@@ -1,4 +1,3 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,15 +20,104 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
+  BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
+  FileCheck, TrendingUp, ChevronDown, ChevronRight
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+type NavItem = {
+  icon: React.ElementType;
+  label: string;
+  path?: string;
+  children?: { label: string; path: string }[];
+};
+
+const menuItems: NavItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  {
+    icon: FileText, label: "Lease Management",
+    children: [
+      { label: "Lease Register",    path: "/leases" },
+      { label: "New Lease",         path: "/leases/new" },
+      { label: "Amortisation",      path: "/leases/amortisation" },
+      { label: "Lease Renewals",    path: "/leases/renewals" },
+      { label: "Modifications",     path: "/leases/modifications" },
+      { label: "Terminations",      path: "/leases/terminations" },
+    ],
+  },
+  {
+    icon: FileCheck, label: "Contracts",
+    children: [
+      { label: "Contract Register", path: "/contracts" },
+      { label: "Version History",   path: "/contracts/history" },
+      { label: "Document Vault",    path: "/contracts/documents" },
+      { label: "Milestones",        path: "/contracts/milestones" },
+    ],
+  },
+  {
+    icon: CreditCard, label: "Payables",
+    children: [
+      { label: "Invoice Register",  path: "/payables/invoices" },
+      { label: "Payment Runs",      path: "/payables/payments" },
+      { label: "GL Journals",       path: "/payables/journals" },
+      { label: "Approval Queue",    path: "/payables/approvals" },
+    ],
+  },
+  {
+    icon: Landmark, label: "Bank Reconciliation",
+    children: [
+      { label: "Bank Accounts",     path: "/bank/accounts" },
+      { label: "Import Statement",  path: "/bank/import" },
+      { label: "Recon Workspace",   path: "/bank/workspace" },
+      { label: "Recon History",     path: "/bank/history" },
+      { label: "Matching Rules",    path: "/bank/rules" },
+    ],
+  },
+  {
+    icon: GitBranch, label: "Workflows",
+    children: [
+      { label: "My Tasks",          path: "/workflows/tasks" },
+      { label: "Process Monitor",   path: "/workflows/monitor" },
+      { label: "Process Modeler",   path: "/workflows/modeler" },
+      { label: "Escalations",       path: "/workflows/escalations" },
+    ],
+  },
+  {
+    icon: BarChart3, label: "MIS & Analytics",
+    children: [
+      { label: "Portfolio Health",  path: "/mis/portfolio" },
+      { label: "Cash Flow Forecast",path: "/mis/cashflow" },
+      { label: "Cost Performance",  path: "/mis/cost" },
+      { label: "AI Query Panel",    path: "/mis/ai-query" },
+      { label: "Custom Reports",    path: "/mis/reports" },
+    ],
+  },
+  {
+    icon: Building2, label: "Operational",
+    children: [
+      { label: "Asset Maintenance", path: "/ops/maintenance" },
+      { label: "Insurance",         path: "/ops/insurance" },
+      { label: "ESG Dashboard",     path: "/ops/esg" },
+      { label: "Document Expiry",   path: "/ops/documents" },
+    ],
+  },
+  {
+    icon: Shield, label: "Compliance",
+    children: [
+      { label: "IFRS 16 Disclosures",path: "/compliance/ifrs16" },
+      { label: "Audit Log",         path: "/compliance/audit" },
+      { label: "Error Log",         path: "/compliance/errors" },
+    ],
+  },
+  { icon: Bell,     label: "Alert Centre",  path: "/alerts" },
+  { icon: Settings, label: "Administration", path: "/admin" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -178,21 +266,58 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
+          <SidebarContent className="gap-0 overflow-y-auto scrollbar-thin">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
+                if (item.children) {
+                  const isGroupActive = item.children.some(c => location.startsWith(c.path));
+                  return (
+                    <Collapsible key={item.label} defaultOpen={isGroupActive}>
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton
+                            isActive={isGroupActive}
+                            tooltip={item.label}
+                            className="h-10 transition-all font-normal w-full justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              <item.icon className={`h-4 w-4 ${isGroupActive ? "text-primary" : ""}`} />
+                              <span>{item.label}</span>
+                            </div>
+                            <ChevronDown className="h-3 w-3 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="ml-6 mt-0.5 mb-1 border-l border-sidebar-border pl-2 flex flex-col gap-0.5">
+                            {item.children.map(child => (
+                              <button
+                                key={child.path}
+                                onClick={() => setLocation(child.path)}
+                                className={`text-left text-sm px-2 py-1.5 rounded-md transition-colors w-full ${
+                                  location === child.path
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                                }`}
+                              >
+                                {child.label}
+                              </button>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                }
                 const isActive = location === item.path;
                 return (
-                  <SidebarMenuItem key={item.path}>
+                  <SidebarMenuItem key={item.path ?? item.label}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => item.path && setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className="h-10 transition-all font-normal"
                     >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
+                      <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
                       <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -1,0 +1,220 @@
+# VodaLease Enterprise — Project TODO
+
+## Phase 1: Project Setup & Dependencies
+- [x] Install SQL Server ODBC driver and mssql npm package
+- [x] Install bpmn-js, bpmn-moddle for BPMN engine
+- [x] Install socket.io for WebSocket real-time updates
+- [x] Install ag-grid-community and ag-grid-react for data grids
+- [x] Install recharts for analytics charts
+- [ ] Install react-dropzone for document uploads
+- [ ] Install date-fns for date manipulation
+- [ ] Install xlsx for Excel export
+- [ ] Install jspdf for PDF export
+- [ ] Install axios for Python FastAPI communication
+- [x] Configure environment secrets (SQL Server, Azure OpenAI)
+
+## Phase 2: SQL Server Database & Stored Procedures
+- [x] Create schemas: coa, lease, payables, finance, compliance, mis, security, workflow
+- [x] Create all core tables with temporal history support
+- [ ] Create stored procedure: sp_GetDashboardKPIs
+- [ ] Create stored procedure: sp_GetLeaseRegister (paginated)
+- [ ] Create stored procedure: sp_GetLeaseById
+- [ ] Create stored procedure: sp_CreateLease
+- [ ] Create stored procedure: sp_UpdateLease
+- [ ] Create stored procedure: sp_SubmitLeaseForApproval
+- [ ] Create stored procedure: sp_ApproveRejectLease
+- [ ] Create stored procedure: sp_GetLessors
+- [ ] Create stored procedure: sp_CreateLessor
+- [ ] Create stored procedure: sp_GetAmortisationSchedule
+- [ ] Create stored procedure: sp_PostMonthlyJournals
+- [ ] Create stored procedure: sp_GetInvoiceRegister
+- [ ] Create stored procedure: sp_CreateInvoice
+- [ ] Create stored procedure: sp_ApproveInvoice
+- [ ] Create stored procedure: sp_CreatePaymentRun
+- [ ] Create stored procedure: sp_GetMakerCheckerQueue
+- [ ] Create stored procedure: sp_GetAuditLog
+- [ ] Create stored procedure: sp_WriteAuditLog
+- [ ] Create stored procedure: sp_GetErrorLog
+- [ ] Create stored procedure: sp_WriteErrorLog
+- [ ] Create stored procedure: sp_GetGLJournals
+- [ ] Create stored procedure: sp_PostGLJournal
+- [ ] Create stored procedure: sp_GetUsers
+- [ ] Create stored procedure: sp_UpsertUser
+- [ ] Create stored procedure: sp_GetWorkflowInstances
+- [ ] Create stored procedure: sp_CreateWorkflowInstance
+- [ ] Create stored procedure: sp_CompleteWorkflowTask
+- [ ] Create stored procedure: sp_GetInsurancePolicies
+- [ ] Create stored procedure: sp_GetMaintenanceTickets
+- [ ] Create stored procedure: sp_GetMISSnapshot
+- [ ] Create stored procedure: sp_GetCashFlowForecast
+- [ ] Create stored procedure: sp_GetPortfolioAnalytics
+- [ ] Create stored procedure: sp_GetScreenRegistry
+- [x] Seed Chart of Accounts (200+ GL codes)
+- [x] Seed asset types, currencies, and configuration tables
+
+## Phase 3: Backend Core
+- [x] Create SQL Server connection pool using mssql
+- [x] Create SPP executor utility (execSP function)
+- [ ] Create screen ID registry middleware
+- [ ] Create JWT RS256 authentication middleware
+- [ ] Create RBAC middleware with role-based route protection
+- [ ] Create audit log middleware (auto-log all write operations)
+- [ ] Create error log middleware (auto-capture all exceptions)
+- [ ] Create WebSocket server with 60-second KPI broadcast
+- [ ] Create core auth router (login, logout, me, MFA)
+- [ ] Create user management router
+
+## Phase 4: Lease & Payables Routers
+- [ ] Create lease router: getRegister, getById, create, update, submit, approve
+- [ ] Create lessor router: list, create, update
+- [ ] Create amortisation router: getSchedule, generateMonthlyJournals
+- [ ] Create modification router: create, approve
+- [ ] Create termination router: initiate, approve
+- [ ] Create payables router: invoices CRUD, approve, reject
+- [ ] Create payment run router: create, approve, generateBankFile (SWIFT + EFT)
+- [ ] Create GL journal router: list, post, void
+- [ ] Create maker/checker queue router: list, action, delegate
+
+## Phase 5: BPMN Engine & Workflow
+- [ ] Create BPMN process definition storage and versioning
+- [ ] Create BPMN runtime executor (Node.js)
+- [ ] Create workflow router: start, getInstances, getTasks, complete, escalate
+- [ ] Implement LEASE_APPROVAL workflow
+- [ ] Implement INVOICE_APPROVAL workflow
+- [ ] Implement PAYMENT_RUN workflow
+- [ ] Implement LEASE_MODIFICATION workflow
+- [ ] Implement LEASE_RENEWAL workflow
+- [ ] Implement LEASE_TERMINATION workflow
+- [ ] Implement LTO_TRANSFER workflow
+- [ ] Create SLA tracker and escalation timer
+
+## Phase 6: Python FastAPI IFRS 16 Engine
+- [ ] Create FastAPI app with Azure OpenAI integration
+- [ ] Implement /ifrs16/compute-pv endpoint
+- [ ] Implement /ifrs16/amortisation-schedule endpoint
+- [ ] Implement /ifrs16/monthly-journals endpoint
+- [ ] Implement /ifrs16/modification endpoint
+- [ ] Implement /ifrs16/lto-schedule endpoint
+- [ ] Implement /ocr/lease-document endpoint (GPT-4o)
+- [ ] Implement /ocr/invoice endpoint (GPT-4o)
+- [ ] Implement /genai/text-to-sql endpoint (LangChain)
+- [ ] Implement /genai/anomaly-explain endpoint
+- [ ] Implement /ml/anomaly-detection endpoint (Scikit-learn)
+- [ ] Implement /genai/board-pack-narrative endpoint
+- [ ] Implement /genai/renewal-recommendation endpoint
+
+## Phase 7: Frontend Layout & Dashboard
+- [x] Create enterprise dark theme with Vodafone red accent
+- [x] Create DashboardLayout with collapsible sidebar
+- [x] Create sidebar navigation with all module links
+- [x] Create KPI ribbon with WebSocket live refresh (60s)
+- [ ] Create Maturity Profile chart (Recharts bar)
+- [ ] Create ROU Asset donut chart
+- [ ] Create Payment Calendar widget
+- [ ] Create Portfolio Summary table
+- [ ] Create Cost vs Budget chart
+- [ ] Create GenAI Insights panel with streaming
+
+## Phase 8: Lease Register & Origination
+- [x] Create Lease Register screen with AG Grid
+- [ ] Implement server-side pagination and filtering
+- [ ] Implement full-row context menu (View, Edit, Audit Trail, etc.)
+- [ ] Implement bulk actions (export, flag, payment advice, renewal)
+- [ ] Create New Lease Origination 5-step wizard
+- [ ] Step 1: Lessor Details form
+- [ ] Step 2: Asset Details with dynamic form by asset type
+- [ ] Step 3: Financial Terms with LTO checkbox (configurable)
+- [ ] Step 4: Document Upload with GPT-4o OCR
+- [ ] Step 5: Review and Post with GL entry preview
+- [ ] Implement Maker/Checker routing with configurable thresholds
+- [ ] Create Lease Detail screen (full read-only view)
+- [ ] Create Amortisation Schedule viewer
+
+## Phase 9: Payables, MIS, BPMN, and Operational Modules
+- [ ] Create Invoice Register screen with AG Grid
+- [ ] Create Invoice Detail screen with OCR pre-fill
+- [ ] Create Payment Run screen with bank file generation
+- [ ] Create Maker/Checker Queue screen
+- [ ] Create GL Journal screen
+- [ ] Create Portfolio Health MIS dashboard
+- [ ] Create Cost Performance charts
+- [ ] Create Cash Flow Forecast chart
+- [ ] Create GenAI text-to-SQL query panel (LangChain)
+- [ ] Create Anomaly Detection queue screen
+- [ ] Create Custom Report Builder
+- [ ] Create BPMN Process Modeler (embedded BPMN.io)
+- [ ] Create Workflow Dashboard and Task Inbox
+- [ ] Create Asset Maintenance Ticketing screen
+- [ ] Create Insurance Policy Register screen
+- [ ] Create ESG Sustainability Dashboard
+- [ ] Create Document Expiry Tracker
+- [ ] Create Audit Log screen (tamper-evident)
+- [ ] Create Error Log screen
+- [ ] Create User Management and RBAC screen
+- [ ] Create Alert Centre screen
+
+## Phase 10: Testing & Delivery
+- [x] Write vitest credential validation tests (SQL Server + Azure OpenAI)
+- [ ] Write vitest tests for SPP executor
+- [ ] Write vitest tests for auth and RBAC middleware
+- [ ] Verify WebSocket KPI broadcast
+- [ ] Verify IFRS 16 computation accuracy
+- [ ] Verify Maker/Checker workflow end-to-end
+- [x] Save final checkpoint
+
+## Contract Management Module (Added per user request)
+- [ ] Contract stored procedures: sp_GetContracts, sp_GetContractById, sp_GetContractVersions, sp_CreateContractVersion, sp_TerminateContract, sp_RenewContract, sp_ModifyContract, sp_GetContractDocuments, sp_AttachContractDocument, sp_GetContractMilestones
+- [ ] Contract router: server/routers/contracts.ts with full lifecycle CRUD, versioning, document vault, renewal, modification, termination, milestone tracking
+- [ ] Contract List screen (VFLSECNTLST0001P001): AG Grid with status badges, expiry countdown, bulk actions
+- [ ] Contract Detail screen (VFLSECNTDET0001P001): Tabbed view — Terms, Amortisation, Documents, History, Insurance, Maintenance, Milestones
+- [ ] Contract Modification screen (VFLSECNTMOD0001P001): IFRS 16 remeasurement, before/after comparison, GL preview
+- [ ] Contract Renewal screen (VFLSECNTREN0001P001): Renewal terms form, new amortisation preview, approval routing
+- [ ] Contract Termination screen (VFLSECNTTRM0001P001): Penalty vs buyout analysis, derecognition GL preview, final settlement
+- [ ] Contract Version History screen (VFLSECNTHST0001P001): Timeline of all changes with diff viewer
+- [ ] Contract Document Vault screen (VFLSECNTDOC0001P001): Upload, OCR extraction, version control, expiry tracking
+- [ ] Register all contract screen IDs in security.screen_registry
+
+## Bank Account Reconciliation & Auto-Matching Module (Added per user request)
+
+### Database & Stored Procedures
+- [ ] Create schema: bank (bank_accounts, bank_statements, bank_transactions, recon_sessions, recon_matches, recon_exceptions, recon_rules)
+- [ ] sp_GetBankAccounts — list all registered bank accounts
+- [ ] sp_CreateBankAccount — register a new bank account
+- [ ] sp_ImportBankStatement — import MT940/CSV/OFX statement rows
+- [ ] sp_RunAutoMatch — engine: match bank lines to GL/payment runs via rules
+- [ ] sp_GetReconSession — get session with match summary
+- [ ] sp_GetUnmatchedItems — unmatched bank lines and GL items
+- [ ] sp_ManualMatch — operator manually links a bank line to a GL entry
+- [ ] sp_UnmatchItem — reverse a match
+- [ ] sp_PostReconJournal — post reconciling GL entries for differences
+- [ ] sp_CloseReconSession — lock and finalise a reconciliation period
+- [ ] sp_GetReconHistory — historical sessions with status and stats
+- [ ] sp_GetReconRules — configurable auto-match rule set
+- [ ] sp_UpsertReconRule — create/update a matching rule
+
+### Auto-Matching Engine Rules
+- [ ] Rule 1: Exact match — bank amount = GL amount + same date ± 3 days
+- [ ] Rule 2: Reference match — bank narrative contains payment run ref or invoice ref
+- [ ] Rule 3: Tolerance match — amount within configurable tolerance (e.g. ±0.50)
+- [ ] Rule 4: Aggregated match — one bank line matches multiple GL lines (sum)
+- [ ] Rule 5: Split match — one GL line matches multiple bank lines
+- [ ] Rule 6: AI-assisted match — GPT-4o analyses narrative for fuzzy lessor name match
+- [ ] Confidence scoring: each match gets a score (0–100) and match method label
+- [ ] Unmatched items flagged for manual review with suggested matches ranked by score
+
+### Backend Router
+- [ ] server/routers/bankRecon.ts — full CRUD + auto-match trigger + manual match + close session
+- [ ] File upload handler for MT940, CSV, OFX bank statement formats
+- [ ] GenAI narrative parser for AI-assisted matching
+- [ ] WebSocket broadcast when auto-match completes
+
+### UI Screens
+- [ ] Bank Account Register (VFBNKACCREG0001P001) — list accounts with balance, last recon date
+- [ ] Bank Statement Import (VFBNKSTMIMP0001P001) — drag-drop upload MT940/CSV/OFX, preview rows
+- [ ] Reconciliation Workspace (VFBNKRECONWS0001P001) — split-pane: bank lines left, GL items right, match lines in centre
+- [ ] Auto-Match Results (VFBNKAUTOMCH0001P001) — matched items with confidence scores, one-click accept all
+- [ ] Unmatched Items Queue (VFBNKUNMTCH0001P001) — exceptions with AI suggested matches, manual link UI
+- [ ] Reconciliation Summary (VFBNKRECSUM0001P001) — closing balance proof, difference analysis, post button
+- [ ] Reconciliation History (VFBNKRECHST0001P001) — all closed sessions with drill-down
+- [ ] Matching Rules Configuration (VFBNKRULCFG0001P001) — admin screen to configure tolerance, rules, priorities
+- [ ] Register all bank recon screen IDs in security.screen_registry
