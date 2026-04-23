@@ -9,6 +9,7 @@ import { payablesRouter }  from "./routers/payables";
 import { workflowRouter, complianceRouter, misRouter } from "./routers/workflow";
 import { genaiRouter }     from "./routers/genai";
 import { bankReconRouter } from "./routers/bankRecon";
+import { chequeRouter }    from "./routers/cheque";
 
 export const appRouter = router({
   system: systemRouter,
@@ -28,6 +29,7 @@ export const appRouter = router({
   workflow:  workflowRouter,
   genai:     genaiRouter,
   bankRecon:   bankReconRouter,
+  cheque:      chequeRouter,
   compliance:  complianceRouter,
   mis:         misRouter,
 });

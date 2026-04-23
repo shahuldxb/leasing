@@ -218,3 +218,45 @@
 - [ ] Reconciliation History (VFBNKRECHST0001P001) — all closed sessions with drill-down
 - [ ] Matching Rules Configuration (VFBNKRULCFG0001P001) — admin screen to configure tolerance, rules, priorities
 - [ ] Register all bank recon screen IDs in security.screen_registry
+
+## Cheque Inventory Module (Added per user request)
+
+### Database & Stored Procedures
+- [ ] Create table: cheque.bank_accounts (account_id, bank_name, account_number, account_name, currency, branch, is_active)
+- [ ] Create table: cheque.cheque_books (book_id, bank_account_id, book_number, series_from, series_to, total_leaves, issued_leaves, available_leaves, status, received_date, screen_id)
+- [ ] Create table: cheque.cheque_register (cheque_id, cheque_book_id, cheque_number, payee_lessor_id, payment_run_id, invoice_id, amount, currency, issue_date, presented_date, cleared_date, status, signatory_1, signatory_2, signature_type, void_reason, bounce_reason, replacement_cheque_id, gl_posted, screen_id, audit_no)
+- [ ] Create table: cheque.cheque_signatories (signatory_id, user_name, designation, is_active, authority_limit)
+- [ ] sp_GetBankAccountsForCheque — list cheque-enabled bank accounts
+- [ ] sp_GetChequeBooks — paginated list with filter by bank account, status
+- [ ] sp_CreateChequeBook — register new cheque book with series
+- [ ] sp_GetNextAvailableCheque — get next unissued cheque number from a book
+- [ ] sp_IssueCheque — issue cheque to lessor, link to invoice/payment run, post GL (Dr Payable / Cr Cheques in Transit)
+- [ ] sp_PresentCheque — mark cheque as presented to bank
+- [ ] sp_ClearCheque — mark cheque as cleared, post GL (Dr Cheques in Transit / Cr Bank)
+- [ ] sp_BounceCheque — mark cheque as bounced, record reason, create replacement workflow
+- [ ] sp_VoidCheque — void/stop payment, record reason, reverse GL
+- [ ] sp_ReissueCheque — issue replacement cheque for bounced/void, link to original
+- [ ] sp_GetChequeRegister — paginated register with filters (status, bank account, lessor, date range)
+- [ ] sp_GetChequeById — full detail with GL entries and audit trail
+- [ ] sp_GetChequeInventorySummary — dashboard KPIs (total in stock, issued, presented, cleared, bounced, stale)
+- [ ] sp_GetStaleCheques — cheques not presented within 90 days
+- [ ] sp_GetSignatories — list authorised signatories
+- [ ] sp_UpsertSignatory — add/update signatory with authority limit
+
+### Backend Router
+- [ ] server/routers/cheque.ts — full tRPC router with all procedures
+- [ ] Wire chequeRouter into server/routers.ts
+
+### Frontend Screens (Dark Theme with Light Toggle)
+- [ ] Cheque Dashboard (VFCHQDASH0001P001) — KPI cards: In Stock, Issued, Presented, Cleared, Bounced, Stale; dark theme default
+- [ ] Cheque Book Register (VFCHQBOOK0001P001) — AG-style table, register new book button, status dropdown filter
+- [ ] New Cheque Book form — bank account dropdown, book number, series from/to, received date, signatory assignment
+- [ ] Cheque Register (VFCHQREG0001P001) — full register with status badges, amount, payee, dates, action menu
+- [ ] Issue Cheque form (VFCHQISS0001P001) — select bank account → auto-select next cheque number, payee dropdown, amount, signatory dropdown (single/dual), link to invoice
+- [ ] Cheque Detail screen (VFCHQDET0001P001) — full lifecycle timeline, GL entries, audit trail
+- [ ] Bounce Handling screen (VFCHQBNC0001P001) — record bounce reason, bounce fee, trigger replacement cheque issuance
+- [ ] Void/Stop Payment screen (VFCHQVOID0001P001) — void reason dropdown, GL reversal preview, confirm
+- [ ] Stale Cheque Alert screen (VFCHQSTALE0001P001) — list of cheques not presented in 90+ days with action options
+- [ ] Signatory Management screen (VFCHQSIGN0001P001) — manage authorised signatories, authority limits
+- [ ] Theme toggle (dark/light) on all cheque screens
+- [ ] Register all cheque screen IDs in security.screen_registry

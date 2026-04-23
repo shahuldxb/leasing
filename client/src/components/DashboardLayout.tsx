@@ -24,7 +24,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight
+  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -78,6 +78,15 @@ const menuItems: NavItem[] = [
       { label: "Recon Workspace",   path: "/bank/workspace" },
       { label: "Recon History",     path: "/bank/history" },
       { label: "Matching Rules",    path: "/bank/rules" },
+    ],
+  },
+  {
+    icon: BookOpen, label: "Cheque Inventory",
+    children: [
+      { label: "Cheque Register",   path: "/cheques" },
+      { label: "Cheque Books",      path: "/cheques" },
+      { label: "Stale Alerts",      path: "/cheques" },
+      { label: "Signatories",       path: "/cheques" },
     ],
   },
   {

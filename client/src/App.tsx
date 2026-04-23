@@ -14,6 +14,7 @@ import WorkflowQueue   from "./pages/WorkflowQueue";
 import BankReconWorkspace from "./pages/BankReconWorkspace";
 import MISAnalytics    from "./pages/MISAnalytics";
 import AuditLog        from "./pages/AuditLog";
+import ChequeInventory from "./pages/ChequeInventory";
 import Home            from "./pages/Home";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/bank-recon"        component={BankReconWorkspace} />
       <Route path="/analytics"         component={MISAnalytics} />
       <Route path="/audit"             component={AuditLog} />
+      <Route path="/cheques"           component={ChequeInventory} />
       <Route path="/404"               component={NotFound} />
       <Route                           component={NotFound} />
     </Switch>
