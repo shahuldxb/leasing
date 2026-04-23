@@ -90,6 +90,28 @@ import ScenarioModelling  from "./pages/ScenarioModelling";
 import AlertCentre        from "./pages/AlertCentre";
 import AdminPanel         from "./pages/AdminPanel";
 
+// New P2/P3/P4 Features
+import LessorFinanceLease   from "./pages/LessorFinanceLease";
+import NotificationSettings from "./pages/NotificationSettings";
+import SSOConfig            from "./pages/SSOConfig";
+import APIWebhookConfig     from "./pages/APIWebhookConfig";
+import DeskBooking          from "./pages/DeskBooking";
+import FacilitiesWorkOrders from "./pages/FacilitiesWorkOrders";
+import VendorManagement     from "./pages/VendorManagement";
+import LeaseDataQuality     from "./pages/LeaseDataQuality";
+import ConsolidationReporting from "./pages/ConsolidationReporting";
+import HedgeAccounting      from "./pages/HedgeAccounting";
+import BudgetingForecasting from "./pages/BudgetingForecasting";
+import ESGReporting         from "./pages/ESGReporting";
+import AILeaseAnalytics     from "./pages/AILeaseAnalytics";
+import MobileFieldApp       from "./pages/MobileFieldApp";
+import TenantPortal         from "./pages/TenantPortal";
+import BrokerManagement     from "./pages/BrokerManagement";
+import LOITracking          from "./pages/LOITracking";
+import LeaseComparison      from "./pages/LeaseComparison";
+import TenantImprovementAllowance from "./pages/TenantImprovementAllowance";
+import ESignatureIntegration from "./pages/ESignatureIntegration";
+
 // Lessor & Asset
 import LessorMaster       from "./pages/LessorMaster";
 import AssetRegistry      from "./pages/AssetRegistry";
@@ -222,6 +244,28 @@ function Router() {
 
       {/* Alerts & Scheduled Reports */}
       <Route path="/admin/alerts-reports"    component={AlertsReports} />
+
+      {/* New P2/P3/P4 Features */}
+      <Route path="/accounting/lessor-finance" component={LessorFinanceLease} />
+      <Route path="/admin/notifications"     component={NotificationSettings} />
+      <Route path="/admin/sso"               component={SSOConfig} />
+      <Route path="/admin/api-webhooks"      component={APIWebhookConfig} />
+      <Route path="/ops/desk-booking"        component={DeskBooking} />
+      <Route path="/ops/work-orders"         component={FacilitiesWorkOrders} />
+      <Route path="/ops/vendors"             component={VendorManagement} />
+      <Route path="/leases/data-quality"     component={LeaseDataQuality} />
+      <Route path="/accounting/consolidation" component={ConsolidationReporting} />
+      <Route path="/accounting/hedge"        component={HedgeAccounting} />
+      <Route path="/finance/budgeting"       component={BudgetingForecasting} />
+      <Route path="/ops/esg-reporting"       component={ESGReporting} />
+      <Route path="/ai-analytics"            component={AILeaseAnalytics} />
+      <Route path="/mobile-field"            component={MobileFieldApp} />
+      <Route path="/tenant-portal"           component={TenantPortal} />
+      <Route path="/leases/brokers"           component={BrokerManagement} />
+      <Route path="/leases/loi"               component={LOITracking} />
+      <Route path="/leases/compare"           component={LeaseComparison} />
+      <Route path="/leases/ti-allowance"      component={TenantImprovementAllowance} />
+      <Route path="/admin/esignature"         component={ESignatureIntegration} />
 
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />

@@ -205,7 +205,62 @@ const menuItems: NavItem[] = [
       { label: "Asset Registry",     path: "/asset-registry" },
     ],
   },
-  { icon: Settings, label: "Administration", path: "/admin" },
+  {
+    icon: Wrench, label: "Facilities & Vendors",
+    children: [
+      { label: "Desk Booking",        path: "/ops/desk-booking" },
+      { label: "Work Orders",          path: "/ops/work-orders" },
+      { label: "Vendor Management",    path: "/ops/vendors" },
+    ],
+  },
+  {
+    icon: Shield, label: "Data Quality",
+    children: [
+      { label: "Lease Data Quality",   path: "/leases/data-quality" },
+    ],
+  },
+  {
+    icon: Calculator, label: "Advanced Accounting",
+    children: [
+      { label: "Lessor Finance Lease", path: "/accounting/lessor-finance" },
+      { label: "Consolidation",        path: "/accounting/consolidation" },
+      { label: "Hedge Accounting",     path: "/accounting/hedge" },
+    ],
+  },
+  {
+    icon: TrendingUp, label: "Budgeting & ESG",
+    children: [
+      { label: "Budgeting & Forecasting", path: "/finance/budgeting" },
+      { label: "ESG Reporting",           path: "/ops/esg-reporting" },
+    ],
+  },
+  {
+    icon: Sparkles, label: "AI & Intelligence",
+    children: [
+      { label: "AI Lease Analytics",   path: "/ai-analytics" },
+    ],
+  },
+  {
+    icon: Package, label: "Field & Tenant",
+    children: [
+      { label: "Mobile Field App",     path: "/mobile-field" },
+      { label: "Tenant Portal",        path: "/tenant-portal" },
+      { label: "Broker Management",    path: "/leases/brokers" },
+      { label: "LOI Tracking",         path: "/leases/loi" },
+      { label: "Lease Comparison",     path: "/leases/compare" },
+      { label: "TI Allowance",         path: "/leases/ti-allowance" },
+    ],
+  },
+  {
+    icon: Settings, label: "System Settings",
+    children: [
+      { label: "Notification Settings",path: "/admin/notifications" },
+      { label: "SSO Configuration",    path: "/admin/sso" },
+      { label: "API & Webhooks",       path: "/admin/api-webhooks" },
+      { label: "E-Signature",          path: "/admin/esignature" },
+      { label: "Administration",       path: "/admin" },
+    ],
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
