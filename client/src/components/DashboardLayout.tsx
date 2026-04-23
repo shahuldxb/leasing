@@ -198,6 +198,13 @@ const menuItems: NavItem[] = [
       { label: "Alert Centre",       path: "/alerts" },
     ],
   },
+  {
+    icon: Building2, label: "Lessor & Assets",
+    children: [
+      { label: "Lessor Master",      path: "/lessor-master" },
+      { label: "Asset Registry",     path: "/asset-registry" },
+    ],
+  },
   { icon: Settings, label: "Administration", path: "/admin" },
 ];
 

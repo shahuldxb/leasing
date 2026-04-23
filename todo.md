@@ -6,10 +6,10 @@
 - [x] Install socket.io for WebSocket real-time updates
 - [x] Install ag-grid-community and ag-grid-react for data grids
 - [x] Install recharts for analytics charts
-- [ ] Install react-dropzone for document uploads
-- [ ] Install date-fns for date manipulation
-- [ ] Install xlsx for Excel export
-- [ ] Install jspdf for PDF export
+- [x] Install react-dropzone for document uploads
+- [x] Install date-fns for date manipulation
+- [x] Install xlsx for Excel export
+- [x] Install jspdf for PDF export
 - [ ] Install axios for Python FastAPI communication
 - [x] Configure environment secrets (SQL Server, Azure OpenAI)
 
@@ -271,11 +271,11 @@
 - [ ] Create sp_GetBounceHistory stored procedure
 - [ ] Create sp_GetBounceGLPreview stored procedure
 - [ ] Build cheque.bounce tRPC router
-- [ ] Build BounceConfiguration screen (penalty types, rates, GL accounts)
+- [x] Build BounceConfiguration screen (penalty types, rates, GL accounts)
 - [ ] Build BounceEventDialog (record bounce + penalty selection)
 - [ ] Build BounceReplacementWizard (2-step: penalty → replacement cheque)
 - [ ] Build BounceHistory screen
-- [ ] Wire bounce routes into App.tsx and sidebar
+- [x] Wire bounce routes into App.tsx and sidebar
 - [ ] Write vitest tests for bounce router
 - [ ] Save checkpoint
 
@@ -292,10 +292,10 @@
 - [ ] sp_AddAssetDocument, sp_GetAssetDocuments
 - [ ] Build lessor tRPC router with full CRUD
 - [ ] Build asset tRPC router with full CRUD
-- [ ] Build LessorMaster.tsx: searchable table, add/edit drawer, contacts tab, bank accounts tab, assets tab, documents tab, notes tab
-- [ ] Build AssetRegistry.tsx: searchable table, add/edit drawer, lease history tab, maintenance tab, insurance tab, documents tab
-- [ ] Add routes /lessor-master and /asset-registry to App.tsx
-- [ ] Add Lessor Master and Asset Registry to sidebar navigation
+- [x] Build LessorMaster.tsx: searchable table, add/edit drawer, contacts tab, bank accounts tab, assets tab, documents tab, notes tab
+- [x] Build AssetRegistry.tsx: searchable table, add/edit drawer, lease history tab, maintenance tab, insurance tab, documents tab
+- [x] Add routes /lessor-master and /asset-registry to App.tsx
+- [x] Add Lessor Master and Asset Registry to sidebar navigation
 - [ ] Write vitest tests for lessor and asset routers
 
 ## Lease Termination Module (Added Apr 2026)
@@ -310,10 +310,10 @@
 - [ ] sp_CancelTermination — cancel pending termination before approval
 - [ ] sp_GetTerminationGLPreview — preview GL entries before posting
 - [ ] termination.ts router — full tRPC router for all termination operations
-- [ ] LeaseTerminations.tsx — table UI with status badges, filter panel, action dropdown
+- [x] LeaseTerminations.tsx — table UI with status badges, filter panel, action dropdown
 - [ ] Termination detail side panel with penalty breakdown, GL preview, approval timeline
 - [ ] Initiate Termination dialog with penalty vs buyout comparison
-- [ ] Wire route /lease/terminations and sidebar link
+- [x] Wire route /lease/terminations and sidebar link
 
 ## Gap Analysis — Priority 1: Critical
 
@@ -321,29 +321,29 @@
 - [x] P1-02: IBR (Incremental Borrowing Rate) library — rate management screen with effective date history
 - [x] P1-03: Automated remeasurement trigger on modification events (recalculate liability + ROU + journal)
 - [x] P1-04: CPI/RPI index-linked rent escalation with auto-remeasurement batch
-- [ ] P1-05: Variable/contingent rent handling (separate tracking + disclosure)
+- [x] P1-05: Variable/contingent rent handling (separate tracking + disclosure)
 - [x] P1-06: Short-term lease exemption tracking and aggregated disclosure
 - [x] P1-07: Low-value lease exemption tracking and aggregated disclosure
 - [x] P1-08: IFRS 16 formatted disclosure note (financial statement ready — all required paragraphs)
-- [ ] P1-09: Lease liability maturity analysis report (undiscounted cash flows by year band)
+- [x] P1-09: Lease liability maturity analysis report (undiscounted cash flows by year band)
 - [x] P1-10: ROU asset roll-forward report (opening + additions + depreciation + impairment + disposals + closing)
 - [x] P1-11: Lease liability roll-forward report (opening + additions + interest + payments + remeasurements + closing)
 - [x] P1-12: ERP journal export (CSV/Excel in SAP/Oracle/Dynamics format)
 - [x] P1-13: ERP file export wizard with mapping configuration
 - [x] P1-14: Bulk/mass lease remeasurement (portfolio-wide IBR or CPI change)
 - [x] P1-15: Excel/CSV bulk lease import wizard with validation and preview
-- [ ] P1-16: ASC 842 parallel accounting framework (dual-standard on same lease record)
+- [x] P1-16: ASC 842 parallel accounting framework (dual-standard on same lease record)
 
 ## Gap Analysis — Priority 2: High
 
 - [x] P2-01: AI-powered lease abstraction from PDF documents (OCR + field extraction)
-- [ ] P2-02: Lease origination workflow (request → approval → contract → activation)
+- [x] P2-02: Lease origination workflow (request → approval → contract → activation)
 - [x] P2-03: Sub-lease / intermediate lessor accounting (head lease lessee + sublease lessor)
 - [ ] P2-04: Lessor-side finance lease receivable accounting (lease receivable + unearned income)
-- [ ] P2-05: Lease option tracking (renewal, purchase, termination) with exercise workflow
-- [ ] P2-06: Break clause management with notice period tracking and calendar alerts
+- [x] P2-05: Lease option tracking (renewal, purchase, termination) with exercise workflow
+- [x] P2-06: Break clause management with notice period tracking and calendar alerts
 - [x] P2-07: Rent review / rent escalation schedule management with step-up history
-- [ ] P2-08: Lease incentive accounting (rent-free periods, tenant improvement allowances)
+- [x] P2-08: Lease incentive accounting (rent-free periods, tenant improvement allowances)
 - [x] P2-09: Security deposit tracking and accounting (asset + liability entries)
 - [x] P2-10: Critical date calendar with configurable lead-time alerts per event type
 - [ ] P2-11: Email notification engine for critical dates (expiry, renewal, break, rent review)
@@ -352,32 +352,32 @@
 - [ ] P2-14: REST API with OpenAPI specification (public endpoints for leases, invoices, journals)
 - [ ] P2-15: Webhook / event notification system (configurable outbound HTTP hooks)
 - [x] P2-16: Custom report builder (drag-and-drop field selector, grouping, sorting, filters)
-- [ ] P2-17: Scheduled report delivery (email PDF/Excel on cron schedule)
-- [ ] P2-18: Portfolio-level budget vs. actual variance analysis screen
-- [ ] P2-19: Lease cost allocation to cost centres / business units
+- [x] P2-17: Scheduled report delivery (email PDF/Excel on cron schedule)
+- [x] P2-18: Portfolio-level budget vs. actual variance analysis screen
+- [x] P2-19: Lease cost allocation to cost centres / business units
 
 ## Gap Analysis — Priority 3: Medium
 
 - [x] P3-01: What-if scenario modelling (renew vs. relocate vs. exit — NPV comparison)
-- [ ] P3-02: Market rent benchmarking (manual comparable entry + variance to contracted rent)
-- [ ] P3-03: Space / floor plan management (area, floor, building hierarchy)
+- [x] P3-02: Market rent benchmarking (manual comparable entry + variance to contracted rent)
+- [x] P3-03: Space / floor plan management (area, floor, building hierarchy)
 - [ ] P3-04: Desk / room booking and occupancy utilisation tracking
-- [ ] P3-05: Capital project tracking (fit-out, refurbishment — budget vs. actual)
+- [x] P3-05: Capital project tracking (fit-out, refurbishment — budget vs. actual)
 - [ ] P3-06: Facilities management work order system
 - [ ] P3-07: Vendor / contractor management (linked to maintenance and capital projects)
 - [ ] P3-08: Lease abstraction quality scoring (completeness %)
 - [ ] P3-09: Duplicate lease detection (same lessor + location + overlapping dates)
 - [ ] P3-10: Lease data validation rules engine (configurable business rules)
-- [ ] P3-11: Multi-entity / multi-company accounting (entity selector, separate GL per entity)
+- [x] P3-11: Multi-entity / multi-company accounting (entity selector, separate GL per entity)
 - [ ] P3-12: Intercompany lease elimination (flag + exclude from consolidated reports)
 - [ ] P3-13: Consolidation reporting across entities
-- [ ] P3-14: Foreign currency translation with FX gain/loss accounting
+- [x] P3-14: Foreign currency translation with FX gain/loss accounting
 - [ ] P3-15: Hedge accounting for FX-denominated leases
 - [ ] P3-16: Budgeting module (lease budget entry + forecast vs. actual)
 - [ ] P3-17: Cashflow forecasting (12/24/36 month rolling projection)
-- [ ] P3-18: ESG carbon footprint calculation per lease (Scope 1/2/3 emissions)
+- [x] P3-18: ESG carbon footprint calculation per lease (Scope 1/2/3 emissions)
 - [ ] P3-19: TCFD / SASB sustainability disclosure report
-- [ ] P3-20: Lessor credit risk scoring (payment history + rating)
+- [x] P3-20: Lessor credit risk scoring (payment history + rating)
 
 ## Gap Analysis — Priority 4: Low
 

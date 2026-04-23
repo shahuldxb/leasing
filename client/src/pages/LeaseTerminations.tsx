@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { MoreHorizontal, Search, Filter } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -49,6 +51,18 @@ export default function LeaseTerminations() {
   const cancelMut = trpc.termination.cancel.useMutation({
     onSuccess: () => { toast.success("Termination cancelled"); refetch(); },
     onError: (e) => toast.error(e.message),
+  });
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const filteredTerminations = (terminations as any[]).filter((t: any) => {
+    const matchSearch = !search || 
+      (t.contract_ref ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (t.asset_description ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (t.lessor_name ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "ALL" || t.status === statusFilter;
+    return matchSearch && matchStatus;
   });
 
   const pending = (terminations as any[]).filter((t: any) => t.status === "PENDING").length;
@@ -100,7 +114,26 @@ export default function LeaseTerminations() {
 
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-red-400" /> Termination Register</CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-red-400" /> Termination Register</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input className="pl-8 h-8 w-48 text-xs" placeholder="Search contract, asset, lessor..." value={search} onChange={e => setSearch(e.target.value)} />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-8 w-36 text-xs"><Filter className="w-3 h-3 mr-1" /><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Statuses</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="APPROVED">Approved</SelectItem>
+                    <SelectItem value="REJECTED">Rejected</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="GL_POSTED">GL Posted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -118,10 +151,10 @@ export default function LeaseTerminations() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(terminations as any[]).length === 0 && (
+                {filteredTerminations.length === 0 && (
                   <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No termination requests found</TableCell></TableRow>
                 )}
-                {(terminations as any[]).map((t: any) => (
+                {filteredTerminations.map((t: any) => (
                   <TableRow key={t.termination_id}>
                     <TableCell className="font-mono text-sm">{t.contract_ref}</TableCell>
                     <TableCell className="text-sm max-w-[140px] truncate">{t.asset_description}</TableCell>
@@ -134,24 +167,31 @@ export default function LeaseTerminations() {
                       <Badge className={`text-xs border ${STATUS_COLORS[t.status] ?? ""}`}>{t.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        {t.status === "PENDING" && (
-                          <>
-                            <Button size="sm" variant="ghost" className="text-green-400 hover:text-green-300 h-7 px-2" title="Approve"
-                              onClick={() => approveMut.mutate({ termination_id: t.termination_id })}>
-                              <CheckCircle className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 h-7 px-2" title="Reject"
-                              onClick={() => setShowReject(t.termination_id)}>
-                              <XCircle className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground h-7 px-2" title="Cancel"
-                              onClick={() => cancelMut.mutate({ termination_id: t.termination_id })}>
-                              <Ban className="w-3.5 h-3.5" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          {t.status === "PENDING" && (
+                            <>
+                              <DropdownMenuItem className="text-green-400 cursor-pointer" onClick={() => approveMut.mutate({ termination_id: t.termination_id })}>
+                                <CheckCircle className="w-3.5 h-3.5 mr-2" /> Approve
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-400 cursor-pointer" onClick={() => setShowReject(t.termination_id)}>
+                                <XCircle className="w-3.5 h-3.5 mr-2" /> Reject
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-muted-foreground cursor-pointer" onClick={() => cancelMut.mutate({ termination_id: t.termination_id })}>
+                                <Ban className="w-3.5 h-3.5 mr-2" /> Cancel
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info(`GL Preview for ${t.contract_ref} — coming soon`)}>
+                            <FileText className="w-3.5 h-3.5 mr-2" /> View GL Preview
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

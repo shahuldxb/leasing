@@ -90,6 +90,10 @@ import ScenarioModelling  from "./pages/ScenarioModelling";
 import AlertCentre        from "./pages/AlertCentre";
 import AdminPanel         from "./pages/AdminPanel";
 
+// Lessor & Asset
+import LessorMaster       from "./pages/LessorMaster";
+import AssetRegistry      from "./pages/AssetRegistry";
+
 // P2/P3 New Features
 import MaturityAnalysis   from "./pages/MaturityAnalysis";
 import VariableRent       from "./pages/VariableRent";
@@ -189,6 +193,10 @@ function Router() {
       <Route path="/leases/security-deposits" component={SecurityDeposits} />
       <Route path="/reports"                 component={ReportBuilder} />
       <Route path="/scenarios"               component={ScenarioModelling} />
+
+      {/* Lessor & Asset */}
+      <Route path="/lessor-master"           component={LessorMaster} />
+      <Route path="/asset-registry"          component={AssetRegistry} />
 
       {/* Alerts & Admin */}
       <Route path="/alerts"                  component={AlertCentre} />
