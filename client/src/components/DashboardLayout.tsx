@@ -86,6 +86,7 @@ const menuItems: NavItem[] = [
     children: [
       { label: "Cheque Register",   path: "/cheques" },
       { label: "Cheque Books",      path: "/cheques" },
+      { label: "Bounce Management", path: "/cheques/bounce" },
       { label: "Stale Alerts",      path: "/cheques" },
       { label: "Signatories",       path: "/cheques" },
     ],

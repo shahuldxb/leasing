@@ -1116,3 +1116,167 @@ export const scheduledReportsRouter = router({
       return { success: true, message: "Report queued for generation" };
     }),
 });
+
+// ─── Lease Termination Router ─────────────────────────────────────────────────
+export const terminationRouter = router({
+  list: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`
+      SELECT t.*, c.contract_ref, c.asset_description, c.monthly_payment, l.lessor_name
+      FROM lease.termination_requests t
+      JOIN lease.contracts c ON t.contract_id = c.contract_id
+      LEFT JOIN lease.lessors l ON c.lessor_id = l.lessor_id
+      ORDER BY t.created_at DESC`);
+    return r.recordset;
+  }),
+  initiate: protectedProcedure.input(z.object({
+    contract_id: z.number(),
+    effective_date: z.string(),
+    reason: z.string(),
+    penalty_amount: z.number().optional(),
+    buyout_amount: z.number().optional(),
+    make_good_amount: z.number().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const pool = await getPool();
+    await pool.request()
+      .input('contract_id', input.contract_id)
+      .input('effective_date', input.effective_date)
+      .input('reason', input.reason)
+      .input('penalty_amount', input.penalty_amount ?? 0)
+      .input('buyout_amount', input.buyout_amount ?? 0)
+      .input('make_good_amount', input.make_good_amount ?? 0)
+      .input('created_by', ctx.user.id)
+      .query(`INSERT INTO lease.termination_requests (contract_id, effective_date, reason, penalty_amount, buyout_amount, make_good_amount, created_by) VALUES (@contract_id, @effective_date, @reason, @penalty_amount, @buyout_amount, @make_good_amount, @created_by)`);
+    return { success: true };
+  }),
+  approve: protectedProcedure.input(z.object({ termination_id: z.number() })).mutation(async ({ input, ctx }) => {
+    const pool = await getPool();
+    await pool.request().input('id', input.termination_id).input('user', ctx.user.id)
+      .query(`UPDATE lease.termination_requests SET status='APPROVED', approved_by=@user, approved_at=GETDATE() WHERE termination_id=@id`);
+    return { success: true };
+  }),
+  reject: protectedProcedure.input(z.object({ termination_id: z.number(), reason: z.string() })).mutation(async ({ input }) => {
+    const pool = await getPool();
+    await pool.request().input('id', input.termination_id).input('reason', input.reason)
+      .query(`UPDATE lease.termination_requests SET status='REJECTED', rejected_reason=@reason WHERE termination_id=@id`);
+    return { success: true };
+  }),
+  cancel: protectedProcedure.input(z.object({ termination_id: z.number() })).mutation(async ({ input }) => {
+    const pool = await getPool();
+    await pool.request().input('id', input.termination_id)
+      .query(`UPDATE lease.termination_requests SET status='CANCELLED' WHERE termination_id=@id AND status='PENDING'`);
+    return { success: true };
+  }),
+});
+
+// ─── Bounce Penalty Router ────────────────────────────────────────────────────
+export const bouncePenaltyRouter = router({
+  listConfig: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`SELECT * FROM cheque.bounce_penalty_config ORDER BY priority, config_id`);
+    return r.recordset;
+  }),
+  saveConfig: protectedProcedure.input(z.object({
+    config_id: z.number().optional(),
+    penalty_code: z.string(),
+    penalty_name: z.string(),
+    pct_rate: z.number().optional(),
+    flat_amount: z.number().optional(),
+    dr_gl_account: z.string().optional(),
+    cr_gl_account: z.string().optional(),
+    is_active: z.boolean().default(true),
+  })).mutation(async ({ input }) => {
+    const pool = await getPool();
+    if (input.config_id) {
+      await pool.request()
+        .input('id', input.config_id).input('rate', input.pct_rate ?? null)
+        .input('flat', input.flat_amount ?? null).input('active', input.is_active ? 1 : 0)
+        .input('name', input.penalty_name)
+        .query(`UPDATE cheque.bounce_penalty_config SET pct_rate=@rate, flat_amount=@flat, is_active=@active, penalty_name=@name WHERE config_id=@id`);
+    } else {
+      await pool.request()
+        .input('code', input.penalty_code).input('name', input.penalty_name)
+        .input('rate', input.pct_rate ?? null).input('flat', input.flat_amount ?? null)
+        .input('debit', input.dr_gl_account ?? null).input('credit', input.cr_gl_account ?? null)
+        .query(`INSERT INTO cheque.bounce_penalty_config (penalty_code, penalty_name, pct_rate, flat_amount, dr_gl_account, cr_gl_account, created_by) VALUES (@code, @name, @rate, @flat, @debit, @credit, 1)`);
+    }
+    return { success: true };
+  }),
+  listEvents: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`
+      SELECT e.*, cr.cheque_number, cr.amount as cheque_amount, l.lessor_name
+      FROM cheque.bounce_events e
+      JOIN cheque.cheque_register cr ON e.cheque_id = cr.cheque_id
+      LEFT JOIN lease.lessors l ON cr.payee_lessor_id = l.lessor_id
+      ORDER BY e.bounce_date DESC`);
+    return r.recordset;
+  }),
+  recordBounce: protectedProcedure.input(z.object({
+    cheque_id: z.number(),
+    bounce_date: z.string(),
+    bounce_reason: z.string(),
+    penalty_type: z.string().optional(),
+    penalty_amount: z.number().optional(),
+  })).mutation(async ({ input }) => {
+    const pool = await getPool();
+    await pool.request()
+      .input('cid', input.cheque_id).input('date', input.bounce_date)
+      .input('reason', input.bounce_reason).input('ptype', input.penalty_type ?? null)
+      .input('pamount', input.penalty_amount ?? 0)
+      .query(`INSERT INTO cheque.bounce_events (cheque_id, bounce_date, bounce_reason, penalty_type, penalty_amount) VALUES (@cid, @date, @reason, @ptype, @pamount)`);
+    await pool.request().input('cid', input.cheque_id)
+      .query(`UPDATE cheque.cheque_register SET status='BOUNCED' WHERE cheque_id=@cid`);
+    return { success: true };
+  }),
+});
+
+// ─── Lease Origination (New) ──────────────────────────────────────────────────
+export const leaseOriginationNewRouter = router({
+  list: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`
+      SELECT o.*, l.lessor_name FROM lease.origination_requests o
+      LEFT JOIN lease.lessors l ON o.lessor_id = l.lessor_id
+      ORDER BY o.created_at DESC`);
+    return r.recordset;
+  }),
+  create: protectedProcedure.input(z.object({
+    lessor_id: z.number().optional(),
+    asset_type: z.string(),
+    asset_description: z.string(),
+    location: z.string(),
+    proposed_start_date: z.string(),
+    proposed_end_date: z.string(),
+    monthly_rent: z.number(),
+    currency: z.string().default('AED'),
+    ibr_rate: z.number().optional(),
+    business_justification: z.string().optional(),
+  })).mutation(async ({ input, ctx }) => {
+    const pool = await getPool();
+    await pool.request()
+      .input('lessor_id', input.lessor_id ?? null)
+      .input('asset_type', input.asset_type)
+      .input('asset_description', input.asset_description)
+      .input('location', input.location)
+      .input('start', input.proposed_start_date)
+      .input('end', input.proposed_end_date)
+      .input('rent', input.monthly_rent)
+      .input('currency', input.currency)
+      .input('ibr', input.ibr_rate ?? null)
+      .input('justification', input.business_justification ?? null)
+      .input('requested_by', ctx.user.id)
+      .query(`INSERT INTO lease.origination_requests (lessor_id, asset_type, asset_description, location, proposed_start_date, proposed_end_date, monthly_rent, currency, ibr_rate, business_justification, requested_by) VALUES (@lessor_id, @asset_type, @asset_description, @location, @start, @end, @rent, @currency, @ibr, @justification, @requested_by)`);
+    return { success: true };
+  }),
+  updateStatus: protectedProcedure.input(z.object({
+    request_id: z.number(),
+    status: z.enum(['DRAFT','SUBMITTED','APPROVED','REJECTED','CONVERTED']),
+  })).mutation(async ({ input, ctx }) => {
+    const pool = await getPool();
+    await pool.request()
+      .input('id', input.request_id).input('status', input.status).input('user', ctx.user.id)
+      .query(`UPDATE lease.origination_requests SET status=@status, approved_by=CASE WHEN @status IN ('APPROVED','REJECTED') THEN @user ELSE approved_by END, updated_at=GETDATE() WHERE request_id=@id`);
+    return { success: true };
+  }),
+});

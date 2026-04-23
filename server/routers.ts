@@ -13,7 +13,7 @@ import { chequeRouter }    from "./routers/cheque";
 import { bounceReconRouter } from "./routers/bounceRecon";
 import { lessorRouter, assetRouter } from "./routers/lessorAsset";
 import { accountingRouter } from "./routers/accounting";
-import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, reportBuilderRouter, scenarioRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter } from "./routers/features";
+import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, reportBuilderRouter, scenarioRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter, terminationRouter, bouncePenaltyRouter, leaseOriginationNewRouter } from "./routers/features";
 
 export const appRouter = router({
   system: systemRouter,
@@ -63,6 +63,9 @@ export const appRouter = router({
   lessorCredit: lessorCreditRouter,
   emailAlerts: emailAlertsRouter,
   scheduledReports: scheduledReportsRouter,
+  termination:  terminationRouter,
+  bouncePenalty: bouncePenaltyRouter,
+  leaseOriginationNew: leaseOriginationNewRouter,
 });
 
 export type AppRouter = typeof appRouter;

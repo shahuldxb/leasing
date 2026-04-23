@@ -15,6 +15,7 @@ import Amortisation       from "./pages/Amortisation";
 import LeaseRenewals      from "./pages/LeaseRenewals";
 import LeaseModifications from "./pages/LeaseModifications";
 import LeaseTerminations  from "./pages/LeaseTerminations";
+import BouncePenalty       from "./pages/BouncePenalty";
 
 // Contract Management
 import ContractRegister   from "./pages/ContractRegister";
@@ -116,6 +117,7 @@ function Router() {
       <Route path="/leases/renewals"         component={LeaseRenewals} />
       <Route path="/leases/modifications"    component={LeaseModifications} />
       <Route path="/leases/terminations"     component={LeaseTerminations} />
+      <Route path="/cheques/bounce"           component={BouncePenalty} />
 
       {/* Contract Management */}
       <Route path="/contracts"               component={ContractRegister} />
