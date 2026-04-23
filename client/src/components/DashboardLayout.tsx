@@ -24,7 +24,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, Package, MapPin
+  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, Package, MapPin,
+  Sparkles, Calculator, Calendar, ArrowRightLeft, RefreshCw, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -125,7 +126,77 @@ const menuItems: NavItem[] = [
       { label: "Error Log",         path: "/compliance/errors" },
     ],
   },
-  { icon: Bell,     label: "Alert Centre",  path: "/alerts" },
+  {
+    icon: Calculator, label: "Accounting Engine",
+    children: [
+      { label: "IBR Library",         path: "/accounting/ibr" },
+      { label: "Lease Classification", path: "/accounting/classification" },
+      { label: "Remeasurement",       path: "/accounting/remeasurement" },
+      { label: "CPI Escalation",      path: "/accounting/cpi" },
+      { label: "Exemptions",          path: "/accounting/exemptions" },
+      { label: "IFRS 16 Disclosure",  path: "/accounting/disclosure" },
+      { label: "Roll-Forward Report", path: "/accounting/roll-forward" },
+      { label: "ERP Export",          path: "/accounting/erp-export" },
+      { label: "Bulk Operations",     path: "/accounting/bulk" },
+    ],
+  },
+  {
+    icon: Sparkles, label: "Advanced Lease",
+    children: [
+      { label: "AI Abstraction",      path: "/leases/ai-abstraction" },
+      { label: "Critical Dates",      path: "/leases/critical-dates" },
+      { label: "Sub-Leases",          path: "/leases/sub-leases" },
+      { label: "Rent Reviews",        path: "/leases/rent-reviews" },
+      { label: "Security Deposits",   path: "/leases/security-deposits" },
+    ],
+  },
+  {
+    icon: LineChart, label: "Reports & Scenarios",
+    children: [
+      { label: "Report Builder",      path: "/reports" },
+      { label: "Scenario Modelling",  path: "/scenarios" },
+    ],
+  },
+  {
+    icon: TrendingUp, label: "Finance & Planning",
+    children: [
+      { label: "Budget Variance",    path: "/finance/budget-variance" },
+      { label: "Maturity Analysis",  path: "/accounting/maturity" },
+      { label: "Variable Rent",      path: "/accounting/variable-rent" },
+      { label: "ASC 842",            path: "/accounting/asc842" },
+    ],
+  },
+  {
+    icon: MapPin, label: "Space & Projects",
+    children: [
+      { label: "Space Management",   path: "/ops/space" },
+      { label: "Capital Projects",   path: "/ops/space" },
+      { label: "ESG & Carbon",       path: "/ops/esg-carbon" },
+    ],
+  },
+  {
+    icon: ArrowRightLeft, label: "Lease Origination",
+    children: [
+      { label: "New Origination",    path: "/leases/origination" },
+      { label: "Options & Breaks",   path: "/leases/options-breaks" },
+    ],
+  },
+  {
+    icon: RefreshCw, label: "Multi-Entity & FX",
+    children: [
+      { label: "Entity Structure",   path: "/admin/multi-entity" },
+      { label: "FX Translations",    path: "/admin/multi-entity" },
+      { label: "Lessor Credit Score",path: "/admin/lessor-credit" },
+    ],
+  },
+  {
+    icon: Bell, label: "Alerts & Reports",
+    children: [
+      { label: "Alert Rules",        path: "/admin/alerts-reports" },
+      { label: "Scheduled Reports",  path: "/admin/alerts-reports" },
+      { label: "Alert Centre",       path: "/alerts" },
+    ],
+  },
   { icon: Settings, label: "Administration", path: "/admin" },
 ];
 

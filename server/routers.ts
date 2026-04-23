@@ -12,6 +12,8 @@ import { bankReconRouter } from "./routers/bankRecon";
 import { chequeRouter }    from "./routers/cheque";
 import { bounceReconRouter } from "./routers/bounceRecon";
 import { lessorRouter, assetRouter } from "./routers/lessorAsset";
+import { accountingRouter } from "./routers/accounting";
+import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, reportBuilderRouter, scenarioRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter } from "./routers/features";
 
 export const appRouter = router({
   system: systemRouter,
@@ -26,17 +28,41 @@ export const appRouter = router({
   }),
 
   // ── Domain Routers ─────────────────────────────────────────
-  lease:     leaseRouter,
-  payables:  payablesRouter,
-  workflow:  workflowRouter,
-  genai:     genaiRouter,
+  lease:       leaseRouter,
+  payables:    payablesRouter,
+  workflow:    workflowRouter,
+  genai:       genaiRouter,
   bankRecon:   bankReconRouter,
   cheque:      chequeRouter,
-  bounceRecon:  bounceReconRouter,
-  lessor:       lessorRouter,
-  asset:        assetRouter,
+  bounceRecon: bounceReconRouter,
+  lessor:      lessorRouter,
+  asset:       assetRouter,
   compliance:  complianceRouter,
   mis:         misRouter,
+  accounting:  accountingRouter,
+  criticalDates: criticalDatesRouter,
+  aiAbstraction: aiAbstractionRouter,
+  subLease:    subLeaseRouter,
+  rentReview:  rentReviewRouter,
+  securityDeposit: securityDepositRouter,
+  reportBuilder: reportBuilderRouter,
+  scenario:    scenarioRouter,
+  asc842:      asc842Router,
+  leaseOrigination: leaseOriginationRouter,
+  leaseOptions: leaseOptionsRouter,
+  breakClause: breakClauseRouter,
+  leaseIncentive: leaseIncentiveRouter,
+  budgetVariance: budgetVarianceRouter,
+  costCentre:  costCentreRouter,
+  marketRent:  marketRentRouter,
+  spaceManagement: spaceManagementRouter,
+  capitalProjects: capitalProjectsRouter,
+  esgCarbon:   esgCarbonRouter,
+  multiEntity: multiEntityRouter,
+  fxAccounting: fxAccountingRouter,
+  lessorCredit: lessorCreditRouter,
+  emailAlerts: emailAlertsRouter,
+  scheduledReports: scheduledReportsRouter,
 });
 
 export type AppRouter = typeof appRouter;

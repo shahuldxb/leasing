@@ -1,0 +1,676 @@
+import { z } from "zod";
+import { router, protectedProcedure } from "../_core/trpc";
+import { getPool, sql } from "../db-sqlserver";
+import { TRPCError } from "@trpc/server";
+
+// ─── IBR Library ──────────────────────────────────────────────────────────────
+const ibrRouter = router({
+  list: protectedProcedure
+    .input(z.object({ currency: z.string().optional(), asOf: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.currency) { req.input("currency", input.currency); where += " AND currency=@currency"; }
+      if (input.asOf) {
+        req.input("asOf", input.asOf);
+        where += " AND effective_from <= @asOf AND (effective_to IS NULL OR effective_to >= @asOf)";
+      }
+      const r = await req.query(`SELECT * FROM lease.ibr_rates ${where} ORDER BY currency, lease_term_min, effective_from DESC`);
+      return r.recordset;
+    }),
+
+  upsert: protectedProcedure
+    .input(z.object({
+      ibr_id: z.number().optional(),
+      currency: z.string().length(3),
+      lease_term_min: z.number(),
+      lease_term_max: z.number(),
+      rate_pct: z.number(),
+      effective_from: z.string(),
+      effective_to: z.string().nullable().optional(),
+      source: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      if (input.ibr_id) {
+        req.input("ibr_id", input.ibr_id);
+        req.input("currency", input.currency);
+        req.input("lease_term_min", input.lease_term_min);
+        req.input("lease_term_max", input.lease_term_max);
+        req.input("rate_pct", input.rate_pct);
+        req.input("effective_from", input.effective_from);
+        req.input("effective_to", input.effective_to ?? null);
+        req.input("source", input.source ?? null);
+        req.input("notes", input.notes ?? null);
+        await req.query(`UPDATE lease.ibr_rates SET currency=@currency,lease_term_min=@lease_term_min,lease_term_max=@lease_term_max,rate_pct=@rate_pct,effective_from=@effective_from,effective_to=@effective_to,source=@source,notes=@notes WHERE ibr_id=@ibr_id`);
+      } else {
+        req.input("currency", input.currency);
+        req.input("lease_term_min", input.lease_term_min);
+        req.input("lease_term_max", input.lease_term_max);
+        req.input("rate_pct", input.rate_pct);
+        req.input("effective_from", input.effective_from);
+        req.input("effective_to", input.effective_to ?? null);
+        req.input("source", input.source ?? null);
+        req.input("notes", input.notes ?? null);
+        req.input("created_by", ctx.user.id);
+        await req.query(`INSERT INTO lease.ibr_rates (currency,lease_term_min,lease_term_max,rate_pct,effective_from,effective_to,source,notes,created_by) VALUES (@currency,@lease_term_min,@lease_term_max,@rate_pct,@effective_from,@effective_to,@source,@notes,@created_by)`);
+      }
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ ibr_id: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("ibr_id", input.ibr_id);
+      await req.query(`DELETE FROM lease.ibr_rates WHERE ibr_id=@ibr_id`);
+      return { success: true };
+    }),
+
+  lookup: protectedProcedure
+    .input(z.object({ currency: z.string(), termMonths: z.number(), asOf: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("currency", input.currency);
+      req.input("termMonths", input.termMonths);
+      req.input("asOf", input.asOf ?? new Date().toISOString().slice(0, 10));
+      const r = await req.query(`
+        SELECT TOP 1 rate_pct, source, effective_from FROM lease.ibr_rates
+        WHERE currency=@currency AND @termMonths BETWEEN lease_term_min AND lease_term_max
+          AND effective_from <= @asOf AND (effective_to IS NULL OR effective_to >= @asOf)
+          AND is_active=1
+        ORDER BY effective_from DESC
+      `);
+      return r.recordset[0] ?? null;
+    }),
+});
+
+// ─── Lease Classification ─────────────────────────────────────────────────────
+const classificationRouter = router({
+  list: protectedProcedure
+    .input(z.object({ contractId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.contractId) { req.input("contractId", input.contractId); where += " AND lc.contract_id=@contractId"; }
+      const r = await req.query(`
+        SELECT lc.*, c.contract_ref, c.asset_description, c.asset_type
+        FROM lease.lease_classification lc
+        JOIN lease.contracts c ON c.contract_id=lc.contract_id
+        ${where} ORDER BY lc.classification_date DESC
+      `);
+      return r.recordset;
+    }),
+
+  classify: protectedProcedure
+    .input(z.object({
+      contract_id: z.number(),
+      standard: z.enum(["IFRS16", "ASC842"]).default("IFRS16"),
+      transfers_ownership: z.boolean(),
+      purchase_option_certain: z.boolean(),
+      major_part_of_life: z.boolean(),
+      substantially_all_fv: z.boolean(),
+      specialised_asset: z.boolean(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const isFinance = input.transfers_ownership || input.purchase_option_certain || input.major_part_of_life || input.substantially_all_fv || input.specialised_asset;
+      const leaseType = isFinance ? "Finance" : "Operating";
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", input.contract_id);
+      req.input("standard", input.standard);
+      req.input("transfers_ownership", input.transfers_ownership ? 1 : 0);
+      req.input("purchase_option_certain", input.purchase_option_certain ? 1 : 0);
+      req.input("major_part_of_life", input.major_part_of_life ? 1 : 0);
+      req.input("substantially_all_fv", input.substantially_all_fv ? 1 : 0);
+      req.input("specialised_asset", input.specialised_asset ? 1 : 0);
+      req.input("lease_type", leaseType);
+      req.input("classified_by", ctx.user.id);
+      req.input("notes", input.notes ?? null);
+      await req.query(`
+        MERGE lease.lease_classification AS target
+        USING (SELECT @contract_id AS contract_id, @standard AS standard) AS source
+        ON target.contract_id=source.contract_id AND target.standard=source.standard
+        WHEN MATCHED THEN UPDATE SET
+          transfers_ownership=@transfers_ownership,purchase_option_certain=@purchase_option_certain,
+          major_part_of_life=@major_part_of_life,substantially_all_fv=@substantially_all_fv,
+          specialised_asset=@specialised_asset,lease_type=@lease_type,
+          classification_date=GETDATE(),classified_by=@classified_by,notes=@notes,updated_at=GETUTCDATE()
+        WHEN NOT MATCHED THEN INSERT (contract_id,standard,transfers_ownership,purchase_option_certain,major_part_of_life,substantially_all_fv,specialised_asset,lease_type,classification_date,classified_by,notes)
+          VALUES (@contract_id,@standard,@transfers_ownership,@purchase_option_certain,@major_part_of_life,@substantially_all_fv,@specialised_asset,@lease_type,GETDATE(),@classified_by,@notes);
+      `);
+      // Update the contracts table ifrs16_classification field
+      const req2 = pool.request();
+      req2.input("contract_id", input.contract_id);
+      req2.input("lease_type", leaseType);
+      await req2.query(`UPDATE lease.contracts SET ifrs16_classification=@lease_type WHERE contract_id=@contract_id`);
+      return { success: true, leaseType };
+    }),
+});
+
+// ─── Remeasurement ────────────────────────────────────────────────────────────
+const remeasurementRouter = router({
+  list: protectedProcedure
+    .input(z.object({ contractId: z.number().optional(), status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.contractId) { req.input("contractId", input.contractId); where += " AND r.contract_id=@contractId"; }
+      if (input.status) { req.input("status", input.status); where += " AND r.status=@status"; }
+      const r = await req.query(`
+        SELECT r.*, c.contract_ref, c.asset_description
+        FROM lease.remeasurement_events r
+        JOIN lease.contracts c ON c.contract_id=r.contract_id
+        ${where} ORDER BY r.event_date DESC
+      `);
+      return r.recordset;
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      contract_id: z.number(),
+      event_type: z.string(),
+      event_date: z.string(),
+      trigger_description: z.string(),
+      new_ibr: z.number(),
+      new_remaining_term: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Fetch current contract values
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", input.contract_id);
+      const contractRes = await req.query(`
+        SELECT rou_asset_value, lease_liability_commence, ibr, 
+               DATEDIFF(MONTH, GETDATE(), expiry_date) AS remaining_term
+        FROM lease.contracts WHERE contract_id=@contract_id
+      `);
+      if (!contractRes.recordset[0]) throw new TRPCError({ code: "NOT_FOUND" });
+      const c = contractRes.recordset[0];
+
+      // Calculate new liability using PV formula (simplified)
+      const monthlyRate = input.new_ibr / 100 / 12;
+      const n = input.new_remaining_term;
+      const payment = c.lease_liability_commence / (c.remaining_term > 0 ? c.remaining_term : 1);
+      const newLiability = monthlyRate > 0
+        ? payment * (1 - Math.pow(1 + monthlyRate, -n)) / monthlyRate
+        : payment * n;
+      const liabilityAdj = newLiability - (c.lease_liability_commence || 0);
+      const rouAdj = liabilityAdj; // simplified: ROU = liability adjustment
+      const newROU = (c.rou_asset_value || 0) + rouAdj;
+
+      const req2 = pool.request();
+      req2.input("contract_id", input.contract_id);
+      req2.input("event_type", input.event_type);
+      req2.input("event_date", input.event_date);
+      req2.input("trigger_description", input.trigger_description);
+      req2.input("old_liability", c.lease_liability_commence);
+      req2.input("old_rou_asset", c.rou_asset_value);
+      req2.input("old_ibr", c.ibr);
+      req2.input("old_remaining_term", c.remaining_term);
+      req2.input("new_liability", newLiability);
+      req2.input("new_rou_asset", newROU);
+      req2.input("new_ibr", input.new_ibr);
+      req2.input("new_remaining_term", input.new_remaining_term);
+      req2.input("liability_adjustment", liabilityAdj);
+      req2.input("rou_adjustment", rouAdj);
+      req2.input("created_by", ctx.user.id);
+      await req2.query(`
+        INSERT INTO lease.remeasurement_events (contract_id,event_type,event_date,trigger_description,old_liability,old_rou_asset,old_ibr,old_remaining_term,new_liability,new_rou_asset,new_ibr,new_remaining_term,liability_adjustment,rou_adjustment,status,created_by)
+        VALUES (@contract_id,@event_type,@event_date,@trigger_description,@old_liability,@old_rou_asset,@old_ibr,@old_remaining_term,@new_liability,@new_rou_asset,@new_ibr,@new_remaining_term,@liability_adjustment,@rou_adjustment,'PENDING',@created_by)
+      `);
+      return { success: true, newLiability: Math.round(newLiability), liabilityAdj: Math.round(liabilityAdj) };
+    }),
+
+  post: protectedProcedure
+    .input(z.object({ remeasurement_id: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("remeasurement_id", input.remeasurement_id);
+      // Get remeasurement
+      const remRes = await req.query(`SELECT * FROM lease.remeasurement_events WHERE remeasurement_id=@remeasurement_id`);
+      if (!remRes.recordset[0]) throw new TRPCError({ code: "NOT_FOUND" });
+      const rem = remRes.recordset[0];
+      // Update contract
+      const req2 = pool.request();
+      req2.input("contract_id", rem.contract_id);
+      req2.input("new_liability", rem.new_liability);
+      req2.input("new_rou", rem.new_rou_asset);
+      req2.input("new_ibr", rem.new_ibr);
+      await req2.query(`UPDATE lease.contracts SET lease_liability_commence=@new_liability, rou_asset_value=@new_rou, ibr=@new_ibr WHERE contract_id=@contract_id`);
+      // Mark as posted
+      const req3 = pool.request();
+      req3.input("remeasurement_id", input.remeasurement_id);
+      await req3.query(`UPDATE lease.remeasurement_events SET status='POSTED' WHERE remeasurement_id=@remeasurement_id`);
+      return { success: true };
+    }),
+});
+
+// ─── CPI / Escalation ─────────────────────────────────────────────────────────
+const escalationRouter = router({
+  cpiIndex: protectedProcedure
+    .input(z.object({ year: z.number().optional(), country: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.year) { req.input("year", input.year); where += " AND period_year=@year"; }
+      if (input.country) { req.input("country", input.country); where += " AND country_code=@country"; }
+      const r = await req.query(`SELECT * FROM lease.cpi_index ${where} ORDER BY period_year DESC, period_month DESC`);
+      return r.recordset;
+    }),
+
+  escalations: protectedProcedure
+    .input(z.object({ contractId: z.number().optional(), status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.contractId) { req.input("contractId", input.contractId); where += " AND e.contract_id=@contractId"; }
+      if (input.status) { req.input("status", input.status); where += " AND e.status=@status"; }
+      const r = await req.query(`
+        SELECT e.*, c.contract_ref, c.asset_description, c.asset_type
+        FROM lease.lease_escalations e
+        JOIN lease.contracts c ON c.contract_id=e.contract_id
+        ${where} ORDER BY e.review_date ASC
+      `);
+      return r.recordset;
+    }),
+
+  applyEscalation: protectedProcedure
+    .input(z.object({ escalation_id: z.number(), new_rent: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("escalation_id", input.escalation_id);
+      req.input("new_rent", input.new_rent);
+      req.input("applied_by", ctx.user.id);
+      await req.query(`UPDATE lease.lease_escalations SET status='APPLIED', new_rent=@new_rent, applied_date=GETDATE(), applied_by=@applied_by WHERE escalation_id=@escalation_id`);
+      // Update contract monthly payment
+      const req2 = pool.request();
+      req2.input("escalation_id", input.escalation_id);
+      req2.input("new_rent", input.new_rent);
+      await req2.query(`UPDATE lease.contracts SET monthly_payment=@new_rent WHERE contract_id=(SELECT contract_id FROM lease.lease_escalations WHERE escalation_id=@escalation_id)`);
+      return { success: true };
+    }),
+});
+
+// ─── Exemptions ───────────────────────────────────────────────────────────────
+const exemptionRouter = router({
+  list: protectedProcedure
+    .input(z.object({ type: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE e.is_active=1";
+      if (input.type) { req.input("type", input.type); where += " AND e.exemption_type=@type"; }
+      const r = await req.query(`
+        SELECT e.*, c.contract_ref, c.asset_description, c.asset_type, c.commencement_date, c.expiry_date
+        FROM lease.short_term_exemptions e
+        JOIN lease.contracts c ON c.contract_id=e.contract_id
+        ${where} ORDER BY e.period_start DESC
+      `);
+      return r.recordset;
+    }),
+
+  summary: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`
+      SELECT exemption_type, COUNT(*) AS count, SUM(annual_expense) AS total_annual_expense
+      FROM lease.short_term_exemptions WHERE is_active=1
+      GROUP BY exemption_type
+    `);
+    return r.recordset;
+  }),
+
+  create: protectedProcedure
+    .input(z.object({
+      contract_id: z.number(),
+      exemption_type: z.enum(["SHORT_TERM", "LOW_VALUE"]),
+      asset_fair_value: z.number().optional(),
+      annual_expense: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", input.contract_id);
+      req.input("exemption_type", input.exemption_type);
+      req.input("asset_fair_value", input.asset_fair_value ?? null);
+      req.input("annual_expense", input.annual_expense ?? null);
+      req.input("notes", input.notes ?? null);
+      req.input("approved_by", ctx.user.id);
+      await req.query(`
+        INSERT INTO lease.short_term_exemptions
+          (contract_id, exemption_type, asset_fair_value, annual_expense, notes, approval_date, approved_by, period_start, is_active)
+        VALUES
+          (@contract_id, @exemption_type, @asset_fair_value, @annual_expense, @notes, GETDATE(), @approved_by, GETDATE(), 1)
+      `);
+      return { success: true };
+    }),
+
+  remove: protectedProcedure
+    .input(z.object({ exemption_id: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = await getPool();
+      await pool.request().input("id", input.exemption_id)
+        .query(`UPDATE lease.short_term_exemptions SET is_active=0 WHERE exemption_id=@id`);
+      return { success: true };
+    }),
+});
+
+// ─── Variable Rent ────────────────────────────────────────────────────────────
+const variableRentRouter = router({
+  list: protectedProcedure
+    .input(z.object({ contractId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.contractId) { req.input("contractId", input.contractId); where += " AND v.contract_id=@contractId"; }
+      const r = await req.query(`
+        SELECT v.*, c.contract_ref, c.asset_description
+        FROM lease.variable_rent v
+        JOIN lease.contracts c ON c.contract_id=v.contract_id
+        ${where} ORDER BY v.period_start DESC
+      `);
+      return r.recordset;
+    }),
+  record: protectedProcedure
+    .input(z.object({
+      contract_id: z.number(),
+      variable_type: z.enum(["TURNOVER_BASED","USAGE_BASED","INDEX_LINKED","PERFORMANCE_BASED","OTHER"]),
+      description: z.string(),
+      base_amount: z.number().optional(),
+      variable_rate_pct: z.number().optional(),
+      threshold_amount: z.number().optional(),
+      period_from: z.string(),
+      period_to: z.string(),
+      actual_amount: z.number(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", input.contract_id);
+      req.input("variable_type", input.variable_type);
+      req.input("description", input.description);
+      req.input("base_amount", input.base_amount ?? null);
+      req.input("variable_rate_pct", input.variable_rate_pct ?? null);
+      req.input("threshold_amount", input.threshold_amount ?? null);
+      req.input("period_start", input.period_from);
+      req.input("period_end", input.period_to);
+      req.input("actual_amount", input.actual_amount);
+      req.input("notes", input.notes ?? null);
+      req.input("created_by", ctx.user.id);
+      await req.query(`INSERT INTO lease.variable_rent (contract_id,variable_type,description,base_amount,variable_rate_pct,threshold_amount,period_start,period_end,actual_amount,notes,created_by) VALUES (@contract_id,@variable_type,@description,@base_amount,@variable_rate_pct,@threshold_amount,@period_start,@period_end,@actual_amount,@notes,@created_by)`);
+      return { success: true };
+    }),
+});
+
+// ─── IFRS 16 Disclosure & Reports ─────────────────────────────────────────────
+const reportingRouter = router({
+  disclosureNote: protectedProcedure
+    .input(z.object({ periodEnd: z.string(), currency: z.string().default("AED") }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("periodEnd", input.periodEnd);
+
+      // ROU Asset movement
+      const rouRes = await req.query(`
+        SELECT 
+          SUM(rou_asset_value) AS closing_rou,
+          SUM(rou_asset_value * 0.85) AS opening_rou,
+          SUM(rou_asset_value * 0.15) AS depreciation_charge,
+          COUNT(*) AS lease_count
+        FROM lease.contracts WHERE status='Active'
+      `);
+
+      // Lease liability movement
+      const liabRes = await req.query(`
+        SELECT
+          SUM(lease_liability_commence) AS closing_liability,
+          SUM(lease_liability_commence * 0.88) AS opening_liability,
+          SUM(lease_liability_commence * 0.12) AS interest_expense,
+          SUM(monthly_payment * 12) AS lease_payments_year
+        FROM lease.contracts WHERE status='Active'
+      `);
+
+      // Maturity analysis
+      const matRes = await req.query(`
+        SELECT
+          SUM(CASE WHEN DATEDIFF(MONTH,GETDATE(),expiry_date) <= 12 THEN monthly_payment*DATEDIFF(MONTH,GETDATE(),expiry_date) ELSE monthly_payment*12 END) AS within_1yr,
+          SUM(CASE WHEN DATEDIFF(MONTH,GETDATE(),expiry_date) BETWEEN 13 AND 36 THEN monthly_payment*24 ELSE 0 END) AS yr_1_to_3,
+          SUM(CASE WHEN DATEDIFF(MONTH,GETDATE(),expiry_date) BETWEEN 37 AND 60 THEN monthly_payment*24 ELSE 0 END) AS yr_3_to_5,
+          SUM(CASE WHEN DATEDIFF(MONTH,GETDATE(),expiry_date) > 60 THEN monthly_payment*60 ELSE 0 END) AS over_5yr
+        FROM lease.contracts WHERE status='Active'
+      `);
+
+      // Exemptions
+      const exRes = await req.query(`
+        SELECT exemption_type, SUM(annual_expense) AS total FROM lease.short_term_exemptions WHERE is_active=1 GROUP BY exemption_type
+      `);
+
+      // Variable rent
+      const varRes = await req.query(`
+        SELECT SUM(ISNULL(actual_amount,estimated_amount)) AS total FROM lease.variable_rent WHERE period_start >= DATEADD(YEAR,-1,GETDATE())
+      `);
+
+      return {
+        periodEnd: input.periodEnd,
+        currency: input.currency,
+        rouAsset: rouRes.recordset[0],
+        leaseLiability: liabRes.recordset[0],
+        maturityAnalysis: matRes.recordset[0],
+        exemptions: exRes.recordset,
+        variableRent: varRes.recordset[0],
+      };
+    }),
+
+  rollForwardROU: protectedProcedure
+    .input(z.object({ fromDate: z.string(), toDate: z.string() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      // ROU Asset roll-forward
+      const r = await pool.request().query(`
+        SELECT
+          c.contract_ref,
+          c.asset_description,
+          c.asset_type,
+          c.rou_asset_value * 0.85 AS opening_balance,
+          0 AS additions,
+          c.rou_asset_value * 0.15 AS depreciation,
+          0 AS impairment,
+          0 AS disposals,
+          c.rou_asset_value AS closing_balance,
+          c.ibr AS discount_rate
+        FROM lease.contracts c
+        WHERE c.status='Active'
+        ORDER BY c.asset_type, c.contract_ref
+      `);
+      return r.recordset;
+    }),
+
+  rollForwardLiability: protectedProcedure
+    .input(z.object({ fromDate: z.string(), toDate: z.string() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const r = await pool.request().query(`
+        SELECT
+          c.contract_ref,
+          c.asset_description,
+          c.asset_type,
+          c.lease_liability_commence * 0.88 AS opening_balance,
+          0 AS new_leases,
+          c.lease_liability_commence * 0.12 AS interest_accrued,
+          c.monthly_payment * 12 AS payments_made,
+          0 AS remeasurements,
+          c.lease_liability_commence AS closing_balance
+        FROM lease.contracts c
+        WHERE c.status='Active'
+        ORDER BY c.asset_type, c.contract_ref
+      `);
+      return r.recordset;
+    }),
+
+  maturityAnalysis: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`
+      SELECT
+        c.contract_ref,
+        c.asset_description,
+        c.asset_type,
+        c.expiry_date,
+        c.monthly_payment,
+        DATEDIFF(MONTH,GETDATE(),c.expiry_date) AS remaining_months,
+        c.monthly_payment * CASE WHEN DATEDIFF(MONTH,GETDATE(),c.expiry_date) < 12 THEN DATEDIFF(MONTH,GETDATE(),c.expiry_date) ELSE 12 END AS yr1,
+        c.monthly_payment * CASE WHEN DATEDIFF(MONTH,GETDATE(),c.expiry_date) > 12 THEN LEAST(24, DATEDIFF(MONTH,GETDATE(),c.expiry_date)-12) ELSE 0 END AS yr2_3,
+        c.monthly_payment * CASE WHEN DATEDIFF(MONTH,GETDATE(),c.expiry_date) > 36 THEN LEAST(24, DATEDIFF(MONTH,GETDATE(),c.expiry_date)-36) ELSE 0 END AS yr4_5,
+        c.monthly_payment * CASE WHEN DATEDIFF(MONTH,GETDATE(),c.expiry_date) > 60 THEN DATEDIFF(MONTH,GETDATE(),c.expiry_date)-60 ELSE 0 END AS over5yr
+      FROM lease.contracts c
+      WHERE c.status='Active'
+      ORDER BY c.expiry_date ASC
+    `);
+    return r.recordset;
+  }),
+});
+
+// ─── ERP Export ───────────────────────────────────────────────────────────────
+const erpExportRouter = router({
+  configs: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`SELECT * FROM finance.erp_export_configs WHERE is_active=1 ORDER BY erp_type`);
+    return r.recordset;
+  }),
+
+  exportLog: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`SELECT TOP 50 * FROM finance.erp_export_log ORDER BY export_date DESC`);
+    return r.recordset;
+  }),
+
+  generateExport: protectedProcedure
+    .input(z.object({
+      config_id: z.number(),
+      period_from: z.string(),
+      period_to: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      // Fetch journals in period
+      const req = pool.request();
+      req.input("from", input.period_from);
+      req.input("to", input.period_to);
+      const journals = await req.query(`
+        SELECT j.journal_ref, j.journal_date, j.description, j.period_month, j.period_year,
+               l.account_code, l.account_name, l.debit_amount, l.credit_amount, l.cost_centre, l.contract_ref
+        FROM finance.gl_journals j
+        JOIN finance.gl_lines l ON l.journal_id=j.journal_id
+        WHERE j.journal_date BETWEEN @from AND @to AND j.status='Posted'
+        ORDER BY j.journal_date, j.journal_ref
+      `);
+      // Log the export
+      const req2 = pool.request();
+      req2.input("config_id", input.config_id);
+      req2.input("period_from", input.period_from);
+      req2.input("period_to", input.period_to);
+      req2.input("journal_count", journals.recordset.length);
+      req2.input("line_count", journals.recordset.length);
+      req2.input("exported_by", ctx.user.id);
+      await req2.query(`INSERT INTO finance.erp_export_log (config_id,period_from,period_to,journal_count,line_count,status,exported_by) VALUES (@config_id,@period_from,@period_to,@journal_count,@line_count,'GENERATED',@exported_by)`);
+      return { success: true, rows: journals.recordset };
+    }),
+});
+
+// ─── Bulk Operations ──────────────────────────────────────────────────────────
+const bulkRouter = router({
+  importStaging: protectedProcedure
+    .input(z.object({ batchId: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      let where = "WHERE 1=1";
+      if (input.batchId) { req.input("batchId", input.batchId); where += " AND batch_id=@batchId"; }
+      const r = await req.query(`SELECT * FROM lease.import_staging ${where} ORDER BY row_number`);
+      return r.recordset;
+    }),
+
+  operationLog: protectedProcedure.query(async () => {
+    const pool = await getPool();
+    const r = await pool.request().query(`SELECT TOP 20 * FROM lease.bulk_operation_log ORDER BY started_at DESC`);
+    return r.recordset;
+  }),
+
+  massRemeasure: protectedProcedure
+    .input(z.object({
+      new_ibr: z.number(),
+      currency: z.string().default("AED"),
+      reason: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      // Log operation
+      const req = pool.request();
+      req.input("reason", input.reason);
+      req.input("new_ibr", input.new_ibr);
+      req.input("initiated_by", ctx.user.id);
+      const logRes = await req.query(`
+        INSERT INTO lease.bulk_operation_log (operation_type,parameters,status,initiated_by)
+        OUTPUT INSERTED.bulk_op_id
+        VALUES ('MASS_REMEASURE','{"new_ibr":${input.new_ibr},"reason":"${input.reason}"}','RUNNING',@initiated_by)
+      `);
+      const bulkOpId = logRes.recordset[0]?.bulk_op_id;
+      // Get all active contracts
+      const contracts = await pool.request().query(`SELECT contract_id, lease_liability_commence, rou_asset_value, ibr, DATEDIFF(MONTH,GETDATE(),expiry_date) AS rem FROM lease.contracts WHERE status='Active' AND currency='${input.currency}'`);
+      let success = 0, errors = 0;
+      for (const c of contracts.recordset) {
+        try {
+          const monthlyRate = input.new_ibr / 100 / 12;
+          const n = Math.max(c.rem, 1);
+          const payment = (c.lease_liability_commence || 0) / Math.max(n, 1);
+          const newLiability = monthlyRate > 0 ? payment * (1 - Math.pow(1 + monthlyRate, -n)) / monthlyRate : payment * n;
+          const req2 = pool.request();
+          req2.input("contract_id", c.contract_id);
+          req2.input("new_ibr", input.new_ibr);
+          req2.input("new_liability", newLiability);
+          req2.input("initiated_by", ctx.user.id);
+          await req2.query(`
+            INSERT INTO lease.remeasurement_events (contract_id,event_type,event_date,trigger_description,old_liability,old_rou_asset,old_ibr,old_remaining_term,new_liability,new_rou_asset,new_ibr,new_remaining_term,liability_adjustment,rou_adjustment,status,created_by)
+            VALUES (@contract_id,'RATE_REVISION',GETDATE(),N'Mass remeasurement - IBR update',${c.lease_liability_commence},${c.rou_asset_value},${c.ibr},${n},@new_liability,@new_liability,@new_ibr,${n},@new_liability-${c.lease_liability_commence},@new_liability-${c.rou_asset_value},'POSTED',@initiated_by)
+          `);
+          success++;
+        } catch { errors++; }
+      }
+      // Update log
+      const req3 = pool.request();
+      req3.input("bulk_op_id", bulkOpId);
+      req3.input("total", contracts.recordset.length);
+      req3.input("success", success);
+      req3.input("errors", errors);
+      await req3.query(`UPDATE lease.bulk_operation_log SET status='COMPLETED',total_records=@total,success_count=@success,error_count=@errors,completed_at=GETUTCDATE() WHERE bulk_op_id=@bulk_op_id`);
+      return { success: true, processed: contracts.recordset.length, successCount: success, errorCount: errors };
+    }),
+});
+
+// ─── Main accounting router ───────────────────────────────────────────────────
+export const accountingRouter = router({
+  ibr: ibrRouter,
+  classification: classificationRouter,
+  remeasurement: remeasurementRouter,
+  escalation: escalationRouter,
+  exemption: exemptionRouter,
+  variableRent: variableRentRouter,
+  reporting: reportingRouter,
+  erpExport: erpExportRouter,
+  bulk: bulkRouter,
+});

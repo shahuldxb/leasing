@@ -65,9 +65,42 @@ import ComplianceIFRS16   from "./pages/ComplianceIFRS16";
 import AuditLog           from "./pages/AuditLog";
 import ComplianceErrors   from "./pages/ComplianceErrors";
 
+// Accounting Engine (P1 features)
+import IBRLibrary         from "./pages/IBRLibrary";
+import LeaseClassification from "./pages/LeaseClassification";
+import RemeasurementEngine from "./pages/RemeasurementEngine";
+import CPIEscalation      from "./pages/CPIEscalation";
+import LeaseExemptions    from "./pages/LeaseExemptions";
+import IFRS16Disclosure   from "./pages/IFRS16Disclosure";
+import RollForwardReport  from "./pages/RollForwardReport";
+import ERPExport          from "./pages/ERPExport";
+import BulkOperations     from "./pages/BulkOperations";
+
+// P2 Features
+import CriticalDateCalendar from "./pages/CriticalDateCalendar";
+import AIAbstraction      from "./pages/AIAbstraction";
+import SubLeases          from "./pages/SubLeases";
+import RentReviews        from "./pages/RentReviews";
+import SecurityDeposits   from "./pages/SecurityDeposits";
+import ReportBuilder      from "./pages/ReportBuilder";
+import ScenarioModelling  from "./pages/ScenarioModelling";
+
 // Alerts & Admin
 import AlertCentre        from "./pages/AlertCentre";
 import AdminPanel         from "./pages/AdminPanel";
+
+// P2/P3 New Features
+import MaturityAnalysis   from "./pages/MaturityAnalysis";
+import VariableRent       from "./pages/VariableRent";
+import ASC842             from "./pages/ASC842";
+import LeaseOrigination   from "./pages/LeaseOrigination";
+import LeaseOptionsBreaks from "./pages/LeaseOptionsBreaks";
+import BudgetVariance     from "./pages/BudgetVariance";
+import SpaceManagement    from "./pages/SpaceManagement";
+import ESGCarbon          from "./pages/ESGCarbon";
+import MultiEntityFX      from "./pages/MultiEntityFX";
+import LessorCreditScore  from "./pages/LessorCreditScore";
+import AlertsReports      from "./pages/AlertsReports";
 
 function Router() {
   return (
@@ -135,9 +168,50 @@ function Router() {
       <Route path="/compliance/errors"       component={ComplianceErrors} />
       <Route path="/audit"                   component={AuditLog} />
 
+      {/* Accounting Engine */}
+      <Route path="/accounting/ibr"          component={IBRLibrary} />
+      <Route path="/accounting/classification" component={LeaseClassification} />
+      <Route path="/accounting/remeasurement" component={RemeasurementEngine} />
+      <Route path="/accounting/cpi"          component={CPIEscalation} />
+      <Route path="/accounting/exemptions"   component={LeaseExemptions} />
+      <Route path="/accounting/disclosure"   component={IFRS16Disclosure} />
+      <Route path="/accounting/roll-forward" component={RollForwardReport} />
+      <Route path="/accounting/erp-export"   component={ERPExport} />
+      <Route path="/accounting/bulk"         component={BulkOperations} />
+
+      {/* Advanced Features */}
+      <Route path="/leases/critical-dates"   component={CriticalDateCalendar} />
+      <Route path="/leases/ai-abstraction"   component={AIAbstraction} />
+      <Route path="/leases/sub-leases"       component={SubLeases} />
+      <Route path="/leases/rent-reviews"     component={RentReviews} />
+      <Route path="/leases/security-deposits" component={SecurityDeposits} />
+      <Route path="/reports"                 component={ReportBuilder} />
+      <Route path="/scenarios"               component={ScenarioModelling} />
+
       {/* Alerts & Admin */}
       <Route path="/alerts"                  component={AlertCentre} />
       <Route path="/admin"                   component={AdminPanel} />
+
+      {/* Maturity, Variable Rent, ASC 842 */}
+      <Route path="/accounting/maturity"     component={MaturityAnalysis} />
+      <Route path="/accounting/variable-rent" component={VariableRent} />
+      <Route path="/accounting/asc842"       component={ASC842} />
+
+      {/* Lease Lifecycle */}
+      <Route path="/leases/origination"      component={LeaseOrigination} />
+      <Route path="/leases/options-breaks"   component={LeaseOptionsBreaks} />
+
+      {/* Finance & Analytics */}
+      <Route path="/finance/budget-variance" component={BudgetVariance} />
+      <Route path="/ops/space"               component={SpaceManagement} />
+      <Route path="/ops/esg-carbon"          component={ESGCarbon} />
+
+      {/* Multi-Entity, FX, Lessor Credit */}
+      <Route path="/admin/multi-entity"      component={MultiEntityFX} />
+      <Route path="/admin/lessor-credit"     component={LessorCreditScore} />
+
+      {/* Alerts & Scheduled Reports */}
+      <Route path="/admin/alerts-reports"    component={AlertsReports} />
 
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />

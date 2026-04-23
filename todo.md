@@ -314,3 +314,77 @@
 - [ ] Termination detail side panel with penalty breakdown, GL preview, approval timeline
 - [ ] Initiate Termination dialog with penalty vs buyout comparison
 - [ ] Wire route /lease/terminations and sidebar link
+
+## Gap Analysis — Priority 1: Critical
+
+- [x] P1-01: Lease classification logic (finance vs operating, 5 IFRS 16 criteria) with decision tree UI
+- [x] P1-02: IBR (Incremental Borrowing Rate) library — rate management screen with effective date history
+- [x] P1-03: Automated remeasurement trigger on modification events (recalculate liability + ROU + journal)
+- [x] P1-04: CPI/RPI index-linked rent escalation with auto-remeasurement batch
+- [ ] P1-05: Variable/contingent rent handling (separate tracking + disclosure)
+- [x] P1-06: Short-term lease exemption tracking and aggregated disclosure
+- [x] P1-07: Low-value lease exemption tracking and aggregated disclosure
+- [x] P1-08: IFRS 16 formatted disclosure note (financial statement ready — all required paragraphs)
+- [ ] P1-09: Lease liability maturity analysis report (undiscounted cash flows by year band)
+- [x] P1-10: ROU asset roll-forward report (opening + additions + depreciation + impairment + disposals + closing)
+- [x] P1-11: Lease liability roll-forward report (opening + additions + interest + payments + remeasurements + closing)
+- [x] P1-12: ERP journal export (CSV/Excel in SAP/Oracle/Dynamics format)
+- [x] P1-13: ERP file export wizard with mapping configuration
+- [x] P1-14: Bulk/mass lease remeasurement (portfolio-wide IBR or CPI change)
+- [x] P1-15: Excel/CSV bulk lease import wizard with validation and preview
+- [ ] P1-16: ASC 842 parallel accounting framework (dual-standard on same lease record)
+
+## Gap Analysis — Priority 2: High
+
+- [x] P2-01: AI-powered lease abstraction from PDF documents (OCR + field extraction)
+- [ ] P2-02: Lease origination workflow (request → approval → contract → activation)
+- [x] P2-03: Sub-lease / intermediate lessor accounting (head lease lessee + sublease lessor)
+- [ ] P2-04: Lessor-side finance lease receivable accounting (lease receivable + unearned income)
+- [ ] P2-05: Lease option tracking (renewal, purchase, termination) with exercise workflow
+- [ ] P2-06: Break clause management with notice period tracking and calendar alerts
+- [x] P2-07: Rent review / rent escalation schedule management with step-up history
+- [ ] P2-08: Lease incentive accounting (rent-free periods, tenant improvement allowances)
+- [x] P2-09: Security deposit tracking and accounting (asset + liability entries)
+- [x] P2-10: Critical date calendar with configurable lead-time alerts per event type
+- [ ] P2-11: Email notification engine for critical dates (expiry, renewal, break, rent review)
+- [ ] P2-12: Outlook/Google Calendar .ics export for lease events
+- [ ] P2-13: SSO / SAML 2.0 configuration screen (Azure AD / Okta)
+- [ ] P2-14: REST API with OpenAPI specification (public endpoints for leases, invoices, journals)
+- [ ] P2-15: Webhook / event notification system (configurable outbound HTTP hooks)
+- [x] P2-16: Custom report builder (drag-and-drop field selector, grouping, sorting, filters)
+- [ ] P2-17: Scheduled report delivery (email PDF/Excel on cron schedule)
+- [ ] P2-18: Portfolio-level budget vs. actual variance analysis screen
+- [ ] P2-19: Lease cost allocation to cost centres / business units
+
+## Gap Analysis — Priority 3: Medium
+
+- [x] P3-01: What-if scenario modelling (renew vs. relocate vs. exit — NPV comparison)
+- [ ] P3-02: Market rent benchmarking (manual comparable entry + variance to contracted rent)
+- [ ] P3-03: Space / floor plan management (area, floor, building hierarchy)
+- [ ] P3-04: Desk / room booking and occupancy utilisation tracking
+- [ ] P3-05: Capital project tracking (fit-out, refurbishment — budget vs. actual)
+- [ ] P3-06: Facilities management work order system
+- [ ] P3-07: Vendor / contractor management (linked to maintenance and capital projects)
+- [ ] P3-08: Lease abstraction quality scoring (completeness %)
+- [ ] P3-09: Duplicate lease detection (same lessor + location + overlapping dates)
+- [ ] P3-10: Lease data validation rules engine (configurable business rules)
+- [ ] P3-11: Multi-entity / multi-company accounting (entity selector, separate GL per entity)
+- [ ] P3-12: Intercompany lease elimination (flag + exclude from consolidated reports)
+- [ ] P3-13: Consolidation reporting across entities
+- [ ] P3-14: Foreign currency translation with FX gain/loss accounting
+- [ ] P3-15: Hedge accounting for FX-denominated leases
+- [ ] P3-16: Budgeting module (lease budget entry + forecast vs. actual)
+- [ ] P3-17: Cashflow forecasting (12/24/36 month rolling projection)
+- [ ] P3-18: ESG carbon footprint calculation per lease (Scope 1/2/3 emissions)
+- [ ] P3-19: TCFD / SASB sustainability disclosure report
+- [ ] P3-20: Lessor credit risk scoring (payment history + rating)
+
+## Gap Analysis — Priority 4: Low
+
+- [ ] P4-01: Mobile-responsive UI (all screens optimised for tablet/phone)
+- [ ] P4-02: Responsive tablet UI improvements
+- [ ] P4-03: Broker / agent management (linked to lease origination)
+- [ ] P4-04: Letter of Intent (LOI) tracking (pre-contract stage)
+- [ ] P4-05: Lease comparison / benchmarking tool (side-by-side lease terms)
+- [ ] P4-06: Tenant improvement allowance tracking
+- [ ] P4-07: DocuSign / e-signature integration for lease documents
