@@ -278,3 +278,22 @@
 - [ ] Wire bounce routes into App.tsx and sidebar
 - [ ] Write vitest tests for bounce router
 - [ ] Save checkpoint
+
+## Lessor Master & Asset Registry Module (Added Apr 23)
+- [ ] Create lessor tables: lessor.lessors, lessor.lessor_contacts, lessor.lessor_bank_accounts, lessor.lessor_documents, lessor.lessor_notes
+- [ ] Create asset tables: asset.assets, asset.asset_documents, asset.asset_maintenance_history, asset.asset_insurance_links
+- [ ] sp_UpsertLessor, sp_GetLessors, sp_GetLessorDetail, sp_DeleteLessor
+- [ ] sp_UpsertLessorContact, sp_GetLessorContacts, sp_DeleteLessorContact
+- [ ] sp_UpsertLessorBankAccount, sp_GetLessorBankAccounts, sp_DeleteLessorBankAccount
+- [ ] sp_AddLessorDocument, sp_GetLessorDocuments, sp_AddLessorNote, sp_GetLessorNotes
+- [ ] sp_UpsertAsset, sp_GetAssets, sp_GetAssetDetail, sp_DeleteAsset
+- [ ] sp_GetLessorAssets (assets linked to a lessor via leases)
+- [ ] sp_GetAssetLeaseHistory (lease history for an asset)
+- [ ] sp_AddAssetDocument, sp_GetAssetDocuments
+- [ ] Build lessor tRPC router with full CRUD
+- [ ] Build asset tRPC router with full CRUD
+- [ ] Build LessorMaster.tsx: searchable table, add/edit drawer, contacts tab, bank accounts tab, assets tab, documents tab, notes tab
+- [ ] Build AssetRegistry.tsx: searchable table, add/edit drawer, lease history tab, maintenance tab, insurance tab, documents tab
+- [ ] Add routes /lessor-master and /asset-registry to App.tsx
+- [ ] Add Lessor Master and Asset Registry to sidebar navigation
+- [ ] Write vitest tests for lessor and asset routers

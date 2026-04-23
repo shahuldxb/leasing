@@ -11,6 +11,7 @@ import { genaiRouter }     from "./routers/genai";
 import { bankReconRouter } from "./routers/bankRecon";
 import { chequeRouter }    from "./routers/cheque";
 import { bounceReconRouter } from "./routers/bounceRecon";
+import { lessorRouter, assetRouter } from "./routers/lessorAsset";
 
 export const appRouter = router({
   system: systemRouter,
@@ -32,6 +33,8 @@ export const appRouter = router({
   bankRecon:   bankReconRouter,
   cheque:      chequeRouter,
   bounceRecon:  bounceReconRouter,
+  lessor:       lessorRouter,
+  asset:        assetRouter,
   compliance:  complianceRouter,
   mis:         misRouter,
 });

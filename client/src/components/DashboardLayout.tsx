@@ -24,7 +24,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen
+  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, Package, MapPin
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
