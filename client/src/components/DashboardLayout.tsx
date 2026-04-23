@@ -22,7 +22,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
+  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
   FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen
 } from "lucide-react";

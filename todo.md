@@ -260,3 +260,21 @@
 - [ ] Signatory Management screen (VFCHQSIGN0001P001) — manage authorised signatories, authority limits
 - [ ] Theme toggle (dark/light) on all cheque screens
 - [ ] Register all cheque screen IDs in security.screen_registry
+
+## Bounced Cheque Replacement & Penalty Module (Added Apr 23)
+- [ ] Create cheque.bounce_penalty_config table (flexible penalty types, rates, GL accounts)
+- [ ] Create cheque.bounce_events table (full bounce history per cheque)
+- [ ] Create sp_GetBouncePenaltyConfig stored procedure
+- [ ] Create sp_SaveBouncePenaltyConfig stored procedure
+- [ ] Create sp_RecordBouncedCheque stored procedure
+- [ ] Create sp_IssueBounceReplacement stored procedure
+- [ ] Create sp_GetBounceHistory stored procedure
+- [ ] Create sp_GetBounceGLPreview stored procedure
+- [ ] Build cheque.bounce tRPC router
+- [ ] Build BounceConfiguration screen (penalty types, rates, GL accounts)
+- [ ] Build BounceEventDialog (record bounce + penalty selection)
+- [ ] Build BounceReplacementWizard (2-step: penalty → replacement cheque)
+- [ ] Build BounceHistory screen
+- [ ] Wire bounce routes into App.tsx and sidebar
+- [ ] Write vitest tests for bounce router
+- [ ] Save checkpoint
