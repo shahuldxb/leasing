@@ -142,7 +142,7 @@
 - [ ] Create GenAI text-to-SQL query panel (LangChain)
 - [ ] Create Anomaly Detection queue screen
 - [ ] Create Custom Report Builder
-- [ ] Create BPMN Process Modeler (embedded BPMN.io)
+- [x] Create BPMN Process Modeler (embedded BPMN.io) — iframe approach with full Camunda palette
 - [ ] Create Workflow Dashboard and Task Inbox
 - [ ] Create Asset Maintenance Ticketing screen
 - [ ] Create Insurance Policy Register screen
@@ -297,3 +297,20 @@
 - [ ] Add routes /lessor-master and /asset-registry to App.tsx
 - [ ] Add Lessor Master and Asset Registry to sidebar navigation
 - [ ] Write vitest tests for lessor and asset routers
+
+## Lease Termination Module (Added Apr 2026)
+- [ ] sp_GetTerminationRegister — paginated list with status, lease ref, penalty, GL status
+- [ ] sp_GetTerminationDetail — full detail including penalty breakdown and GL entries
+- [ ] sp_InitiateTermination — raise new termination request with reason, effective date, penalty
+- [ ] sp_ComputeTerminationPenalty — contractual penalty vs remaining liability buyout comparison
+- [ ] sp_ApproveTermination — maker/checker approve step with threshold routing
+- [ ] sp_RejectTermination — reject with mandatory reason, resets lease to Active
+- [ ] sp_PostTerminationGL — IFRS 16 derecognition: Dr Lease Liability, Dr Accum Dep, Cr ROU Asset, Cr/Dr Gain-Loss
+- [ ] sp_RecordMakeGoodSettlement — record make-good reinstatement payment
+- [ ] sp_CancelTermination — cancel pending termination before approval
+- [ ] sp_GetTerminationGLPreview — preview GL entries before posting
+- [ ] termination.ts router — full tRPC router for all termination operations
+- [ ] LeaseTerminations.tsx — table UI with status badges, filter panel, action dropdown
+- [ ] Termination detail side panel with penalty breakdown, GL preview, approval timeline
+- [ ] Initiate Termination dialog with penalty vs buyout comparison
+- [ ] Wire route /lease/terminations and sidebar link

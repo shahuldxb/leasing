@@ -18,7 +18,7 @@ export const workflowRouter = router({
       const rows = await execSPP('sp_GetMakerCheckerQueue', [
         { name: 'CheckerId', type: sql.Int, value: ctx.user!.id },
         { name: 'Module', type: sql.VarChar(50), value: input.module || null },
-        { name: 'Outcome', type: sql.VarChar(20), value: input.outcome },
+        { name: 'Status', type: sql.VarChar(20), value: input.outcome },   // SP uses @Status not @Outcome
         { name: 'PageNumber', type: sql.Int, value: input.page },
         { name: 'PageSize', type: sql.Int, value: input.pageSize },
       ]);
@@ -31,7 +31,7 @@ export const workflowRouter = router({
     .query(async ({ input, ctx }) => {
       return execSPP('sp_GetUserTasks', [
         { name: 'UserId', type: sql.Int, value: ctx.user!.id },
-        { name: 'UserRole', type: sql.VarChar(50), value: ctx.user!.role },
+        // SP has no @UserRole param — removed
         { name: 'Status', type: sql.VarChar(20), value: input.status },
       ]);
     }),
@@ -45,12 +45,12 @@ export const workflowRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const start = new Date();
+      // SP uses @QueueId, @CheckerId, @Decision, @Comments — not TaskId/UserId/Outcome/Comment/ScreenId
       const result = await execSPPOne<{ rows_updated: number }>('sp_CompleteWorkflowTask', [
-        { name: 'TaskId', type: sql.Int, value: input.taskId },
-        { name: 'UserId', type: sql.Int, value: ctx.user!.id },
-        { name: 'Outcome', type: sql.VarChar(50), value: input.outcome },
-        { name: 'Comment', type: sql.NVarChar(1000), value: input.comment || null },
-        { name: 'ScreenId', type: sql.VarChar(20), value: input.screenId },
+        { name: 'QueueId', type: sql.Int, value: input.taskId },
+        { name: 'CheckerId', type: sql.Int, value: ctx.user!.id },
+        { name: 'Decision', type: sql.VarChar(50), value: input.outcome },
+        { name: 'Comments', type: sql.NVarChar(500), value: input.comment || null },
       ]);
       await writeAuditLog({
         userId: ctx.user!.id, username: ctx.user!.name || '', userRole: ctx.user!.role,

@@ -2,6 +2,10 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -36,6 +40,12 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+
+  // Standalone BPMN modeler page (served outside Vite to avoid HMR issues)
+  app.get('/api/bpmn-modeler', (_req, res) => {
+    res.sendFile(path.join(__dirname, '../../server/bpmn-modeler.html'));
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
