@@ -333,6 +333,122 @@ const FORM_PROMPTS: Record<string, { description: string; schema: Record<string,
       notes: "Comparison notes",
     },
   },
+  // alias — AssetRegistry page uses formType="asset"
+  asset: {
+    description: "A physical asset in a leased property portfolio in the UAE",
+    schema: {
+      assetName: "Descriptive asset name e.g. Dubai Tower Site 01",
+      assetType: "One of: Office, Retail, Warehouse, Industrial, Residential",
+      status: "One of: Available, Leased, Under Maintenance",
+      country: "2-letter ISO country code e.g. AE",
+      city: "UAE city name e.g. Dubai",
+      address: "Full UAE street address",
+      floorArea: "Floor area in sqm as number",
+      notes: "Brief asset notes",
+    },
+  },
+  budget_variance: {
+    description: "A budget vs actual variance entry for lease costs in the UAE",
+    schema: {
+      period: "Quarter/year like 2024-Q1",
+      budgetAmount: "Budgeted amount in AED as number",
+      actualAmount: "Actual amount in AED as number",
+      varianceAmount: "Variance in AED as number",
+      variancePct: "Variance percentage as number",
+      category: "One of: Rent, Service Charge, Insurance, Maintenance, Other",
+      notes: "Variance explanation",
+    },
+  },
+  cpi_escalation: {
+    description: "A CPI escalation record for lease rent adjustments in the UAE",
+    schema: {
+      escalationDate: "ISO date YYYY-MM-DD",
+      cpiIndex: "CPI index value as number e.g. 108.5",
+      escalationRate: "Escalation rate as percentage e.g. 3.5",
+      previousRent: "Previous monthly rent in AED as number",
+      newRent: "New monthly rent in AED as number",
+      notes: "Escalation notes",
+    },
+  },
+  lease_origination: {
+    description: "A new lease origination request for commercial property in the UAE",
+    schema: {
+      propertyName: "Property name e.g. Business Bay Tower A",
+      propertyAddress: "Full UAE address",
+      assetType: "One of: Office, Retail, Warehouse, Industrial, Residential",
+      floorArea: "Floor area in sqm as number",
+      monthlyRent: "Monthly rent in AED as number",
+      leaseTerm: "Lease term in months as number",
+      commencementDate: "ISO date YYYY-MM-DD",
+      lessorName: "Lessor company name",
+      notes: "Origination notes",
+    },
+  },
+  lease_option: {
+    description: "A lease renewal option or break clause for a commercial lease in the UAE",
+    schema: {
+      optionType: "One of: RENEWAL, PURCHASE, TERMINATION, EXPANSION",
+      exerciseDeadline: "ISO date YYYY-MM-DD",
+      noticePeriodDays: "Notice period in days as number e.g. 90",
+      newTermMonths: "New term in months as number",
+      newRent: "New monthly rent in AED as number",
+      notes: "Option notes",
+    },
+  },
+  lessor_bank: {
+    description: "A lessor bank account record for payment processing in the UAE",
+    schema: {
+      bankName: "UAE bank name e.g. Emirates NBD",
+      accountNumber: "Bank account number",
+      iban: "UAE IBAN like AE070331234567890123456",
+      swiftCode: "SWIFT/BIC code",
+      currency: "Currency code e.g. AED",
+      accountType: "One of: Current, Savings",
+    },
+  },
+  lessor_contact: {
+    description: "A lessor contact person record in the UAE",
+    schema: {
+      contactName: "Full name",
+      role: "One of: Primary, Finance, Legal, Operations",
+      email: "Professional email address",
+      phone: "UAE phone number +971 XX XXX XXXX",
+      department: "Department name",
+    },
+  },
+  lessor_note: {
+    description: "A note or memo regarding a lessor in the UAE",
+    schema: {
+      noteDate: "ISO date YYYY-MM-DD",
+      noteType: "One of: General, Legal, Financial, Operational",
+      subject: "Brief subject line",
+      content: "Detailed note content 2-3 sentences",
+      author: "Author name",
+    },
+  },
+  payment_runs: {
+    description: "A payment run batch for lease invoices in the UAE",
+    schema: {
+      runDate: "ISO date YYYY-MM-DD",
+      paymentMethod: "One of: Bank Transfer, Cheque, Direct Debit",
+      totalAmount: "Total payment amount in AED as number",
+      invoiceCount: "Number of invoices as number",
+      bankAccount: "Paying bank account name",
+      notes: "Payment run notes",
+    },
+  },
+  space_management: {
+    description: "A building or space management record for commercial property in the UAE",
+    schema: {
+      buildingName: "Building name e.g. Dubai World Trade Centre",
+      totalArea: "Total area in sqm as number",
+      occupiedArea: "Occupied area in sqm as number",
+      availableArea: "Available area in sqm as number",
+      occupancyRate: "Occupancy rate as percentage",
+      location: "UAE city and district",
+      notes: "Space notes",
+    },
+  },
 };
 
 // ─── Screen data generation prompts ─────────────────────────────────────────

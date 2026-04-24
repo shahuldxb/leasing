@@ -38,7 +38,8 @@ export default function AssetRegistry() {
     pageNumber: 1, pageSize: 100, searchTerm: search || undefined,
   });
   const assets = [...((assetsData as any)?.assets ?? []), ...aiRows];
-  const { data: lessors = [] } = trpc.lessor.getLessors.useQuery({});
+  const { data: lessorsData } = trpc.lessor.getLessors.useQuery({});
+  const lessors: any[] = (lessorsData as any)?.lessors ?? [];
 
   const upsertMutation = trpc.asset.upsertAsset.useMutation({
     onSuccess: () => { refetch(); setShowForm(false); setEditItem(null); toast.success(editItem ? "Asset updated" : "Asset created"); },
@@ -111,7 +112,17 @@ export default function AssetRegistry() {
               <p className="text-xs text-gray-400">Fill in asset details. Use Gen AI to auto-fill with realistic data.</p>
             </div>
             <div className="ml-auto">
-              <ScreenHeader screenId="VFLSEASTREG0001P001" title="" formType="asset" onAIFormFill={(data) => setForm((p: any) => ({ ...p, ...data }))} />
+              <ScreenHeader screenId="VFLSEASTREG0001P001" title="" formType="asset" onAIFormFill={(data) => setForm((p: any) => ({
+                ...p,
+                assetName: data.assetName ?? p.assetName,
+                assetType: data.assetType ?? p.assetType,
+                status: data.status ?? p.status,
+                country: data.country ?? p.country,
+                city: data.city ?? p.city,
+                addressLine1: data.address ?? p.addressLine1,
+                floorAreaSqm: data.floorArea ?? p.floorAreaSqm,
+                description: data.notes ?? p.description,
+              }))} />
             </div>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
