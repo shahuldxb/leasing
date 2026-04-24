@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, PlusCircle, Search, Banknote, AlertTriangle, CheckCircle2, Clock, Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const STATUS_COLORS: Record<string, string> = {
   HELD:     "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -269,6 +270,7 @@ export default function AssetDepositRegister() {
         open={showAdd}
         onClose={() => setShowAdd(false)}
         title="Record Asset Deposit"
+          headerAction={<GenAIFillButton formType="asset_deposit" onFill={(data) => { if (data.deposit_amount !== undefined) setAddForm(f => ({ ...f, deposit_amount: data.deposit_amount as any })); if (data.currency !== undefined) setAddForm(f => ({ ...f, currency: data.currency as any })); if (data.bank_name !== undefined) setAddForm(f => ({ ...f, bank_name: data.bank_name as any })); if (data.bank_ref !== undefined) setAddForm(f => ({ ...f, bank_ref: data.bank_ref as any })); if (data.deposit_date !== undefined) setAddForm(f => ({ ...f, deposit_date: data.deposit_date as any })); if (data.deposit_type !== undefined) setAddForm(f => ({ ...f, deposit_type: data.deposit_type as any })); }} />}
         subtitle="Register a new deposit held against furnished property assets"
         width="xl"
         footer={

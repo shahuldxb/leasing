@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Shield, Plus, Banknote, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -94,7 +95,8 @@ export default function SecurityDeposits() {
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Record Security Deposit</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Record Security Deposit</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="security_deposit" onFill={(data) => { if (data.amount !== undefined) setForm(f => ({ ...f, amount: data.amount as any })); if (data.currency !== undefined) setForm(f => ({ ...f, currency: data.currency as any })); if (data.bank_name !== undefined) setForm(f => ({ ...f, bank_name: data.bank_name as any })); if (data.bank_ref !== undefined) setForm(f => ({ ...f, bank_ref: data.bank_ref as any })); if (data.deposit_date !== undefined) setForm(f => ({ ...f, deposit_date: data.deposit_date as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Contract</Label>

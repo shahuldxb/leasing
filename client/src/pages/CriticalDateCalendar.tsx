@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Bell, AlertTriangle, CheckCircle, Plus, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const URGENCY_COLORS: Record<string, string> = {
   OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
@@ -175,7 +176,8 @@ export default function CriticalDateCalendar() {
         {/* Add dialog */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Add Critical Date</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Add Critical Date</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="critical_date_alert" onFill={(data) => { if (data.event_type !== undefined) setForm(f => ({ ...f, event_type: data.event_type as any })); if (data.event_date !== undefined) setForm(f => ({ ...f, event_date: data.event_date as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.notify_days_before !== undefined) setForm(f => ({ ...f, notify_days_before: data.notify_days_before as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Contract</Label>

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wrench, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const TICKET_TYPES = ["Routine Maintenance","Major Repair","Emergency","Structural","HVAC/Power","Cleaning","Security","Compliance Inspection"];
 const RESPONSIBILITY = ["Vodafone","Lessor","Shared"];
@@ -91,7 +92,8 @@ export default function OpsMaintenance() {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Raise Maintenance Ticket</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Raise Maintenance Ticket</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="maintenance_ticket" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.asset_type !== undefined) setForm(f => ({ ...f, asset_type: data.asset_type as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div></DialogHeader>
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Lease *</Label>

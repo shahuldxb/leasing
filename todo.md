@@ -475,3 +475,32 @@
 - [x] Add Gen AI fill button to FurnitureCollectionDetail item form
 - [x] Wire navigation in DashboardLayout under "Furnished Assets" section
 - [x] Wire routes in App.tsx
+
+## Gen AI Fill on All Screens + Sidebar Reorganisation
+- [x] Move Audit Log and Error Log from Compliance to System Settings in DashboardLayout
+- [x] Add Gen AI fill button to: OpsMaintenance (raise ticket form)
+- [x] Add Gen AI fill button to: OpsInsurance (add policy form)
+- [x] Add Gen AI fill button to: VendorManagement (add vendor form)
+- [x] Add Gen AI fill button to: BrokerManagement (add broker form)
+- [x] Add Gen AI fill button to: LOITracking (add LOI form)
+- [x] Add Gen AI fill button to: TenantImprovementAllowance (add TI form)
+- [x] Add Gen AI fill button to: ESignatureIntegration (send for signature form)
+- [x] Add Gen AI fill button to: SecurityDeposits (add deposit form)
+- [x] Add Gen AI fill button to: SubLeases (add sub-lease form)
+- [x] Add Gen AI fill button to: RentReviews (add review form)
+- [x] Add Gen AI fill button to: LeaseModifications (add modification form)
+- [x] Add Gen AI fill button to: LeaseTerminations (initiate termination form)
+- [x] Add Gen AI fill button to: BudgetingForecasting (add budget entry form)
+- [x] Add Gen AI fill button to: HedgeAccounting (add hedge form)
+- [x] Add Gen AI fill button to: DeskBooking (add booking form)
+- [x] Add Gen AI fill button to: FacilitiesWorkOrders (raise work order form)
+- [x] Add Gen AI fill button to: LeaseComparison (add comparison form)
+- [x] Add Gen AI fill button to: LessorMaster (add lessor form)
+- [x] Add Gen AI fill button to: AssetRegistry (add asset form)
+- [x] Add Gen AI fill button to: AssetDepositRegister (add deposit form)
+- [x] Add Gen AI fill button to: HandoverChecklist (create checklist form)
+- [x] Add Gen AI fill button to: FurnishedAssets (add asset form)
+- [x] Add Gen AI fill button to: ConsolidationReporting (add entity form)
+- [x] Add Gen AI fill button to: LeaseDataQuality (validation rule form)
+- [x] Add Gen AI fill button to: ScenarioModelling (add scenario form)
+- [x] Add Gen AI fill button to: CriticalDateCalendar (add alert form)

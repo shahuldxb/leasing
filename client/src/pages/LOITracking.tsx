@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FileText, Clock, CheckCircle, XCircle, Plus, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const LOIS = [
   { id: 1, ref: "LOI-2026-001", property: "DIFC Gate Village — Unit 12", lessor: "DIFC Authority", area_sqm: 1850, rent_pa: 2775000, broker: "JLL UAE", submitted: "2026-04-01", expiry: "2026-04-30", status: "UNDER_NEGOTIATION", notes: "Counter-offer received — 5% above asking" },
@@ -148,7 +149,8 @@ export default function LOITracking() {
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>New Letter of Intent</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>New Letter of Intent</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="letter_of_intent" onFill={(data) => { if (data.property_name !== undefined) setForm(f => ({ ...f, property_name: data.property_name as any })); if (data.lessor_name !== undefined) setForm(f => ({ ...f, lessor_name: data.lessor_name as any })); if (data.proposed_rent !== undefined) setForm(f => ({ ...f, proposed_rent: data.proposed_rent as any })); if (data.proposed_term !== undefined) setForm(f => ({ ...f, proposed_term: data.proposed_term as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} /></div></DialogHeader>
             <div className="space-y-3">
               {[
                 { key: "property", label: "Property / Address", placeholder: "e.g. DIFC Gate Village Unit 12" },

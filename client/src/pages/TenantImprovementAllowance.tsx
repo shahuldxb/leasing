@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, CheckCircle, Clock, AlertTriangle, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const TI_RECORDS = [
   { id: 1, lease_ref: "VF-2024-001", property: "Vodafone HQ Floor 12", lessor: "Al Futtaim", ti_agreed: 1200000, ti_received: 1200000, ti_spent: 1180000, remaining: 20000, status: "FULLY_RECEIVED", deadline: "2024-06-30", notes: "Fit-out complete. Minor snagging items outstanding." },
@@ -36,6 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function TenantImprovementAllowance() {
   const [tab, setTab] = useState("overview");
+  const [tiForm, setTiForm] = useState({ lease_ref: "", property_name: "", allowance_amount: "", scope_of_work: "", contractor: "", completion_date: "" });
   const [showDialog, setShowDialog] = useState(false);
 
   const totalAgreed = TI_RECORDS.reduce((s, r) => s + r.ti_agreed, 0);
@@ -174,7 +176,8 @@ export default function TenantImprovementAllowance() {
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add TI Allowance Record</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Add TI Allowance Record</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="ti_allowance" onFill={(data) => { if (data.lease_ref !== undefined) setTiForm(f => ({ ...f, lease_ref: data.lease_ref as any })); if (data.property_name !== undefined) setTiForm(f => ({ ...f, property_name: data.property_name as any })); if (data.allowance_amount !== undefined) setTiForm(f => ({ ...f, allowance_amount: data.allowance_amount as any })); if (data.scope_of_work !== undefined) setTiForm(f => ({ ...f, scope_of_work: data.scope_of_work as any })); if (data.contractor !== undefined) setTiForm(f => ({ ...f, contractor: data.contractor as any })); if (data.completion_date !== undefined) setTiForm(f => ({ ...f, completion_date: data.completion_date as any })); }} /></div></DialogHeader>
             <div className="space-y-3">
               {[
                 { label: "Lease Reference", placeholder: "e.g. VF-2024-001" },

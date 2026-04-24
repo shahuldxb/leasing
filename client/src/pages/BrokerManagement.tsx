@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, DollarSign, TrendingUp, Star, Plus, Search, Phone, Mail, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const BROKERS = [
   { id: 1, name: "JLL UAE", contact: "Michael Thompson", email: "m.thompson@jll.com", phone: "+971 4 426 6999", speciality: "Commercial Office", active_mandates: 4, closed_deals: 12, commission_ytd: 485000, rating: 4.8, status: "ACTIVE" },
@@ -34,6 +35,7 @@ const COMMISSIONS = [
 
 export default function BrokerManagement() {
   const [tab, setTab] = useState("brokers");
+  const [newBroker, setNewBroker] = useState({ name: "", agency: "", email: "", phone: "", license_number: "", specialization: "" });
   const [search, setSearch] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
 
@@ -213,7 +215,8 @@ export default function BrokerManagement() {
 
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add New Broker</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Add New Broker</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="broker" onFill={(data) => { if (data.name !== undefined) setNewBroker(f => ({ ...f, name: data.name as any })); if (data.agency !== undefined) setNewBroker(f => ({ ...f, agency: data.agency as any })); if (data.email !== undefined) setNewBroker(f => ({ ...f, email: data.email as any })); if (data.phone !== undefined) setNewBroker(f => ({ ...f, phone: data.phone as any })); if (data.license_number !== undefined) setNewBroker(f => ({ ...f, license_number: data.license_number as any })); if (data.specialization !== undefined) setNewBroker(f => ({ ...f, specialization: data.specialization as any })); }} /></div></DialogHeader>
             <div className="space-y-3">
               {[
                 { label: "Company Name", placeholder: "e.g. JLL UAE" },

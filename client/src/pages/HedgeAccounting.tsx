@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, DollarSign, Shield, Plus, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const STATUS_COLORS: Record<string, string> = {
   DESIGNATED: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -34,6 +35,7 @@ const GL_IMPACT = [
 
 export default function HedgeAccounting() {
   const [tab, setTab] = useState("hedges");
+  const [hedgeForm, setHedgeForm] = useState({ instrument_type: "", notional_amount: "", currency_pair: "", start_date: "", maturity_date: "", strike_rate: "" });
   const [showDialog, setShowDialog] = useState(false);
 
   const totalOCI = HEDGES.reduce((s, h) => s + h.oci_balance, 0);
@@ -238,7 +240,8 @@ export default function HedgeAccounting() {
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Designate New Hedge Relationship</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Designate New Hedge Relationship</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="hedge_instrument" onFill={(data) => { if (data.instrument_type !== undefined) setHedgeForm(f => ({ ...f, instrument_type: data.instrument_type as any })); if (data.notional_amount !== undefined) setHedgeForm(f => ({ ...f, notional_amount: data.notional_amount as any })); if (data.currency_pair !== undefined) setHedgeForm(f => ({ ...f, currency_pair: data.currency_pair as any })); if (data.start_date !== undefined) setHedgeForm(f => ({ ...f, start_date: data.start_date as any })); if (data.maturity_date !== undefined) setHedgeForm(f => ({ ...f, maturity_date: data.maturity_date as any })); if (data.strike_rate !== undefined) setHedgeForm(f => ({ ...f, strike_rate: data.strike_rate as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>

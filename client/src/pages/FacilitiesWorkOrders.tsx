@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench, AlertTriangle, CheckCircle, Clock, Plus, BarChart3, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -199,7 +200,8 @@ export default function FacilitiesWorkOrders() {
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Raise Work Order</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Raise Work Order</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="work_order" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); if (data.estimated_cost !== undefined) setForm(f => ({ ...f, estimated_cost: data.estimated_cost as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label className="text-xs font-medium">Title / Description *</Label>

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Building2, Plus, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -88,7 +89,8 @@ export default function SubLeases() {
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>New Sub-Lease</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>New Sub-Lease</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="sub_lease" onFill={(data) => { if (data.sub_tenant_name !== undefined) setForm(f => ({ ...f, sub_tenant_name: data.sub_tenant_name as any })); if (data.sub_rent !== undefined) setForm(f => ({ ...f, sub_rent: data.sub_rent as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); if (data.area_sqm !== undefined) setForm(f => ({ ...f, area_sqm: data.area_sqm as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Head Lease Contract</Label>

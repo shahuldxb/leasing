@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sofa, PlusCircle, Search, Package, Tv, Refrigerator, Bath, BedDouble, ChefHat, TreePine, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const CATEGORIES = [
   { value: "FURNITURE",    label: "Furniture",    icon: Sofa },
@@ -267,6 +268,7 @@ export default function FurnishedAssets() {
         open={showAdd}
         onClose={() => setShowAdd(false)}
         title="Add Furnished Asset"
+          headerAction={<GenAIFillButton formType="furnished_asset" onFill={(data) => { if (data.asset_name !== undefined) setForm(f => ({ ...f, asset_name: data.asset_name as any })); if (data.asset_category !== undefined) setForm(f => ({ ...f, asset_category: data.asset_category as any })); if (data.brand !== undefined) setForm(f => ({ ...f, brand: data.brand as any })); if (data.model !== undefined) setForm(f => ({ ...f, model: data.model as any })); if (data.serial_number !== undefined) setForm(f => ({ ...f, serial_number: data.serial_number as any })); if (data.estimated_value !== undefined) setForm(f => ({ ...f, estimated_value: data.estimated_value as any })); if (data.condition_at_handover !== undefined) setForm(f => ({ ...f, condition_at_handover: data.condition_at_handover as any })); }} />}
         subtitle="Register a new furniture, appliance or equipment item against a lease"
         width="xl"
         footer={

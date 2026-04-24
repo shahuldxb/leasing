@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Star, CheckCircle, Clock, Plus, Phone, Mail, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const STATUS_COLORS: Record<string, string> = {
   APPROVED: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -212,7 +213,8 @@ export default function VendorManagement() {
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add New Vendor</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Add New Vendor</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="vendor" onFill={(data) => { if (data.name !== undefined) setForm(f => ({ ...f, name: data.name as any })); if (data.category !== undefined) setForm(f => ({ ...f, category: data.category as any })); if (data.contact_name !== undefined) setForm(f => ({ ...f, contact_name: data.contact_name as any })); if (data.email !== undefined) setForm(f => ({ ...f, email: data.email as any })); if (data.phone !== undefined) setForm(f => ({ ...f, phone: data.phone as any })); if (data.address !== undefined) setForm(f => ({ ...f, address: data.address as any })); if (data.registration_number !== undefined) setForm(f => ({ ...f, registration_number: data.registration_number as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label className="text-xs font-medium">Company Name *</Label>

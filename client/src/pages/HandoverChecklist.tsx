@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardList, PlusCircle, Search, CheckCircle2, AlertCircle, Clock, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const CHECKLIST_CONDITIONS = ["NEW","EXCELLENT","GOOD","FAIR","POOR","MISSING","DAMAGED"];
 
@@ -268,6 +269,7 @@ export default function HandoverChecklist() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         title="New Inspection Checklist"
+          headerAction={<GenAIFillButton formType="handover_checklist" onFill={(data) => { if (data.checklist_type !== undefined) setForm(f => ({ ...f, checklist_type: data.checklist_type as any })); if (data.conducted_by !== undefined) setForm(f => ({ ...f, conducted_by: data.conducted_by as any })); if (data.conducted_date !== undefined) setForm(f => ({ ...f, conducted_date: data.conducted_date as any })); if (data.overall_condition !== undefined) setForm(f => ({ ...f, overall_condition: data.overall_condition as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} />}
         subtitle="Create a handover or return inspection checklist for a furnished property"
         width="xl"
         footer={

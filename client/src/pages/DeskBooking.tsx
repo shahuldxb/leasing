@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Users, CheckCircle, Clock, Plus, BarChart3, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const FLOORS = [
   { id: 1, building: "Vodafone HQ — Dubai", floor: "Floor 12", total_desks: 80, available: 23, booked: 57, rooms: 6 },
@@ -213,7 +214,8 @@ export default function DeskBooking() {
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>New Desk / Room Booking</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>New Desk / Room Booking</DialogTitle>
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="desk_booking" onFill={(data) => { if (data.desk_id !== undefined) setForm(f => ({ ...f, desk_id: data.desk_id as any })); if (data.floor !== undefined) setForm(f => ({ ...f, floor: data.floor as any })); if (data.building !== undefined) setForm(f => ({ ...f, building: data.building as any })); if (data.booked_by !== undefined) setForm(f => ({ ...f, booked_by: data.booked_by as any })); if (data.booking_date !== undefined) setForm(f => ({ ...f, booking_date: data.booking_date as any })); if (data.time_slot !== undefined) setForm(f => ({ ...f, time_slot: data.time_slot as any })); }} /></div></DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>

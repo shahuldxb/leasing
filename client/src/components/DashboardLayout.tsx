@@ -124,8 +124,6 @@ const menuItems: NavItem[] = [
     icon: Shield, label: "Compliance",
     children: [
       { label: "IFRS 16 Disclosures",path: "/compliance/ifrs16" },
-      { label: "Audit Log",         path: "/compliance/audit" },
-      { label: "Error Log",         path: "/compliance/errors" },
     ],
   },
   {
@@ -263,6 +261,8 @@ const menuItems: NavItem[] = [
       { label: "SSO Configuration",    path: "/admin/sso" },
       { label: "API & Webhooks",       path: "/admin/api-webhooks" },
       { label: "E-Signature",          path: "/admin/esignature" },
+      { label: "Audit Log",            path: "/compliance/audit" },
+      { label: "Error Log",            path: "/compliance/errors" },
       { label: "Administration",       path: "/admin" },
     ],
   },

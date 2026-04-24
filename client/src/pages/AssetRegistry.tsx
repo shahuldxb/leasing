@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import {
   Package, Plus, Search, RefreshCw, Eye, Edit, MapPin,
   Building2, Calendar, DollarSign, Wrench, FileText,
