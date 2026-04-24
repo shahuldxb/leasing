@@ -6,24 +6,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Flag, PlusCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, PlusCircle, CheckCircle2, Clock, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const MILESTONE_TYPES = ["Rent Review Date","Renewal Decision Deadline","Break Clause Date","Insurance Renewal","Maintenance Inspection","Regulatory Compliance","Payment Escalation","Make-Good Assessment"];
+const INIT = { leaseId: "", type: "", dueDate: "", notes: "" };
 
 export default function ContractMilestones() {
-  const [open, setOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const [form, setForm] = useState({ leaseId: "", type: "", dueDate: "", notes: "" });
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const [form, setForm] = useState(INIT);
 
-  const utils = trpc.useUtils();
-  const submitForApprovalMut = trpc.lease.submitForApproval.useMutation({
-    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted"); },
-    onError: (e) => toast.error(e.message),
-  });
+  function openEdit(m: any) {
+    setEditRow(m);
+    setForm({ leaseId: String(m.contract ?? ""), type: m.type ?? "", dueDate: m.dueDate ? new Date(m.dueDate).toISOString().slice(0,10) : "", notes: m.notes ?? "" });
+    setShowForm(true);
+  }
+  function handleDelete(m: any) {
+    toast("Delete milestone '" + m.type + "'?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Milestone deleted") },
+    });
+  }
+  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
 
   const today = new Date();
   const upcoming = [
@@ -34,48 +41,66 @@ export default function ContractMilestones() {
 
   const statusIcon = (s: string) => s === "Overdue" ? <AlertTriangle className="w-4 h-4 text-red-400" /> : s === "Completed" ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Clock className="w-4 h-4 text-amber-400" />;
 
-  return (
-    <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="space-y-3">
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Milestone" : "Add Contract Milestone"}</h2>
+              <p className="text-xs text-muted-foreground">{editRow ? "Update milestone details" : "Set a key date or milestone for a lease contract"}</p>
+            </div>
+            <GenAIFillButton formType="lease_modification" onFill={(data) => setForm(f => ({
+              ...f,
+              dueDate: data.modificationDate ? String(data.modificationDate) : f.dueDate,
+              notes: data.reason ? String(data.reason) : f.notes,
+            }))} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
               <div>
-                <Label className="text-sm font-medium">Lease</Label>
+                <Label>Lease</Label>
                 <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
-                  <SelectContent>{(leases as any[]).map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {((leases as any)?.rows ?? []).map((l: any) => (
+                      <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium">Milestone Type</Label>
+                <Label>Milestone Type</Label>
                 <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select type..." /></SelectTrigger>
                   <SelectContent>{MILESTONE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label className="text-sm font-medium">Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Notes</Label><Input className="mt-1" placeholder="Notes..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+              <div><Label>Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+              <div><Label>Notes</Label><Input className="mt-1" placeholder="Notes..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => { toast.success("Milestone added"); setShowForm(false); }}>Add Milestone</Button>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => { toast.success("Milestone added"); setOpen(false); }}>Add</Button>
-            </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
-        <ScreenHeader
-  screenId="VFLCNTMLS0001P001"
-  title="Contract Milestones"
-  subtitle="Key dates and milestone tracking per contract"
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        <ScreenHeader
+          screenId="VFLCNTMLS0001P001"
+          title="Contract Milestones"
+          subtitle="Key dates and milestone tracking per contract"
           screenType="contract_milestones"
           onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+          actions={<Button size="sm" onClick={() => { setForm(INIT); setShowForm(true); }} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />Add Milestone</Button>}
         />
-
         <div className="grid gap-3">
           {upcoming.map(m => (
             <div key={m.id} className={`bg-card border rounded-xl p-4 flex items-center justify-between ${m.status === "Overdue" ? "border-red-500/30" : "border-border"}`}>
@@ -89,12 +114,13 @@ export default function ContractMilestones() {
               <div className="flex items-center gap-3">
                 <Badge className={m.status === "Overdue" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}>{m.status}</Badge>
                 <Button size="sm" variant="outline" onClick={() => toast.success("Milestone marked complete")}>Complete</Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => openEdit(m)}><Pencil className="w-3.5 h-3.5" /></Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(m)}><Trash2 className="w-3.5 h-3.5" /></Button>
               </div>
             </div>
           ))}
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

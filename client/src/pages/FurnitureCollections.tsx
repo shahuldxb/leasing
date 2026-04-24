@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function FurnitureCollections() {
   const [, setLocation] = useLocation();
@@ -39,6 +40,14 @@ export default function FurnitureCollections() {
               <h2 className="font-semibold text-lg">{editItem ? "Edit Collection" : "New Collection"}</h2>
               <p className="text-sm text-muted-foreground">Create or update a furniture collection</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="furnished_asset"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          name: data.assetName ?? f.name,
+                          description: data.notes ?? f.description,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

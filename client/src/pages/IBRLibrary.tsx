@@ -9,6 +9,7 @@ import { ArrowLeft, Trash2, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function IBRLibrary() {
   const [showForm, setShowForm] = useState(false);
@@ -32,6 +33,17 @@ export default function IBRLibrary() {
               <h2 className="font-semibold text-lg">Add IBR Rate</h2>
               <p className="text-sm text-muted-foreground">Add an Incremental Borrowing Rate for IFRS 16 calculations</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="ibr_library"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          currency: data.currency ?? f.currency,
+                          tenor: data.tenor ?? f.tenor,
+                          rate: data.rate ?? f.rate,
+                          effectiveDate: data.effectiveDate ?? f.effectiveDate,
+                          source: data.source ?? f.source,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

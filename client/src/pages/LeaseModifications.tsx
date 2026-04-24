@@ -7,16 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, GitBranch } from "lucide-react";
+import { ArrowLeft, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
-import SlidePanel from "@/components/SlidePanel";
 
 const MOD_TYPES = ["Rent Change","Term Extension","Term Reduction","Scope Change","Remeasurement","Other"];
 
 export default function LeaseModifications() {
-  const [open, setOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [selectedLease, setSelectedLease] = useState("");
   const [modType, setModType] = useState("");
@@ -24,16 +23,17 @@ export default function LeaseModifications() {
   const [newRent, setNewRent] = useState("");
   const [newEndDate, setNewEndDate] = useState("");
   const [reason, setReason] = useState("");
-
   const [editRow, setEditRow] = useState<any>(null);
+
   const utils = trpc.useUtils();
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
   const createMut = trpc.leaseModification.create.useMutation({
-    onSuccess: () => { utils.leaseModification.list.invalidate(); toast.success("Modification created"); setOpen(false); },
+    onSuccess: () => { utils.leaseModification.list.invalidate(); toast.success("Modification created"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
   const updateMut = trpc.leaseModification.update.useMutation({
-    onSuccess: () => { utils.leaseModification.list.invalidate(); toast.success("Modification updated"); setOpen(false); },
+    onSuccess: () => { utils.leaseModification.list.invalidate(); toast.success("Modification updated"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
   const deleteMut = trpc.leaseModification.delete.useMutation({
@@ -41,6 +41,11 @@ export default function LeaseModifications() {
     onError: (e) => toast.error(e.message),
   });
   const { data: mods = [], isLoading } = trpc.leaseModification.list.useQuery({});
+
+  function openAdd() {
+    setEditRow(null); setSelectedLease(""); setModType(""); setEffectiveDate(""); setNewRent(""); setNewEndDate(""); setReason("");
+    setShowForm(true);
+  }
 
   const handleSubmit = () => {
     if (!selectedLease || !modType || !effectiveDate) { toast.error("Please fill in all required fields"); return; }
@@ -51,24 +56,30 @@ export default function LeaseModifications() {
       liability_adjustment: newRent ? Number(newRent) : undefined,
       status: "Draft" as const,
     };
-    if (editRow) {
-      updateMut.mutate({ modification_id: editRow.modification_id, ...payload });
-    } else {
-      createMut.mutate(payload);
-    }
+    if (editRow) { updateMut.mutate({ modification_id: editRow.modification_id, ...payload }); }
+    else { createMut.mutate(payload); }
   };
 
-  return (
-    <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-              
-            
-            <div className="space-y-4">
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Lease Modification" : "New Lease Modification"}</h2>
+              <p className="text-xs text-muted-foreground">Record a lease modification or remeasurement event</p>
+            </div>
+            <GenAIFillButton formType="lease_modification" onFill={(data) => {
+              if (data.modificationDate) setEffectiveDate(String(data.modificationDate));
+              if (data.modificationTypeValue) setModType(String(data.modificationTypeValue));
+              if (data.reason) setReason(String(data.reason));
+            }} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
               <div>
-                <Label className="text-sm font-medium">Lease *</Label>
+                <Label>Lease Contract *</Label>
                 <Select value={selectedLease} onValueChange={setSelectedLease}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
                   <SelectContent>
@@ -79,50 +90,56 @@ export default function LeaseModifications() {
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium">Modification Type *</Label>
+                <Label>Modification Type *</Label>
                 <Select value={modType} onValueChange={setModType}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select type..." /></SelectTrigger>
                   <SelectContent>{MOD_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-sm font-medium">Effective Date *</Label>
+                <Label>Effective Date *</Label>
                 <Input type="date" className="mt-1" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} />
               </div>
               {(modType === "Rent Change" || modType === "Remeasurement") && (
                 <div>
-                  <Label className="text-sm font-medium">New Monthly Rent</Label>
+                  <Label>New Monthly Rent</Label>
                   <Input type="number" className="mt-1" placeholder="0.00" value={newRent} onChange={e => setNewRent(e.target.value)} />
                 </div>
               )}
               {(modType === "Term Extension" || modType === "Term Reduction") && (
                 <div>
-                  <Label className="text-sm font-medium">New End Date</Label>
+                  <Label>New End Date</Label>
                   <Input type="date" className="mt-1" value={newEndDate} onChange={e => setNewEndDate(e.target.value)} />
                 </div>
               )}
               <div>
-                <Label className="text-sm font-medium">Reason / Notes</Label>
+                <Label>Reason / Notes</Label>
                 <Input className="mt-1" placeholder="Reason for modification..." value={reason} onChange={e => setReason(e.target.value)} />
               </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSubmit}>
+                  {editRow ? "Update Modification" : "Submit for Remeasurement"}
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSubmit}>Submit for Remeasurement</Button>
-            </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLLEAMOD0001P001"
+          screenId="VFLLEAMOD0001P001"
           screenType="lease_modifications"
           onAIData={(rows) => setAiRows(rows)}
-  title="Lease Modifications"
-  subtitle="Lease modification and remeasurement processing"
-/>
-
+          title="Lease Modifications"
+          subtitle="Lease modification and remeasurement processing"
+          actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />New Modification</Button>}
+        />
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
@@ -131,8 +148,8 @@ export default function LeaseModifications() {
                 <TableHead className="text-xs">Lessor</TableHead>
                 <TableHead className="text-xs">Mod Type</TableHead>
                 <TableHead className="text-xs">Effective Date</TableHead>
-                <TableHead className="text-xs">Old Rent</TableHead>
-                <TableHead className="text-xs">New Rent</TableHead>
+                <TableHead className="text-xs">Liability Adj.</TableHead>
+                <TableHead className="text-xs">ROU Adj.</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -140,7 +157,7 @@ export default function LeaseModifications() {
               {isLoading && aiRows.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8">Loading…</TableCell></TableRow>
               ) : (aiRows.length > 0 ? aiRows : (mods as any[])).length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No modifications yet</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No modifications yet. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
               ) : (
                 (aiRows.length > 0 ? aiRows : (mods as any[])).map((row: any, i: number) => (
                   <TableRow key={row.modification_id ?? i}>
@@ -153,7 +170,10 @@ export default function LeaseModifications() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Badge variant="outline">{row.status ?? "Draft"}</Badge>
-                        <Button variant="ghost" size="sm" onClick={() => { setEditRow(row); setSelectedLease(String(row.contract_id)); setModType(row.modification_type); setEffectiveDate(row.modification_date?.split("T")[0] ?? ""); setOpen(true); }}>Edit</Button>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                          setEditRow(row); setSelectedLease(String(row.contract_id)); setModType(row.modification_type);
+                          setEffectiveDate(row.modification_date?.split("T")[0] ?? ""); setShowForm(true);
+                        }}>Edit</Button>
                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteMut.mutate({ modification_id: row.modification_id })}>Del</Button>
                       </div>
                     </TableCell>
@@ -163,8 +183,7 @@ export default function LeaseModifications() {
             </TableBody>
           </Table>
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

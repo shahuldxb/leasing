@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function FurnishedAssets() {
   const [showForm, setShowForm] = useState(false);
@@ -39,6 +40,20 @@ export default function FurnishedAssets() {
               <h2 className="font-semibold text-lg">{editItem ? "Edit Furnished Asset" : "Add Furnished Asset"}</h2>
               <p className="text-sm text-muted-foreground">Record furniture and fittings provided with a lease</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="furnished_asset"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          assetName: data.assetName ?? f.assetName,
+                          assetCategory: data.assetCategory ?? f.assetCategory,
+                          brand: data.brand ?? f.brand,
+                          model: data.model ?? f.model,
+                          serialNumber: data.serialNumber ?? f.serialNumber,
+                          conditionAtHandover: data.conditionAtHandover ?? f.conditionAtHandover,
+                          estimatedValue: data.estimatedValue ?? f.estimatedValue,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

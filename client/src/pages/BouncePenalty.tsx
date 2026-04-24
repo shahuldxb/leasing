@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function BouncePenalty() {
   const [showForm, setShowForm] = useState(false);
@@ -31,6 +32,14 @@ export default function BouncePenalty() {
               <h2 className="font-semibold text-lg">Configure Bounce Penalty</h2>
               <p className="text-sm text-muted-foreground">Set penalty rates and grace periods for bounced cheques</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="security_deposit"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          penaltyAmount: data.depositAmount ?? f.penaltyAmount,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

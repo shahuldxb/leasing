@@ -10,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function WorkflowQueue() {
   const [showForm, setShowForm] = useState(false);
@@ -35,6 +36,10 @@ export default function WorkflowQueue() {
               <h2 className="font-semibold text-lg">{dialogAction} Task</h2>
               <p className="text-sm text-muted-foreground">{selected.description}</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="new_lease"
+              onFill={(data) => { if (data.notes) setComment(data.notes); }}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

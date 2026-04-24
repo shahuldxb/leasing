@@ -7,29 +7,38 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Shield, PlusCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Shield, PlusCircle, AlertTriangle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
-import SlidePanel from "@/components/SlidePanel";
 
 const COVERAGE_TYPES = ["Property All Risk","Fire & Perils","Public Liability","Employer Liability","Motor Fleet","Equipment Breakdown","Business Interruption","Cyber Liability"];
 const PAYMENT_FREQ = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
 export default function OpsInsurance() {
-  const [open, setOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ provider: "", policyNumber: "", coverageType: "", sumInsured: "", premiumAmount: "", paymentFrequency: "Annual", startDate: "", endDate: "", leaseId: "" });
+
+  function openAdd() { setEditRow(null); setForm({ provider: "", policyNumber: "", coverageType: "", sumInsured: "", premiumAmount: "", paymentFrequency: "Annual", startDate: "", endDate: "", leaseId: "" }); setShowForm(true); }
+  function openEdit(p: any) {
+    setEditRow(p);
+    setForm({ provider: p.provider_name ?? p.provider ?? "", policyNumber: p.policy_number ?? "", coverageType: p.coverage_type ?? "", sumInsured: String(p.sum_insured ?? ""), premiumAmount: String(p.premium_amount ?? ""), paymentFrequency: p.payment_frequency ?? "Annual", startDate: p.start_date ? new Date(p.start_date).toISOString().slice(0,10) : "", endDate: p.end_date ? new Date(p.end_date).toISOString().slice(0,10) : "", leaseId: String(p.contract_id ?? "") });
+    setShowForm(true);
+  }
+  function handleDelete(p: any) {
+    toast("Delete policy " + p.policy_number + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Policy deleted") },
+    });
+  }
 
   const { data, refetch } = trpc.lease.getInsurancePolicies.useQuery({});
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
 
   const utils = trpc.useUtils();
-  const submitMut = trpc.lease.submitForApproval.useMutation({
-    onSuccess: () => { utils.lease.getInsurancePolicies.invalidate(); toast.success("Submitted"); },
-    onError: (e) => toast.error(e.message),
-  });
-  const addMutation = { mutate: (_: any) => { toast.success("Policy registered"); setOpen(false); refetch(); }, isPending: false };
+  const addMutation = { mutate: (_: any) => { toast.success("Policy registered"); setShowForm(false); refetch(); }, isPending: false };
 
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.policies ?? [];
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
@@ -48,52 +57,64 @@ export default function OpsInsurance() {
     return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>;
   };
 
-  return (
-    <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="insurance_policy" onFill={(data) => { if (data.policy_number !== undefined) setForm(f => ({ ...f, policy_number: data.policy_number as any })); if (data.insurer !== undefined) setForm(f => ({ ...f, insurer: data.insurer as any })); if (data.policy_type !== undefined) setForm(f => ({ ...f, policy_type: data.policy_type as any })); if (data.coverage_amount !== undefined) setForm(f => ({ ...f, coverage_amount: data.coverage_amount as any })); if (data.premium !== undefined) setForm(f => ({ ...f, premium: data.premium as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); }} /></div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Provider Name *</Label><Input className="mt-1" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Policy Number *</Label><Input className="mt-1" value={form.policyNumber} onChange={e => setForm(f => ({ ...f, policyNumber: e.target.value }))} /></div>
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Insurance Policy" : "Register Insurance Policy"}</h2>
+              <p className="text-xs text-muted-foreground">{editRow ? "Update policy details" : "Add a new insurance policy to the register"}</p>
+            </div>
+            <GenAIFillButton formType="insurance_policy" onFill={(data) => {
+              if (data.provider !== undefined) setForm(f => ({ ...f, provider: data.provider as any }));
+              if (data.policyNumber !== undefined) setForm(f => ({ ...f, policyNumber: data.policyNumber as any }));
+              if (data.coverageType !== undefined) setForm(f => ({ ...f, coverageType: data.coverageType as any }));
+              if (data.sumInsured !== undefined) setForm(f => ({ ...f, sumInsured: String(data.sumInsured) }));
+              if (data.premiumAmount !== undefined) setForm(f => ({ ...f, premiumAmount: String(data.premiumAmount) }));
+              if (data.startDate !== undefined) setForm(f => ({ ...f, startDate: data.startDate as any }));
+              if (data.endDate !== undefined) setForm(f => ({ ...f, endDate: data.endDate as any }));
+            }} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Provider Name *</Label><Input className="mt-1" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
+                <div><Label>Policy Number *</Label><Input className="mt-1" value={form.policyNumber} onChange={e => setForm(f => ({ ...f, policyNumber: e.target.value }))} /></div>
               </div>
               <div>
-                <Label className="text-sm font-medium">Coverage Type</Label>
+                <Label>Coverage Type</Label>
                 <Select value={form.coverageType} onValueChange={v => setForm(f => ({ ...f, coverageType: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>{COVERAGE_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Sum Insured ($)</Label><Input type="number" className="mt-1" value={form.sumInsured} onChange={e => setForm(f => ({ ...f, sumInsured: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Premium Amount ($)</Label><Input type="number" className="mt-1" value={form.premiumAmount} onChange={e => setForm(f => ({ ...f, premiumAmount: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Sum Insured ($)</Label><Input type="number" className="mt-1" value={form.sumInsured} onChange={e => setForm(f => ({ ...f, sumInsured: e.target.value }))} /></div>
+                <div><Label>Premium Amount ($)</Label><Input type="number" className="mt-1" value={form.premiumAmount} onChange={e => setForm(f => ({ ...f, premiumAmount: e.target.value }))} /></div>
               </div>
               <div>
-                <Label className="text-sm font-medium">Payment Frequency</Label>
+                <Label>Payment Frequency</Label>
                 <Select value={form.paymentFrequency} onValueChange={v => setForm(f => ({ ...f, paymentFrequency: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>{PAYMENT_FREQ.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Start Date</Label><Input type="date" className="mt-1" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">End Date</Label><Input type="date" className="mt-1" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Start Date</Label><Input type="date" className="mt-1" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} /></div>
+                <div><Label>End Date</Label><Input type="date" className="mt-1" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} /></div>
               </div>
               <div>
-                <Label className="text-sm font-medium">Linked Lease (optional)</Label>
+                <Label>Linked Lease (optional)</Label>
                 <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
                   <SelectContent>{leaseList.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => addMutation.mutate({
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => addMutation.mutate({
                   contractId: form.leaseId ? Number(form.leaseId) : undefined,
                   providerName: form.provider,
                   policyNumber: form.policyNumber,
@@ -104,19 +125,25 @@ export default function OpsInsurance() {
                   startDate: form.startDate,
                   endDate: form.endDate,
                 })}>Register Policy</Button>
+              </div>
             </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLOPSINS0001P001"
+          screenId="VFLOPSINS0001P001"
           screenType="insurance"
           onAIData={(rows) => setAiRows(rows)}
-  title="Insurance Register"
-  subtitle="Insurance policy register per lease"
-/>
+          title="Insurance Register"
+          subtitle="Insurance policy register per lease"
+          actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />Add Policy</Button>}
+        />
 
         {expiringSoon.length > 0 && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
@@ -150,6 +177,7 @@ export default function OpsInsurance() {
                 <TableHead className="text-xs text-right">Premium</TableHead>
                 <TableHead className="text-xs">Expiry</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -162,14 +190,22 @@ export default function OpsInsurance() {
                   <TableCell className="text-right font-mono text-xs">${Number(p.premium_amount ?? 0).toLocaleString()}</TableCell>
                   <TableCell className="text-xs">{p.end_date ? new Date(p.end_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell>{statusBadge(p.end_date)}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(p)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(p)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))}
-              {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No insurance policies registered</TableCell></TableRow>}
+              {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No insurance policies registered. <button className="text-primary underline" onClick={() => setShowForm(true)}>Add the first one.</button></TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

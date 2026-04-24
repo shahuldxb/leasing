@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import {
   Building2, Plus, Search, Phone, Mail, CreditCard,
   FileText, ChevronRight, MapPin, ArrowLeft
@@ -254,6 +255,14 @@ export default function LessorMaster() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <GenAIFillButton formType="lessor_contact" onFill={(data) => setContactForm(f => ({
+              ...f,
+              fullName: data.fullName ? String(data.fullName) : f.fullName,
+              jobTitle: data.jobTitle ? String(data.jobTitle) : f.jobTitle,
+              department: data.department ? String(data.department) : f.department,
+              email: data.email ? String(data.email) : f.email,
+              phonePrimary: data.phonePrimary ? String(data.phonePrimary) : f.phonePrimary,
+            }))} />
             <Button variant="outline" className="border-white/10 text-gray-400" onClick={() => setActiveForm(null)}>Cancel</Button>
             <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={contactMutation.isPending}
               onClick={() => contactMutation.mutate({
@@ -337,6 +346,14 @@ export default function LessorMaster() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <GenAIFillButton formType="lessor_bank" onFill={(data) => setBankForm(f => ({
+              ...f,
+              bankName: data.bankName ? String(data.bankName) : f.bankName,
+              accountName: data.accountName ? String(data.accountName) : f.accountName,
+              accountNumber: data.accountNumber ? String(data.accountNumber) : f.accountNumber,
+              iban: data.iban ? String(data.iban) : f.iban,
+              swiftCode: data.swiftCode ? String(data.swiftCode) : f.swiftCode,
+            }))} />
             <Button variant="outline" className="border-white/10 text-gray-400" onClick={() => setActiveForm(null)}>Cancel</Button>
             <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={bankMutation.isPending}
               onClick={() => bankMutation.mutate({
@@ -424,6 +441,11 @@ export default function LessorMaster() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <GenAIFillButton formType="lessor_note" onFill={(data) => setNoteForm(f => ({
+              ...f,
+              subject: data.subject ? String(data.subject) : f.subject,
+              noteText: data.noteText ? String(data.noteText) : f.noteText,
+            }))} />
             <Button variant="outline" className="border-white/10 text-gray-400" onClick={() => setActiveForm(null)}>Cancel</Button>
             <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={noteMutation.isPending}
               onClick={() => noteMutation.mutate({

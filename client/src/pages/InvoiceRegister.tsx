@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, PlusCircle, CheckCircle2, XCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const statusColor: Record<string, string> = {
   Pending: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -20,16 +21,19 @@ const statusColor: Record<string, string> = {
   Overdue: "bg-red-600/20 text-red-500 border-red-600/30",
 };
 
+const INIT = { leaseId: "", invoiceNo: "", invoiceDate: "", dueDate: "", amount: "", currency: "AED", description: "" };
+
 export default function InvoiceRegister() {
-  const [open, setOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const [form, setForm] = useState({ leaseId: "", invoiceNo: "", invoiceDate: "", dueDate: "", amount: "", currency: "USD", description: "" });
+  const [form, setForm] = useState(INIT);
 
   const { data: invoices = [], refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 50 });
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
 
   const createMutation = trpc.payables.createInvoice.useMutation({
-    onSuccess: () => { toast.success("Invoice created"); setOpen(false); refetch(); },
+    onSuccess: () => { toast.success("Invoice created"); setShowForm(false); refetch(); },
     onError: (e) => toast.error(e.message),
   });
   const approveMutation = trpc.payables.approveInvoice.useMutation({
@@ -37,7 +41,25 @@ export default function InvoiceRegister() {
     onError: (e) => toast.error(e.message),
   });
 
-  const handleCreate = () => {
+  function openEdit(inv: any) {
+    setEditRow(inv);
+    setForm({
+      leaseId: String(inv.contract_id ?? ""),
+      invoiceNo: inv.invoice_number ?? "",
+      invoiceDate: inv.invoice_date ? new Date(inv.invoice_date).toISOString().slice(0,10) : "",
+      dueDate: inv.due_date ? new Date(inv.due_date).toISOString().slice(0,10) : "",
+      amount: String(inv.gross_amount ?? inv.amount ?? ""),
+      currency: inv.currency ?? "AED",
+      description: inv.description ?? "",
+    });
+    setShowForm(true);
+  }
+  function handleDelete(inv: any) {
+    toast("Delete invoice " + inv.invoice_number + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.info("Invoice deletion requires admin approval") },
+    });
+  }
+  function handleCreate() {
     if (!form.leaseId || !form.invoiceNo || !form.amount) { toast.error("Fill required fields"); return; }
     const d = new Date(form.invoiceDate || new Date());
     createMutation.mutate({
@@ -52,57 +74,79 @@ export default function InvoiceRegister() {
       rentAmount: Number(form.amount),
       currency: form.currency,
     });
-  };
+  }
 
   const rows: any[] = Array.isArray(invoices) ? invoices : (invoices as any)?.invoices ?? [];
 
-  return (
-    <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="space-y-3">
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Invoice" : "New Invoice"}</h2>
+              <p className="text-xs text-muted-foreground">{editRow ? "Update invoice details" : "Create a new lease payment invoice"}</p>
+            </div>
+            <GenAIFillButton formType="payables" onFill={(data) => setForm(f => ({
+              ...f,
+              invoiceNo: data.invoiceNumber ? String(data.invoiceNumber) : f.invoiceNo,
+              amount: data.amount ? String(data.amount) : f.amount,
+              currency: data.currency ? String(data.currency) : f.currency,
+              dueDate: data.dueDate ? String(data.dueDate) : f.dueDate,
+              description: data.description ? String(data.description) : f.description,
+            }))} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
               <div>
-                <Label className="text-sm font-medium">Lease *</Label>
+                <Label>Lease *</Label>
                 <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
-                  <SelectContent>{(leases as any[]).map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {((leases as any)?.rows ?? []).map((l: any) => (
+                      <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Invoice No *</Label><Input className="mt-1" value={form.invoiceNo} onChange={e => setForm(f => ({ ...f, invoiceNo: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Currency</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Invoice No *</Label><Input className="mt-1" value={form.invoiceNo} onChange={e => setForm(f => ({ ...f, invoiceNo: e.target.value }))} /></div>
+                <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["USD","GHS","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-sm font-medium">Invoice Date</Label><Input type="date" className="mt-1" value={form.invoiceDate} onChange={e => setForm(f => ({ ...f, invoiceDate: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-                <div className="col-span-2"><Label className="text-sm font-medium">Amount *</Label><Input type="number" className="mt-1" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
-                <div className="col-span-2"><Label className="text-sm font-medium">Description</Label><Input className="mt-1" placeholder="Invoice description..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+                <div><Label>Invoice Date</Label><Input type="date" className="mt-1" value={form.invoiceDate} onChange={e => setForm(f => ({ ...f, invoiceDate: e.target.value }))} /></div>
+                <div><Label>Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+                <div className="col-span-2"><Label>Amount *</Label><Input type="number" className="mt-1" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+                <div className="col-span-2"><Label>Description</Label><Input className="mt-1" placeholder="Invoice description..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleCreate} disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Creating..." : "Create Invoice"}
+                </Button>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleCreate} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create Invoice"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLINVREG0001P001"
+          screenId="VFLINVREG0001P001"
+          title="Invoice Register"
+          subtitle="Lease payment invoices and approval queue"
           screenType="payables"
           onAIData={(rows) => setAiRows(rows)}
-  title="Invoice Register"
-  subtitle="Lease payment invoices and approval queue"
-/>
-
+          actions={<Button size="sm" onClick={() => { setForm(INIT); setShowForm(true); }} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />New Invoice</Button>}
+        />
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
@@ -118,35 +162,50 @@ export default function InvoiceRegister() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((inv: any) => (
-                <TableRow key={inv.invoice_id} className="text-sm hover:bg-muted/30">
+              {(aiRows.length > 0 ? aiRows : rows).map((inv: any, i: number) => (
+                <TableRow key={inv.invoice_id ?? i} className="text-sm hover:bg-muted/30">
                   <TableCell className="font-mono text-xs">{inv.invoice_number}</TableCell>
                   <TableCell className="font-mono text-xs">{inv.contract_ref}</TableCell>
                   <TableCell>{inv.lessor_name}</TableCell>
                   <TableCell>{inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}</TableCell>
-                  <TableCell className="text-right font-mono">{inv.currency} {Number(inv.gross_amount).toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono">{inv.currency} {Number(inv.gross_amount ?? inv.amount ?? 0).toLocaleString()}</TableCell>
                   <TableCell><Badge className={statusColor[inv.status] ?? ""}>{inv.status}</Badge></TableCell>
                   <TableCell>
-                    {inv.status === "Pending" && (
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="text-green-400 h-7 px-2" onClick={() => approveMutation.mutate({ invoiceId: inv.invoice_id, outcome: "Approved" })}>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-red-400 h-7 px-2" onClick={() => approveMutation.mutate({ invoiceId: inv.invoice_id, outcome: "Rejected" })}>
-                          <XCircle className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {inv.status === "Pending" && (
+                        <>
+                          <Button size="sm" variant="ghost" className="text-green-400 h-7 px-2" onClick={() => approveMutation.mutate({ invoiceId: inv.invoice_id, outcome: "Approved" })}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-red-400 h-7 px-2" onClick={() => approveMutation.mutate({ invoiceId: inv.invoice_id, outcome: "Rejected" })}>
+                            <XCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(inv)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(inv)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
-              {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No invoices found</TableCell></TableRow>}
+              {rows.length === 0 && aiRows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    No invoices found.{" "}
+                    <button className="text-primary underline" onClick={() => { setForm(INIT); setShowForm(true); }}>Create the first invoice.</button>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

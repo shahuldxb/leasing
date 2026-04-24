@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -35,6 +36,13 @@ export default function BudgetVariance() {
               <div><h2 className="text-lg font-semibold">New Budget Variance Entry</h2><p className="text-xs text-muted-foreground">Log budgeted vs actual amounts for a lease</p></div>
             </div>
             <div className="flex gap-2">
+              <GenAIFillButton formType="budget_variance" onFill={(data) => setForm(f => ({
+                ...f,
+                cost_centre: data.costCentre ? String(data.costCentre) : f.cost_centre,
+                budgeted_amount: data.budgetedAmount ? Number(data.budgetedAmount) : f.budgeted_amount,
+                actual_amount: data.actualAmount ? Number(data.actualAmount) : f.actual_amount,
+                notes: data.notes ? String(data.notes) : f.notes,
+              }))} />
               <Button variant="outline" onClick={() => setBvOpen(false)}>Cancel</Button>
               <Button disabled={save.isPending} onClick={() => save.mutate(form as any)}>{save.isPending ? "Saving..." : "Save"}</Button>
             </div>

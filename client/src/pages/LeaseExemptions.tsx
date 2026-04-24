@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function LeaseExemptions() {
   const [showForm, setShowForm] = useState(false);
@@ -33,6 +34,14 @@ export default function LeaseExemptions() {
               <h2 className="font-semibold text-lg">Add Lease Exemption</h2>
               <p className="text-sm text-muted-foreground">Record an IFRS 16 exemption for a short-term or low-value lease</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="new_lease"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          leaseName: data.leaseName ?? f.leaseName,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

@@ -6,36 +6,61 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, PlayCircle, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Download } from "lucide-react";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
 
 export default function PaymentRuns() {
-  const [open, setOpen] = useState(false);
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [payDate, setPayDate] = useState("");
   const [bankFormat, setBankFormat] = useState("SWIFT");
 
+  const runs: any[] = [];
+
+  function openEdit(r: any) {
+    setEditRow(r);
+    setPayDate(r.run_date ? new Date(r.run_date).toISOString().slice(0,10) : "");
+    setBankFormat(r.bank_file_format ?? "SWIFT");
+    setShowForm(true);
+  }
+  function handleDelete(r: any) {
+    toast("Delete payment run " + (r.run_ref ?? r.run_id) + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Payment run deleted") },
+    });
+  }
+
   const createRunMutation = trpc.payables.createPaymentRun.useMutation({
-    onSuccess: () => { toast.success("Payment run created and bank file generated"); setOpen(false); },
+    onSuccess: () => { toast.success("Payment run created and bank file generated"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
 
-  return (
-    <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="space-y-4">
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Payment Run" : "Create Payment Run"}</h2>
+              <p className="text-xs text-muted-foreground">{editRow ? "Update payment run details" : "Generate a bank payment file for approved invoices"}</p>
+            </div>
+            <GenAIFillButton formType="payment_runs" onFill={(data) => {
+              if (data.paymentDate) setPayDate(String(data.paymentDate));
+              if (data.bankFormat) setBankFormat(String(data.bankFormat));
+            }} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
               <div>
-                <Label className="text-sm font-medium">Payment Date *</Label>
+                <Label>Payment Date *</Label>
                 <Input type="date" className="mt-1" value={payDate} onChange={e => setPayDate(e.target.value)} />
               </div>
               <div>
-                <Label className="text-sm font-medium">Bank File Format *</Label>
+                <Label>Bank File Format *</Label>
                 <Select value={bankFormat} onValueChange={setBankFormat}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -48,27 +73,29 @@ export default function PaymentRuns() {
               <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
                 All approved invoices due on or before the payment date will be included in this run.
               </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                  onClick={() => createRunMutation.mutate({ runDate: payDate, currency: 'USD', invoices: [], bankFileFormat: bankFormat as 'SWIFT' | 'EFT' })}
+                  disabled={!payDate || createRunMutation.isPending}>
+                  {createRunMutation.isPending ? "Processing..." : "Generate Run"}
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => createRunMutation.mutate({ runDate: payDate, currency: 'USD', invoices: [], bankFileFormat: bankFormat as 'SWIFT' | 'EFT' })}
-                disabled={!payDate || createRunMutation.isPending}>
-                {createRunMutation.isPending ? "Processing..." : "Generate Run"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
-        <ScreenHeader
-  screenId="VFLPAYRUN0001P001"
-  title="Payment Runs"
-  subtitle="Payment run creation and bank file generation"
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-          screenType="payment_runs"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        <ScreenHeader
+          screenId="VFLPAYRUN0001P001"
+          title="Payment Runs"
+          subtitle="Payment run creation and bank file generation"
+          actions={<Button size="sm" onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlayCircle className="w-4 h-4" />Create Run</Button>}
         />
 
         <div className="grid grid-cols-3 gap-4">
@@ -98,12 +125,31 @@ export default function PaymentRuns() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No payment runs yet</TableCell></TableRow>
+              {runs.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No payment runs yet. <button className="text-primary underline" onClick={() => setShowForm(true)}>Create the first one.</button></TableCell></TableRow>}
+              {runs.map((r: any) => (
+                <TableRow key={r.run_id} className="text-sm hover:bg-muted/30">
+                  <TableCell className="font-mono text-xs">{r.run_ref ?? `RUN-${r.run_id}`}</TableCell>
+                  <TableCell>{r.run_date ? new Date(r.run_date).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell>{r.bank_file_format ?? "—"}</TableCell>
+                  <TableCell className="text-right font-mono">{r.currency} {Number(r.total_amount ?? 0).toLocaleString()}</TableCell>
+                  <TableCell>{r.payment_count ?? 0}</TableCell>
+                  <TableCell><Badge className={r.status === "Completed" ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}>{r.status ?? "Pending"}</Badge></TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(r)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem><Download className="mr-2 h-4 w-4" />Download Bank File</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(r)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

@@ -15,10 +15,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const INIT_FORM = {
   contract_id: "" as string | number,
@@ -33,7 +33,7 @@ const INIT_FORM = {
 export default function LeaseRenewals() {
   const [search, setSearch] = useState("");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ ...INIT_FORM });
 
@@ -41,11 +41,11 @@ export default function LeaseRenewals() {
   const { data: rows = [], isLoading } = trpc.leaseRenewal.list.useQuery({} as any);
 
   const createMut = trpc.leaseRenewal.create.useMutation({
-    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Record created"); setPanelOpen(false); },
+    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Record created"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
   const updateMut = trpc.leaseRenewal.update.useMutation({
-    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Updated"); setPanelOpen(false); },
+    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Updated"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
   const deleteMut = trpc.leaseRenewal.delete.useMutation({
@@ -62,7 +62,7 @@ export default function LeaseRenewals() {
   function openAdd() {
     setEditRow(null);
     setForm({ ...INIT_FORM });
-    setPanelOpen(true);
+    setShowForm(true);
   }
   function openEdit(row: any) {
     setEditRow(row);
@@ -75,7 +75,7 @@ export default function LeaseRenewals() {
       status: row.status ?? "",
       notes: row.notes ?? ""
       });
-    setPanelOpen(true);
+    setShowForm(true);
   }
   function handleSubmit() {
     const payload = {
@@ -94,25 +94,21 @@ export default function LeaseRenewals() {
     }
   }
 
-  return (
-    <DashboardLayout>
-      {panelOpen ? (
-        <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
+
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Record" : "Add New Record"}</h2>
+              <p className="text-xs text-muted-foreground">Fill in the details below</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
+              <div className="space-y-4">
           <div>
             <Label>Contract Id</Label>
             <Input type="number" value={form.contract_id ?? ""} onChange={e => setForm((f: any) => ({...f, contract_id: e.target.value}))} />
@@ -157,9 +153,22 @@ export default function LeaseRenewals() {
             <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
           </div>
         </div>
-      </SlidePanel>
-      ) : (
-        <div className="p-6 space-y-6">
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLLEASEREN0001P001"
           title="Lease Renewals"
@@ -227,7 +236,6 @@ export default function LeaseRenewals() {
           </CardContent>
         </Card>
       </div>
-      )}
     </DashboardLayout>
   );
 }

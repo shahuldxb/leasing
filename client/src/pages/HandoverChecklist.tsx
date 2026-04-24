@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function HandoverChecklist() {
   const [showForm, setShowForm] = useState(false);
@@ -34,6 +35,15 @@ export default function HandoverChecklist() {
               <h2 className="font-semibold text-lg">New Handover Checklist</h2>
               <p className="text-sm text-muted-foreground">Create a property handover inspection checklist</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="maintenance_ticket"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          title: data.title ?? f.title,
+                          description: data.description ?? f.description,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

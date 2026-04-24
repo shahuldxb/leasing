@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function MSCRegister() {
   const [showForm, setShowForm] = useState(false);
@@ -37,6 +38,19 @@ export default function MSCRegister() {
               <h2 className="font-semibold text-lg">{editItem ? "Edit Contract" : "New Master Contract"}</h2>
               <p className="text-sm text-muted-foreground">Register a master service or framework contract</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="msc_contract"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          mscRef: data.mscRef ?? f.mscRef,
+                          contractType: data.contractType ?? f.contractType,
+                          titleEn: data.titleEn ?? f.titleEn,
+                          partyAEn: data.partyAEn ?? f.partyAEn,
+                          partyBEn: data.partyBEn ?? f.partyBEn,
+                          effectiveDate: data.effectiveDate ?? f.effectiveDate,
+                          expiryDate: data.expiryDate ?? f.expiryDate,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

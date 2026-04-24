@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function LeaseDataQuality() {
   const [showForm, setShowForm] = useState(false);
@@ -37,6 +38,13 @@ export default function LeaseDataQuality() {
               <h2 className="font-semibold text-lg">Add Quality Rule</h2>
               <p className="text-sm text-muted-foreground">Define a new data quality validation rule</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="new_lease"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

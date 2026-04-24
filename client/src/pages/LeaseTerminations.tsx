@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function LeaseTerminations() {
   const [showForm, setShowForm] = useState(false);
@@ -35,6 +36,17 @@ export default function LeaseTerminations() {
               <h2 className="font-semibold text-lg">Initiate Lease Termination</h2>
               <p className="text-sm text-muted-foreground">Start the early termination process for a lease contract</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="lease_termination"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          terminationDate: data.terminationDate ?? f.terminationDate,
+                          terminationType: data.terminationType ?? f.terminationType,
+                          penaltyAmount: data.penaltyAmount ?? f.penaltyAmount,
+                          reason: data.reason ?? f.reason,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

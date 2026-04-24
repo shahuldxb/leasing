@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function BounceManagement() {
   const [showForm, setShowForm] = useState(false);
@@ -35,6 +36,14 @@ export default function BounceManagement() {
               <h2 className="font-semibold text-lg">Record Bounced Cheque</h2>
               <p className="text-sm text-muted-foreground">Register a returned/bounced cheque and calculate penalties</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="security_deposit"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          amount: data.depositAmount ?? f.amount,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

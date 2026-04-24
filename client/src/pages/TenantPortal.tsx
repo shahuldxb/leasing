@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function TenantPortal() {
   const [showForm, setShowForm] = useState(false);
@@ -38,6 +39,16 @@ export default function TenantPortal() {
               <h2 className="font-semibold text-lg">New Tenant Request</h2>
               <p className="text-sm text-muted-foreground">Submit a maintenance, document, or service request</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="sub_lease"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          subtenantName: data.subTenantName ?? f.subtenantName,
+                          startDate: data.startDate ?? f.startDate,
+                          endDate: data.endDate ?? f.endDate,
+                          monthlyRent: data.monthlyRent ?? f.monthlyRent,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

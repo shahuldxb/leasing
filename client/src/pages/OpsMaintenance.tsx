@@ -7,28 +7,35 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, PlusCircle } from "lucide-react";
+import { ArrowLeft, Wrench, PlusCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
-import SlidePanel from "@/components/SlidePanel";
 
 const TICKET_TYPES = ["Routine Maintenance","Major Repair","Emergency","Structural","HVAC/Power","Cleaning","Security","Compliance Inspection"];
 const RESPONSIBILITY = ["Vodafone","Lessor","Shared"];
 
 export default function OpsMaintenance() {
-  const [open, setOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ leaseId: "", ticketType: "", description: "", responsibility: "Lessor", priority: "Normal", estimatedCost: "" });
 
+  function openAdd() { setEditRow(null); setForm({ leaseId: "", ticketType: "", description: "", responsibility: "Lessor", priority: "Normal", estimatedCost: "" }); setShowForm(true); }
+  function openEdit(t: any) {
+    setEditRow(t);
+    setForm({ leaseId: String(t.contract_id ?? ""), ticketType: t.ticket_type ?? "", description: t.description ?? "", responsibility: t.responsibility ?? "Lessor", priority: t.priority ?? "Normal", estimatedCost: String(t.estimated_cost ?? "") });
+    setShowForm(true);
+  }
+  function handleDelete(t: any) {
+    toast("Delete ticket " + (t.ticket_ref ?? t.ticket_id) + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Ticket deleted") },
+    });
+  }
+
   const { data: tickets = [], refetch } = trpc.lease.getMaintenanceTickets.useQuery({});
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
-
-  const utils = trpc.useUtils();
-  const submitMut = trpc.lease.submitForApproval.useMutation({
-    onSuccess: () => { utils.lease.getMaintenanceTickets.invalidate(); toast.success("Submitted"); },
-    onError: (e) => toast.error(e.message),
-  });
 
   const rows: any[] = Array.isArray(tickets) ? tickets : (tickets as any)?.tickets ?? [];
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
@@ -40,66 +47,80 @@ export default function OpsMaintenance() {
     return "bg-muted text-muted-foreground";
   };
 
-  return (
-    <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="maintenance_ticket" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.asset_type !== undefined) setForm(f => ({ ...f, asset_type: data.asset_type as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div>
-            <div className="space-y-3">
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Maintenance Ticket" : "Raise Maintenance Ticket"}</h2>
+              <p className="text-xs text-muted-foreground">{editRow ? "Update ticket details" : "Log a new maintenance or repair request"}</p>
+            </div>
+            <GenAIFillButton formType="maintenance_ticket" onFill={(data) => {
+              if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any }));
+              if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any }));
+              if (data.ticketType !== undefined) setForm(f => ({ ...f, ticketType: data.ticketType as any }));
+            }} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
               <div>
-                <Label className="text-sm font-medium">Lease *</Label>
+                <Label>Lease *</Label>
                 <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
                   <SelectContent>{leaseList.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium">Ticket Type</Label>
+                  <Label>Ticket Type</Label>
                   <Select value={form.ticketType} onValueChange={v => setForm(f => ({ ...f, ticketType: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>{TICKET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Responsibility</Label>
+                  <Label>Responsibility</Label>
                   <Select value={form.responsibility} onValueChange={v => setForm(f => ({ ...f, responsibility: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>{RESPONSIBILITY.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
-              <div><Label className="text-sm font-medium">Description</Label><Input className="mt-1" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div><Label>Description</Label><Input className="mt-1" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium">Priority</Label>
+                  <Label>Priority</Label>
                   <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>{["Low","Normal","High","Critical"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-sm font-medium">Estimated Cost ($)</Label><Input type="number" className="mt-1" value={form.estimatedCost} onChange={e => setForm(f => ({ ...f, estimatedCost: e.target.value }))} /></div>
+                <div><Label>Estimated Cost ($)</Label><Input type="number" className="mt-1" value={form.estimatedCost} onChange={e => setForm(f => ({ ...f, estimatedCost: e.target.value }))} /></div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => { toast.success("Ticket raised"); setShowForm(false); refetch(); }}>Raise Ticket</Button>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => { toast.success("Ticket raised"); setOpen(false); refetch(); }}>Raise Ticket</Button>
-            </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLOPSMNT0001P001"
+          screenId="VFLOPSMNT0001P001"
           screenType="maintenance"
           onAIData={(rows) => setAiRows(rows)}
-  title="Asset Maintenance"
-  subtitle="Maintenance ticket register and repair tracking"
-/>
+          title="Asset Maintenance"
+          subtitle="Maintenance ticket register and repair tracking"
+          actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />Raise Ticket</Button>}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           {[
@@ -126,6 +147,7 @@ export default function OpsMaintenance() {
                 <TableHead className="text-xs">Priority</TableHead>
                 <TableHead className="text-xs text-right">Est. Cost</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -142,14 +164,22 @@ export default function OpsMaintenance() {
                   <TableCell>{t.priority}</TableCell>
                   <TableCell className="text-right font-mono text-xs">{t.estimated_cost ? `$${Number(t.estimated_cost).toLocaleString()}` : "—"}</TableCell>
                   <TableCell><Badge className={statusColor(t.status)}>{t.status}</Badge></TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(t)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(t)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))}
-              {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No maintenance tickets</TableCell></TableRow>}
+              {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No maintenance tickets. <button className="text-primary underline" onClick={() => setShowForm(true)}>Raise the first one.</button></TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

@@ -15,25 +15,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
-const INIT_FORM = {
-  name: "",
-  license_no: "",
-  contact_email: "",
-  contact_phone: "",
-  commission_pct: "" as string | number,
-  status: "",
-  notes: ""
-};
+const INIT_FORM = { name: "", license_no: "", contact_email: "", contact_phone: "", commission_pct: "" as string | number, status: "", notes: "" };
 
 export default function BrokerManagement() {
   const [search, setSearch] = useState("");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ ...INIT_FORM });
 
@@ -41,11 +33,11 @@ export default function BrokerManagement() {
   const { data: rows = [], isLoading } = trpc.broker.list.useQuery({} as any);
 
   const createMut = trpc.broker.create.useMutation({
-    onSuccess: () => { utils.broker.list.invalidate(); toast.success("Record created"); setPanelOpen(false); },
+    onSuccess: () => { utils.broker.list.invalidate(); toast.success("Record created"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
   const updateMut = trpc.broker.update.useMutation({
-    onSuccess: () => { utils.broker.list.invalidate(); toast.success("Updated"); setPanelOpen(false); },
+    onSuccess: () => { utils.broker.list.invalidate(); toast.success("Updated"); setShowForm(false); },
     onError: (e) => toast.error(e.message),
   });
   const deleteMut = trpc.broker.delete.useMutation({
@@ -53,153 +45,124 @@ export default function BrokerManagement() {
     onError: (e) => toast.error(e.message),
   });
 
-
   const displayRows = aiRows.length > 0 ? aiRows : (rows as any[]);
   const filtered = displayRows.filter((r: any) =>
     !search || Object.values(r).some(v => String(v).toLowerCase().includes(search.toLowerCase()))
   );
 
-  function openAdd() {
-    setEditRow(null);
-    setForm({ ...INIT_FORM });
-    setPanelOpen(true);
-  }
+  function openAdd() { setEditRow(null); setForm({ ...INIT_FORM }); setShowForm(true); }
   function openEdit(row: any) {
     setEditRow(row);
-    setForm({
-      name: row.name ?? "",
-      license_no: row.license_no ?? "",
-      contact_email: row.contact_email ?? "",
-      contact_phone: row.contact_phone ?? "",
-      commission_pct: row.commission_pct ?? "",
-      status: row.status ?? "",
-      notes: row.notes ?? ""
-      });
-    setPanelOpen(true);
+    setForm({ name: row.name ?? "", license_no: row.license_no ?? "", contact_email: row.contact_email ?? "", contact_phone: row.contact_phone ?? "", commission_pct: row.commission_pct ?? "", status: row.status ?? "", notes: row.notes ?? "" });
+    setShowForm(true);
   }
   function handleSubmit() {
-    const payload = {
-      name: form.name as any,
-      license_no: form.license_no as any,
-      contact_email: form.contact_email as any,
-      contact_phone: form.contact_phone as any,
-      commission_pct: form.commission_pct ? Number(form.commission_pct) : undefined,
-      status: form.status as any,
-      notes: form.notes as any
-      };
-    if (editRow) {
-            updateMut.mutate({ broker_id: editRow.broker_id, ...payload } as any);
-    } else {
-      createMut.mutate(payload as any);
-    }
+    const payload = { name: form.name, license_no: form.license_no, contact_email: form.contact_email, contact_phone: form.contact_phone, commission_pct: form.commission_pct ? Number(form.commission_pct) : undefined, status: form.status, notes: form.notes };
+    if (editRow) { updateMut.mutate({ broker_id: editRow.broker_id, ...payload } as any); }
+    else { createMut.mutate(payload as any); }
+  }
+
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">{editRow ? "Edit Broker" : "Add New Broker"}</h2>
+              <p className="text-xs text-muted-foreground">Fill in the broker details below</p>
+            </div>
+            <GenAIFillButton formType="broker" onFill={(data) => setForm((f: any) => ({
+              ...f,
+              name: data.brokerName ? String(data.brokerName) : f.name,
+              license_no: data.licenseNumber ? String(data.licenseNumber) : f.license_no,
+              contact_email: data.email ? String(data.email) : f.contact_email,
+              contact_phone: data.phone ? String(data.phone) : f.contact_phone,
+              commission_pct: data.commissionRate ?? f.commission_pct,
+              notes: data.notes ? String(data.notes) : f.notes,
+            }))} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
+              <div><Label>Name</Label><Input className="mt-1" value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} /></div>
+              <div><Label>License No</Label><Input className="mt-1" value={form.license_no} onChange={e => setForm((f: any) => ({ ...f, license_no: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Contact Email</Label><Input type="email" className="mt-1" value={form.contact_email} onChange={e => setForm((f: any) => ({ ...f, contact_email: e.target.value }))} /></div>
+                <div><Label>Contact Phone</Label><Input className="mt-1" value={form.contact_phone} onChange={e => setForm((f: any) => ({ ...f, contact_phone: e.target.value }))} /></div>
+              </div>
+              <div><Label>Commission %</Label><Input type="number" className="mt-1" value={form.commission_pct} onChange={e => setForm((f: any) => ({ ...f, commission_pct: e.target.value }))} /></div>
+              <div>
+                <Label>Status</Label>
+                <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({ ...f, status: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                    <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Notes</Label><Textarea className="mt-1" value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} rows={3} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
+                  {createMut.isPending || updateMut.isPending ? "Saving..." : editRow ? "Update" : "Create"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
     <DashboardLayout>
-      {panelOpen ? (
-        <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Name</Label>
-            <Input type="text" value={form.name ?? ""} onChange={e => setForm((f: any) => ({...f, name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>License No</Label>
-            <Input type="text" value={form.license_no ?? ""} onChange={e => setForm((f: any) => ({...f, license_no: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input type="email" value={form.contact_email ?? ""} onChange={e => setForm((f: any) => ({...f, contact_email: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input type="text" value={form.contact_phone ?? ""} onChange={e => setForm((f: any) => ({...f, contact_phone: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Commission Pct</Label>
-            <Input type="number" value={form.commission_pct ?? ""} onChange={e => setForm((f: any) => ({...f, commission_pct: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                  <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
-      ) : (
-        <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLBROKERMA0001P001"
           title="Broker Management"
           subtitle="Manage broker management records"
           screenType="broker"
           onAIData={(r) => setAiRows(r)}
-          actions={<Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" />Add New</Button>}
+          actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><Plus className="w-4 h-4" />Add New</Button>}
         />
-
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
         </div>
-
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                <TableHead className="text-xs">Broker Code</TableHead>
-                <TableHead className="text-xs">Name</TableHead>
-                <TableHead className="text-xs">License No</TableHead>
-                <TableHead className="text-xs">Contact Email</TableHead>
-                <TableHead className="text-xs">Commission Pct</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Broker Code</TableHead>
+                    <TableHead className="text-xs">Name</TableHead>
+                    <TableHead className="text-xs">License No</TableHead>
+                    <TableHead className="text-xs">Contact Email</TableHead>
+                    <TableHead className="text-xs">Commission %</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
                     <TableHead className="text-xs">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading && aiRows.length === 0 ? (
                     Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        {Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
-                      </TableRow>
+                      <TableRow key={i}>{Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
                     ))
                   ) : filtered.length === 0 ? (
                     <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No records found. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
                   ) : (
                     filtered.map((row: any, i: number) => (
                       <TableRow key={row.broker_id ?? i} className="hover:bg-muted/20">
-                    <TableCell>{row.broker_code ?? "—"}</TableCell>
-                    <TableCell>{row.name ?? "—"}</TableCell>
-                    <TableCell>{row.license_no ?? "—"}</TableCell>
-                    <TableCell>{row.contact_email ?? "—"}</TableCell>
-                    <TableCell>{row.commission_pct ?? "—"}</TableCell>
-                    <TableCell>{row.status ?? "—"}</TableCell>
+                        <TableCell>{row.broker_code ?? "—"}</TableCell>
+                        <TableCell>{row.name ?? "—"}</TableCell>
+                        <TableCell>{row.license_no ?? "—"}</TableCell>
+                        <TableCell>{row.contact_email ?? "—"}</TableCell>
+                        <TableCell>{row.commission_pct ?? "—"}</TableCell>
+                        <TableCell><Badge variant="outline">{row.status ?? "—"}</Badge></TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -218,7 +181,6 @@ export default function BrokerManagement() {
           </CardContent>
         </Card>
       </div>
-      )}
     </DashboardLayout>
   );
 }

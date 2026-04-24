@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function FurnitureCollectionDetail() {
   const [, params] = useRoute("/furniture-collection/:id");
@@ -43,6 +44,20 @@ export default function FurnitureCollectionDetail() {
               <h2 className="font-semibold text-lg">{editItem ? "Edit Item" : "Add Item"}</h2>
               <p className="text-sm text-muted-foreground">Collection: {collection?.collection_name}</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="furnished_asset"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          assetName: data.assetName ?? f.assetName,
+                          assetCategory: data.assetCategory ?? f.assetCategory,
+                          brand: data.brand ?? f.brand,
+                          model: data.model ?? f.model,
+                          serialNumber: data.serialNumber ?? f.serialNumber,
+                          conditionAtHandover: data.conditionAtHandover ?? f.conditionAtHandover,
+                          estimatedValue: data.estimatedValue ?? f.estimatedValue,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

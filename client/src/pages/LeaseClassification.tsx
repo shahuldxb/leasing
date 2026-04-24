@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Plus, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 const CRITERIA_IFRS16 = ["ownership_transfer","purchase_option","major_part_of_life","substantially_all_fv","specialised_asset"];
 const CRITERIA_ASC842 = ["ownership_transfer","purchase_option","major_part_of_life","substantially_all_fv","specialised_asset"];
@@ -37,7 +38,12 @@ export default function LeaseClassification() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
-              <div><h2 className="text-lg font-semibold">Classify Lease</h2><p className="text-xs text-muted-foreground">Apply IFRS 16 / ASC 842 classification criteria</p></div>
+              <div><h2 className="text-lg font-semibold">Classify Lease</h2><p className="text-xs text-muted-foreground">Apply IFRS 16 / ASC 842 classification criteria</p>
+          </div>
+          <div className="ml-auto"><GenAIFillButton
+              formType="new_lease"
+              onFill={(data) => { if (data.notes) setNotes(data.notes); }}
+            /></div>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>

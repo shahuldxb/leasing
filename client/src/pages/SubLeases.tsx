@@ -6,15 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function SubLeases() {
   const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openAdd() { setEditRow(null); setForm({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" }); setShowForm(true); }
+  function openEdit(s: any) {
+    setEditRow(s);
+    setForm({ parentContractId: String(s.parent_contract_id ?? s.head_lease_contract_id ?? ""), subtenantName: s.subtenant_name ?? s.sublessee_name ?? "", startDate: s.start_date ? new Date(s.start_date).toISOString().slice(0,10) : "", endDate: s.end_date ? new Date(s.end_date).toISOString().slice(0,10) : "", monthlyRent: String(s.monthly_rent ?? s.monthly_income ?? ""), currency: s.currency ?? "AED" });
+    setShowForm(true);
+  }
+  function handleDelete(s: any) {
+    toast("Delete sub-lease for " + (s.subtenant_name ?? s.sublessee_name) + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Sub-lease deleted") },
+    });
+  }
 
   const { data: subleases = [], refetch } = trpc.subLease.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
@@ -30,9 +44,20 @@ export default function SubLeases() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">New Sub-Lease</h2>
-              <p className="text-sm text-muted-foreground">Create a sub-lease arrangement under a master lease contract</p>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Sub-Lease" : "New Sub-Lease"}</h2>
+              <p className="text-sm text-muted-foreground">{editRow ? "Update sub-lease details" : "Create a sub-lease arrangement under a master lease contract"}</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="sub_lease"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          subtenantName: data.subTenantName ?? f.subtenantName,
+                          startDate: data.startDate ?? f.startDate,
+                          endDate: data.endDate ?? f.endDate,
+                          monthlyRent: data.monthlyRent ?? f.monthlyRent,
+                          currency: data.currency ?? f.currency,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">
@@ -79,12 +104,12 @@ export default function SubLeases() {
           subtitle="Sub-lease arrangements and subletting management"
           screenType="sub_leases"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Parent Contract</TableHead><TableHead>Subtenant</TableHead><TableHead>Start Date</TableHead><TableHead>End Date</TableHead><TableHead>Monthly Rent</TableHead><TableHead>Status</TableHead>
+              <TableHead>Parent Contract</TableHead><TableHead>Subtenant</TableHead><TableHead>Start Date</TableHead><TableHead>End Date</TableHead><TableHead>Monthly Rent</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(subleases as any[]).map((s: any) => (
@@ -95,6 +120,10 @@ export default function SubLeases() {
                   <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell>{s.currency} {Number(s.monthly_rent).toLocaleString()}</TableCell>
                   <TableCell><Badge className={s.status === "Active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>{s.status}</Badge></TableCell>
+                  <TableCell className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(s)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(s)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(subleases as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No sub-leases recorded</TableCell></TableRow>}

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -26,7 +25,6 @@ const FREQ_OPTIONS = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
 export default function NewLease() {
   const [step, setStep] = useState(1);
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [, setLocation] = useLocation();
 
   // Step 1 — Lessor
@@ -122,8 +120,41 @@ export default function NewLease() {
   title="New Lease Origination"
   subtitle="IFRS 16 compliant lease creation wizard"
 
-          screenType="new_lease"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+          formType="new_lease"
+          onAIFormFill={(data) => {
+            // Map AI response keys → form state setters
+            setLessor(l => ({
+              ...l,
+              name:          data.lessorName          ?? l.name,
+              contactPerson: data.lessorContact        ?? l.contactPerson,
+              email:         data.lessorEmail          ?? l.email,
+              phone:         data.lessorPhone          ?? l.phone,
+              address:       data.propertyAddress      ?? l.address,
+              country:       data.country              ?? l.country,
+              taxId:         data.taxId                ?? l.taxId,
+            }));
+            setAsset(a => ({
+              ...a,
+              assetType: data.assetClass ?? a.assetType,
+              assetName: data.leaseName  ?? a.assetName,
+              location:  data.city       ?? a.location,
+              country:   data.country    ?? a.country,
+            }));
+            setFinancial(f => ({
+              ...f,
+              commencementDate: data.commencementDate  ?? f.commencementDate,
+              endDate:          data.expiryDate         ?? f.endDate,
+              currency:         data.currency           ?? f.currency,
+              rentAmount:       data.monthlyRent        ?? f.rentAmount,
+              paymentFrequency: data.rentFrequency === "MONTHLY" ? "Monthly"
+                               : data.rentFrequency === "QUARTERLY" ? "Quarterly"
+                               : data.rentFrequency === "ANNUALLY" ? "Annual"
+                               : f.paymentFrequency,
+              securityDeposit:  data.depositAmount      ?? f.securityDeposit,
+              discountRate:     data.discountRate        ?? f.discountRate,
+              escalationRate:   data.escalationRate      ?? f.escalationRate,
+            }));
+          }}
         />
 
         {/* Step Indicator */}

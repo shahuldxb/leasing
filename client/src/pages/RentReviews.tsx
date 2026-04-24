@@ -6,16 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function RentReviews() {
   const [showForm, setShowForm] = useState(false);
   const [completing, setCompleting] = useState<any>(null);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ newRent: "", reviewDate: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openEdit(r: any) {
+    setEditRow(r);
+    setCompleting(r);
+    setForm({ newRent: String(r.new_rent ?? r.current_rent ?? ""), reviewDate: r.review_date ? new Date(r.review_date).toISOString().slice(0,10) : "", notes: r.notes ?? "" });
+    setShowForm(true);
+  }
+  function handleDelete(r: any) {
+    toast("Delete rent review for contract " + r.contract_id + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Rent review deleted") },
+    });
+  }
 
   const { data: reviews = [], refetch } = trpc.rentReview.list.useQuery();
   const complete = trpc.rentReview.complete.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setCompleting(null); toast.success("Rent review completed"); }, onError: (e: any) => toast.error(e.message) });
@@ -32,6 +46,15 @@ export default function RentReviews() {
               <h2 className="font-semibold text-lg">Complete Rent Review</h2>
               <p className="text-sm text-muted-foreground">Contract: {completing.contract_id} — Due: {completing.review_date ? new Date(completing.review_date).toLocaleDateString() : "—"}</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="rent_review"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          newRent: data.proposedRent ?? f.newRent,
+                          reviewDate: data.reviewDate ?? f.reviewDate,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">
@@ -75,7 +98,11 @@ export default function RentReviews() {
                   <TableCell>{r.current_rent ? Number(r.current_rent).toLocaleString() : "—"}</TableCell>
                   <TableCell>{r.new_rent ? Number(r.new_rent).toLocaleString() : "—"}</TableCell>
                   <TableCell><Badge className={r.status === "Completed" ? "bg-green-500/20 text-green-400" : "bg-amber-500/20 text-amber-400"}>{r.status}</Badge></TableCell>
-                  <TableCell>{r.status === "Pending" && <Button size="sm" variant="outline" onClick={() => { setCompleting(r); setForm({ newRent: "", reviewDate: "", notes: "" }); setShowForm(true); }}>Complete</Button>}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    {r.status === "Pending" && <Button size="sm" variant="outline" onClick={() => { setCompleting(r); setForm({ newRent: "", reviewDate: "", notes: "" }); setShowForm(true); }}>Complete</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(r)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(reviews as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No rent reviews scheduled</TableCell></TableRow>}

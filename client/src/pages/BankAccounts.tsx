@@ -6,71 +6,87 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Building2, PlusCircle } from "lucide-react";
+import { ArrowLeft, Building2, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
+
+const INIT = { bankName: "", accountName: "", accountNumber: "", currency: "USD", branchCode: "", swiftCode: "", accountType: "Current" };
 
 export default function BankAccounts() {
-  const [open, setOpen] = useState(false);
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const [form, setForm] = useState({ bankName: "", accountName: "", accountNumber: "", currency: "USD", branchCode: "", swiftCode: "", accountType: "Current" });
+  const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
+  const [form, setForm] = useState(INIT);
 
-  const { data: accounts = [], refetch } = trpc.bankRecon.listAccounts.useQuery({});
-  const createMutation = trpc.bankRecon.createAccount.useMutation({
-    onSuccess: () => { toast.success("Bank account created"); setOpen(false); refetch(); },
+  const { data: accountsData, refetch } = trpc.bankRecon.listAccounts.useQuery({});
+  const createMut = trpc.bankRecon.createAccount.useMutation({
+    onSuccess: () => { toast.success("Bank account created"); setShowForm(false); refetch(); },
     onError: (e) => toast.error(e.message),
   });
 
-  const rows: any[] = Array.isArray(accounts) ? accounts : [];
+  const rows: any[] = (accountsData as any)?.accounts ?? [];
+
+  function openAdd() { setEditRow(null); setForm(INIT); setShowForm(true); }
+
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-[#161616] shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">Add Bank Account</h2>
+              <p className="text-xs text-muted-foreground">Register a new bank account for payment processing</p>
+            </div>
+            <GenAIFillButton formType="bank_reconciliation" onFill={(data) => setForm(f => ({ ...f,
+              bankName: data.bankName ? String(data.bankName) : f.bankName,
+              accountName: data.accountName ? String(data.accountName) : f.accountName,
+              swiftCode: data.swiftCode ? String(data.swiftCode) : f.swiftCode,
+              accountNumber: data.accountNumber ? String(data.accountNumber) : f.accountNumber,
+            }))} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="max-w-2xl mx-auto space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2"><Label>Bank Name *</Label><Input className="mt-1" value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} /></div>
+                <div className="col-span-2"><Label>Account Name *</Label><Input className="mt-1" value={form.accountName} onChange={e => setForm(f => ({ ...f, accountName: e.target.value }))} /></div>
+                <div><Label>Account Number *</Label><Input className="mt-1" value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} /></div>
+                <div><Label>Currency</Label>
+                  <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["USD","AED","EUR","GBP","ZAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Branch Code</Label><Input className="mt-1" value={form.branchCode} onChange={e => setForm(f => ({ ...f, branchCode: e.target.value }))} /></div>
+                <div><Label>SWIFT Code</Label><Input className="mt-1" value={form.swiftCode} onChange={e => setForm(f => ({ ...f, swiftCode: e.target.value }))} /></div>
+                <div><Label>Account Type</Label>
+                  <Select value={form.accountType} onValueChange={v => setForm(f => ({ ...f, accountType: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["Current","Savings","Call"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                  onClick={() => createMut.mutate({ bankName: form.bankName, accountName: form.accountName, accountNumber: form.accountNumber, currency: form.currency, swiftBic: form.swiftCode, accountType: form.accountType })}
+                  disabled={createMut.isPending}>
+                  {createMut.isPending ? "Creating..." : "Create Account"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      {open && (
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><Label className="text-sm font-medium">Bank Name *</Label><Input className="mt-1" value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} /></div>
-              <div className="col-span-2"><Label className="text-sm font-medium">Account Name *</Label><Input className="mt-1" value={form.accountName} onChange={e => setForm(f => ({ ...f, accountName: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Account Number *</Label><Input className="mt-1" value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Currency</Label>
-                <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["USD","GHS","EUR","GBP","ZAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label className="text-sm font-medium">Branch Code</Label><Input className="mt-1" value={form.branchCode} onChange={e => setForm(f => ({ ...f, branchCode: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">SWIFT Code</Label><Input className="mt-1" value={form.swiftCode} onChange={e => setForm(f => ({ ...f, swiftCode: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Account Type</Label>
-                <Select value={form.accountType} onValueChange={v => setForm(f => ({ ...f, accountType: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Current","Savings","Call"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => createMutation.mutate({ bankName: form.bankName, accountName: form.accountName, accountNumber: form.accountNumber, currency: form.currency, swiftBic: form.swiftCode, accountType: form.accountType })}
-                disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create Account"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
-      )}
-      {!open && (
-        <div className="p-6 space-y-6">
-        <ScreenHeader
-  screenId="VFLBNKACC0001P001"
-  title="Bank Accounts"
-  subtitle="Registered bank accounts for payment processing"
-
-          screenType="bank_accounts"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+      <div className="p-6 space-y-6">
+        <ScreenHeader screenId="VFLBNKACC0001P001" title="Bank Accounts" subtitle="Registered bank accounts for payment processing"
+          actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />Add Account</Button>}
         />
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rows.map((acc: any) => (
             <div key={acc.account_id} className="bg-card border border-border rounded-xl p-5 space-y-3">
@@ -89,17 +105,25 @@ export default function BankAccounts() {
                 <span>SWIFT: {acc.swift_code ?? "—"}</span>
                 <span>{acc.account_type}</span>
               </div>
+              <div className="flex gap-2 pt-2 border-t border-border">
+                <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={() => { setEditRow(acc); setForm({ bankName: acc.bank_name, accountName: acc.account_name, accountNumber: acc.account_number, currency: acc.currency, branchCode: acc.branch_code ?? "", swiftCode: acc.swift_bic ?? "", accountType: acc.account_type }); setShowForm(true); }}>
+                  <Pencil className="w-3 h-3" />Edit
+                </Button>
+                <Button size="sm" variant="outline" className="text-red-400 border-red-400/30 hover:bg-red-500/10 gap-1 text-xs" onClick={() => { if (confirm('Delete this bank account?')) toast.info('Delete coming soon'); }}>
+                  <Trash2 className="w-3 h-3" />Delete
+                </Button>
+              </div>
             </div>
           ))}
           {rows.length === 0 && (
             <div className="col-span-3 text-center py-12 text-muted-foreground">
               <Building2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>No bank accounts registered yet</p>
+              <p>No bank accounts registered yet.</p>
+              <button className="text-primary underline mt-2" onClick={openAdd}>Add the first one.</button>
             </div>
           )}
         </div>
-        </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function HedgeAccounting() {
   const [showForm, setShowForm] = useState(false);
@@ -36,6 +37,17 @@ export default function HedgeAccounting() {
               <h2 className="font-semibold text-lg">New Hedge Designation</h2>
               <p className="text-sm text-muted-foreground">Designate a new hedging relationship under IFRS 9</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="hedge"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          instrument: data.instrumentType ?? f.instrument,
+                          notionalAmount: data.notionalAmount ?? f.notionalAmount,
+                          startDate: data.startDate ?? f.startDate,
+                          endDate: data.maturityDate ?? f.endDate,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

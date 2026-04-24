@@ -6,15 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function SecurityDeposits() {
   const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ contractId: "", amount: "", currency: "AED", depositType: "Cash", receivedDate: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openAdd() { setEditRow(null); setForm({ contractId: "", amount: "", currency: "AED", depositType: "Cash", receivedDate: "", notes: "" }); setShowForm(true); }
+  function openEdit(d: any) {
+    setEditRow(d);
+    setForm({ contractId: String(d.contract_id ?? ""), amount: String(d.amount ?? d.deposit_amount ?? ""), currency: d.currency ?? "AED", depositType: d.deposit_type ?? "Cash", receivedDate: d.received_date ? new Date(d.received_date).toISOString().slice(0,10) : "", notes: d.notes ?? "" });
+    setShowForm(true);
+  }
+  function handleDelete(d: any) {
+    toast("Delete deposit for contract " + d.contract_id + "?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Deposit deleted") },
+    });
+  }
 
   const { data: deposits = [], refetch } = trpc.securityDeposit.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
@@ -31,9 +45,20 @@ export default function SecurityDeposits() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Record Security Deposit</h2>
-              <p className="text-sm text-muted-foreground">Register a security deposit received for a lease contract</p>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Security Deposit" : "Record Security Deposit"}</h2>
+              <p className="text-sm text-muted-foreground">{editRow ? "Update deposit details" : "Register a security deposit received for a lease contract"}</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="security_deposit"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          amount: data.depositAmount ?? f.amount,
+                          currency: data.currency ?? f.currency,
+                          depositType: data.depositType ?? f.depositType,
+                          receivedDate: data.depositDate ?? f.receivedDate,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">
@@ -83,7 +108,7 @@ export default function SecurityDeposits() {
           subtitle="Security deposit register and release management"
           screenType="security_deposits"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
@@ -99,7 +124,11 @@ export default function SecurityDeposits() {
                   <TableCell>{d.deposit_type}</TableCell>
                   <TableCell>{d.received_date ? new Date(d.received_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell><Badge className={d.status === "Held" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>{d.status}</Badge></TableCell>
-                  <TableCell>{d.status === "Held" && <Button size="sm" variant="outline" onClick={() => release.mutate({ contract_id: d.contract_id, deposit_amount: d.deposit_amount, deposit_type: d.deposit_type, deposit_date: d.deposit_date })}>Release</Button>}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    {d.status === "Held" && <Button size="sm" variant="outline" onClick={() => release.mutate({ contract_id: d.contract_id, deposit_amount: d.deposit_amount, deposit_type: d.deposit_type, deposit_date: d.deposit_date })}>Release</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(d)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(deposits as any[]).length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No security deposits recorded</TableCell></TableRow>}

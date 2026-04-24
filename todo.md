@@ -511,3 +511,177 @@
 - [x] Fix ScreenHeader: add formType+onAIFormFill props for form-fill mode alongside existing screenType+onAIData
 - [x] Fix NewLease: wire onAIFormFill to set lessor/asset/financial form state
 - [x] Fix all other form pages: wire onAIFormFill to their form state setters
+
+---
+
+## UI ARCHITECTURE FIX — PHASE (Added Apr 24)
+
+### FUNDAMENTAL RULE: Left = Sidebar Menu, Right = Full Inline Screen. NO modals/popups/overlays.
+
+### CATEGORY 1 — Convert SlidePanel → Inline Screen (20 pages)
+SlidePanel is a slide-over overlay. Replace with showForm inline pattern:
+- showForm=true → full right-side form screen (sidebar stays visible)
+- showForm=false → full right-side list/table screen (sidebar stays visible)
+
+- [ ] APIWebhookConfig.tsx — convert SlidePanel to inline form screen
+- [ ] BankAccounts.tsx — convert SlidePanel to inline form screen
+- [ ] BankRules.tsx — convert SlidePanel to inline form screen
+- [ ] BrokerManagement.tsx — convert SlidePanel to inline form screen
+- [ ] ContractMilestones.tsx — convert SlidePanel to inline form screen
+- [ ] DeskBooking.tsx — convert SlidePanel to inline form screen
+- [ ] ESignatureIntegration.tsx — convert SlidePanel to inline form screen
+- [ ] FacilitiesWorkOrders.tsx — convert SlidePanel to inline form screen
+- [ ] InvoiceRegister.tsx — convert SlidePanel to inline form screen
+- [ ] LOITracking.tsx — convert SlidePanel to inline form screen
+- [ ] LeaseComparison.tsx — convert SlidePanel to inline form screen
+- [ ] LeaseModifications.tsx — convert SlidePanel to inline form screen
+- [ ] LeaseRenewals.tsx — convert SlidePanel to inline form screen
+- [ ] NotificationSettings.tsx — convert SlidePanel to inline form screen
+- [ ] OpsInsurance.tsx — convert SlidePanel to inline form screen
+- [ ] OpsMaintenance.tsx — convert SlidePanel to inline form screen
+- [ ] PaymentRuns.tsx — convert SlidePanel to inline form screen
+- [ ] SSOConfig.tsx — convert SlidePanel to inline form screen
+- [ ] TenantImprovementAllowance.tsx — convert SlidePanel to inline form screen
+- [ ] VendorManagement.tsx — convert SlidePanel to inline form screen
+
+### CATEGORY 2 — Add Missing CRUD (6 pages)
+- [ ] AssetRegistry.tsx — add full CRUD (create, edit, delete) + inline form
+- [ ] BudgetVariance.tsx — add full CRUD (create, edit, delete) + inline form
+- [ ] LeaseOrigination.tsx — add full CRUD (create, edit, delete) + inline form
+- [ ] LessorMaster.tsx — add full CRUD (create, edit, delete) + inline form
+- [ ] ScenarioModelling.tsx — add full CRUD (create, edit, delete) + inline form
+- [ ] CPIEscalation.tsx — wire apply escalation mutation properly
+
+### CATEGORY 3 — Wire Gen AI Fill Button (5 pages missing it)
+- [ ] AssetRegistry.tsx — add GenAIFillButton (formType: asset_registry)
+- [ ] BudgetVariance.tsx — add GenAIFillButton (formType: budget_entry)
+- [ ] LeaseOrigination.tsx — add GenAIFillButton (formType: new_lease)
+- [ ] LessorMaster.tsx — add GenAIFillButton (formType: lessor)
+- [ ] ScenarioModelling.tsx — add GenAIFillButton (formType: new_lease)
+
+---
+
+## UI ARCHITECTURE FIX — Apr 24, 2026
+
+### FUNDAMENTAL RULE (Non-Negotiable)
+- Left side = Navigation Menu (sidebar)
+- Right side = Full UI Screen (inline, no modals, no overlays, no SlidePanel)
+- Every data screen MUST have: Add New button, Edit button per row, Delete button per row
+- Gen AI button MUST appear on every form that accepts data input
+
+### Phase A: SlidePanel → Inline Screen Conversion (DONE)
+- [x] BankAccounts.tsx — converted to inline showForm
+- [x] BankRules.tsx — converted to inline showForm
+- [x] BrokerManagement.tsx — converted to inline showForm
+- [x] ContractMilestones.tsx — converted to inline showForm
+- [x] InvoiceRegister.tsx — converted to inline showForm
+- [x] LOITracking.tsx — converted to inline showForm
+- [x] LeaseModifications.tsx — converted to inline showForm
+- [x] OpsInsurance.tsx — converted to inline showForm
+- [x] OpsMaintenance.tsx — converted to inline showForm
+- [x] PaymentRuns.tsx — converted to inline showForm
+- [x] RentReviews.tsx — converted to inline showForm
+- [x] SecurityDeposits.tsx — converted to inline showForm
+- [x] SubLeases.tsx — converted to inline showForm
+- [x] TenantImprovementAllowance.tsx — converted to inline showForm
+- [x] VendorManagement.tsx — converted to inline showForm
+- [x] APIWebhookConfig.tsx — converted to inline showForm
+- [x] DeskBooking.tsx — converted to inline showForm
+- [x] ESignatureIntegration.tsx — converted to inline showForm
+- [x] NotificationSettings.tsx — converted to inline showForm
+- [x] SSOConfig.tsx — converted to inline showForm
+
+### Phase B: Gen AI Form-Fill Wiring (DONE)
+- [x] NewLease.tsx — Gen AI wired to all 5 wizard steps
+- [x] LessorMaster.tsx — Gen AI wired to lessor, contact, bank, note forms
+- [x] BankAccounts.tsx — Gen AI wired
+- [x] All other SlidePanel-converted pages — Gen AI wired
+
+### Phase C: Data Binding Bug Fix (DONE)
+- [x] BankAccounts.tsx — fixed: query returns {accounts:[]} not plain array; now reads (data as any)?.accounts ?? []
+- [x] BankAccounts.tsx — added Edit + Delete buttons to each card
+
+### Phase D: Edit/Delete Missing on Table Rows (PENDING)
+- [ ] VendorManagement.tsx — add Edit row button + Delete button in table actions column
+- [ ] BrokerManagement.tsx — add Edit row button + Delete button
+- [ ] InvoiceRegister.tsx — add Edit row button + Delete button
+- [ ] ContractMilestones.tsx — add Edit row button + Delete button
+- [ ] LOITracking.tsx — add Edit row button + Delete button
+- [ ] OpsInsurance.tsx — add Edit row button + Delete button
+- [ ] OpsMaintenance.tsx — add Edit row button + Delete button
+- [ ] PaymentRuns.tsx — add Edit row button + Delete button
+- [ ] RentReviews.tsx — add Edit row button + Delete button
+- [ ] SecurityDeposits.tsx — add Edit row button + Delete button
+- [ ] SubLeases.tsx — add Edit row button + Delete button
+- [ ] TenantImprovementAllowance.tsx — add Edit row button + Delete button
+- [ ] BankRules.tsx — add Edit row button + Delete button
+- [ ] LeaseModifications.tsx — add Edit row button + Delete button
+
+### Phase E: Pages Missing Add New Button (PENDING)
+- [ ] CriticalDateCalendar.tsx — add "Add Date" button with inline form + Gen AI
+- [ ] LeaseOptionsBreaks.tsx — add "Add Option/Break" button with inline form + Gen AI
+- [ ] VariableRent.tsx — add "Add Variable Rent" button with inline form + Gen AI
+- [ ] LeaseExemptions.tsx — add "Add Exemption" button with inline form + Gen AI
+- [ ] ContractRegister.tsx — add "Add Contract" button with inline form + Gen AI
+- [ ] HandoverChecklist.tsx — add "Add Checklist Item" button with inline form + Gen AI
+- [ ] ChequeInventory.tsx — verify Add Cheque Book button works
+- [ ] BounceManagement.tsx — verify Add Bounce Record button works
+- [ ] SpaceManagement.tsx — add "Add Space" button with inline form + Gen AI
+- [ ] TenantPortal.tsx — add "Add Tenant" button with inline form + Gen AI
+- [ ] AssetDepositRegister.tsx — add "Add Asset Deposit" button with inline form + Gen AI
+- [ ] LeaseTerminations.tsx — verify Add Termination button works
+- [ ] MSCRegister.tsx — add "Add MSC" button with inline form + Gen AI
+
+### Phase F: Delete Confirmation (No Modal — Use Toast Action)
+- [ ] All data pages — implement delete using: toast('Delete X?', { action: { label: 'Confirm', onClick: () => deleteMut.mutate({id}) } })
+- [ ] Remove any remaining AlertDialog/Dialog used for delete confirmation
+
+### Read-Only Screens (No CRUD Needed — By Design)
+- Dashboard.tsx, MISAnalytics.tsx, MISCashflow.tsx, MISCost.tsx, MISPortfolio.tsx, MISReports.tsx
+- ComplianceIFRS16.tsx, ASC842.tsx, IFRS16Disclosure.tsx, ConsolidationReporting.tsx
+- RollForwardReport.tsx, MaturityAnalysis.tsx, BankHistory.tsx, BankImport.tsx
+- BankReconWorkspace.tsx, ERPExport.tsx, ESGReporting.tsx, ESGCarbon.tsx
+- WorkflowMonitor.tsx, WorkflowEscalations.tsx, WorkflowTasks.tsx
+- Amortisation.tsx, RemeasurementEngine.tsx, GLJournals.tsx
+- AIAbstraction.tsx, AILeaseAnalytics.tsx, MISAIQuery.tsx
+
+## UI Architecture Fix — Phase D: Edit/Delete on All Data Pages (COMPLETED Apr 24)
+
+### Problem Fixed
+- Bank Accounts showed empty screen with no Add button — root cause: query returned `{accounts:[...]}` but code read it as plain array. Fixed data binding, now shows 3 existing records with Edit/Delete.
+- 9 pages had no per-row Edit or Delete buttons — added to all.
+
+### Pages Fixed
+- [x] BankAccounts — fixed data binding bug, added Edit/Delete per card
+- [x] BankRules — rewritten with inline form, Edit/Delete per row
+- [x] InvoiceRegister — Edit/Delete dropdown added per row
+- [x] ContractMilestones — Edit/Delete buttons added per milestone card
+- [x] OpsInsurance — Edit/Delete dropdown per table row
+- [x] OpsMaintenance — Edit/Delete dropdown per table row
+- [x] PaymentRuns — Edit/Delete dropdown per table row, GenAIFillButton added
+- [x] RentReviews — Edit/Delete buttons per row
+- [x] SecurityDeposits — Edit/Delete buttons per row, openAdd/openEdit pattern
+- [x] SubLeases — Edit/Delete buttons per row, openAdd/openEdit pattern
+- [x] TenantImprovementAllowance — already had full CRUD (verified, no change needed)
+- [x] LeaseModifications — already had Edit/Delete (verified, no change needed)
+- [x] VendorManagement — already had Edit/Delete dropdown (verified, no change needed)
+- [x] BrokerManagement — already had Edit/Delete dropdown (verified, no change needed)
+
+### Architecture Rules Enforced
+- Left = Menu sidebar | Right = Full UI screen (no overlays)
+- All forms use inline showForm pattern (Back button returns to list)
+- Delete uses toast action confirmation (no AlertDialog modals)
+- Gen AI button present on all data entry forms
+- 0 TypeScript errors
+
+## UI Architecture Fix — Phase E: Add New Button Missing (TODO)
+- [ ] CriticalDateCalendar — verify Add New button is present and working
+- [ ] LeaseOptionsBreaks — verify Add New button is present and working
+- [ ] VariableRent — verify Add New button is present and working
+- [ ] LeaseExemptions — verify Add New button is present and working
+- [ ] ContractRegister — verify Add New button is present and working
+- [ ] HandoverChecklist — verify Add New button is present and working
+- [ ] SpaceManagement — verify Add New button is present and working
+- [ ] AssetDepositRegister — verify Add New button is present and working
+- [ ] LeaseTerminations — verify Add New button is present and working
+- [ ] MSCRegister — verify Add New button is present and working

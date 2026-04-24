@@ -10,6 +10,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function LessorFinanceLease() {
   const [showForm, setShowForm] = useState(false);
@@ -36,6 +37,14 @@ export default function LessorFinanceLease() {
               <h2 className="font-semibold text-lg">New Lessor Finance Lease</h2>
               <p className="text-sm text-muted-foreground">Record a finance lease facility for a lessor</p>
             </div>
+            <div className="ml-auto"><GenAIFillButton
+              formType="lessor"
+              onFill={(data) => setForm((f: any) => ({
+                          ...f,
+                          lessorName: data.lessorName ?? f.lessorName,
+                          notes: data.notes ?? f.notes,
+                        }))}
+            /></div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Plus } from "lucide-react";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -38,6 +39,16 @@ export default function LeaseOrigination() {
               <div><h2 className="text-lg font-semibold">New Lease Origination Request</h2><p className="text-xs text-muted-foreground">Submit a new lease requirement for approval</p></div>
             </div>
             <div className="flex gap-2">
+              <GenAIFillButton formType="lease_origination" onFill={(data) => setForm(f => ({
+                ...f,
+                lessor_name: data.lessorName ? String(data.lessorName) : f.lessor_name,
+                asset_description: data.assetDescription ? String(data.assetDescription) : f.asset_description,
+                asset_type: data.assetType ? String(data.assetType) : f.asset_type,
+                proposed_start: data.proposedStart ? String(data.proposedStart) : f.proposed_start,
+                proposed_end: data.proposedEnd ? String(data.proposedEnd) : f.proposed_end,
+                estimated_annual_rent: data.estimatedAnnualRent ? Number(data.estimatedAnnualRent) : f.estimated_annual_rent,
+                business_justification: data.businessJustification ? String(data.businessJustification) : f.business_justification,
+              }))} />
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button disabled={createMut.isPending} onClick={() => createMut.mutate(form as any)}>{createMut.isPending ? "Submitting..." : "Submit Request"}</Button>
             </div>
