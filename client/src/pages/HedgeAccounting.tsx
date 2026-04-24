@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -100,7 +100,7 @@ export default function HedgeAccounting() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Type</TableHead><TableHead>Instrument</TableHead><TableHead>Notional</TableHead><TableHead>Currency</TableHead><TableHead>Ratio</TableHead><TableHead>Status</TableHead>
+              <TableHead>Type</TableHead><TableHead>Instrument</TableHead><TableHead>Notional</TableHead><TableHead>Currency</TableHead><TableHead>Ratio</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {hedges.map((h) => (
@@ -111,6 +111,10 @@ export default function HedgeAccounting() {
                   <TableCell>{h.currency}</TableCell>
                   <TableCell>{h.ratio}</TableCell>
                   <TableCell><Badge className={h.status === "Effective" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>{h.status}</Badge></TableCell>
+                  <TableCell className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setForm({ hedgeType: h.type, instrument: h.instrument, notionalAmount: h.notional.replace(/,/g,''), currency: h.currency, hedgeRatio: h.ratio.replace('%',''), startDate: '', endDate: '' }); setShowForm(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => toast.success(`Hedge ${h.id} deleted`)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

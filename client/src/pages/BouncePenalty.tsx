@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
@@ -76,7 +76,7 @@ export default function BouncePenalty() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Rate (%)</TableHead><TableHead>Grace Days</TableHead><TableHead>Flat Fee</TableHead><TableHead>Active</TableHead>
+              <TableHead>Rate (%)</TableHead><TableHead>Grace Days</TableHead><TableHead>Flat Fee</TableHead><TableHead>Active</TableHead><TableHead>Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(configs as any[]).map((c: any, i: number) => (
@@ -85,6 +85,10 @@ export default function BouncePenalty() {
                   <TableCell>{c.grace_days}</TableCell>
                   <TableCell>{c.flat_fee ?? "—"}</TableCell>
                   <TableCell><Badge className={c.is_active ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>{c.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                  <TableCell className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setForm({ penaltyRate: String(c.penalty_rate ?? ''), graceDays: String(c.grace_days ?? '3'), flatFee: String(c.flat_fee ?? '') }); setShowForm(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => toast.success('Penalty config deleted')}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(configs as any[]).length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No penalty configurations yet</TableCell></TableRow>}

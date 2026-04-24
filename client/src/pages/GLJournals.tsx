@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Download } from "lucide-react";
+import { RefreshCw, Download, Trash2 } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { toast } from "sonner";
 
@@ -81,6 +81,7 @@ export default function GLJournals() {
                 <TableHead className="text-xs text-right">Debit</TableHead>
                 <TableHead className="text-xs text-right">Credit</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,6 +96,7 @@ export default function GLJournals() {
                   <TableCell className="text-right font-mono text-green-400">{j.debit_amount ? Number(j.debit_amount).toLocaleString("en-US",{minimumFractionDigits:2}) : "—"}</TableCell>
                   <TableCell className="text-right font-mono text-red-400">{j.credit_amount ? Number(j.credit_amount).toLocaleString("en-US",{minimumFractionDigits:2}) : "—"}</TableCell>
                   <TableCell><Badge className="text-xs">{j.status ?? "Posted"}</Badge></TableCell>
+                  <TableCell><Button size="sm" variant="ghost" onClick={() => deleteMut.mutate({ journal_id: j.journal_id ?? j.id })}><Trash2 className="w-4 h-4 text-red-400" /></Button></TableCell>
                 </TableRow>
               ))}
               {!isLoading && rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No journal entries for this period</TableCell></TableRow>}

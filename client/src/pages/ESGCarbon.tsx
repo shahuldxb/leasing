@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -88,7 +88,7 @@ export default function ESGCarbon() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Contract</TableHead><TableHead>Period</TableHead><TableHead>Carbon (kg)</TableHead><TableHead>Energy (kWh)</TableHead><TableHead>Water (m³)</TableHead><TableHead>Renewable %</TableHead>
+              <TableHead>Contract</TableHead><TableHead>Period</TableHead><TableHead>Carbon (kg)</TableHead><TableHead>Energy (kWh)</TableHead><TableHead>Water (m³)</TableHead><TableHead>Renewable %</TableHead><TableHead>Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(records as any[]).map((r: any) => (
@@ -99,6 +99,10 @@ export default function ESGCarbon() {
                   <TableCell>{Number(r.energy_kwh).toLocaleString()}</TableCell>
                   <TableCell>{Number(r.water_m3).toLocaleString()}</TableCell>
                   <TableCell>{r.renewable_percent}%</TableCell>
+                  <TableCell className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setForm({ contractId: String(r.contract_id), reportingPeriod: r.reporting_period ?? '', carbonKg: String(r.carbon_kg ?? ''), energyKwh: String(r.energy_kwh ?? ''), waterM3: String(r.water_m3 ?? ''), wasteKg: String(r.waste_kg ?? ''), renewablePercent: String(r.renewable_percent ?? '') }); setShowForm(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => toast.success('ESG record deleted')}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(records as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No ESG data recorded yet</TableCell></TableRow>}

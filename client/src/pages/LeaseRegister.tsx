@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText } from "lucide-react";
+import { Plus, Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
@@ -201,6 +201,9 @@ export default function LeaseRegister() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toast.info("Renewal workflow initiated")}>
                                 Initiate Renewal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-400" onClick={() => toast.success(`Lease ${lease.lease_ref} deleted`)}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Lease
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

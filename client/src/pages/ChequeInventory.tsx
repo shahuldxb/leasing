@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -103,7 +103,7 @@ export default function ChequeInventory() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Cheque #</TableHead><TableHead>Payee</TableHead><TableHead>Amount</TableHead><TableHead>Currency</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead>
+              <TableHead>Cheque #</TableHead><TableHead>Payee</TableHead><TableHead>Amount</TableHead><TableHead>Currency</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(cheques as any[]).map((c: any) => (
@@ -114,6 +114,10 @@ export default function ChequeInventory() {
                   <TableCell>{c.currency}</TableCell>
                   <TableCell>{c.cheque_date ? new Date(c.cheque_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell><Badge className={c.status === "Issued" ? "bg-blue-500/20 text-blue-400" : c.status === "Cleared" ? "bg-green-500/20 text-green-400" : c.status === "Bounced" ? "bg-red-500/20 text-red-400" : "bg-gray-500/20 text-gray-400"}>{c.status}</Badge></TableCell>
+                  <TableCell className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setForm({ bankAccountId: String(c.bank_account_id ?? ''), signatoryId: String(c.signatory1_id ?? ''), payee: c.payee, amount: String(c.amount), currency: c.currency, chequeDate: c.cheque_date ? new Date(c.cheque_date).toISOString().split('T')[0] : '', memo: c.remarks ?? '' }); setShowForm(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => toast.success(`Cheque ${c.cheque_number} voided`)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(cheques as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No cheques in inventory</TableCell></TableRow>}

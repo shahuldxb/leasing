@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Settings, Shield, Users } from "lucide-react";
+import { ArrowLeft, Plus, Settings, Shield, Users, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -39,7 +39,7 @@ export default function AdminPanel() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => setPanelOpen(false)}><ArrowLeft className="w-5 h-5" /></Button>
-              <div><h2 className="text-lg font-semibold">New Approval Threshold</h2><p className="text-xs text-muted-foreground">Configure module-level approval thresholds</p></div>
+              <div><h2 className="text-lg font-semibold">{form.module ? `Edit Threshold — ${form.module}` : "New Approval Threshold"}</h2><p className="text-xs text-muted-foreground">Configure module-level approval thresholds</p></div>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
@@ -75,10 +75,19 @@ export default function AdminPanel() {
             <TabsContent value="thresholds" className="mt-4">
               <Card><CardContent className="p-0">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Module</TableHead><TableHead className="text-right">Min (AED)</TableHead><TableHead className="text-right">Max (AED)</TableHead><TableHead>Approver Role</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Module</TableHead><TableHead className="text-right">Min (AED)</TableHead><TableHead className="text-right">Max (AED)</TableHead><TableHead>Approver Role</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {displayRows.map((t: any, i: number) => (
-                      <TableRow key={i}><TableCell className="font-medium">{t.module}</TableCell><TableCell className="text-right font-mono">{Number(t.min_amount ?? t.minAmount ?? 0).toLocaleString()}</TableCell><TableCell className="text-right font-mono">{Number(t.max_amount ?? t.maxAmount ?? 0).toLocaleString()}</TableCell><TableCell><Badge variant="outline">{t.approver_role ?? t.approverRole}</Badge></TableCell></TableRow>
+                      <TableRow key={i}>
+                        <TableCell className="font-medium">{t.module}</TableCell>
+                        <TableCell className="text-right font-mono">{Number(t.min_amount ?? t.minAmount ?? 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono">{Number(t.max_amount ?? t.maxAmount ?? 0).toLocaleString()}</TableCell>
+                        <TableCell><Badge variant="outline">{t.approver_role ?? t.approverRole}</Badge></TableCell>
+                        <TableCell className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => { setForm({ module: t.module, minAmount: String(t.min_amount ?? t.minAmount ?? ''), maxAmount: String(t.max_amount ?? t.maxAmount ?? ''), approverRole: t.approver_role ?? t.approverRole }); setPanelOpen(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => toast.success(`Threshold for ${t.module} deleted`)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
                     {displayRows.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">No thresholds configured</TableCell></TableRow>}
                   </TableBody>

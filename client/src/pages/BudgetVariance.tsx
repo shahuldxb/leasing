@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Pencil, Trash2 } from "lucide-react";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -76,7 +76,7 @@ export default function BudgetVariance() {
             ))}
           </div>
           <Card><CardContent className="p-0"><Table>
-            <TableHeader><TableRow><TableHead>Contract</TableHead><TableHead>Period</TableHead><TableHead>Cost Centre</TableHead><TableHead className="text-right">Budget</TableHead><TableHead className="text-right">Actual</TableHead><TableHead className="text-right">Variance</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Contract</TableHead><TableHead>Period</TableHead><TableHead>Cost Centre</TableHead><TableHead className="text-right">Budget</TableHead><TableHead className="text-right">Actual</TableHead><TableHead className="text-right">Variance</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
             <TableBody>
               {displayRows.map((r: any, i: number) => {
                 const v = Number(r.actual_amount ?? 0) - Number(r.budgeted_amount ?? 0);
@@ -88,6 +88,10 @@ export default function BudgetVariance() {
                     <TableCell className="text-right font-mono">{Number(r.budgeted_amount ?? 0).toLocaleString()}</TableCell>
                     <TableCell className="text-right font-mono">{Number(r.actual_amount ?? 0).toLocaleString()}</TableCell>
                     <TableCell className={`text-right font-mono font-semibold ${v > 0 ? "text-red-600" : "text-emerald-600"}`}>{v > 0 ? "+" : ""}{v.toLocaleString()}</TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => { setForm({ contract_id: r.contract_id ?? 0, budget_year: r.budget_year ?? year, budget_month: r.budget_month ?? 1, budgeted_amount: r.budgeted_amount ?? 0, actual_amount: r.actual_amount ?? 0, cost_centre: r.cost_centre ?? '', notes: r.notes ?? '' }); setBvOpen(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => toast.success('Budget entry deleted')}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                    </TableCell>
                   </TableRow>
                 );
               })}

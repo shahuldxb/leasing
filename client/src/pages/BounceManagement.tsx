@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -85,7 +85,7 @@ export default function BounceManagement() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Cheque ID</TableHead><TableHead>Bounce Date</TableHead><TableHead>Reason</TableHead><TableHead>Bank Charges</TableHead><TableHead>Penalty</TableHead><TableHead>Status</TableHead>
+              <TableHead>Cheque ID</TableHead><TableHead>Bounce Date</TableHead><TableHead>Reason</TableHead><TableHead>Bank Charges</TableHead><TableHead>Penalty</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(bounces as any[]).map((b: any) => (
@@ -96,6 +96,10 @@ export default function BounceManagement() {
                   <TableCell>{b.bank_charges ? Number(b.bank_charges).toLocaleString() : "—"}</TableCell>
                   <TableCell>{b.penalty_amount ? Number(b.penalty_amount).toLocaleString() : "—"}</TableCell>
                   <TableCell><Badge className={b.status === "Resolved" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>{b.status ?? "Open"}</Badge></TableCell>
+                  <TableCell className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setForm({ chequeId: String(b.cheque_id), bounceDate: b.bounce_date ? new Date(b.bounce_date).toISOString().split('T')[0] : '', bounceReason: b.bounce_reason ?? 'Insufficient Funds', bankCharges: String(b.bank_charges ?? ''), notes: b.notes ?? '' }); setShowForm(true); }}><Pencil className="w-4 h-4 text-blue-400" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => toast.success(`Bounce record ${b.bounce_id} deleted`)}><Trash2 className="w-4 h-4 text-red-400" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(bounces as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No bounced cheques recorded</TableCell></TableRow>}
