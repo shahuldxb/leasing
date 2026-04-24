@@ -111,6 +111,11 @@ import LOITracking          from "./pages/LOITracking";
 import LeaseComparison      from "./pages/LeaseComparison";
 import TenantImprovementAllowance from "./pages/TenantImprovementAllowance";
 import ESignatureIntegration from "./pages/ESignatureIntegration";
+import FurnishedAssets       from "./pages/FurnishedAssets";
+import AssetDepositRegister  from "./pages/AssetDepositRegister";
+import HandoverChecklist     from "./pages/HandoverChecklist";
+import MSCRegister           from "./pages/MSCRegister";
+import MSCContractViewer     from "./pages/MSCContractViewer";
 
 // Lessor & Asset
 import LessorMaster       from "./pages/LessorMaster";
@@ -266,6 +271,16 @@ function Router() {
       <Route path="/leases/compare"           component={LeaseComparison} />
       <Route path="/leases/ti-allowance"      component={TenantImprovementAllowance} />
       <Route path="/admin/esignature"         component={ESignatureIntegration} />
+
+      {/* Furnished Assets & Asset Deposits */}
+      <Route path="/ops/furnished-assets"     component={FurnishedAssets} />
+      <Route path="/ops/asset-deposits"       component={AssetDepositRegister} />
+      <Route path="/ops/handover-checklist"   component={HandoverChecklist} />
+
+      {/* Master Services Contracts */}
+      <Route path="/contracts/msc"            component={MSCRegister} />
+      <Route path="/contracts/msc/:id"        component={MSCContractViewer} />
+      <Route path="/contracts/msc/:id/print"  component={MSCContractViewer} />
 
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />

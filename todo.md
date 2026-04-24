@@ -387,3 +387,41 @@
 - [x] P4-05: Lease comparison / benchmarking tool (side-by-side lease terms)
 - [x] P4-06: Tenant improvement allowance tracking
 - [x] P4-07: DocuSign / e-signature integration for lease documents
+
+## Furnished Property Assets & Asset Deposit Module
+
+### Database & Backend
+- [ ] Create table: lease.furnished_assets (asset_id, contract_id, asset_category, asset_name, brand, model, serial_number, condition_at_handover, estimated_value, photo_url, notes)
+- [ ] Create table: lease.asset_deposits (deposit_id, contract_id, deposit_amount, deposit_currency, deposit_date, deposit_type, bank_ref, status, released_amount, release_date, notes)
+- [ ] Create table: lease.asset_handover_checklist (checklist_id, contract_id, checklist_type [HANDOVER/RETURN], conducted_date, conducted_by, overall_condition, notes, signed_off)
+- [ ] Create table: lease.asset_checklist_items (item_id, checklist_id, asset_id, condition_at_check, damage_description, repair_cost_estimate, deduct_from_deposit, photo_url)
+- [ ] Create table: lease.asset_deposit_deductions (deduction_id, deposit_id, asset_id, deduction_reason, deduction_amount, approved_by, approved_date)
+- [ ] Create tRPC router: furnishedAssets — list, create, update, delete, getByLease
+- [ ] Create tRPC router: assetDeposits — list, create, release, deduct, getByLease
+- [ ] Create tRPC router: handoverChecklists — list, create, complete, getByLease, addItem
+
+### Frontend Pages
+- [ ] Build FurnishedAssets.tsx — asset inventory per lease with category grouping, condition badges, photo upload, estimated value totals
+- [ ] Build AssetDepositRegister.tsx — asset deposit register separate from security deposits, with release workflow and deduction tracking
+- [ ] Build HandoverChecklist.tsx — digital handover/return checklist with per-asset condition, damage photos, repair cost estimation, deposit deduction calculation
+- [ ] Build AssetDepositDeductions.tsx — deduction management screen showing deposit balance, approved deductions, remaining refund amount
+
+### Navigation
+- [ ] Add "Furnished Assets" section to DashboardLayout sidebar under "Operational"
+- [ ] Wire all 4 new pages in App.tsx
+
+## Master Services Contract (MSC) Module
+
+### Database & Backend
+- [x] Create table: msc.master_contracts (msc_id, msc_ref, contract_type [FLEET/RESIDENTIAL], title_en, title_ar, party_a_en, party_a_ar, party_b_en, party_b_ar, effective_date, expiry_date, contract_value, currency, payment_terms_en, payment_terms_ar, scope_en, scope_ar, governing_law_en, governing_law_ar, jurisdiction_en, jurisdiction_ar, termination_en, termination_ar, warranties_en, warranties_ar, signed_by_en, signed_by_ar, witness_en, witness_ar, status, created_by, created_at)
+- [x] Create table: msc.contract_assets (link_id, msc_id, asset_type [VEHICLE/HOME], asset_ref, asset_description, make_model, plate_vin, location, linked_lease_id)
+- [x] Create tRPC router: masterContracts — list, getById, create, update, delete, linkAsset, unlinkAsset, getLinkedAssets
+
+### Frontend Pages
+- [x] Build MSCRegister.tsx — list view with contract type filter (Fleet/Residential), status badges, expiry countdown, linked asset count
+- [x] Build MSCDetail.tsx (combined into MSCContractViewer) — full attribute screen showing all EN/AR fields side by side, linked assets sub-table, action buttons (Edit, Print, View Contract)
+- [x] Build MSCContractViewer.tsx — portrait A4 bilingual contract renderer (EN left column, AR right column RTL), printable via browser print
+
+### Navigation
+- [x] Add "Master Contracts" section to DashboardLayout sidebar under "Contracts"
+- [x] Wire all 3 new pages in App.tsx
