@@ -9,13 +9,6 @@ import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { trpc } from "@/lib/trpc";
 
-// ── Mock contract data (replace with trpc.masterContracts.getById.useQuery) ──
-
-  const utils = trpc.useUtils();
-  const activateMut = trpc.masterContracts.activate.useMutation({
-    onSuccess: () => { utils.masterContracts.list.invalidate(); toast.success("Contract activated"); },
-    onError: (e) => toast.error(e.message),
-  });
 const MOCK_CONTRACT = {
   msc_id: 1,
   msc_ref: "MSC-2024-001",
