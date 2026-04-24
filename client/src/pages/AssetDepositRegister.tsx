@@ -51,6 +51,16 @@ export default function AssetDepositRegister() {
   const [deductForm, setDeductForm] = useState({ asset_id: "", deduction_reason: "", deduction_amount: "", notes: "" });
 
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
+  const utils = trpc.useUtils();
+  const createMut = trpc.assetDeposit.create.useMutation({
+    onSuccess: () => { utils.assetDeposit.listAll.invalidate(); toast.success("Deposit created"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const releaseMut = trpc.assetDeposit.release.useMutation({
+    onSuccess: () => { utils.assetDeposit.listAll.invalidate(); toast.success("Deposit released"); },
+    onError: (e) => toast.error(e.message),
+  });
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
 
   const filtered = MOCK_DEPOSITS.filter(d => {

@@ -3,6 +3,8 @@ import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Leaf } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 const ESG_DATA = [
   { month: "Jan", carbon: 0, energy: 0, water: 0 },
@@ -19,6 +21,11 @@ const ESG_METRICS = [
 ];
 
 export default function OpsESG() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   return (
     <DashboardLayout>

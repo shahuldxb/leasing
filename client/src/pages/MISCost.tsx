@@ -4,10 +4,17 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { BarChart2 } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 export default function MISCost() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data: analytics } = trpc.mis.getPortfolioAnalytics.useQuery();
+
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Report sent to owner"),
+    onError: (e) => toast.error(e.message),
+  });
   const byType: any[] = (analytics as any)?.by_asset_type ?? [];
 
   const costData = byType.map((t: any) => ({

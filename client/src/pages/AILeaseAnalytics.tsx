@@ -52,6 +52,11 @@ const CANNED_RESPONSES: Record<string, string> = {
 };
 
 export default function AILeaseAnalytics() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("chat");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [messages, setMessages] = useState<Message[]>([

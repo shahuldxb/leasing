@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Flag, PlusCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const MILESTONE_TYPES = ["Rent Review Date","Renewal Decision Deadline","Break Clause Date","Insurance Renewal","Maintenance Inspection","Regulatory Compliance","Payment Escalation","Make-Good Assessment"];
 
@@ -18,6 +18,12 @@ export default function ContractMilestones() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ leaseId: "", type: "", dueDate: "", notes: "" });
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
+  const utils = trpc.useUtils();
+  const submitForApprovalMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted"); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const today = new Date();
   const upcoming = [
@@ -58,9 +64,9 @@ export default function ContractMilestones() {
           ))}
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add Milestone</DialogTitle></DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Lease</Label>
@@ -79,12 +85,12 @@ export default function ContractMilestones() {
               <div><Label className="text-sm font-medium">Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
               <div><Label className="text-sm font-medium">Notes</Label><Input className="mt-1" placeholder="Notes..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => { toast.success("Milestone added"); setOpen(false); }}>Add</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

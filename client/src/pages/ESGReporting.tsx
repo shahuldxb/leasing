@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Leaf, TrendingDown, BarChart3, FileText, Download, Globe, Building2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 const CARBON_DATA = [
   { entity: "VF-UAE", category: "Office Leases", sqm: 12400, energy_kwh: 2480000, co2_tonnes: 1116, green_certified: true, rating: "LEED Gold" },
@@ -42,6 +43,11 @@ const TARGETS = [
 ];
 
 export default function ESGReporting() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("overview");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [year, setYear] = useState("2025");

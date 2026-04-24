@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 /* ─── Process templates ─── */
 const PROCESS_TEMPLATES = [
@@ -407,6 +408,11 @@ function PropertiesPanel({ element }: { element: ElementInfo | null }) {
 
 /* ─── Main component ─── */
 export default function WorkflowModeler() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [selectedProcess, setSelectedProcess] = useState("lease_approval");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);

@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
@@ -95,6 +96,11 @@ const EMPTY_FORM = {
 };
 
 export default function MSCRegister() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.masterContracts.activate.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);

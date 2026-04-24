@@ -58,6 +58,16 @@ export default function HandoverChecklist() {
   });
 
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
+  const utils = trpc.useUtils();
+  const createMut = trpc.handoverChecklist.create.useMutation({
+    onSuccess: () => { utils.handoverChecklist.listAll.invalidate(); toast.success("Checklist created"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const signOffMut = trpc.handoverChecklist.signOff.useMutation({
+    onSuccess: () => { utils.handoverChecklist.listAll.invalidate(); toast.success("Signed off"); },
+    onError: (e) => toast.error(e.message),
+  });
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
 
   const filtered = MOCK_CHECKLISTS.filter(c => {

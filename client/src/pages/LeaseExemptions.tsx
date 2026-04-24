@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Info, Shield, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -134,9 +134,9 @@ export default function LeaseExemptions() {
         </Card>
 
         {/* Add dialog */}
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add Lease Exemption</DialogTitle></DialogHeader>
+        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
+          
+            
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Contract</Label>
@@ -172,14 +172,14 @@ export default function LeaseExemptions() {
                 <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="Justification for exemption..." />
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               <Button onClick={() => create.mutate(form)} disabled={create.isPending || !form.contract_id}>
                 {create.isPending ? "Saving..." : "Save Exemption"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, FileText, MessageSquare, CreditCard, CheckCircle, Clock, Plus, Download, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
+import { trpc } from "@/lib/trpc";
 
 const TENANT_LEASES = [
   { id: 1, ref: "VF-2024-001", property: "Vodafone HQ — Floor 12", lessor: "Al Futtaim Properties", monthly_rent: 185000, next_payment: "2026-05-01", lease_end: "2028-12-31", status: "ACTIVE" },
@@ -47,6 +48,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function TenantPortal() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("overview");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
@@ -253,9 +259,9 @@ export default function TenantPortal() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>New Service Request</DialogTitle></DialogHeader>
+        <SlidePanel open={showRequestDialog} onClose={() => setShowRequestDialog(false)} title="" width="xl">
+          
+            
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -312,8 +318,8 @@ export default function TenantPortal() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

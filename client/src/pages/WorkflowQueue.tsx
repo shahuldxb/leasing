@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, RefreshCw, Clock, User, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 export default function WorkflowQueue() {
   const [module, setModule]   = useState("all");
@@ -187,45 +187,15 @@ export default function WorkflowQueue() {
         </Card>
       </div>
 
-      {/* Approval/Rejection Dialog */}
-      <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setDialogAction(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {dialogAction === "Approve"
-                ? <CheckCircle2 className="h-5 w-5 text-green-500" />
-                : <XCircle className="h-5 w-5 text-red-500" />}
-              {dialogAction} Task
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Module</span>
-                <span className="font-medium">{selected?.module}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Description</span>
-                <span className="font-medium truncate max-w-48">{selected?.description}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Maker</span>
-                <span className="font-medium">{selected?.maker_name ?? "—"}</span>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Comment {dialogAction === "Reject" && <span className="text-red-500">*</span>}
-              </label>
-              <Textarea
-                placeholder={dialogAction === "Approve" ? "Optional comment..." : "Reason for rejection (required)"}
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
+      {/* Approval/Rejection Panel */}
+      <SlidePanel
+        open={!!selected}
+        onClose={() => { setSelected(null); setDialogAction(null); }}
+        title={dialogAction === "Approve" ? "Approve Task" : "Reject Task"}
+        subtitle={selected?.description ?? ""}
+        width="lg"
+        footer={
+          <>
             <Button variant="outline" onClick={() => { setSelected(null); setDialogAction(null); }}>Cancel</Button>
             <Button
               onClick={submitDecision}
@@ -234,9 +204,37 @@ export default function WorkflowQueue() {
             >
               {completeTask.isPending ? "Processing..." : `Confirm ${dialogAction}`}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Module</span>
+              <span className="font-medium">{selected?.module}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Description</span>
+              <span className="font-medium truncate max-w-48">{selected?.description}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Maker</span>
+              <span className="font-medium">{selected?.maker_name ?? "—"}</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              Comment {dialogAction === "Reject" && <span className="text-red-500">*</span>}
+            </label>
+            <Textarea
+              placeholder={dialogAction === "Approve" ? "Optional comment..." : "Reason for rejection (required)"}
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+      </SlidePanel>
     </DashboardLayout>
   );
 }

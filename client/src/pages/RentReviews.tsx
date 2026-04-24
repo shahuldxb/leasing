@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -115,21 +115,11 @@ export default function RentReviews() {
         </Card>
 
         {/* Complete Review Dialog */}
-        <Dialog open={!!completing} onOpenChange={() => setCompleting(null)}>
-          <DialogContent className="max-w-md bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                Complete Rent Review
-                <GenAIFillButton
-                  formType="rent_review"
-                  onFill={(data) => {
-                    if (data.agreed_new_rent !== undefined) setCompleteForm(f => ({ ...f, agreed_new_rent: Number(data.agreed_new_rent) }));
-                    if (data.effective_date !== undefined) setCompleteForm(f => ({ ...f, effective_date: data.effective_date as string }));
-                    if (data.notes !== undefined) setCompleteForm(f => ({ ...f, notes: data.notes as string }));
-                  }}
-                />
-              </DialogTitle>
-            </DialogHeader>
+        <SlidePanel open={!!completing} onClose={() => setCompleting(null)} title="" width="xl">
+          
+            
+              
+            
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Agreed New Rent (AED/year)</Label>
@@ -144,12 +134,12 @@ export default function RentReviews() {
                 <Textarea value={completeForm.notes} onChange={e => setCompleteForm(f => ({ ...f, notes: e.target.value }))} rows={3} />
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setCompleting(null)}>Cancel</Button>
               <Button onClick={() => complete.mutate({ review_id: completing.id, agreed_new_rent: completeForm.agreed_new_rent, effective_date: completeForm.effective_date, notes: completeForm.notes })} disabled={complete.isPending} className="bg-green-600 hover:bg-green-700">Confirm Agreement</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

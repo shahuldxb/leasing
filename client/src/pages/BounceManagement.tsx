@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -19,6 +18,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import SlidePanel from "@/components/SlidePanel";
 
 const BOUNCE_REASONS = [
   { value: 'INSUFFICIENT_FUNDS', label: 'Insufficient Funds' },
@@ -78,13 +78,11 @@ function RecordBounceDialog({ open, onClose, chequeId, chequeNumber, chequeAmoun
   const penaltyDisplay = form.waivePenalty ? 0 : (form.overridePenalty ?? preview?.penalty_amount ?? 0);
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="text-red-400 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" /> Record Bounced Cheque
-          </DialogTitle>
-        </DialogHeader>
+    <SlidePanel open={open} onClose={onClose} title="" width="xl">
+      
+        
+          
+        
 
         <div className="space-y-4 py-2">
           {/* Cheque Info Banner */}
@@ -207,7 +205,7 @@ function RecordBounceDialog({ open, onClose, chequeId, chequeNumber, chequeAmoun
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
           <Button variant="outline" onClick={onClose} className="border-gray-600 text-gray-300">Cancel</Button>
           <Button onClick={() => recordMutation.mutate({
             chequeId, bounceDate: form.bounceDate, bounceReason: form.bounceReason,
@@ -220,9 +218,9 @@ function RecordBounceDialog({ open, onClose, chequeId, chequeNumber, chequeAmoun
             className="bg-red-600 hover:bg-red-700 text-white">
             {recordMutation.isPending ? 'Recording...' : 'Record Bounce'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      
+    </SlidePanel>
   );
 }
 
@@ -255,13 +253,11 @@ function ReplacementDialog({ open, onClose, bounce }: {
   });
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-blue-400 flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" /> Issue Replacement Cheque
-          </DialogTitle>
-        </DialogHeader>
+    <SlidePanel open={open} onClose={onClose} title="" width="xl">
+      
+        
+          
+        
 
         <div className="space-y-4 py-2">
           {/* Bounce Summary */}
@@ -333,7 +329,7 @@ function ReplacementDialog({ open, onClose, bounce }: {
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
           <Button variant="outline" onClick={onClose} className="border-gray-600 text-gray-300">Cancel</Button>
           <Button
             disabled={!form.replacementBookId || issueMutation.isPending}
@@ -349,9 +345,9 @@ function ReplacementDialog({ open, onClose, bounce }: {
             className="bg-blue-600 hover:bg-blue-700 text-white">
             {issueMutation.isPending ? 'Issuing...' : 'Issue Replacement'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      
+    </SlidePanel>
   );
 }
 
@@ -385,13 +381,11 @@ function PenaltyConfigDialog({ open, onClose, config }: { open: boolean; onClose
   });
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-yellow-400 flex items-center gap-2">
-            <Settings className="h-5 w-5" /> {config ? 'Edit' : 'New'} Penalty Configuration
-          </DialogTitle>
-        </DialogHeader>
+    <SlidePanel open={open} onClose={onClose} title="" width="xl">
+      
+        
+          
+        
 
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-4">
@@ -502,7 +496,7 @@ function PenaltyConfigDialog({ open, onClose, config }: { open: boolean; onClose
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
           <Button variant="outline" onClick={onClose} className="border-gray-600 text-gray-300">Cancel</Button>
           <Button disabled={!form.configName || saveMutation.isPending}
             onClick={() => saveMutation.mutate({
@@ -525,9 +519,9 @@ function PenaltyConfigDialog({ open, onClose, config }: { open: boolean; onClose
             className="bg-yellow-600 hover:bg-yellow-700 text-white">
             {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      
+    </SlidePanel>
   );
 }
 

@@ -9,6 +9,7 @@ import { AlertCircle, Search } from "lucide-react";
 // Error log is stored in SQL Server security.error_log — displayed via audit log query
 import { trpc } from "@/lib/trpc";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 const SEVERITY_COLORS: Record<string, string> = {
   Critical: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -27,6 +28,12 @@ export default function ComplianceErrors() {
     module: "ERROR",
     page: 1,
     pageSize: 200,
+  });
+
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Compliance report sent to owner"),
+    onError: (e) => toast.error(e.message),
   });
   const allRows: any[] = (data as any)?.rows ?? [];
   const rows = allRows.filter((r: any) => {

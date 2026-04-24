@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Calculator } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 export default function Amortisation() {
   const [leaseId, setLeaseId] = useState("");
@@ -19,6 +20,12 @@ export default function Amortisation() {
     { contractId: selectedId! },
     { enabled: !!selectedId }
   );
+
+  const utils = trpc.useUtils();
+  const saveMut = trpc.lease.saveAmortisationSchedule.useMutation({
+    onSuccess: () => { toast.success("Schedule saved to database"); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const rows: any[] = Array.isArray((schedule as any)?.schedule) ? (schedule as any).schedule : [];
 

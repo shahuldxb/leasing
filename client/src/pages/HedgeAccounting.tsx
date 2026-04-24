@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, DollarSign, Shield, Plus, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
+import { trpc } from "@/lib/trpc";
 
 const STATUS_COLORS: Record<string, string> = {
   DESIGNATED: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -34,6 +35,11 @@ const GL_IMPACT = [
 ];
 
 export default function HedgeAccounting() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("hedges");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [hedgeForm, setHedgeForm] = useState({ instrument_type: "", notional_amount: "", currency_pair: "", start_date: "", maturity_date: "", strike_rate: "" });
@@ -241,10 +247,10 @@ export default function HedgeAccounting() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Designate New Hedge Relationship</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="hedge_instrument" onFill={(data) => { if (data.instrument_type !== undefined) setHedgeForm(f => ({ ...f, instrument_type: data.instrument_type as any })); if (data.notional_amount !== undefined) setHedgeForm(f => ({ ...f, notional_amount: data.notional_amount as any })); if (data.currency_pair !== undefined) setHedgeForm(f => ({ ...f, currency_pair: data.currency_pair as any })); if (data.start_date !== undefined) setHedgeForm(f => ({ ...f, start_date: data.start_date as any })); if (data.maturity_date !== undefined) setHedgeForm(f => ({ ...f, maturity_date: data.maturity_date as any })); if (data.strike_rate !== undefined) setHedgeForm(f => ({ ...f, strike_rate: data.strike_rate as any })); }} /></div></DialogHeader>
+        <SlidePanel open={showDialog} onClose={() => setShowDialog(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="hedge_instrument" onFill={(data) => { if (data.instrument_type !== undefined) setHedgeForm(f => ({ ...f, instrument_type: data.instrument_type as any })); if (data.notional_amount !== undefined) setHedgeForm(f => ({ ...f, notional_amount: data.notional_amount as any })); if (data.currency_pair !== undefined) setHedgeForm(f => ({ ...f, currency_pair: data.currency_pair as any })); if (data.start_date !== undefined) setHedgeForm(f => ({ ...f, start_date: data.start_date as any })); if (data.maturity_date !== undefined) setHedgeForm(f => ({ ...f, maturity_date: data.maturity_date as any })); if (data.strike_rate !== undefined) setHedgeForm(f => ({ ...f, strike_rate: data.strike_rate as any })); }} /></div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -291,8 +297,8 @@ export default function HedgeAccounting() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

@@ -47,6 +47,12 @@ export default function AlertCentre() {
   const { data: insurance } = trpc.lease.getInsurancePolicies.useQuery({});
   const { data: cheques } = trpc.cheque.getStaleCheques.useQuery();
 
+  const utils = trpc.useUtils();
+  const submitMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted"); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
   const insuranceList: any[] = Array.isArray(insurance) ? insurance : [];
   const chequeList: any[] = Array.isArray(cheques) ? cheques : [];

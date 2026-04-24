@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const statusColor: Record<string, string> = {
   Pending: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -110,9 +110,9 @@ export default function InvoiceRegister() {
           </Table>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>New Invoice</DialogTitle></DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Lease *</Label>
@@ -135,14 +135,14 @@ export default function InvoiceRegister() {
                 <div className="col-span-2"><Label className="text-sm font-medium">Description</Label><Input className="mt-1" placeholder="Invoice description..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleCreate} disabled={createMutation.isPending}>
                 {createMutation.isPending ? "Creating..." : "Create Invoice"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

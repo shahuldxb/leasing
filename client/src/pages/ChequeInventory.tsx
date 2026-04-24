@@ -12,9 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
-} from "@/components/ui/dialog";
-import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -24,6 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 // ── Theme ─────────────────────────────────────────────────────
 type Theme = "dark" | "light";
@@ -138,11 +136,11 @@ function IssueChequeDialog({ open, onClose, theme }: { open: boolean; onClose: (
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={`max-w-lg ${dlgBg}`}>
-        <DialogHeader>
-          <DialogTitle className={theme === "dark" ? "text-white" : ""}>Issue New Cheque</DialogTitle>
-        </DialogHeader>
+    <SlidePanel open={open} onClose={onClose} title="" width="xl">
+      
+        
+          
+        
         <div className="grid grid-cols-2 gap-4 py-2">
           {/* Bank Account */}
           <div className="col-span-2">
@@ -260,15 +258,15 @@ function IssueChequeDialog({ open, onClose, theme }: { open: boolean; onClose: (
               onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} />
           </div>
         </div>
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={issueMutation.isPending}
             className="bg-[#e60000] hover:bg-[#cc0000] text-white">
             {issueMutation.isPending ? "Issuing..." : "Issue Cheque"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      
+    </SlidePanel>
   );
 }
 
@@ -288,9 +286,9 @@ function RegisterBookDialog({ open, onClose, theme }: { open: boolean; onClose: 
     ? Math.max(0, Number(form.seriesTo) - Number(form.seriesFrom) + 1) : 0;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={`max-w-md ${dlgBg}`}>
-        <DialogHeader><DialogTitle className={theme === "dark" ? "text-white" : ""}>Register Cheque Book</DialogTitle></DialogHeader>
+    <SlidePanel open={open} onClose={onClose} title="" width="xl">
+      
+        
         <div className="grid gap-4 py-2">
           <div>
             <Label className={labelCls}>Bank Account *</Label>
@@ -333,15 +331,15 @@ function RegisterBookDialog({ open, onClose, theme }: { open: boolean; onClose: 
               onChange={e => setForm(f => ({ ...f, receivedDate: e.target.value }))} />
           </div>
         </div>
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => createMutation.mutate({ bankAccountId: Number(form.bankAccountId), bookNumber: form.bookNumber, seriesFrom: form.seriesFrom, seriesTo: form.seriesTo, receivedDate: form.receivedDate })}
             disabled={createMutation.isPending} className="bg-[#e60000] hover:bg-[#cc0000] text-white">
             {createMutation.isPending ? "Registering..." : "Register Book"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      
+    </SlidePanel>
   );
 }
 
@@ -377,9 +375,9 @@ function ActionDialog({ open, onClose, cheque, action, theme }: {
   const btnColors: Record<string, string> = { bounce: "bg-red-600 hover:bg-red-700", void: "bg-gray-600 hover:bg-gray-700", present: "bg-yellow-600 hover:bg-yellow-700", clear: "bg-green-600 hover:bg-green-700" };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className={`max-w-md ${dlgBg}`}>
-        <DialogHeader><DialogTitle className={theme === "dark" ? "text-white" : ""}>{titles[action]}</DialogTitle></DialogHeader>
+    <SlidePanel open={open} onClose={onClose} title="" width="xl">
+      
+        
         {cheque && (
           <div className={`rounded-lg p-3 text-sm mb-2 ${theme === "dark" ? "bg-[#0e1525] border border-[#2a3347]" : "bg-gray-50 border border-gray-200"}`}>
             <div className="font-mono font-bold">{cheque.cheque_number}</div>
@@ -418,14 +416,14 @@ function ActionDialog({ open, onClose, cheque, action, theme }: {
             </div>
           )}
         </div>
-        <DialogFooter>
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleAction} className={`text-white ${btnColors[action]}`}>
             Confirm {titles[action]}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      
+    </SlidePanel>
   );
 }
 

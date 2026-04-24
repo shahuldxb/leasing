@@ -21,6 +21,12 @@ export default function MaturityAnalysis() {
   const [leaseType, setLeaseType] = useState("ALL");
 
   const { data, isLoading, refetch } = trpc.accounting.reporting.maturityAnalysis.useQuery();
+
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Maturity analysis sent to owner"),
+    onError: (e) => toast.error(e.message),
+  });
   const rows: any[] = (data as any)?.rows ?? [];
   const summary: any = (data as any)?.summary ?? {};
 

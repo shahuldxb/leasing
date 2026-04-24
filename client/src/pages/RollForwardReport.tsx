@@ -22,6 +22,12 @@ export default function RollForwardReport() {
 
   const { data, isLoading } = trpc.accounting.reporting.rollForwardROU.useQuery({ fromDate: submitted.from, toDate: submitted.to });
 
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Roll-forward report sent to owner"),
+    onError: (e) => toast.error(e.message),
+  });
+
   const run = () => {
     setSubmitted({ from: fromDate, to: toDate });
     toast.success("Roll-forward report generated");

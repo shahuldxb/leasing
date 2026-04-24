@@ -7,12 +7,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { FolderOpen, Search, AlertTriangle } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 export default function OpsDocuments() {
   const [search, setSearch] = useState("");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   // Documents are stored per lease — use lease register as data source
   const { data } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200, search: search || undefined });
+
+  const utils = trpc.useUtils();
+  const submitMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted"); },
+    onError: (e) => toast.error(e.message),
+  });
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.documents ?? [];
   const today = new Date();
 

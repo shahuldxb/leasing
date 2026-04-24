@@ -17,6 +17,7 @@ import {
   ArrowLeftRight, Lock, ChevronRight, Info
 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
@@ -32,6 +33,7 @@ const MATCH_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function BankReconWorkspace() {
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
   const [matchFilter, setMatchFilter] = useState<"all" | "Matched" | "Unmatched" | "Disputed">("all");
@@ -91,36 +93,13 @@ export default function BankReconWorkspace() {
     <DashboardLayout>
       <div className="space-y-4">
         {/* Header */}
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Reconciliation Workspace</h1>
-            <p className="page-subtitle">Screen ID: VFBNKRECONWS0001P001</p>
-          </div>
-          <div className="flex gap-2">
-            {sessionId && (
-              <>
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => autoMatch.mutate({ sessionId })}
-                  disabled={autoMatch.isPending || session?.status === "Closed"}
-                  className="gap-1.5"
-                >
-                  <Zap className="h-3.5 w-3.5 text-amber-500" />
-                  {autoMatch.isPending ? "Matching..." : "Run Auto-Match"}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => closeSession.mutate({ sessionId })}
-                  disabled={closeSession.isPending || unmatchedCount > 0 || session?.status === "Closed"}
-                  className="gap-1.5"
-                >
-                  <Lock className="h-3.5 w-3.5" />
-                  Close & Post GL
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
+        <ScreenHeader
+            screenId="VFBNKRECONWS0001P001"
+            title="Reconciliation Workspace"
+            subtitle="Bank reconciliation and transaction matching"
+            screenType="bank_recon"
+            onAIData={(r) => setAiRows(r)}
+          />
 
         {/* Account Selector */}
         {!sessionId && (

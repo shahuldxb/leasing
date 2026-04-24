@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Activity } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
   Active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -16,6 +17,12 @@ const STATUS_COLORS: Record<string, string> = {
 export default function WorkflowMonitor() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data } = trpc.workflow.getQueue.useQuery({ page: 1, pageSize: 100 });
+
+  const utils = trpc.useUtils();
+  const completeTaskMut = trpc.workflow.completeTask.useMutation({
+    onSuccess: () => { utils.workflow.getQueue.invalidate(); toast.success("Task completed"); },
+    onError: (e) => toast.error(e.message),
+  });
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.tasks ?? [];
 
   return (

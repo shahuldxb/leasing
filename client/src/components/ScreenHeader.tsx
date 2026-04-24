@@ -52,12 +52,19 @@ interface ScreenHeaderProps {
    * When provided, a "Gen AI" button appears that populates the screen with
    * realistic sample data via the aiFill.generateScreenData tRPC mutation.
    */
-  screenType?: string;
   /**
-   * Callback fired when the AI has generated data.
-   * The parent component receives the rows array and can use it to
-   * temporarily replace its table/list state.
+   * FORM FILL MODE — for wizard/form pages.
+   * Provide formType + onAIFormFill.
+   * Gen AI calls fillForm and passes a single Record<string,string> to the callback.
    */
+  formType?: string;
+  onAIFormFill?: (data: Record<string, string>) => void;
+  /**
+   * LIST/SCREEN MODE — for table/list pages.
+   * Provide screenType + onAIData.
+   * Gen AI calls generateScreenData and passes rows[] to the callback.
+   */
+  screenType?: string;
   onAIData?: (rows: Record<string, unknown>[]) => void;
 }
 
@@ -241,30 +248,44 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
   );
 }
 
-// ── GenAIScreenButton ─────────────────────────────────────────────────────────
+// ── GenAIButton — unified: form fill mode OR screen data mode ─────────────────
 
-function GenAIScreenButton({
+function GenAIButton({
+  formType,
+  onAIFormFill,
   screenType,
   onAIData,
 }: {
-  screenType: string;
-  onAIData: (rows: Record<string, unknown>[]) => void;
+  formType?: string;
+  onAIFormFill?: (data: Record<string, string>) => void;
+  screenType?: string;
+  onAIData?: (rows: Record<string, unknown>[]) => void;
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const generate = trpc.aiFill.generateScreenData.useMutation();
+  const fillFormMutation = trpc.aiFill.fillForm.useMutation();
+  const generateScreenMutation = trpc.aiFill.generateScreenData.useMutation();
 
-  const handleGenerate = async () => {
+  const handleClick = async () => {
     setIsGenerating(true);
     try {
-      const result = await generate.mutateAsync({ screenType });
-      if (result.rows && result.rows.length > 0) {
-        onAIData(result.rows as Record<string, unknown>[]);
-        toast.success(`Gen AI generated ${result.rows.length} sample records`, {
-          description: "Showing temporary demo data — not saved to database",
-          duration: 4000,
+      if (formType && onAIFormFill) {
+        const result = await fillFormMutation.mutateAsync({ formType });
+        onAIFormFill(result as Record<string, string>);
+        toast.success("Gen AI filled the form with realistic data", {
+          description: "Review the data and click Save when ready — nothing is stored yet.",
+          duration: 5000,
         });
-      } else {
-        toast.info("Gen AI returned no data for this screen type");
+      } else if (screenType && onAIData) {
+        const result = await generateScreenMutation.mutateAsync({ screenType });
+        if (result.rows && result.rows.length > 0) {
+          onAIData(result.rows as Record<string, unknown>[]);
+          toast.success(`Gen AI generated ${result.rows.length} sample records`, {
+            description: "Showing temporary demo data — not saved to database.",
+            duration: 4000,
+          });
+        } else {
+          toast.info("Gen AI returned no data for this screen type");
+        }
       }
     } catch (err) {
       toast.error("Gen AI failed to generate data", {
@@ -275,13 +296,16 @@ function GenAIScreenButton({
     }
   };
 
+  const isConfigured = (formType && onAIFormFill) || (screenType && onAIData);
+  if (!isConfigured) return null;
+
   return (
     <Button
-      onClick={handleGenerate}
+      onClick={handleClick}
       disabled={isGenerating}
       size="sm"
       className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-0 text-xs h-7 px-3 font-semibold shadow-md shadow-violet-900/30"
-      title="Generate realistic sample data for this screen using AI"
+      title={formType ? "Fill this form with realistic AI-generated data" : "Generate realistic sample data for this screen"}
     >
       {isGenerating ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -323,6 +347,8 @@ export function ScreenHeader({
   subtitle,
   icon,
   actions,
+  formType,
+  onAIFormFill,
   screenType,
   onAIData,
 }: ScreenHeaderProps) {
@@ -352,10 +378,13 @@ export function ScreenHeader({
 
       {/* Right: toolbar */}
       <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-        {/* Gen AI button — prominent, always first if screenType is provided */}
-        {screenType && onAIData && (
-          <GenAIScreenButton screenType={screenType} onAIData={onAIData} />
-        )}
+        {/* Gen AI button — form fill or screen data mode */}
+        <GenAIButton
+          formType={formType}
+          onAIFormFill={onAIFormFill}
+          screenType={screenType}
+          onAIData={onAIData}
+        />
         <AuditLogDrawer screenId={screenId} />
         <ErrorLogDrawer screenId={screenId} />
         {actions}

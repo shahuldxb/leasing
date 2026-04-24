@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, AlertTriangle, XCircle, BarChart3, Search, Plus, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const QUALITY_FIELDS = [
   "contract_ref", "lessor_name", "asset_description", "lease_start_date", "lease_end_date",
@@ -55,6 +55,11 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 export default function LeaseDataQuality() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("scores");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [rules, setRules] = useState(VALIDATION_RULES);
@@ -248,9 +253,9 @@ export default function LeaseDataQuality() {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={showRuleDialog} onOpenChange={setShowRuleDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add Validation Rule</DialogTitle></DialogHeader>
+        <SlidePanel open={showRuleDialog} onClose={() => setShowRuleDialog(false)} title="" width="xl">
+          
+            
             <div className="space-y-4">
               <div>
                 <Label className="text-xs font-medium">Rule Name</Label>
@@ -295,8 +300,8 @@ export default function LeaseDataQuality() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

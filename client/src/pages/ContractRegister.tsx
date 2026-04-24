@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Download, RefreshCw, Eye, GitBranch, MoreHorizontal, FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -27,6 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ContractRegister() {
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [, setLocation] = useLocation();
   const [search, setSearch]   = useState("");
   const [status, setStatus]   = useState("all");
@@ -40,6 +42,16 @@ export default function ContractRegister() {
     sortColumn: "created_at", sortDirection: "DESC",
   });
 
+  const utils = trpc.useUtils();
+  const submitForApprovalMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted for approval"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const approveRejectMut = trpc.lease.approveRejectLease.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Decision recorded"); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const contracts  = data?.rows ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -47,19 +59,13 @@ export default function ContractRegister() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Contract Register</h1>
-            <p className="page-subtitle">Screen ID: VFCNTREGLS0001P001 · {totalCount} contracts</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>
-            <Button variant="outline" size="sm" className="gap-1.5"><Download className="h-3.5 w-3.5" /> Export</Button>
-            <Button size="sm" className="gap-1.5" onClick={() => toast.info("New contract form — coming soon")}>
-              <Plus className="h-3.5 w-3.5" /> New Contract
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+            screenId="VFCNTREGLS0001P001"
+            title="Contract Register"
+            subtitle="Master register of all lease contracts"
+            screenType="contract_register"
+            onAIData={(r) => setAiRows && setAiRows(r)}
+          />
 
         <Card>
           <CardContent className="pt-4 pb-3">

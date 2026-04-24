@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, TrendingUp, BookOpen, Plus, Download, BarChart3, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
+import { trpc } from "@/lib/trpc";
 
 const SAMPLE_RECEIVABLES = [
   { id: 1, contract_ref: "VF-FIN-001", lessee: "Vodafone Retail LLC", asset: "Network Equipment — Dubai Hub", lease_start: "2023-01-01", lease_end: "2027-12-31", gross_receivable: 2450000, unearned_income: 312500, net_receivable: 2137500, current_portion: 487500, non_current: 1650000, status: "ACTIVE" },
@@ -35,6 +36,11 @@ const GL_ENTRIES = [
 ];
 
 export default function LessorFinanceLease() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("receivables");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [selectedLease, setSelectedLease] = useState<any>(SAMPLE_RECEIVABLES[0]);
@@ -243,11 +249,11 @@ export default function LessorFinanceLease() {
         </Tabs>
 
         {/* New Finance Lease Dialog */}
-        <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>New Finance Lease (Lessor)</DialogTitle>
-            </DialogHeader>
+        <SlidePanel open={showNewDialog} onClose={() => setShowNewDialog(false)} title="" width="xl">
+          
+            
+              
+            
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -298,8 +304,8 @@ export default function LessorFinanceLease() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { MoreHorizontal, Search, Filter } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -368,11 +368,11 @@ export default function LeaseTerminations() {
         </div>
 
         {/* Initiate Dialog */}
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-red-400"><XCircle className="w-5 h-5" /> Initiate Lease Termination</DialogTitle>
-            </DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+              
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label className="text-sm font-medium">Contract *</Label>
@@ -446,15 +446,15 @@ export default function LeaseTerminations() {
                 {initiateMut.isPending ? "Submitting..." : "Submit for Approval"}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
 
         {/* Reject Dialog */}
-        <Dialog open={showReject !== null} onOpenChange={() => setShowReject(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-red-400">Reject Termination Request</DialogTitle>
-            </DialogHeader>
+        <SlidePanel open={showReject !== null} onClose={() => setShowReject(null)} title="" width="xl">
+          
+            
+              
+            
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium">Rejection Reason (mandatory)</Label>
@@ -470,8 +470,8 @@ export default function LeaseTerminations() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

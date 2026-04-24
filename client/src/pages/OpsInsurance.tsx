@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Shield, PlusCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
 const COVERAGE_TYPES = ["Property All Risk","Fire & Perils","Public Liability","Employer Liability","Motor Fleet","Equipment Breakdown","Business Interruption","Cyber Liability"];
 const PAYMENT_FREQ = ["Monthly","Quarterly","Semi-Annual","Annual"];
@@ -23,6 +23,12 @@ export default function OpsInsurance() {
 
   const { data, refetch } = trpc.lease.getInsurancePolicies.useQuery({});
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
+  const utils = trpc.useUtils();
+  const submitMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getInsurancePolicies.invalidate(); toast.success("Submitted"); },
+    onError: (e) => toast.error(e.message),
+  });
   const addMutation = { mutate: (_: any) => { toast.success("Policy registered"); setOpen(false); refetch(); }, isPending: false };
 
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.policies ?? [];
@@ -104,10 +110,10 @@ export default function OpsInsurance() {
           </Table>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Register Insurance Policy</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="insurance_policy" onFill={(data) => { if (data.policy_number !== undefined) setForm(f => ({ ...f, policy_number: data.policy_number as any })); if (data.insurer !== undefined) setForm(f => ({ ...f, insurer: data.insurer as any })); if (data.policy_type !== undefined) setForm(f => ({ ...f, policy_type: data.policy_type as any })); if (data.coverage_amount !== undefined) setForm(f => ({ ...f, coverage_amount: data.coverage_amount as any })); if (data.premium !== undefined) setForm(f => ({ ...f, premium: data.premium as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); }} /></div></DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="insurance_policy" onFill={(data) => { if (data.policy_number !== undefined) setForm(f => ({ ...f, policy_number: data.policy_number as any })); if (data.insurer !== undefined) setForm(f => ({ ...f, insurer: data.insurer as any })); if (data.policy_type !== undefined) setForm(f => ({ ...f, policy_type: data.policy_type as any })); if (data.coverage_amount !== undefined) setForm(f => ({ ...f, coverage_amount: data.coverage_amount as any })); if (data.premium !== undefined) setForm(f => ({ ...f, premium: data.premium as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); }} /></div>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-sm font-medium">Provider Name *</Label><Input className="mt-1" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
@@ -143,7 +149,7 @@ export default function OpsInsurance() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
                 onClick={() => addMutation.mutate({
@@ -157,9 +163,9 @@ export default function OpsInsurance() {
                   startDate: form.startDate,
                   endDate: form.endDate,
                 })}>Register Policy</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

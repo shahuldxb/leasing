@@ -20,6 +20,7 @@ import {
   Building2, Activity
 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Helpers ───────────────────────────────────────────────────
 const fmt = (n: number, decimals = 0) =>
@@ -161,27 +162,13 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* ── Header ─────────────────────────────────────────── */}
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Portfolio Dashboard</h1>
-            <p className="page-subtitle">
-              IFRS 16 Lease Portfolio Overview · Screen ID: VFLSEDASH0001P001
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <div className={`h-2 w-2 rounded-full ${wsConnected ? "bg-green-500 animate-pulse" : "bg-red-400"}`} />
-              {wsConnected ? "Live" : "Offline"}
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Updated {lastRefresh.toLocaleTimeString()}
-            </span>
-            <Button variant="outline" size="sm" onClick={handleManualRefresh} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+            screenId="VFPRTDASH0001P001"
+            title="Portfolio Dashboard"
+            subtitle="Real-time IFRS 16 portfolio overview"
+            screenType="dashboard"
+            onAIData={(r) => console.log("AI data", r)}
+          />
 
         {/* ── KPI Ribbon ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">

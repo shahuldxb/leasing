@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Building2, Plus, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -90,10 +90,10 @@ export default function SubLeases() {
           </CardContent>
         </Card>
 
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>New Sub-Lease</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="sub_lease" onFill={(data) => { if (data.sub_tenant_name !== undefined) setForm(f => ({ ...f, sub_tenant_name: data.sub_tenant_name as any })); if (data.sub_rent !== undefined) setForm(f => ({ ...f, sub_rent: data.sub_rent as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); if (data.area_sqm !== undefined) setForm(f => ({ ...f, area_sqm: data.area_sqm as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} /></div></DialogHeader>
+        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="sub_lease" onFill={(data) => { if (data.sub_tenant_name !== undefined) setForm(f => ({ ...f, sub_tenant_name: data.sub_tenant_name as any })); if (data.sub_rent !== undefined) setForm(f => ({ ...f, sub_rent: data.sub_rent as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); if (data.area_sqm !== undefined) setForm(f => ({ ...f, area_sqm: data.area_sqm as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} /></div>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Head Lease Contract</Label>
@@ -141,14 +141,14 @@ export default function SubLeases() {
                 <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} />
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               <Button onClick={() => create.mutate(form)} disabled={create.isPending || !form.head_lease_contract_id || !form.sublessee_name}>
                 {create.isPending ? "Saving..." : "Create Sub-Lease"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

@@ -47,6 +47,8 @@ const menuItems: NavItem[] = [
     children: [
       { label: "Lease Register",    path: "/leases" },
       { label: "New Lease",         path: "/leases/new" },
+      { label: "Lessor Master",      path: "/lessor-master" },
+      { label: "Asset Registry",     path: "/asset-registry" },
       { label: "Amortisation",      path: "/leases/amortisation" },
       { label: "Lease Renewals",    path: "/leases/renewals" },
       { label: "Modifications",     path: "/leases/modifications" },
@@ -195,13 +197,6 @@ const menuItems: NavItem[] = [
       { label: "Alert Rules",        path: "/admin/alerts-reports" },
       { label: "Scheduled Reports",  path: "/admin/alerts-reports" },
       { label: "Alert Centre",       path: "/alerts" },
-    ],
-  },
-  {
-    icon: Building2, label: "Lessor & Assets",
-    children: [
-      { label: "Lessor Master",      path: "/lessor-master" },
-      { label: "Asset Registry",     path: "/asset-registry" },
     ],
   },
   {

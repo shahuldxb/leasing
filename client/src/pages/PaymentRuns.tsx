@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { PlayCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 export default function PaymentRuns() {
   const [open, setOpen] = useState(false);
@@ -67,9 +67,9 @@ export default function PaymentRuns() {
           </Table>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Create Payment Run</DialogTitle></DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium">Payment Date *</Label>
@@ -90,16 +90,16 @@ export default function PaymentRuns() {
                 All approved invoices due on or before the payment date will be included in this run.
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
                 onClick={() => createRunMutation.mutate({ runDate: payDate, currency: 'USD', invoices: [], bankFileFormat: bankFormat as 'SWIFT' | 'EFT' })}
                 disabled={!payDate || createRunMutation.isPending}>
                 {createRunMutation.isPending ? "Processing..." : "Generate Run"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

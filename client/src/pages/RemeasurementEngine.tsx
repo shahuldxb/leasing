@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw, Plus, CheckCircle, Clock, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const EVENT_TYPES = [
   { value: "EXTENSION_EXERCISE", label: "Extension Option Exercised" },
@@ -146,9 +146,9 @@ export default function RemeasurementEngine() {
         </Card>
 
         {/* New remeasurement dialog */}
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>New Remeasurement Event</DialogTitle></DialogHeader>
+        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
+          
+            
             {!calcResult ? (
               <div className="space-y-4">
                 <div className="space-y-1">
@@ -185,12 +185,12 @@ export default function RemeasurementEngine() {
                   <Label>Trigger Description</Label>
                   <Textarea value={form.trigger_description} onChange={e => setForm(f => ({ ...f, trigger_description: e.target.value }))} placeholder="Describe the event triggering remeasurement..." rows={2} />
                 </div>
-                <DialogFooter>
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
                   <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                   <Button onClick={() => create.mutate(form)} disabled={create.isPending || !form.contract_id}>
                     {create.isPending ? "Calculating..." : "Calculate"}
                   </Button>
-                </DialogFooter>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -202,13 +202,13 @@ export default function RemeasurementEngine() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">The remeasurement has been saved as PENDING. Post it to update the contract values.</p>
-                <DialogFooter>
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
                   <Button onClick={() => setShowForm(false)}>Close</Button>
-                </DialogFooter>
+                </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

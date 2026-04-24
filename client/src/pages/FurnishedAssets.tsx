@@ -66,6 +66,20 @@ export default function FurnishedAssets() {
   });
 
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
+  const utils = trpc.useUtils();
+  const createMut = trpc.furnishedAssets.create.useMutation({
+    onSuccess: () => { utils.furnishedAssets.listAll.invalidate(); toast.success("Asset created"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.furnishedAssets.update.useMutation({
+    onSuccess: () => { utils.furnishedAssets.listAll.invalidate(); toast.success("Asset updated"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMut = trpc.furnishedAssets.delete.useMutation({
+    onSuccess: () => { utils.furnishedAssets.listAll.invalidate(); toast.success("Asset deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
 
   // Use mock data since DB tables may not exist yet

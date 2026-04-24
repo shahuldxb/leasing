@@ -4,7 +4,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CheckCircle, Edit, Plus, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 export default function BouncePenalty() {
   const [cfgOpen, setCfgOpen] = useState(false);
@@ -192,11 +192,11 @@ export default function BouncePenalty() {
         </Tabs>
 
         {/* Config Dialog */}
-        <Dialog open={cfgOpen} onOpenChange={setCfgOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editCfg ? "Edit Penalty Rule" : "Add Penalty Rule"}</DialogTitle>
-            </DialogHeader>
+        <SlidePanel open={cfgOpen} onClose={() => setCfgOpen(false)} title="" width="xl">
+          
+            
+              
+            
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -256,15 +256,15 @@ export default function BouncePenalty() {
                 {saveCfgMut.isPending ? "Saving..." : "Save Rule"}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
 
         {/* Record Bounce Dialog */}
-        <Dialog open={bounceOpen} onOpenChange={setBounceOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-red-400 flex items-center gap-2"><AlertCircle className="w-5 h-5" /> Record Bounce Event</DialogTitle>
-            </DialogHeader>
+        <SlidePanel open={bounceOpen} onClose={() => setBounceOpen(false)} title="" width="xl">
+          
+            
+              
+            
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium">Cheque *</Label>
@@ -307,8 +307,8 @@ export default function BouncePenalty() {
                 {recordBounceMut.isPending ? "Recording..." : "Record Bounce"}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

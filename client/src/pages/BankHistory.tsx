@@ -5,10 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { History } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 export default function BankHistory() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data } = trpc.bankRecon.getHistory.useQuery({ pageNumber: 1, pageSize: 50 });
+
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Reconciliation report sent"),
+    onError: (e) => toast.error(e.message),
+  });
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.sessions ?? [];
   return (
     <DashboardLayout>

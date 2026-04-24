@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -18,6 +17,7 @@ import {
   Building2, Calendar, DollarSign, Wrench, FileText,
   CheckCircle, AlertTriangle, Layers, Tag
 } from "lucide-react";
+import SlidePanel from "@/components/SlidePanel";
 
 type AssetType = "Tower Site" | "Data Centre" | "Retail Outlet" | "Office" | "Warehouse" | "Vehicle" | "Network Equipment" | "Land" | "Other";
 type ConditionRating = "Excellent" | "Good" | "Fair" | "Poor";
@@ -500,11 +500,11 @@ export default function AssetRegistry() {
       </div>
 
       {/* Asset Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">{editMode ? "Edit Asset" : "Register New Asset"}</DialogTitle>
-          </DialogHeader>
+      <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
+        
+          
+            
+          
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -593,14 +593,14 @@ export default function AssetRegistry() {
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Additional details about this asset..." className="bg-background border-border mt-1" rows={3} />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={upsertMutation.isPending}>
               {upsertMutation.isPending ? "Saving..." : editMode ? "Update Asset" : "Register Asset"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        
+      </SlidePanel>
     </DashboardLayout>
   );
 }

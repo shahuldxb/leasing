@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Smartphone, Wifi, WifiOff, CheckCircle, Clock, Camera, MapPin, RefreshCw, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 const INSPECTIONS = [
   { id: "INS-2026-001", property: "Vodafone HQ — Floor 12", type: "Annual Condition Survey", inspector: "Ahmed Al Rashid", date: "2026-04-20", status: "COMPLETED", photos: 24, findings: 3, synced: true },
@@ -32,6 +33,11 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function MobileFieldApp() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("inspections");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
 

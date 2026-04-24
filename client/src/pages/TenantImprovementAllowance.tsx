@@ -1,209 +1,249 @@
+/**
+ * VodaLease Enterprise — Tenant Improvement Allowance
+ * Screen ID: VFLTENANTIM0001P001
+ */
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, CheckCircle, Clock, AlertTriangle, Plus, Download } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
-const TI_RECORDS = [
-  { id: 1, lease_ref: "VF-2024-001", property: "Vodafone HQ Floor 12", lessor: "Al Futtaim", ti_agreed: 1200000, ti_received: 1200000, ti_spent: 1180000, remaining: 20000, status: "FULLY_RECEIVED", deadline: "2024-06-30", notes: "Fit-out complete. Minor snagging items outstanding." },
-  { id: 2, lease_ref: "VF-2024-003", property: "Vodafone HQ Floor 13", lessor: "Al Futtaim", ti_agreed: 1100000, ti_received: 550000, ti_spent: 480000, remaining: 70000, status: "PARTIAL", deadline: "2024-09-30", notes: "Second tranche due on practical completion certificate." },
-  { id: 3, lease_ref: "VF-2023-041", property: "Vodafone Abu Dhabi", lessor: "TECOM", ti_agreed: 800000, ti_received: 800000, ti_spent: 795000, remaining: 5000, status: "FULLY_RECEIVED", deadline: "2023-12-31", notes: "All works complete." },
-  { id: 4, lease_ref: "LOI-2026-002", property: "One Central Tower A (Proposed)", lessor: "DWTC", ti_agreed: 1500000, ti_received: 0, ti_spent: 0, remaining: 1500000, status: "PENDING", deadline: "2026-12-31", notes: "Awaiting lease execution." },
-];
-
-const EXPENDITURE = [
-  { category: "Partition & Joinery", amount: 485000, lease: "VF-2024-001", date: "2024-03-15", supplier: "Al Habtoor Interiors" },
-  { category: "MEP Works", amount: 320000, lease: "VF-2024-001", date: "2024-04-01", supplier: "Drake & Scull" },
-  { category: "Flooring", amount: 185000, lease: "VF-2024-001", date: "2024-04-20", supplier: "Interface UAE" },
-  { category: "AV & IT Infrastructure", amount: 190000, lease: "VF-2024-001", date: "2024-05-10", supplier: "Dimension Data" },
-  { category: "Furniture", amount: 0, lease: "VF-2024-001", date: "—", supplier: "Procured separately" },
-];
-
-const STATUS_COLORS: Record<string, string> = {
-  FULLY_RECEIVED: "bg-green-500/20 text-green-400 border-green-500/30",
-  PARTIAL: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  PENDING: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  OVERDUE: "bg-red-500/20 text-red-400 border-red-500/30",
+const INIT_FORM = {
+  description: "",
+  total_amount: "" as string | number,
+  currency: "",
+  received_date: "",
+  amortisation_start: "",
+  amortisation_end: "",
+  amortisation_method: "",
+  gl_account: "",
+  status: "",
+  notes: ""
 };
 
 export default function TenantImprovementAllowance() {
-  const [tab, setTab] = useState("overview");
+  const [search, setSearch] = useState("");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const [tiForm, setTiForm] = useState({ lease_ref: "", property_name: "", allowance_amount: "", scope_of_work: "", contractor: "", completion_date: "" });
-  const [showDialog, setShowDialog] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
+  const [form, setForm] = useState<any>({ ...INIT_FORM });
 
-  const totalAgreed = TI_RECORDS.reduce((s, r) => s + r.ti_agreed, 0);
-  const totalReceived = TI_RECORDS.reduce((s, r) => s + r.ti_received, 0);
-  const totalSpent = TI_RECORDS.reduce((s, r) => s + r.ti_spent, 0);
-  const totalOutstanding = TI_RECORDS.reduce((s, r) => s + (r.ti_agreed - r.ti_received), 0);
+  const utils = trpc.useUtils();
+  const { data: rows = [], isLoading } = trpc.tiAllowance.list.useQuery({} as any);
+
+  const createMut = trpc.tiAllowance.create.useMutation({
+    onSuccess: () => { utils.tiAllowance.list.invalidate(); toast.success("Record created"); setPanelOpen(false); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.tiAllowance.update.useMutation({
+    onSuccess: () => { utils.tiAllowance.list.invalidate(); toast.success("Updated"); setPanelOpen(false); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMut = trpc.tiAllowance.delete.useMutation({
+    onSuccess: () => { utils.tiAllowance.list.invalidate(); toast.success("Deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+
+  const displayRows = aiRows.length > 0 ? aiRows : (rows as any[]);
+  const filtered = displayRows.filter((r: any) =>
+    !search || Object.values(r).some(v => String(v).toLowerCase().includes(search.toLowerCase()))
+  );
+
+  function openAdd() {
+    setEditRow(null);
+    setForm({ ...INIT_FORM });
+    setPanelOpen(true);
+  }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({
+      description: row.description ?? "",
+      total_amount: row.total_amount ?? "",
+      currency: row.currency ?? "",
+      received_date: row.received_date ?? "",
+      amortisation_start: row.amortisation_start ?? "",
+      amortisation_end: row.amortisation_end ?? "",
+      amortisation_method: row.amortisation_method ?? "",
+      gl_account: row.gl_account ?? "",
+      status: row.status ?? "",
+      notes: row.notes ?? ""
+      });
+    setPanelOpen(true);
+  }
+  function handleSubmit() {
+    const payload = {
+      description: form.description as any,
+      total_amount: form.total_amount ? Number(form.total_amount) : undefined,
+      currency: form.currency as any,
+      received_date: form.received_date as any,
+      amortisation_start: form.amortisation_start as any,
+      amortisation_end: form.amortisation_end as any,
+      amortisation_method: form.amortisation_method as any,
+      gl_account: form.gl_account as any,
+      status: form.status as any,
+      notes: form.notes as any
+      };
+    if (editRow) {
+            updateMut.mutate({ ti_id: editRow.ti_id, ...payload } as any);
+    } else {
+      createMut.mutate(payload as any);
+    }
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLTIALL0001P001"
-          screenType="ti_allowance"
-          onAIData={(rows) => setAiRows(rows)}
-  title="Tenant Improvement Allowance"
-  subtitle="TI allowance tracking and amortisation"
-/>
+          screenId="VFLTENANTIM0001P001"
+          title="Tenant Improvement Allowance"
+          subtitle="Manage tenant improvement allowance records"
+          screenType="tiAllowance"
+          onAIData={(r) => setAiRows(r)}
+          actions={<Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" />Add New</Button>}
+        />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Total TI Agreed", value: `AED ${(totalAgreed / 1000000).toFixed(2)}M`, icon: DollarSign, color: "text-blue-400" },
-            { label: "Total Received", value: `AED ${(totalReceived / 1000000).toFixed(2)}M`, icon: CheckCircle, color: "text-green-400" },
-            { label: "Total Spent", value: `AED ${(totalSpent / 1000000).toFixed(2)}M`, icon: DollarSign, color: "text-yellow-400" },
-            { label: "Outstanding (Unclaimed)", value: `AED ${(totalOutstanding / 1000000).toFixed(2)}M`, icon: AlertTriangle, color: "text-orange-400" },
-          ].map((kpi) => (
-            <Card key={kpi.label} className="bg-card border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <kpi.icon className={`w-8 h-8 ${kpi.color}`} />
-                  <div>
-                    <p className="text-lg font-bold">{kpi.value}</p>
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
         </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="bg-muted/30">
-            <TabsTrigger value="overview">TI Overview</TabsTrigger>
-            <TabsTrigger value="expenditure">Expenditure Breakdown</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="mt-4">
-            <Card className="bg-card border-border">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-xs">Lease Ref</TableHead>
-                      <TableHead className="text-xs">Property</TableHead>
-                      <TableHead className="text-xs">Lessor</TableHead>
-                      <TableHead className="text-xs text-right">TI Agreed</TableHead>
-                      <TableHead className="text-xs text-right">Received</TableHead>
-                      <TableHead className="text-xs text-right">Spent</TableHead>
-                      <TableHead className="text-xs text-right">Balance</TableHead>
-                      <TableHead className="text-xs">Deadline</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {TI_RECORDS.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-mono text-xs">{r.lease_ref}</TableCell>
-                        <TableCell className="text-sm">{r.property}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{r.lessor}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{(r.ti_agreed / 1000).toFixed(0)}K</TableCell>
-                        <TableCell className="text-right font-mono text-sm text-green-400">{(r.ti_received / 1000).toFixed(0)}K</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{(r.ti_spent / 1000).toFixed(0)}K</TableCell>
-                        <TableCell className="text-right font-mono text-sm text-yellow-400">{(r.remaining / 1000).toFixed(0)}K</TableCell>
-                        <TableCell className="text-xs">{r.deadline}</TableCell>
-                        <TableCell><Badge className={`text-xs border ${STATUS_COLORS[r.status]}`}>{r.status.replace("_", " ")}</Badge></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-            <div className="mt-4 space-y-3">
-              {TI_RECORDS.map((r) => (
-                <Card key={r.id} className="bg-card border-border">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-xs font-semibold">{r.lease_ref}</span>
-                      <span className="text-xs text-muted-foreground">{r.property}</span>
-                    </div>
-                    <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
-                      <div className="h-full flex">
-                        <div className="bg-green-500/70 h-full" style={{ width: `${(r.ti_spent / r.ti_agreed) * 100}%` }} />
-                        <div className="bg-yellow-500/40 h-full" style={{ width: `${((r.ti_received - r.ti_spent) / r.ti_agreed) * 100}%` }} />
-                      </div>
-                    </div>
-                    <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                      <span className="text-green-400">Spent: {Math.round((r.ti_spent / r.ti_agreed) * 100)}%</span>
-                      <span className="text-yellow-400">Unspent received: {Math.round(((r.ti_received - r.ti_spent) / r.ti_agreed) * 100)}%</span>
-                      <span>Unclaimed: {Math.round(((r.ti_agreed - r.ti_received) / r.ti_agreed) * 100)}%</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="expenditure" className="mt-4">
-            <Card className="bg-card border-border">
-              <CardHeader><CardTitle className="text-sm">Expenditure Breakdown — VF-2024-001</CardTitle></CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-xs">Category</TableHead>
-                      <TableHead className="text-xs">Supplier</TableHead>
-                      <TableHead className="text-xs">Date</TableHead>
-                      <TableHead className="text-xs text-right">Amount (AED)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {EXPENDITURE.map((e, i) => (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                <TableHead className="text-xs">Ti Ref</TableHead>
+                <TableHead className="text-xs">Contract Ref</TableHead>
+                <TableHead className="text-xs">Description</TableHead>
+                <TableHead className="text-xs">Total Amount</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && aiRows.length === 0 ? (
+                    Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell className="text-sm">{e.category}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{e.supplier}</TableCell>
-                        <TableCell className="text-xs">{e.date}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{e.amount > 0 ? e.amount.toLocaleString() : "—"}</TableCell>
+                        {Array.from({ length: 6 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
                       </TableRow>
-                    ))}
-                    <TableRow className="bg-muted/30 font-semibold">
-                      <TableCell colSpan={3} className="text-sm">TOTAL</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{EXPENDITURE.reduce((s, e) => s + e.amount, 0).toLocaleString()}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Add TI Allowance Record</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="ti_allowance" onFill={(data) => { if (data.lease_ref !== undefined) setTiForm(f => ({ ...f, lease_ref: data.lease_ref as any })); if (data.property_name !== undefined) setTiForm(f => ({ ...f, property_name: data.property_name as any })); if (data.allowance_amount !== undefined) setTiForm(f => ({ ...f, allowance_amount: data.allowance_amount as any })); if (data.scope_of_work !== undefined) setTiForm(f => ({ ...f, scope_of_work: data.scope_of_work as any })); if (data.contractor !== undefined) setTiForm(f => ({ ...f, contractor: data.contractor as any })); if (data.completion_date !== undefined) setTiForm(f => ({ ...f, completion_date: data.completion_date as any })); }} /></div></DialogHeader>
-            <div className="space-y-3">
-              {[
-                { label: "Lease Reference", placeholder: "e.g. VF-2024-001" },
-                { label: "Property", placeholder: "Property name" },
-                { label: "Lessor", placeholder: "Lessor name" },
-                { label: "TI Agreed (AED)", placeholder: "e.g. 1200000" },
-                { label: "Claim Deadline", placeholder: "YYYY-MM-DD" },
-              ].map(f => (
-                <div key={f.label}>
-                  <Label className="text-xs font-medium">{f.label}</Label>
-                  <Input className="mt-1" placeholder={f.placeholder} />
-                </div>
-              ))}
-              <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowDialog(false)} className="flex-1">Cancel</Button>
-                <Button className="flex-1 bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => { toast.success("TI record added"); setShowDialog(false); }}>
-                  Save
-                </Button>
-              </div>
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">No records found. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
+                  ) : (
+                    filtered.map((row: any, i: number) => (
+                      <TableRow key={row.ti_id ?? i} className="hover:bg-muted/20">
+                    <TableCell>{row.ti_ref ?? "—"}</TableCell>
+                    <TableCell>{row.contract_ref ?? "—"}</TableCell>
+                    <TableCell>{row.description ?? "—"}</TableCell>
+                    <TableCell>{row.total_amount ?? "—"}</TableCell>
+                    <TableCell>{row.status ?? "—"}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(row)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMut.mutate({ ti_id: row.ti_id })}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          </DialogContent>
-        </Dialog>
+          </CardContent>
+        </Card>
       </div>
+
+      <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Description</Label>
+            <Input type="text" value={form.description ?? ""} onChange={e => setForm((f: any) => ({...f, description: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Total Amount</Label>
+            <Input type="number" value={form.total_amount ?? ""} onChange={e => setForm((f: any) => ({...f, total_amount: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Currency</Label>
+            <Input type="text" value={form.currency ?? ""} onChange={e => setForm((f: any) => ({...f, currency: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Received Date</Label>
+            <Input type="date" value={form.received_date ?? ""} onChange={e => setForm((f: any) => ({...f, received_date: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Amortisation Start</Label>
+            <Input type="date" value={form.amortisation_start ?? ""} onChange={e => setForm((f: any) => ({...f, amortisation_start: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Amortisation End</Label>
+            <Input type="date" value={form.amortisation_end ?? ""} onChange={e => setForm((f: any) => ({...f, amortisation_end: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Amortisation Method</Label>
+            <Select value={String(form.amortisation_method ?? "")} onValueChange={v => setForm((f: any) => ({...f, amortisation_method: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="STRAIGHT_LINE">STRAIGHT_LINE</SelectItem>
+                  <SelectItem value="EFFECTIVE_INTEREST">EFFECTIVE_INTEREST</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Gl Account</Label>
+            <Input type="text" value={form.gl_account ?? ""} onChange={e => setForm((f: any) => ({...f, gl_account: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="PENDING">PENDING</SelectItem>
+                  <SelectItem value="RECEIVED">RECEIVED</SelectItem>
+                  <SelectItem value="AMORTISING">AMORTISING</SelectItem>
+                  <SelectItem value="FULLY_AMORTISED">FULLY_AMORTISED</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
     </DashboardLayout>
   );
 }

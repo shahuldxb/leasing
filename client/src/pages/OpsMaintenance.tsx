@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
 const TICKET_TYPES = ["Routine Maintenance","Major Repair","Emergency","Structural","HVAC/Power","Cleaning","Security","Compliance Inspection"];
 const RESPONSIBILITY = ["Vodafone","Lessor","Shared"];
@@ -23,6 +23,12 @@ export default function OpsMaintenance() {
 
   const { data: tickets = [], refetch } = trpc.lease.getMaintenanceTickets.useQuery({});
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+
+  const utils = trpc.useUtils();
+  const submitMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getMaintenanceTickets.invalidate(); toast.success("Submitted"); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const rows: any[] = Array.isArray(tickets) ? tickets : (tickets as any)?.tickets ?? [];
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
@@ -93,10 +99,10 @@ export default function OpsMaintenance() {
           </Table>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Raise Maintenance Ticket</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="maintenance_ticket" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.asset_type !== undefined) setForm(f => ({ ...f, asset_type: data.asset_type as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div></DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="maintenance_ticket" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.asset_type !== undefined) setForm(f => ({ ...f, asset_type: data.asset_type as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div>
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Lease *</Label>
@@ -133,13 +139,13 @@ export default function OpsMaintenance() {
                 <div><Label className="text-sm font-medium">Estimated Cost ($)</Label><Input type="number" className="mt-1" value={form.estimatedCost} onChange={e => setForm(f => ({ ...f, estimatedCost: e.target.value }))} /></div>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
                 onClick={() => { toast.success("Ticket raised"); setOpen(false); refetch(); }}>Raise Ticket</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

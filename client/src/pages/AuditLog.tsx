@@ -11,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, RefreshCw, Download, Shield } from "lucide-react";
+import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function AuditLog() {
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [module, setModule]     = useState("all");
   const [actionType, setActionType] = useState("all");
   const [page, setPage]         = useState(1);
@@ -25,6 +28,12 @@ export default function AuditLog() {
     pageSize: PAGE_SIZE,
   });
 
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Report sent to owner"),
+    onError: (e) => toast.error(e.message),
+  });
+
   const rows       = data?.rows ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -32,16 +41,13 @@ export default function AuditLog() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Audit Log</h1>
-            <p className="page-subtitle">Screen ID: VFCMPAUDIT0001P001 · {totalCount} entries</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>
-            <Button variant="outline" size="sm" className="gap-1.5"><Download className="h-3.5 w-3.5" /> Export</Button>
-          </div>
-        </div>
+        <ScreenHeader
+            screenId="VFCMPAUDIT0001P001"
+            title="Audit Log"
+            subtitle="Complete audit trail of all system actions"
+            screenType="audit_log"
+            onAIData={(r) => setAiRows(r)}
+          />
 
         <Card>
           <CardContent className="pt-4 pb-3">

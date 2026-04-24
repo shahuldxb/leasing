@@ -1,202 +1,246 @@
+/**
+ * VodaLease Enterprise — LOITracking
+ * Screen ID: VFLLOITRACK0001P001
+ */
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Clock, CheckCircle, XCircle, Plus, ArrowRight } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
-const LOIS = [
-  { id: 1, ref: "LOI-2026-001", property: "DIFC Gate Village — Unit 12", lessor: "DIFC Authority", area_sqm: 1850, rent_pa: 2775000, broker: "JLL UAE", submitted: "2026-04-01", expiry: "2026-04-30", status: "UNDER_NEGOTIATION", notes: "Counter-offer received — 5% above asking" },
-  { id: 2, ref: "LOI-2026-002", property: "One Central — Tower A", lessor: "DWTC", area_sqm: 2400, rent_pa: 3600000, broker: "CBRE Middle East", submitted: "2026-03-20", expiry: "2026-04-25", status: "ACCEPTED", notes: "LOI accepted, progressing to formal lease" },
-  { id: 3, ref: "LOI-2026-003", property: "Jumeirah Bay X3 — Floor 8", lessor: "Meraas", area_sqm: 1200, rent_pa: 1800000, broker: "Savills UAE", submitted: "2026-04-10", expiry: "2026-05-10", status: "SUBMITTED", notes: "Awaiting lessor response" },
-  { id: 4, ref: "LOI-2025-018", property: "Dubai Hills Business Park", lessor: "Emaar Properties", area_sqm: 3100, rent_pa: 3875000, broker: "JLL UAE", submitted: "2025-11-01", expiry: "2025-11-30", status: "EXPIRED", notes: "LOI expired — lessor withdrew" },
-  { id: 5, ref: "LOI-2025-012", property: "Abu Dhabi Global Market Square", lessor: "ADGM", area_sqm: 950, rent_pa: 1425000, broker: "Knight Frank", submitted: "2025-09-15", expiry: "2025-10-15", status: "CONVERTED", notes: "Converted to lease VF-2025-042" },
-];
-
-const STATUS_COLORS: Record<string, string> = {
-  SUBMITTED: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  UNDER_NEGOTIATION: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  ACCEPTED: "bg-green-500/20 text-green-400 border-green-500/30",
-  EXPIRED: "bg-red-500/20 text-red-400 border-red-500/30",
-  CONVERTED: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  WITHDRAWN: "bg-muted/30 text-muted-foreground border-border",
-};
-
-const STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  SUBMITTED: Clock,
-  UNDER_NEGOTIATION: Clock,
-  ACCEPTED: CheckCircle,
-  EXPIRED: XCircle,
-  CONVERTED: CheckCircle,
+const INIT_FORM = {
+  property_name: "",
+  lessor_name: "",
+  asset_type: "",
+  location: "",
+  proposed_start: "",
+  proposed_end: "",
+  monthly_rent: "" as string | number,
+  currency: "",
+  status: "",
+  notes: ""
 };
 
 export default function LOITracking() {
-  const [lois, setLois] = useState(LOIS);
+  const [search, setSearch] = useState("");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  // Merge AI-generated rows with real data
-  const displayLois = aiRows.length > 0 ? aiRows as typeof lois : lois;
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
+  const [form, setForm] = useState<any>({ ...INIT_FORM });
 
-  const [showDialog, setShowDialog] = useState(false);
-  const [form, setForm] = useState({ property: "", lessor: "", area_sqm: "", rent_pa: "", broker: "", expiry: "", notes: "" });
+  const utils = trpc.useUtils();
+  const { data: rows = [], isLoading } = trpc.loi.list.useQuery({} as any);
 
-  const active = lois.filter(l => ["SUBMITTED", "UNDER_NEGOTIATION", "ACCEPTED"].includes(l.status)).length;
-  const converted = lois.filter(l => l.status === "CONVERTED").length;
-  const conversionRate = Math.round((converted / lois.length) * 100);
+  const createMut = trpc.loi.create.useMutation({
+    onSuccess: () => { utils.loi.list.invalidate(); toast.success("Record created"); setPanelOpen(false); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.loi.update.useMutation({
+    onSuccess: () => { utils.loi.list.invalidate(); toast.success("Updated"); setPanelOpen(false); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMut = trpc.loi.delete.useMutation({
+    onSuccess: () => { utils.loi.list.invalidate(); toast.success("Deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+
+  const displayRows = aiRows.length > 0 ? aiRows : (rows as any[]);
+  const filtered = displayRows.filter((r: any) =>
+    !search || Object.values(r).some(v => String(v).toLowerCase().includes(search.toLowerCase()))
+  );
+
+  function openAdd() {
+    setEditRow(null);
+    setForm({ ...INIT_FORM });
+    setPanelOpen(true);
+  }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({
+      property_name: row.property_name ?? "",
+      lessor_name: row.lessor_name ?? "",
+      asset_type: row.asset_type ?? "",
+      location: row.location ?? "",
+      proposed_start: row.proposed_start ?? "",
+      proposed_end: row.proposed_end ?? "",
+      monthly_rent: row.monthly_rent ?? "",
+      currency: row.currency ?? "",
+      status: row.status ?? "",
+      notes: row.notes ?? ""
+      });
+    setPanelOpen(true);
+  }
+  function handleSubmit() {
+    const payload = {
+      property_name: form.property_name as any,
+      lessor_name: form.lessor_name as any,
+      asset_type: form.asset_type as any,
+      location: form.location as any,
+      proposed_start: form.proposed_start as any,
+      proposed_end: form.proposed_end as any,
+      monthly_rent: form.monthly_rent ? Number(form.monthly_rent) : undefined,
+      currency: form.currency as any,
+      status: form.status as any,
+      notes: form.notes as any
+      };
+    if (editRow) {
+            updateMut.mutate({ loi_id: editRow.loi_id, ...payload } as any);
+    } else {
+      createMut.mutate(payload as any);
+    }
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLLOI0001P001"
-          screenType="loi_tracking"
-          onAIData={(rows) => setAiRows(rows)}
-  title="LOI Tracking"
-  subtitle="Letter of Intent tracking for pre-contract stage"
-/>
+          screenId="VFLLOITRACK0001P001"
+          title="LOITracking"
+          subtitle="Manage loitracking records"
+          screenType="loi"
+          onAIData={(r) => setAiRows(r)}
+          actions={<Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" />Add New</Button>}
+        />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Active LOIs", value: active, icon: FileText, color: "text-blue-400" },
-            { label: "Converted to Lease", value: converted, icon: CheckCircle, color: "text-green-400" },
-            { label: "Conversion Rate", value: `${conversionRate}%`, icon: ArrowRight, color: "text-purple-400" },
-            { label: "Expiring This Week", value: lois.filter(l => l.status !== "EXPIRED" && l.status !== "CONVERTED" && new Date(l.expiry) <= new Date(Date.now() + 7 * 86400000)).length, icon: Clock, color: "text-orange-400" },
-          ].map((kpi) => (
-            <Card key={kpi.label} className="bg-card border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <kpi.icon className={`w-8 h-8 ${kpi.color}`} />
-                  <div>
-                    <p className="text-2xl font-bold">{kpi.value}</p>
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
         </div>
 
-        {/* Pipeline visual */}
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle className="text-sm">LOI Pipeline</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {[
-                { stage: "Submitted", count: lois.filter(l => l.status === "SUBMITTED").length, color: "bg-blue-500/20 border-blue-500/30 text-blue-400" },
-                { stage: "Negotiating", count: lois.filter(l => l.status === "UNDER_NEGOTIATION").length, color: "bg-yellow-500/20 border-yellow-500/30 text-yellow-400" },
-                { stage: "Accepted", count: lois.filter(l => l.status === "ACCEPTED").length, color: "bg-green-500/20 border-green-500/30 text-green-400" },
-                { stage: "Converted", count: lois.filter(l => l.status === "CONVERTED").length, color: "bg-purple-500/20 border-purple-500/30 text-purple-400" },
-                { stage: "Expired/Withdrawn", count: lois.filter(l => l.status === "EXPIRED" || l.status === "WITHDRAWN").length, color: "bg-red-500/20 border-red-500/30 text-red-400" },
-              ].map((stage, i, arr) => (
-                <div key={stage.stage} className="flex items-center gap-2 shrink-0">
-                  <div className={`px-4 py-3 rounded-lg border text-center min-w-[100px] ${stage.color}`}>
-                    <p className="text-2xl font-bold">{stage.count}</p>
-                    <p className="text-xs">{stage.stage}</p>
-                  </div>
-                  {i < arr.length - 1 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
+        <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="text-xs">LOI Ref</TableHead>
-                  <TableHead className="text-xs">Property</TableHead>
-                  <TableHead className="text-xs">Lessor</TableHead>
-                  <TableHead className="text-xs text-right">Area (sqm)</TableHead>
-                  <TableHead className="text-xs text-right">Annual Rent</TableHead>
-                  <TableHead className="text-xs">Broker</TableHead>
-                  <TableHead className="text-xs">Expiry</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
-                  <TableHead className="text-xs">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lois.map((loi) => {
-                  const StatusIcon = STATUS_ICONS[loi.status] || Clock;
-                  return (
-                    <TableRow key={loi.id}>
-                      <TableCell className="font-mono text-xs">{loi.ref}</TableCell>
-                      <TableCell className="text-sm">{loi.property}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{loi.lessor}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{loi.area_sqm.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{(loi.rent_pa / 1000000).toFixed(2)}M</TableCell>
-                      <TableCell className="text-xs">{loi.broker}</TableCell>
-                      <TableCell className="text-xs">{loi.expiry}</TableCell>
-                      <TableCell><Badge className={`text-xs border ${STATUS_COLORS[loi.status]}`}>{loi.status.replace("_", " ")}</Badge></TableCell>
-                      <TableCell>
-                        {loi.status === "ACCEPTED" && (
-                          <Button size="sm" className="h-7 px-2 text-xs bg-[#e60000] hover:bg-[#cc0000] text-white"
-                            onClick={() => { toast.success(`LOI ${loi.ref} converted to lease`); setLois(prev => prev.map(l => l.id === loi.id ? { ...l, status: "CONVERTED" } : l)); }}>
-                            Convert to Lease
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                <TableHead className="text-xs">Loi Ref</TableHead>
+                <TableHead className="text-xs">Property Name</TableHead>
+                <TableHead className="text-xs">Lessor Name</TableHead>
+                <TableHead className="text-xs">Asset Type</TableHead>
+                <TableHead className="text-xs">Monthly Rent</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && aiRows.length === 0 ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
+                      </TableRow>
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No records found. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
+                  ) : (
+                    filtered.map((row: any, i: number) => (
+                      <TableRow key={row.loi_id ?? i} className="hover:bg-muted/20">
+                    <TableCell>{row.loi_ref ?? "—"}</TableCell>
+                    <TableCell>{row.property_name ?? "—"}</TableCell>
+                    <TableCell>{row.lessor_name ?? "—"}</TableCell>
+                    <TableCell>{row.asset_type ?? "—"}</TableCell>
+                    <TableCell>{row.monthly_rent ?? "—"}</TableCell>
+                    <TableCell>{row.status ?? "—"}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(row)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMut.mutate({ loi_id: row.loi_id })}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
-
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>New Letter of Intent</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="letter_of_intent" onFill={(data) => { if (data.property_name !== undefined) setForm(f => ({ ...f, property_name: data.property_name as any })); if (data.lessor_name !== undefined) setForm(f => ({ ...f, lessor_name: data.lessor_name as any })); if (data.proposed_rent !== undefined) setForm(f => ({ ...f, proposed_rent: data.proposed_rent as any })); if (data.proposed_term !== undefined) setForm(f => ({ ...f, proposed_term: data.proposed_term as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} /></div></DialogHeader>
-            <div className="space-y-3">
-              {[
-                { key: "property", label: "Property / Address", placeholder: "e.g. DIFC Gate Village Unit 12" },
-                { key: "lessor", label: "Lessor / Landlord", placeholder: "e.g. DIFC Authority" },
-                { key: "area_sqm", label: "Area (sqm)", placeholder: "e.g. 1850" },
-                { key: "rent_pa", label: "Annual Rent (AED)", placeholder: "e.g. 2775000" },
-                { key: "broker", label: "Broker", placeholder: "e.g. JLL UAE" },
-                { key: "expiry", label: "LOI Expiry Date", placeholder: "YYYY-MM-DD" },
-              ].map(f => (
-                <div key={f.key}>
-                  <Label className="text-xs font-medium">{f.label}</Label>
-                  <Input className="mt-1" placeholder={f.placeholder} value={(form as Record<string, string>)[f.key]} onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))} />
-                </div>
-              ))}
-              <div>
-                <Label className="text-xs font-medium">Notes</Label>
-                <Textarea className="mt-1 resize-none" rows={2} value={form.notes} onChange={e => setForm(prev => ({ ...prev, notes: e.target.value }))} />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowDialog(false)} className="flex-1">Cancel</Button>
-                <Button className="flex-1 bg-[#e60000] hover:bg-[#cc0000] text-white"
-                  disabled={!form.property}
-                  onClick={() => {
-                    setLois(prev => [...prev, {
-                      id: prev.length + 1, ref: `LOI-2026-00${prev.length + 1}`,
-                      property: form.property, lessor: form.lessor, area_sqm: Number(form.area_sqm) || 0,
-                      rent_pa: Number(form.rent_pa) || 0, broker: form.broker,
-                      submitted: new Date().toISOString().split("T")[0], expiry: form.expiry,
-                      status: "SUBMITTED", notes: form.notes,
-                    }]);
-                    toast.success("LOI submitted");
-                    setShowDialog(false);
-                  }}>
-                  Submit LOI
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Property Name</Label>
+            <Input type="text" value={form.property_name ?? ""} onChange={e => setForm((f: any) => ({...f, property_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Lessor Name</Label>
+            <Input type="text" value={form.lessor_name ?? ""} onChange={e => setForm((f: any) => ({...f, lessor_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Asset Type</Label>
+            <Input type="text" value={form.asset_type ?? ""} onChange={e => setForm((f: any) => ({...f, asset_type: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Location</Label>
+            <Input type="text" value={form.location ?? ""} onChange={e => setForm((f: any) => ({...f, location: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Proposed Start</Label>
+            <Input type="date" value={form.proposed_start ?? ""} onChange={e => setForm((f: any) => ({...f, proposed_start: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Proposed End</Label>
+            <Input type="date" value={form.proposed_end ?? ""} onChange={e => setForm((f: any) => ({...f, proposed_end: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Monthly Rent</Label>
+            <Input type="number" value={form.monthly_rent ?? ""} onChange={e => setForm((f: any) => ({...f, monthly_rent: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Currency</Label>
+            <Input type="text" value={form.currency ?? ""} onChange={e => setForm((f: any) => ({...f, currency: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="DRAFT">DRAFT</SelectItem>
+                  <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
+                  <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
+                  <SelectItem value="REJECTED">REJECTED</SelectItem>
+                  <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
     </DashboardLayout>
   );
 }

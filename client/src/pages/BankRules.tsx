@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Zap, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 export default function BankRules() {
   const [open, setOpen] = useState(false);
@@ -67,9 +67,9 @@ export default function BankRules() {
           </Table>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Add Matching Rule</DialogTitle></DialogHeader>
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
             <div className="space-y-3">
               <div><Label className="text-sm font-medium">Rule Name *</Label><Input className="mt-1" value={form.ruleName} onChange={e => setForm(f => ({ ...f, ruleName: e.target.value }))} /></div>
               <div className="grid grid-cols-3 gap-3">
@@ -94,14 +94,14 @@ export default function BankRules() {
                 <div><Label className="text-sm font-medium">Priority</Label><Input type="number" className="mt-1" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} /></div>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
                 onClick={() => upsertMutation.mutate({ ruleName: form.ruleName, ruleType: 'RefMatch', priority: Number(form.priority), refPattern: form.matchValue, description: `${form.matchField} ${form.matchOperator} ${form.matchValue}` })}
                 disabled={upsertMutation.isPending}>Save Rule</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

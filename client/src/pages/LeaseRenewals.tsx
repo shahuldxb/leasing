@@ -1,107 +1,231 @@
+/**
+ * VodaLease Enterprise — Lease Renewals
+ * Screen ID: VFLLEASEREN0001P001
+ */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
+
+const INIT_FORM = {
+  contract_id: "" as string | number,
+  renewal_type: "",
+  new_expiry_date: "",
+  new_monthly_payment: "" as string | number,
+  new_ibr: "" as string | number,
+  status: "",
+  notes: ""
+};
 
 export default function LeaseRenewals() {
+  const [search, setSearch] = useState("");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const { data: leases = [], refetch } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200, status: "Active" });
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
+  const [form, setForm] = useState<any>({ ...INIT_FORM });
 
-  const allLeases = (leases as any[]);
-  const today = new Date();
-  const in90 = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const utils = trpc.useUtils();
+  const { data: rows = [], isLoading } = trpc.leaseRenewal.list.useQuery({} as any);
 
-  const expiring = allLeases.filter((l: any) => {
-    const exp = new Date(l.expiry_date);
-    return exp <= in90 && exp >= today;
+  const createMut = trpc.leaseRenewal.create.useMutation({
+    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Record created"); setPanelOpen(false); },
+    onError: (e) => toast.error(e.message),
   });
-  const expired = allLeases.filter((l: any) => new Date(l.expiry_date) < today);
+  const updateMut = trpc.leaseRenewal.update.useMutation({
+    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Updated"); setPanelOpen(false); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMut = trpc.leaseRenewal.delete.useMutation({
+    onSuccess: () => { utils.leaseRenewal.list.invalidate(); toast.success("Deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
 
-  const statusBadge = (l: any) => {
-    const exp = new Date(l.expiry_date);
-    const daysLeft = Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysLeft < 0) return <Badge variant="destructive">Expired</Badge>;
-    if (daysLeft <= 30) return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">{daysLeft}d left</Badge>;
-    if (daysLeft <= 90) return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">{daysLeft}d left</Badge>;
-    return <Badge variant="outline">{daysLeft}d left</Badge>;
-  };
+
+  const displayRows = aiRows.length > 0 ? aiRows : (rows as any[]);
+  const filtered = displayRows.filter((r: any) =>
+    !search || Object.values(r).some(v => String(v).toLowerCase().includes(search.toLowerCase()))
+  );
+
+  function openAdd() {
+    setEditRow(null);
+    setForm({ ...INIT_FORM });
+    setPanelOpen(true);
+  }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({
+      contract_id: row.contract_id ?? "",
+      renewal_type: row.renewal_type ?? "",
+      new_expiry_date: row.new_expiry_date ?? "",
+      new_monthly_payment: row.new_monthly_payment ?? "",
+      new_ibr: row.new_ibr ?? "",
+      status: row.status ?? "",
+      notes: row.notes ?? ""
+      });
+    setPanelOpen(true);
+  }
+  function handleSubmit() {
+    const payload = {
+      contract_id: form.contract_id ? Number(form.contract_id) : undefined,
+      renewal_type: form.renewal_type as any,
+      new_expiry_date: form.new_expiry_date as any,
+      new_monthly_payment: form.new_monthly_payment ? Number(form.new_monthly_payment) : undefined,
+      new_ibr: form.new_ibr ? Number(form.new_ibr) : undefined,
+      status: form.status as any,
+      notes: form.notes as any
+      };
+    if (editRow) {
+            updateMut.mutate({ renewal_id: editRow.renewal_id, ...payload } as any);
+    } else {
+      createMut.mutate(payload as any);
+    }
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLLEAREN0001P001"
-          screenType="lease_renewals"
-          onAIData={(rows) => setAiRows(rows)}
-  title="Lease Renewals"
-  subtitle="Renewal pipeline and negotiation tracking"
-/>
+          screenId="VFLLEASEREN0001P001"
+          title="Lease Renewals"
+          subtitle="Manage lease renewals records"
+          screenType="leaseRenewal"
+          onAIData={(r) => setAiRows(r)}
+          actions={<Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" />Add New</Button>}
+        />
 
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2"><AlertTriangle className="w-5 h-5 text-red-400" /><span className="font-semibold text-red-400">Expired</span></div>
-            <p className="text-3xl font-bold text-red-400">{expired.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Require immediate action</p>
-          </div>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 text-amber-400" /><span className="font-semibold text-amber-400">Expiring in 90 Days</span></div>
-            <p className="text-3xl font-bold text-amber-400">{expiring.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Renewal action needed</p>
-          </div>
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2"><CheckCircle2 className="w-5 h-5 text-green-400" /><span className="font-semibold text-green-400">Active (Safe)</span></div>
-            <p className="text-3xl font-bold text-green-400">{allLeases.length - expiring.length - expired.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">No action required</p>
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
         </div>
 
-        {/* Renewals Table */}
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h2 className="font-semibold">Leases Requiring Renewal Action</h2>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                <TableHead className="text-xs">Renewal Ref</TableHead>
                 <TableHead className="text-xs">Contract Ref</TableHead>
-                <TableHead className="text-xs">Lessor</TableHead>
-                <TableHead className="text-xs">Asset</TableHead>
-                <TableHead className="text-xs">Expiry Date</TableHead>
+                <TableHead className="text-xs">Lessor Name</TableHead>
+                <TableHead className="text-xs">Renewal Type</TableHead>
+                <TableHead className="text-xs">New Expiry Date</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
-                <TableHead className="text-xs">Monthly Rent</TableHead>
-                <TableHead className="text-xs">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...expired, ...expiring].map((l: any) => (
-                <TableRow key={l.contract_id} className="text-sm hover:bg-muted/30">
-                  <TableCell className="font-mono text-xs">{l.contract_ref}</TableCell>
-                  <TableCell>{l.lessor_name}</TableCell>
-                  <TableCell>{l.asset_description}</TableCell>
-                  <TableCell>{new Date(l.expiry_date).toLocaleDateString()}</TableCell>
-                  <TableCell>{statusBadge(l)}</TableCell>
-                  <TableCell className="font-mono">{l.currency} {Number(l.monthly_payment).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => toast.info("Renewal workflow initiated")}>Renew</Button>
-                      <Button size="sm" variant="outline" onClick={() => toast.info("Termination workflow initiated")}>Terminate</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {expired.length === 0 && expiring.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No leases requiring renewal action</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    <TableHead className="text-xs">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && aiRows.length === 0 ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
+                      </TableRow>
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No records found. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
+                  ) : (
+                    filtered.map((row: any, i: number) => (
+                      <TableRow key={row.renewal_id ?? i} className="hover:bg-muted/20">
+                    <TableCell>{row.renewal_ref ?? "—"}</TableCell>
+                    <TableCell>{row.contract_ref ?? "—"}</TableCell>
+                    <TableCell>{row.lessor_name ?? "—"}</TableCell>
+                    <TableCell>{row.renewal_type ?? "—"}</TableCell>
+                    <TableCell>{row.new_expiry_date ?? "—"}</TableCell>
+                    <TableCell>{row.status ?? "—"}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(row)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMut.mutate({ renewal_id: row.renewal_id })}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Contract Id</Label>
+            <Input type="number" value={form.contract_id ?? ""} onChange={e => setForm((f: any) => ({...f, contract_id: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Renewal Type</Label>
+            <Select value={String(form.renewal_type ?? "")} onValueChange={v => setForm((f: any) => ({...f, renewal_type: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="EXTENSION">EXTENSION</SelectItem>
+                  <SelectItem value="RENEGOTIATION">RENEGOTIATION</SelectItem>
+                  <SelectItem value="HOLDOVER">HOLDOVER</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>New Expiry Date</Label>
+            <Input type="date" value={form.new_expiry_date ?? ""} onChange={e => setForm((f: any) => ({...f, new_expiry_date: e.target.value}))} />
+          </div>
+          <div>
+            <Label>New Monthly Payment</Label>
+            <Input type="number" value={form.new_monthly_payment ?? ""} onChange={e => setForm((f: any) => ({...f, new_monthly_payment: e.target.value}))} />
+          </div>
+          <div>
+            <Label>New Ibr</Label>
+            <Input type="number" value={form.new_ibr ?? ""} onChange={e => setForm((f: any) => ({...f, new_ibr: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="DRAFT">DRAFT</SelectItem>
+                  <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
+                  <SelectItem value="APPROVED">APPROVED</SelectItem>
+                  <SelectItem value="REJECTED">REJECTED</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
     </DashboardLayout>
   );
 }

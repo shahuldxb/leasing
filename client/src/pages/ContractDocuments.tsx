@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Upload, Search, Eye, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 const MOCK_DOCS = [
   { id: 1, name: "Lease Agreement - Tower Site A.pdf", contract: "VFL-2025-0001", type: "Lease Agreement", uploaded: "2025-01-15", size: "2.4 MB", status: "Active" },
@@ -14,6 +15,11 @@ const MOCK_DOCS = [
 ];
 
 export default function ContractDocuments() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [search, setSearch] = useState("");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const filtered = MOCK_DOCS.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.contract.toLowerCase().includes(search.toLowerCase()));

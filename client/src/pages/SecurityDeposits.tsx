@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Shield, Plus, Banknote, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import SlidePanel from "@/components/SlidePanel";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -96,10 +96,10 @@ export default function SecurityDeposits() {
           </CardContent>
         </Card>
 
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Record Security Deposit</DialogTitle>
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="security_deposit" onFill={(data) => { if (data.amount !== undefined) setForm(f => ({ ...f, amount: data.amount as any })); if (data.currency !== undefined) setForm(f => ({ ...f, currency: data.currency as any })); if (data.bank_name !== undefined) setForm(f => ({ ...f, bank_name: data.bank_name as any })); if (data.bank_ref !== undefined) setForm(f => ({ ...f, bank_ref: data.bank_ref as any })); if (data.deposit_date !== undefined) setForm(f => ({ ...f, deposit_date: data.deposit_date as any })); }} /></div></DialogHeader>
+        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="security_deposit" onFill={(data) => { if (data.amount !== undefined) setForm(f => ({ ...f, amount: data.amount as any })); if (data.currency !== undefined) setForm(f => ({ ...f, currency: data.currency as any })); if (data.bank_name !== undefined) setForm(f => ({ ...f, bank_name: data.bank_name as any })); if (data.bank_ref !== undefined) setForm(f => ({ ...f, bank_ref: data.bank_ref as any })); if (data.deposit_date !== undefined) setForm(f => ({ ...f, deposit_date: data.deposit_date as any })); }} /></div>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label>Contract</Label>
@@ -151,14 +151,14 @@ export default function SecurityDeposits() {
                 <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} />
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               <Button onClick={() => create.mutate(form)} disabled={create.isPending || !form.contract_id || !form.deposit_date}>
                 {create.isPending ? "Saving..." : "Record Deposit"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          
+        </SlidePanel>
       </div>
     </DashboardLayout>
   );

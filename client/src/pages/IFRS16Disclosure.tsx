@@ -22,6 +22,12 @@ export default function IFRS16Disclosure() {
 
   const { data, isLoading, refetch } = trpc.accounting.reporting.disclosureNote.useQuery({ periodEnd: submitted });
 
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Disclosure note sent to owner"),
+    onError: (e) => toast.error(e.message),
+  });
+
   const handleGenerate = () => {
     setSubmitted(periodEnd);
     toast.success("Disclosure note generated");

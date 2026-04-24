@@ -504,3 +504,10 @@
 - [x] Add Gen AI fill button to: LeaseDataQuality (validation rule form)
 - [x] Add Gen AI fill button to: ScenarioModelling (add scenario form)
 - [x] Add Gen AI fill button to: CriticalDateCalendar (add alert form)
+
+## Critical UI Fixes (Apr 24)
+- [ ] Fix Lessor Master: remove all modal dialogs, replace with right-side SlidePanel (no Dialog/Modal components anywhere)
+- [ ] Move Lessor Master and Asset Registry under Lease Management section in sidebar (not Master Data)
+- [ ] Fix ScreenHeader: add formType+onAIFormFill props for form-fill mode alongside existing screenType+onAIData
+- [ ] Fix NewLease: wire onAIFormFill to set lessor/asset/financial form state
+- [ ] Fix all other form pages: wire onAIFormFill to their form state setters

@@ -7,11 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings, Users, Monitor, Shield, Database } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("users");
@@ -22,6 +22,12 @@ export default function AdminPanel() {
   const { data: screenRegistry } = trpc.compliance.getScreenRegistry.useQuery();
   const { data: thresholds, refetch: refetchThresholds } = trpc.workflow.getMCThresholds.useQuery();
   const { data: kpis } = trpc.mis.getDashboardKPIs.useQuery();
+
+  const utils = trpc.useUtils();
+  const notifyOwnerMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Notification sent"),
+    onError: (e) => toast.error(e.message),
+  });
 
   const screens: any[] = Array.isArray(screenRegistry) ? screenRegistry : [];
   const thresholdList: any[] = Array.isArray(thresholds) ? thresholds : [];

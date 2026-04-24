@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Download } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { toast } from "sonner";
 
 export default function GLJournals() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -17,6 +18,20 @@ export default function GLJournals() {
 
   // Use invoice register as proxy for GL entries until dedicated journal endpoint is added
   const { data, isLoading, refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 100 });
+
+  const utils = trpc.useUtils();
+  const createMut = trpc.glJournal.create.useMutation({
+    onSuccess: () => { utils.glJournal.list.invalidate(); toast.success("Journal created"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.glJournal.update.useMutation({
+    onSuccess: () => { utils.glJournal.list.invalidate(); toast.success("Journal updated"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMut = trpc.glJournal.delete.useMutation({
+    onSuccess: () => { utils.glJournal.list.invalidate(); toast.success("Journal deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.invoices ?? [];
 
   return (

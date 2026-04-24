@@ -54,14 +54,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Drawer,
   DrawerClose,
   DrawerContent,
@@ -172,6 +164,7 @@ import {
 import { useState } from "react";
 import { toast as sonnerToast } from "sonner";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
+import SlidePanel from "@/components/SlidePanel";
 
 export default function ComponentsShowcase() {
   const { theme, toggleTheme } = useTheme();
@@ -1020,41 +1013,29 @@ export default function ComponentsShowcase() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-4">
-                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">Open Dialog</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Test Input</DialogTitle>
-                        <DialogDescription>
-                          Enter some text below. Press Enter to submit (IME composition supported).
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="dialog-input">Input</Label>
-                          <Input
-                            id="dialog-input"
-                            placeholder="Type something..."
-                            value={dialogInput}
-                            onChange={(e) => setDialogInput(e.target.value)}
-                            onKeyDown={handleDialogKeyDown}
-                            autoFocus
-                          />
-                        </div>
-                      </div>
+                  <Button variant="outline" onClick={() => setDialogOpen(true)}>Open Dialog</Button>
+                  <SlidePanel open={dialogOpen} onClose={() => setDialogOpen(false)} title="Dialog Example" width="xl"
+                    footer={
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => setDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleDialogSubmit}>Submit</Button>
                       </div>
-                    </DialogContent>
-                  </Dialog>
+                    }
+                  >
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="dialog-input">Input</Label>
+                        <Input
+                          id="dialog-input"
+                          placeholder="Type something..."
+                          value={dialogInput}
+                          onChange={(e) => setDialogInput(e.target.value)}
+                          onKeyDown={handleDialogKeyDown}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                  </SlidePanel>
 
                   <Sheet>
                     <SheetTrigger asChild>

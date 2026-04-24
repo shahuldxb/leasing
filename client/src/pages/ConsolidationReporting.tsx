@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Building2, BarChart3, FileText, Download, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 const ENTITIES = [
   { code: "VF-UAE", name: "Vodafone UAE LLC", type: "Parent", leases: 47, rou_asset: 125400000, lease_liability: 118900000, interco: false },
@@ -36,6 +37,11 @@ const CONSOLIDATED = {
 };
 
 export default function ConsolidationReporting() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [tab, setTab] = useState("overview");
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [period, setPeriod] = useState("2026-03");

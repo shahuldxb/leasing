@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Star, TrendingUp, Award } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import SlidePanel from "@/components/SlidePanel";
 
 const RATING_COLORS: Record<string, string> = { AAA: "bg-emerald-600", AA: "bg-emerald-500", A: "bg-blue-500", BBB: "bg-amber-500", BB: "bg-orange-500", B: "bg-red-500", CCC: "bg-red-700", D: "bg-gray-600" };
 

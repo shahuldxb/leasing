@@ -50,6 +50,16 @@ export default function LeaseRegister() {
     sortDirection: "DESC",
   });
 
+  const utils = trpc.useUtils();
+  const submitMut = trpc.lease.submitForApproval.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted for approval"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const approveRejectMut = trpc.lease.approveRejectLease.useMutation({
+    onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Decision recorded"); },
+    onError: (e) => toast.error(e.message),
+  });
+
   // Merge AI-generated rows with real data (AI rows take precedence when present)
   const leases     = aiLeases.length > 0 ? aiLeases as any[] : (data?.rows ?? []);
   const totalCount = aiLeases.length > 0 ? aiLeases.length : (data?.totalCount ?? 0);

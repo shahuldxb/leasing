@@ -41,6 +41,12 @@ export default function ReportBuilder() {
     { enabled: false }
   );
 
+  const utils = trpc.useUtils();
+  const notifyMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Report sent to owner"),
+    onError: (e) => toast.error(e.message),
+  });
+
   const handleRun = async () => {
     const data = await run.refetch();
     if (data.data) setResult(data.data);

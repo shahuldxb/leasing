@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { FileText, Download, Play } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { trpc } from "@/lib/trpc";
 
 const REPORT_TEMPLATES = [
   { id: "lease_register", name: "Lease Register Report", description: "Full list of all active leases with key terms" },
@@ -22,6 +23,11 @@ const REPORT_TEMPLATES = [
 ];
 
 export default function MISReports() {
+  const utils = trpc.useUtils();
+  const actionMut = trpc.system.notifyOwner.useMutation({
+    onSuccess: () => toast.success("Action completed successfully"),
+    onError: (e: any) => toast.error(e.message),
+  });
   const [selectedReport, setSelectedReport] = useState("");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10));
