@@ -11,6 +11,7 @@ interface SlidePanelProps {
   children: ReactNode;
   footer?: ReactNode;
   width?: "md" | "lg" | "xl" | "2xl" | "full";
+  headerAction?: ReactNode;
 }
 
 /**
@@ -26,6 +27,7 @@ export default function SlidePanel({
   children,
   footer,
   width = "xl",
+  headerAction,
 }: SlidePanelProps) {
   const widthClass = {
     md: "w-full max-w-md",
@@ -55,20 +57,23 @@ export default function SlidePanel({
       >
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-border bg-[#161616] shrink-0">
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold text-foreground">{title}</h2>
             {subtitle && (
               <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground -mt-1 -mr-2"
-            onClick={onClose}
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2 ml-4 shrink-0">
+            {headerAction}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={onClose}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Scrollable body */}

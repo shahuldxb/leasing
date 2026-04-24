@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Leaf, Zap, Droplets, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const RATINGS = ["Platinum","Gold","Silver","Bronze","None"];
@@ -35,46 +36,11 @@ export default function ESGCarbon() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Leaf className="w-6 h-6 text-emerald-500" />ESG & Carbon Reporting</h1>
-            <p className="text-muted-foreground text-sm">Scope 1/2/3 emissions, energy, water, and waste tracking per leased property</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Add Record</Button></DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>ESG Data Entry</DialogTitle></DialogHeader>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="col-span-2"><Label>Contract</Label>
-                  <Select onValueChange={v => setForm(p => ({ ...p, contract_id: Number(v) }))}>
-                    <SelectTrigger><SelectValue placeholder="Select contract" /></SelectTrigger>
-                    <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.contract_ref} — {c.asset_description}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Year</Label><Input type="number" value={form.reporting_year} onChange={e => setForm(p => ({ ...p, reporting_year: Number(e.target.value) }))} /></div>
-                <div><Label>Month</Label>
-                  <Select value={String(form.reporting_month)} onValueChange={v => setForm(p => ({ ...p, reporting_month: Number(v) }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Scope 1 (tonnes CO₂e)</Label><Input type="number" step="0.001" value={form.scope1_tonnes} onChange={e => setForm(p => ({ ...p, scope1_tonnes: Number(e.target.value) }))} /></div>
-                <div><Label>Scope 2 (tonnes CO₂e)</Label><Input type="number" step="0.001" value={form.scope2_tonnes} onChange={e => setForm(p => ({ ...p, scope2_tonnes: Number(e.target.value) }))} /></div>
-                <div><Label>Scope 3 (tonnes CO₂e)</Label><Input type="number" step="0.001" value={form.scope3_tonnes} onChange={e => setForm(p => ({ ...p, scope3_tonnes: Number(e.target.value) }))} /></div>
-                <div><Label>Energy (kWh)</Label><Input type="number" value={form.energy_kwh} onChange={e => setForm(p => ({ ...p, energy_kwh: Number(e.target.value) }))} /></div>
-                <div><Label>Water (m³)</Label><Input type="number" value={form.water_m3} onChange={e => setForm(p => ({ ...p, water_m3: Number(e.target.value) }))} /></div>
-                <div><Label>Waste (tonnes)</Label><Input type="number" step="0.001" value={form.waste_tonnes} onChange={e => setForm(p => ({ ...p, waste_tonnes: Number(e.target.value) }))} /></div>
-                <div><Label>Green Building Rating</Label>
-                  <Select value={form.green_rating} onValueChange={v => setForm(p => ({ ...p, green_rating: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{RATINGS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button className="mt-4 w-full" onClick={() => save.mutate(form)} disabled={save.isPending}>Save ESG Record</Button>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <ScreenHeader
+  screenId="VFLESGCRB0001P001"
+  title="ESG Carbon Tracker"
+  subtitle="Carbon footprint and sustainability metrics"
+/>
 
         <div className="grid grid-cols-4 gap-4">
           {[

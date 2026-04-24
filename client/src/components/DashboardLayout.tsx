@@ -215,6 +215,7 @@ const menuItems: NavItem[] = [
       { label: "Furnished Assets",     path: "/ops/furnished-assets" },
       { label: "Asset Deposits",       path: "/ops/asset-deposits" },
       { label: "Handover Checklist",   path: "/ops/handover-checklist" },
+      { label: "Furniture Collections", path: "/assets/furniture" },
     ],
   },
   {

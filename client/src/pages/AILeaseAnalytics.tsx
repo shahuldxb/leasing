@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, Send, Sparkles, TrendingUp, AlertTriangle, BarChart3, Lightbulb, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const SUGGESTED_QUERIES = [
   "Which leases are expiring in the next 6 months and what is the total liability exposure?",
@@ -85,15 +86,11 @@ export default function AILeaseAnalytics() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">AI Lease Analytics</h1>
-            <p className="text-sm text-muted-foreground mt-1">Natural language portfolio queries, AI-generated insights, risk alerts, and predictive analytics</p>
-          </div>
-          <Badge className="text-sm px-3 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/30">
-            <Brain className="w-3.5 h-3.5 mr-1.5" /> GPT-4o Powered
-          </Badge>
-        </div>
+        <ScreenHeader
+  screenId="VFLAIALY0001P001"
+  title="AI Lease Analytics"
+  subtitle="Natural language insights and predictive analytics"
+/>
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-muted/30">

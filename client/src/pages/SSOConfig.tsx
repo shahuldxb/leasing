@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Key, Users, CheckCircle, AlertTriangle, Copy, RefreshCw, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function SSOConfig() {
   const [tab, setTab] = useState("saml");
@@ -44,15 +45,11 @@ export default function SSOConfig() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">SSO / Identity Configuration</h1>
-            <p className="text-sm text-muted-foreground mt-1">Configure SAML 2.0 and OpenID Connect for Azure AD, Okta, and other identity providers</p>
-          </div>
-          <Badge className={`text-sm px-3 py-1 border ${samlEnabled || oidcEnabled ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-muted text-muted-foreground border-border"}`}>
-            {samlEnabled || oidcEnabled ? "SSO Active" : "SSO Disabled"}
-          </Badge>
-        </div>
+        <ScreenHeader
+  screenId="VFLSSOCFG0001P001"
+  title="SSO Configuration"
+  subtitle="SAML 2.0 / OIDC single sign-on configuration"
+/>
 
         {/* Status Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

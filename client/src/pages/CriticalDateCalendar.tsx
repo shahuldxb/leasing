@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Bell, AlertTriangle, CheckCircle, Plus, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const URGENCY_COLORS: Record<string, string> = {
   OVERDUE: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
@@ -53,13 +54,11 @@ export default function CriticalDateCalendar() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Critical Date Calendar</h1>
-            <p className="text-muted-foreground text-sm">Lease expiries, renewal options, break clauses, rent reviews, and all key milestones</p>
-          </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-2" />Add Date</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLCRTCAL0001P001"
+  title="Critical Date Calendar"
+  subtitle="Expiry, renewal, and review date calendar"
+/>
 
         {/* Urgency summary */}
         <div className="grid grid-cols-4 gap-4">

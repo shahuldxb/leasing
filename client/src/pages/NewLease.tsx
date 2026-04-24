@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const STEPS = [
   { id: 1, label: "Lessor Details",    icon: Building2 },
@@ -114,10 +116,11 @@ export default function NewLease() {
     <DashboardLayout>
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">New Lease Origination</h1>
-          <p className="text-sm text-muted-foreground mt-1">Screen ID: VFLSENEWLS0001P001 · IFRS 16 compliant lease creation</p>
-        </div>
+        <ScreenHeader
+  screenId="VFLNEWLEA0001P001"
+  title="New Lease Origination"
+  subtitle="IFRS 16 compliant lease creation wizard"
+/>
 
         {/* Step Indicator */}
         <div className="flex items-center mb-8">

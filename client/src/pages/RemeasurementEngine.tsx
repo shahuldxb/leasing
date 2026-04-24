@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw, Plus, CheckCircle, Clock, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const EVENT_TYPES = [
   { value: "EXTENSION_EXERCISE", label: "Extension Option Exercised" },
@@ -55,13 +56,11 @@ export default function RemeasurementEngine() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Remeasurement Engine</h1>
-            <p className="text-muted-foreground text-sm">Recalculate lease liability and ROU asset on triggering events — IFRS 16.45–46</p>
-          </div>
-          <Button onClick={() => { setCalcResult(null); setShowForm(true); }}><Plus className="w-4 h-4 mr-2" />New Remeasurement</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLREMEAS0001P001"
+  title="Remeasurement Engine"
+  subtitle="IFRS 16 lease remeasurement calculator"
+/>
 
         {/* Summary */}
         <div className="grid grid-cols-3 gap-4">

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Building2, Hammer } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString()}` : "—";
 const pct = (used: any, total: any) => total ? `${((Number(used) / Number(total)) * 100).toFixed(0)}%` : "—";
@@ -39,145 +40,11 @@ export default function SpaceManagement() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Building2 className="w-6 h-6 text-teal-500" />Space & Capital Projects</h1>
-          <p className="text-muted-foreground text-sm">Occupancy management and capital expenditure tracking</p>
-        </div>
-
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: "Total Portfolio Area", value: `${totalSqm.toLocaleString()} sqm`, color: "text-blue-600" },
-            { label: "Occupied Area", value: `${occupiedSqm.toLocaleString()} sqm (${totalSqm ? ((occupiedSqm/totalSqm)*100).toFixed(0) : 0}%)`, color: "text-foreground" },
-            { label: "Total CapEx Budget", value: fmt(totalBudget), color: "text-violet-600" },
-            { label: "Total CapEx Spent", value: fmt(totalSpend), color: totalSpend > totalBudget ? "text-red-600" : "text-emerald-600" },
-          ].map(k => <Card key={k.label}><CardContent className="pt-4"><p className="text-xs text-muted-foreground">{k.label}</p><p className={`text-lg font-bold ${k.color}`}>{k.value}</p></CardContent></Card>)}
-        </div>
-
-        <Tabs defaultValue="space">
-          <TabsList>
-            <TabsTrigger value="space">Space Management ({(spaces as any[]).length})</TabsTrigger>
-            <TabsTrigger value="projects">Capital Projects ({(projects as any[]).length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="space">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Space Inventory</CardTitle>
-                <Dialog open={spaceOpen} onOpenChange={setSpaceOpen}>
-                  <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" />Add Space</Button></DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader><DialogTitle>Add Space Record</DialogTitle></DialogHeader>
-                    <div className="space-y-3 mt-4">
-                      <div><Label>Contract</Label>
-                        <Select onValueChange={v => setSpaceForm(p => ({ ...p, contract_id: Number(v) }))}>
-                          <SelectTrigger><SelectValue placeholder="Select contract" /></SelectTrigger>
-                          <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.contract_ref}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><Label>Building Name</Label><Input value={spaceForm.building_name} onChange={e => setSpaceForm(p => ({ ...p, building_name: e.target.value }))} /></div>
-                        <div><Label>Floor</Label><Input value={spaceForm.floor_number} onChange={e => setSpaceForm(p => ({ ...p, floor_number: e.target.value }))} /></div>
-                        <div><Label>Total Area (sqm)</Label><Input type="number" value={spaceForm.total_area_sqm} onChange={e => setSpaceForm(p => ({ ...p, total_area_sqm: Number(e.target.value) }))} /></div>
-                        <div><Label>Occupied Area (sqm)</Label><Input type="number" value={spaceForm.occupied_area_sqm} onChange={e => setSpaceForm(p => ({ ...p, occupied_area_sqm: Number(e.target.value) }))} /></div>
-                        <div><Label>Capacity (desks)</Label><Input type="number" value={spaceForm.capacity_desks} onChange={e => setSpaceForm(p => ({ ...p, capacity_desks: Number(e.target.value) }))} /></div>
-                        <div><Label>Occupied (desks)</Label><Input type="number" value={spaceForm.occupied_desks} onChange={e => setSpaceForm(p => ({ ...p, occupied_desks: Number(e.target.value) }))} /></div>
-                      </div>
-                    </div>
-                    <Button className="mt-4 w-full" onClick={() => saveSpace.mutate(spaceForm)} disabled={saveSpace.isPending}>Save</Button>
-                  </DialogContent>
-                </Dialog>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader><TableRow><TableHead>Contract</TableHead><TableHead>Building</TableHead><TableHead>Floor</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Total sqm</TableHead><TableHead className="text-right">Occupied sqm</TableHead><TableHead className="text-right">Utilisation</TableHead><TableHead className="text-right">Desks</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {(spaces as any[]).map((s: any) => (
-                      <TableRow key={s.space_id}>
-                        <TableCell className="font-mono text-xs">{s.contract_ref}</TableCell>
-                        <TableCell className="font-medium text-sm">{s.building_name}</TableCell>
-                        <TableCell className="text-sm">{s.floor_number ?? "—"}</TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{s.space_type}</Badge></TableCell>
-                        <TableCell className="text-right font-mono text-sm">{Number(s.total_area_sqm).toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{Number(s.occupied_area_sqm ?? 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-right"><Badge className={`text-xs ${Number(s.occupied_area_sqm)/Number(s.total_area_sqm) > 0.9 ? "bg-emerald-500" : Number(s.occupied_area_sqm)/Number(s.total_area_sqm) > 0.7 ? "bg-amber-500" : "bg-red-500"} text-white`}>{pct(s.occupied_area_sqm, s.total_area_sqm)}</Badge></TableCell>
-                        <TableCell className="text-right text-sm">{s.occupied_desks ?? 0}/{s.capacity_desks ?? 0}</TableCell>
-                      </TableRow>
-                    ))}
-                    {(spaces as any[]).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">No space records</TableCell></TableRow>}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="projects">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2"><Hammer className="w-4 h-4" />Capital Projects</CardTitle>
-                <Dialog open={projOpen} onOpenChange={setProjOpen}>
-                  <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 mr-1" />Add Project</Button></DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader><DialogTitle>New Capital Project</DialogTitle></DialogHeader>
-                    <div className="space-y-3 mt-4">
-                      <div><Label>Contract</Label>
-                        <Select onValueChange={v => setProjForm(p => ({ ...p, contract_id: Number(v) }))}>
-                          <SelectTrigger><SelectValue placeholder="Select contract" /></SelectTrigger>
-                          <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.contract_ref}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div><Label>Project Name</Label><Input value={projForm.project_name} onChange={e => setProjForm(p => ({ ...p, project_name: e.target.value }))} /></div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><Label>Type</Label>
-                          <Select value={projForm.project_type} onValueChange={v => setProjForm(p => ({ ...p, project_type: v as "FIT_OUT" | "REFURBISHMENT" | "EXPANSION" | "MAINTENANCE" | "OTHER" }))}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{["FIT_OUT","REFURBISHMENT","EXPANSION","MAINTENANCE","OTHER"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                        <div><Label>Status</Label>
-                          <Select value={projForm.status} onValueChange={v => setProjForm(p => ({ ...p, status: v as "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD" | "CANCELLED" }))}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>{["PLANNED","IN_PROGRESS","ON_HOLD","COMPLETED","CANCELLED"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                        <div><Label>Budget (AED)</Label><Input type="number" value={projForm.budget_amount} onChange={e => setProjForm(p => ({ ...p, budget_amount: Number(e.target.value) }))} /></div>
-                        <div><Label>Actual Spend (AED)</Label><Input type="number" value={projForm.actual_spend} onChange={e => setProjForm(p => ({ ...p, actual_spend: Number(e.target.value) }))} /></div>
-                        <div><Label>Start Date</Label><Input type="date" value={projForm.start_date} onChange={e => setProjForm(p => ({ ...p, start_date: e.target.value }))} /></div>
-                        <div><Label>Expected Completion</Label><Input type="date" value={projForm.expected_completion} onChange={e => setProjForm(p => ({ ...p, expected_completion: e.target.value }))} /></div>
-                      </div>
-                      <div><Label>Project Manager</Label><Input value={projForm.project_manager} onChange={e => setProjForm(p => ({ ...p, project_manager: e.target.value }))} /></div>
-                    </div>
-                    <Button className="mt-4 w-full" onClick={() => saveProj.mutate(projForm)} disabled={saveProj.isPending}>Save Project</Button>
-                  </DialogContent>
-                </Dialog>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader><TableRow><TableHead>Project</TableHead><TableHead>Contract</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Budget</TableHead><TableHead className="text-right">Spent</TableHead><TableHead className="text-right">Remaining</TableHead><TableHead>Completion</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {(projects as any[]).map((p: any) => {
-                      const remaining = Number(p.budget_amount ?? 0) - Number(p.actual_spend ?? 0);
-                      return (
-                        <TableRow key={p.project_id}>
-                          <TableCell className="font-medium text-sm">{p.project_name}</TableCell>
-                          <TableCell className="font-mono text-xs">{p.contract_ref}</TableCell>
-                          <TableCell><Badge variant="outline" className="text-xs">{p.project_type?.replace("_"," ")}</Badge></TableCell>
-                          <TableCell className="text-right font-mono text-sm">{fmt(p.budget_amount)}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{fmt(p.actual_spend)}</TableCell>
-                          <TableCell className={`text-right font-mono text-sm ${remaining < 0 ? "text-red-600" : "text-emerald-600"}`}>{fmt(Math.abs(remaining))}</TableCell>
-                          <TableCell className="text-sm">{p.expected_completion?.slice(0,10)}</TableCell>
-                          <TableCell><Badge className={`${STATUS_COLORS[p.status] ?? "bg-gray-500"} text-white text-xs`}>{p.status?.replace("_"," ")}</Badge></TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {(projects as any[]).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">No capital projects</TableCell></TableRow>}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+      <ScreenHeader
+  screenId="VFLSPCMGR0001P001"
+  title="Space Management"
+  subtitle="Floor plan and space utilisation management"
+/>
     </DashboardLayout>
   );
 }

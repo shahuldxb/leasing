@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Shield, Plus, Banknote, FileCheck } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -37,16 +38,11 @@ export default function SecurityDeposits() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Shield className="w-6 h-6 text-emerald-500" />
-              Security Deposits
-            </h1>
-            <p className="text-muted-foreground text-sm">Track cash deposits, bank guarantees, and letters of credit held by lessors</p>
-          </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-2" />Record Deposit</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLSECDEP0001P001"
+  title="Security Deposits"
+  subtitle="Security deposit register and release management"
+/>
 
         <div className="grid grid-cols-4 gap-4">
           <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">Total Held</p><p className="text-2xl font-bold text-emerald-600">{fmt(totalHeld)}</p></CardContent></Card>

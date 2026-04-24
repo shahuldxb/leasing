@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, CheckCircle, Clock, AlertTriangle, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const TI_RECORDS = [
   { id: 1, lease_ref: "VF-2024-001", property: "Vodafone HQ Floor 12", lessor: "Al Futtaim", ti_agreed: 1200000, ti_received: 1200000, ti_spent: 1180000, remaining: 20000, status: "FULLY_RECEIVED", deadline: "2024-06-30", notes: "Fit-out complete. Minor snagging items outstanding." },
@@ -45,20 +46,11 @@ export default function TenantImprovementAllowance() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Tenant Improvement Allowance</h1>
-            <p className="text-sm text-muted-foreground mt-1">Track TI allowances agreed with lessors, receipts, expenditure, and outstanding balances</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.info("Exporting TI report...")}>
-              <Download className="w-4 h-4 mr-2" /> Export
-            </Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" /> Add TI Record
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLTIALL0001P001"
+  title="Tenant Improvement Allowance"
+  subtitle="TI allowance tracking and amortisation"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

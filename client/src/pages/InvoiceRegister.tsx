@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const statusColor: Record<string, string> = {
   Pending: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -57,15 +58,11 @@ export default function InvoiceRegister() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Invoice Register</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFPAYINVRG0001P001</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> New Invoice
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLINVREG0001P001"
+  title="Invoice Register"
+  subtitle="Lease payment invoices and approval queue"
+/>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>

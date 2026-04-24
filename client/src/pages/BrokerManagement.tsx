@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, DollarSign, TrendingUp, Star, Plus, Search, Phone, Mail, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const BROKERS = [
   { id: 1, name: "JLL UAE", contact: "Michael Thompson", email: "m.thompson@jll.com", phone: "+971 4 426 6999", speciality: "Commercial Office", active_mandates: 4, closed_deals: 12, commission_ytd: 485000, rating: 4.8, status: "ACTIVE" },
@@ -47,15 +48,11 @@ export default function BrokerManagement() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Broker & Agent Management</h1>
-            <p className="text-sm text-muted-foreground mt-1">Manage broker relationships, mandates, commission tracking, and deal performance</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Add Broker
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLBRKRMG0001P001"
+  title="Broker & Agent Management"
+  subtitle="Broker profiles linked to lease origination"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

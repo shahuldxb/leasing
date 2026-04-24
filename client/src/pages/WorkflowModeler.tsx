@@ -16,6 +16,7 @@ import {
   ChevronRight, ChevronLeft, AlignCenter, Grid3X3, Info
 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 /* ─── Process templates ─── */
 const PROCESS_TEMPLATES = [
@@ -550,7 +551,7 @@ export default function WorkflowModeler() {
             <GitBranch className="w-5 h-5 text-[#e60000]" />
             <div>
               <h1 className="text-base font-bold leading-tight">Process Modeler</h1>
-              <p className="text-[10px] text-muted-foreground">VFWKFMODS0004P001 · BPMN 2.0</p>
+              <p className="text-[10px] text-muted-foreground">VFLWFLMOD0001P001 · BPMN 2.0</p>
             </div>
             {isDirty && <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-500 ml-2">Unsaved</Badge>}
           </div>

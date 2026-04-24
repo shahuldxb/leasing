@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Download, RefreshCw, Target } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -56,26 +57,11 @@ export default function BudgetingForecasting() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Budgeting & Cash Flow Forecasting</h1>
-            <p className="text-sm text-muted-foreground mt-1">Annual lease payment budgets, actuals vs forecast variance analysis, and multi-scenario cash flow projections</p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="h-9 w-24 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["2026", "2027", "2028"].map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={() => toast.info("Refreshing forecast model...")}>
-              <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-            </Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Exporting budget report...")}>
-              <Download className="w-4 h-4 mr-2" /> Export
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLBDGFRC0001P001"
+  title="Budgeting & Cash Flow Forecasting"
+  subtitle="Annual budget planning and cash flow projection"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

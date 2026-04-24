@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   Package, Plus, Search, RefreshCw, Eye, Edit, MapPin,
   Building2, Calendar, DollarSign, Wrench, FileText,
@@ -160,25 +161,11 @@ export default function AssetRegistry() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Package className="h-6 w-6 text-primary" />
-              Asset Registry
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {total.toLocaleString()} assets registered across all locations
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-1" /> Refresh
-            </Button>
-            <Button size="sm" onClick={() => { setForm(EMPTY_FORM); setEditMode(false); setShowForm(true); }}>
-              <Plus className="h-4 w-4 mr-1" /> Register Asset
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLASSREG0001P001"
+  title="Asset Registry"
+  subtitle="Master register of all leased assets"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

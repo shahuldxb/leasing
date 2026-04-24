@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, GitBranch } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const MOD_TYPES = ["Rent Change","Term Extension","Term Reduction","Scope Change","Remeasurement","Other"];
 
@@ -36,15 +37,11 @@ export default function LeaseModifications() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lease Modifications</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFLSEMODIF0001P001 · IFRS 16 remeasurement on contract changes</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> New Modification
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEAMOD0001P001"
+  title="Lease Modifications"
+  subtitle="Lease modification and remeasurement processing"
+/>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>

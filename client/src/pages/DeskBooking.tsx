@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Users, CheckCircle, Clock, Plus, BarChart3, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const FLOORS = [
   { id: 1, building: "Vodafone HQ — Dubai", floor: "Floor 12", total_desks: 80, available: 23, booked: 57, rooms: 6 },
@@ -47,15 +48,11 @@ export default function DeskBooking() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Desk & Room Booking</h1>
-            <p className="text-sm text-muted-foreground mt-1">Hot-desk reservations, meeting room bookings, and occupancy utilisation tracking</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> New Booking
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLDSBBKG0001P001"
+  title="Desk & Room Booking"
+  subtitle="Hot-desk and meeting room booking management"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

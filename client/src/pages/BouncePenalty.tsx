@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CheckCircle, Edit, Plus, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function BouncePenalty() {
   const [cfgOpen, setCfgOpen] = useState(false);
@@ -61,18 +62,11 @@ export default function BouncePenalty() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Bounce Cheque Management</h1>
-            <p className="text-sm text-muted-foreground mt-1">Configure penalty rules and record returned cheque events</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Add Penalty Rule</Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setBounceOpen(true)}>
-              <AlertCircle className="w-4 h-4 mr-2" /> Record Bounce
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLBNCPEN0001P001"
+  title="Bounce Penalty Register"
+  subtitle="Penalty calculation and recovery for bounced cheques"
+/>
 
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-4">

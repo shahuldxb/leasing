@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { MoreHorizontal, Search, Filter } from "lucide-react";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -89,15 +90,11 @@ export default function LeaseTerminations() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lease Terminations</h1>
-            <p className="text-sm text-muted-foreground mt-1">IFRS 16 derecognition — manage early exit, penalty analysis, and GL posting</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Initiate Termination
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEATRM0001P001"
+  title="Lease Terminations"
+  subtitle="Termination initiation and penalty calculation"
+/>
 
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />

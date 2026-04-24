@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, PlusCircle, Search, Banknote, AlertTriangle, CheckCircle2, Clock, Scissors } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const STATUS_COLORS: Record<string, string> = {
   HELD:     "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -91,19 +92,11 @@ export default function AssetDepositRegister() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-[#e60000]" /> Asset Deposit Register
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Screen ID: VFOPSDEP0001P001 · Deposits held against furnished property assets — separate from security deposits
-            </p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowAdd(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> Record Deposit
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLASSDEP0001P001"
+  title="Asset Deposit Register"
+  subtitle="Deposits held against furnished assets per lease"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Theme ─────────────────────────────────────────────────────
 type Theme = "dark" | "light";
@@ -476,39 +477,11 @@ export default function ChequeInventory() {
       <div className="max-w-screen-xl mx-auto px-6 py-6 space-y-6">
 
         {/* ── Header ─────────────────────────────────────────── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <CreditCard className="w-6 h-6 text-[#e60000]" />
-              Cheque Inventory
-            </h1>
-            <p className={`text-sm mt-0.5 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-              Screen ID: VFCHQDASH0001P001 · Manage cheque books, issuance, and lifecycle
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
-            <Select value={theme} onValueChange={v => setTheme(v as Theme)}>
-              <SelectTrigger className={`w-32 ${inputCls}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dark"><span className="flex items-center gap-2"><Moon className="w-3.5 h-3.5" /> Dark</span></SelectItem>
-                <SelectItem value="light"><span className="flex items-center gap-2"><Sun className="w-3.5 h-3.5" /> Light</span></SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={refetchAll} className={inputCls}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-            <Button size="sm" onClick={() => setShowBookDialog(true)} variant="outline" className={inputCls}>
-              <BookOpen className="w-4 h-4 mr-1.5" /> Register Book
-            </Button>
-            <Button size="sm" onClick={() => setShowIssueDialog(true)}
-              className="bg-[#e60000] hover:bg-[#cc0000] text-white">
-              <Plus className="w-4 h-4 mr-1.5" /> Issue Cheque
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLCHQINV0001P001"
+  title="Cheque Inventory"
+  subtitle="Cheque book management and tracking"
+/>
 
         {/* ── KPI Ribbon ──────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">

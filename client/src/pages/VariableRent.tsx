@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { DollarSign, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -41,16 +42,11 @@ export default function VariableRent() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-amber-500" />
-              Variable / Contingent Rent
-            </h1>
-            <p className="text-muted-foreground text-sm">Track variable lease payments not included in lease liability — IFRS 16 para 38(b)</p>
-          </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-2" />Record Variable Rent</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLVARNT0001P001"
+  title="Variable Rent"
+  subtitle="Variable and contingent rent tracking"
+/>
 
         <div className="grid grid-cols-3 gap-4">
           <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">Total Variable Rent (YTD)</p><p className="text-3xl font-bold text-amber-600">{fmt(totalActual)}</p></CardContent></Card>

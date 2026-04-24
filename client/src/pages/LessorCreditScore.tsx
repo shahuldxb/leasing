@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Star, TrendingUp, Award } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const RATING_COLORS: Record<string, string> = { AAA: "bg-emerald-600", AA: "bg-emerald-500", A: "bg-blue-500", BBB: "bg-amber-500", BB: "bg-orange-500", B: "bg-red-500", CCC: "bg-red-700", D: "bg-gray-600" };
 
@@ -31,47 +32,11 @@ export default function LessorCreditScore() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Star className="w-6 h-6 text-amber-500" />Lessor Credit Scoring</h1>
-            <p className="text-muted-foreground text-sm">AI-assisted credit risk assessment and rating for all lessors</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Score Lessor</Button></DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Lessor Credit Assessment</DialogTitle></DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div><Label>Lessor</Label>
-                  <Select onValueChange={v => setForm(p => ({ ...p, lessor_id: Number(v) }))}>
-                    <SelectTrigger><SelectValue placeholder="Select lessor" /></SelectTrigger>
-                    <SelectContent>{(lessors as any[]).map((l: any) => <SelectItem key={l.lessor_id} value={String(l.lessor_id)}>{l.lessor_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                {[
-                  { key: "payment_history_score", label: "Payment History (40% weight)", hint: "Timeliness, disputes, defaults" },
-                  { key: "financial_stability_score", label: "Financial Stability (30% weight)", hint: "Credit rating, debt levels" },
-                  { key: "dispute_history_score", label: "Dispute History (20% weight)", hint: "Legal disputes, complaints" },
-                  { key: "compliance_score", label: "Compliance (10% weight)", hint: "Regulatory, contractual compliance" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <Label>{f.label}</Label>
-                    <p className="text-xs text-muted-foreground mb-1">{f.hint}</p>
-                    <div className="flex items-center gap-3">
-                      <Input type="range" min={0} max={100} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: Number(e.target.value) }))} className="flex-1" />
-                      <span className="w-10 text-right font-mono font-bold">{(form as any)[f.key]}</span>
-                    </div>
-                  </div>
-                ))}
-                <div className="p-3 rounded-lg bg-muted">
-                  <p className="text-sm font-medium">Computed Overall Score: <span className="text-lg font-bold">{overall(form).toFixed(1)}</span></p>
-                  <p className="text-sm">Rating: <Badge className={`${RATING_COLORS[rating(overall(form))] ?? "bg-gray-500"} text-white ml-1`}>{rating(overall(form))}</Badge></p>
-                </div>
-                <div><Label>Notes</Label><Input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
-              </div>
-              <Button className="mt-4 w-full" onClick={() => save.mutate(form)} disabled={save.isPending}>Save Assessment</Button>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <ScreenHeader
+  screenId="VFLLESCRD0001P001"
+  title="Lessor Credit Score"
+  subtitle="Lessor creditworthiness and risk rating"
+/>
 
         <div className="grid grid-cols-4 gap-4">
           {[

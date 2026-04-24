@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, FileText, MessageSquare, CreditCard, CheckCircle, Clock, Plus, Download, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const TENANT_LEASES = [
   { id: 1, ref: "VF-2024-001", property: "Vodafone HQ — Floor 12", lessor: "Al Futtaim Properties", monthly_rent: 185000, next_payment: "2026-05-01", lease_end: "2028-12-31", status: "ACTIVE" },
@@ -58,15 +59,11 @@ export default function TenantPortal() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Tenant Self-Service Portal</h1>
-            <p className="text-sm text-muted-foreground mt-1">Lease overview, document access, maintenance requests, renewal enquiries, and payment history</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowRequestDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> New Request
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLTENPTL0001P001"
+  title="Tenant Portal"
+  subtitle="Self-service portal for tenants and lessees"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

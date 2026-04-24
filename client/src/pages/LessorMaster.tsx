@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   Building2, Plus, Search, Edit, Trash2, Phone, Mail, CreditCard,
   FileText, StickyNote, ChevronRight, MapPin, Globe, Star, AlertTriangle,
@@ -271,31 +272,11 @@ export default function LessorMaster() {
         ) : (
           <div className="p-6">
             {/* Detail Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-2xl font-bold text-white">{String((detail.lessor as Record<string, string | number | boolean | null>).lessor_name)}</h1>
-                  <Badge className={`border ${STATUS_COLORS[String((detail.lessor as Record<string, string | number | boolean | null>).status)] ?? ""}`}>
-                    {String((detail.lessor as Record<string, string | number | boolean | null>).status)}
-                  </Badge>
-                </div>
-                <p className="text-gray-400 text-sm">
-                  {String((detail.lessor as Record<string, string | number | boolean | null>).lessor_type)} ·
-                  {(detail.lessor as Record<string, string | number | boolean | null>).registration_no ? ` Reg: ${(detail.lessor as Record<string, string | number | boolean | null>).registration_no} ·` : ""}
-                  {(detail.lessor as Record<string, string | number | boolean | null>).city ? ` ${(detail.lessor as Record<string, string | number | boolean | null>).city},` : ""} {String((detail.lessor as Record<string, string | number | boolean | null>).country)}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="border-white/10 text-gray-300 hover:bg-white/10"
-                  onClick={() => openEdit(detail.lessor as Record<string, string | number | boolean | null>)}>
-                  <Edit className="w-3.5 h-3.5 mr-1" /> Edit
-                </Button>
-                <Button variant="outline" size="sm" className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-                  onClick={() => { if (confirm("Delete this lessor?")) deleteMutation.mutate({ lessorId: selectedLessorId }); }}>
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
-                </Button>
-              </div>
-            </div>
+            <ScreenHeader
+  screenId="VFLLESMAS0001P001"
+  title="Lessor Master"
+  subtitle="Lessor profile and contact management"
+/>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-4 gap-3 mb-6">

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { Flag, PlusCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const MILESTONE_TYPES = ["Rent Review Date","Renewal Decision Deadline","Break Clause Date","Insurance Renewal","Maintenance Inspection","Regulatory Compliance","Payment Escalation","Make-Good Assessment"];
 
@@ -29,15 +30,11 @@ export default function ContractMilestones() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Flag className="w-6 h-6 text-[#e60000]" /> Contract Milestones</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFCNTMILE0001P001 · Critical dates and action triggers</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> Add Milestone
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLCNTMLS0001P001"
+  title="Contract Milestones"
+  subtitle="Key dates and milestone tracking per contract"
+/>
 
         <div className="grid gap-3">
           {upcoming.map(m => (

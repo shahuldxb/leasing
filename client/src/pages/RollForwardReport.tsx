@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, Download, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -36,13 +37,11 @@ export default function RollForwardReport() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Roll-Forward Report</h1>
-            <p className="text-muted-foreground text-sm">Opening → movements → closing balances for ROU assets and lease liabilities</p>
-          </div>
-          <Button variant="outline" onClick={() => toast.info("Export to Excel coming soon")}><Download className="w-4 h-4 mr-2" />Export</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLRLFWD0001P001"
+  title="Roll Forward Report"
+  subtitle="ROU asset and lease liability roll-forward"
+/>
 
         {/* Period selector */}
         <Card>

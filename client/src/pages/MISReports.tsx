@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, Download, Play } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const REPORT_TEMPLATES = [
   { id: "lease_register", name: "Lease Register Report", description: "Full list of all active leases with key terms" },
@@ -34,57 +35,11 @@ export default function MISReports() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="w-6 h-6 text-[#e60000]" /> Custom Report Builder</h1>
-          <p className="text-sm text-muted-foreground mt-1">Screen ID: VFMISREPT0001P001 · Generate and export standard and custom reports</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-card border border-border rounded-xl p-5 space-y-4">
-            <h3 className="font-semibold">Report Parameters</h3>
-            <div>
-              <Label className="text-sm font-medium">Report Template *</Label>
-              <Select value={selectedReport} onValueChange={setSelectedReport}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select report..." /></SelectTrigger>
-                <SelectContent>{REPORT_TEMPLATES.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div><Label className="text-sm font-medium">From Date</Label><Input type="date" className="mt-1" value={fromDate} onChange={e => setFromDate(e.target.value)} /></div>
-            <div><Label className="text-sm font-medium">To Date</Label><Input type="date" className="mt-1" value={toDate} onChange={e => setToDate(e.target.value)} /></div>
-            <div>
-              <Label className="text-sm font-medium">Export Format</Label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>{["PDF","Excel","CSV"].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Button className="flex-1 bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleGenerate}>
-                <Play className="w-4 h-4 mr-2" /> Generate
-              </Button>
-              <Button variant="outline" onClick={() => toast.info("Schedule coming soon")}><Download className="w-4 h-4" /></Button>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 space-y-3">
-            <h3 className="font-semibold">Available Reports</h3>
-            {REPORT_TEMPLATES.map(r => (
-              <div key={r.id}
-                className={`bg-card border rounded-xl p-4 cursor-pointer transition-colors ${selectedReport === r.id ? "border-[#e60000]" : "border-border hover:border-[#e60000]/50"}`}
-                onClick={() => setSelectedReport(r.id)}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-sm">{r.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
-                  </div>
-                  {selectedReport === r.id && <div className="w-2 h-2 bg-[#e60000] rounded-full mt-1.5 flex-shrink-0" />}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ScreenHeader
+  screenId="VFLMISRPT0001P001"
+  title="MIS Reports"
+  subtitle="Management information system reports and board pack"
+/>
     </DashboardLayout>
   );
 }

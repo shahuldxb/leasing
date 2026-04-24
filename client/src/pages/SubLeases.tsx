@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Building2, Plus, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -33,16 +34,11 @@ export default function SubLeases() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <ArrowRightLeft className="w-6 h-6 text-teal-500" />
-              Sub-Lease Accounting
-            </h1>
-            <p className="text-muted-foreground text-sm">Manage sub-leases where Vodafone acts as intermediate lessor</p>
-          </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-2" />New Sub-Lease</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLSUBLSE0001P001"
+  title="Sub-Leases"
+  subtitle="Sub-lease register and income tracking"
+/>
 
         {/* Summary */}
         <div className="grid grid-cols-3 gap-4">

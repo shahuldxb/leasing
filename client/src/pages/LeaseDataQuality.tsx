@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, AlertTriangle, XCircle, BarChart3, Search, Plus, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const QUALITY_FIELDS = [
   "contract_ref", "lessor_name", "asset_description", "lease_start_date", "lease_end_date",
@@ -67,15 +68,11 @@ export default function LeaseDataQuality() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lease Data Quality</h1>
-            <p className="text-sm text-muted-foreground mt-1">Abstraction completeness scoring, duplicate detection, and configurable validation rules engine</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Running full data quality scan...")}>
-            <Search className="w-4 h-4 mr-2" /> Run Quality Scan
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEADQ0001P001"
+  title="Lease Data Quality"
+  subtitle="Abstraction quality scoring and duplicate detection"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

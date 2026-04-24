@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Mail, Calendar, Plus, Edit2, Trash2, Send, CheckCircle, Clock, Download } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const EVENT_TYPES = [
   "Lease Expiry", "Renewal Option Deadline", "Break Clause Notice", "Rent Review Date",
@@ -82,20 +83,11 @@ export default function NotificationSettings() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Notification Settings</h1>
-            <p className="text-sm text-muted-foreground mt-1">Email notification engine for critical lease dates — expiry, renewal, break clauses, rent reviews</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.info("Sending test notification...")}>
-              <Send className="w-4 h-4 mr-2" /> Send Test
-            </Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" /> New Rule
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLNOTIFC0001P001"
+  title="Notification Settings"
+  subtitle="Email alert configuration for critical lease dates"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

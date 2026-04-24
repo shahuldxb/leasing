@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileSignature, CheckCircle, Clock, XCircle, Send, Plus, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const ENVELOPES = [
   { id: 1, ref: "ENV-2026-001", document: "Lease Agreement — VF-2024-001", signatories: ["CEO (Vodafone)", "Legal Director (Al Futtaim)"], sent: "2026-04-18", completed: "2026-04-20", status: "COMPLETED", provider: "DocuSign" },
@@ -54,15 +55,11 @@ export default function ESignatureIntegration() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">E-Signature Integration</h1>
-            <p className="text-sm text-muted-foreground mt-1">DocuSign and Adobe Sign integration for lease document execution, signature tracking, and audit trails</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Send for Signature
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLESIGN0001P001"
+  title="E-Signature Integration"
+  subtitle="DocuSign and e-signature workflow for lease documents"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

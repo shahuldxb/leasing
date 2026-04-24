@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Search, RefreshCw, Download, Eye, CheckCircle2, XCircle, MoreHorizontal, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -54,8 +55,11 @@ export default function PayablesQueue() {
       <div className="space-y-4">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Payables Queue</h1>
-            <p className="page-subtitle">Screen ID: VFPAYQUEUEP0001P001 · {totalCount} invoices</p>
+            <ScreenHeader
+  screenId="VFLPAYQUE0001P001"
+  title="Payables Queue"
+  subtitle="Outstanding payables and payment scheduling"
+/>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>

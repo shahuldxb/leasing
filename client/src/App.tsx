@@ -133,6 +133,8 @@ import ESGCarbon          from "./pages/ESGCarbon";
 import MultiEntityFX      from "./pages/MultiEntityFX";
 import LessorCreditScore  from "./pages/LessorCreditScore";
 import AlertsReports      from "./pages/AlertsReports";
+import FurnitureCollections    from "./pages/FurnitureCollections";
+import FurnitureCollectionDetail from "./pages/FurnitureCollectionDetail";
 
 function Router() {
   return (
@@ -281,6 +283,10 @@ function Router() {
       <Route path="/contracts/msc"            component={MSCRegister} />
       <Route path="/contracts/msc/:id"        component={MSCContractViewer} />
       <Route path="/contracts/msc/:id/print"  component={MSCContractViewer} />
+
+      {/* Property Furniture Collections */}
+      <Route path="/assets/furniture"            component={FurnitureCollections} />
+      <Route path="/assets/furniture/:id"        component={FurnitureCollectionDetail} />
 
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />

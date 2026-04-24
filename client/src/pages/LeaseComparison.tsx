@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, Minus, BarChart3, Download } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const LEASE_OPTIONS = [
   { id: "VF-2024-001", label: "VF-2024-001 — Vodafone HQ Floor 12", lessor: "Al Futtaim Properties", property: "Vodafone HQ, DIFC, Floor 12", area_sqm: 2480, rent_pa: 2220000, rent_psm: 895, term_years: 5, break_option: "Year 3", renewal_option: "2 × 3 years", ibr: 4.75, rou_asset: 9840000, liability: 9320000, deposit: 555000, fit_out_contribution: 1200000, service_charge: 185000, parking_spaces: 25, green_rating: "LEED Gold" },
@@ -57,15 +58,11 @@ export default function LeaseComparison() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lease Comparison & Benchmarking</h1>
-            <p className="text-sm text-muted-foreground mt-1">Side-by-side comparison of lease terms, financial metrics, and IFRS 16 impact</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Exporting comparison report...")}>
-            <Download className="w-4 h-4 mr-2" /> Export
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEACMP0001P001"
+  title="Lease Comparison"
+  subtitle="Side-by-side lease benchmarking and comparison"
+/>
 
         <div className="grid grid-cols-2 gap-4">
           <div>

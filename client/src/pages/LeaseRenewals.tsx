@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RefreshCw, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function LeaseRenewals() {
   const { data: leases = [], refetch } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200, status: "Active" });
@@ -32,13 +33,11 @@ export default function LeaseRenewals() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lease Renewals</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFLSERENEW0001P001 · Upcoming and overdue renewals</p>
-          </div>
-          <Button variant="outline" onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2" />Refresh</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEAREN0001P001"
+  title="Lease Renewals"
+  subtitle="Renewal pipeline and negotiation tracking"
+/>
 
         {/* Summary */}
         <div className="grid grid-cols-3 gap-4">

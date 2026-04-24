@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { PlayCircle, Download } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function PaymentRuns() {
   const [open, setOpen] = useState(false);
@@ -24,15 +25,11 @@ export default function PaymentRuns() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Payment Runs</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFPAYPAYRUN0001P001 · SWIFT and EFT bank file generation</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <PlayCircle className="w-4 h-4 mr-2" /> Create Payment Run
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLPAYRUN0001P001"
+  title="Payment Runs"
+  subtitle="Payment run creation and bank file generation"
+/>
 
         <div className="grid grid-cols-3 gap-4">
           {[

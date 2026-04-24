@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, DollarSign, Shield, Plus, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const STATUS_COLORS: Record<string, string> = {
   DESIGNATED: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -42,15 +43,11 @@ export default function HedgeAccounting() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Hedge Accounting</h1>
-            <p className="text-sm text-muted-foreground mt-1">IFRS 9 hedge accounting for FX-denominated leases — effectiveness testing, OCI tracking, and GL impact</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Designate Hedge
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLHEDGE0001P001"
+  title="Hedge Accounting"
+  subtitle="FX hedge designation and effectiveness testing"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

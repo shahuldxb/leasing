@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, TrendingUp, BookOpen, Plus, Download, BarChart3, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const SAMPLE_RECEIVABLES = [
   { id: 1, contract_ref: "VF-FIN-001", lessee: "Vodafone Retail LLC", asset: "Network Equipment — Dubai Hub", lease_start: "2023-01-01", lease_end: "2027-12-31", gross_receivable: 2450000, unearned_income: 312500, net_receivable: 2137500, current_portion: 487500, non_current: 1650000, status: "ACTIVE" },
@@ -46,20 +47,11 @@ export default function LessorFinanceLease() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lessor Finance Lease Receivables</h1>
-            <p className="text-sm text-muted-foreground mt-1">IFRS 16 / IAS 17 lessor-side accounting — finance lease receivable and unearned income tracking</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.info("Excel export initiated")}>
-              <Download className="w-4 h-4 mr-2" /> Export
-            </Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowNewDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" /> New Finance Lease
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLLESFIN0001P001"
+  title="Lessor Finance Lease"
+  subtitle="Lessor-side finance lease receivable accounting"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

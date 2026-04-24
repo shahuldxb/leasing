@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Download, RefreshCw, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: number | null | undefined) => n != null ? Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 }) : "—";
 const fmtK = (n: number | null | undefined) => n != null ? `AED ${(Number(n) / 1000).toFixed(0)}K` : "—";
@@ -32,15 +33,11 @@ export default function IFRS16Disclosure() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">IFRS 16 Disclosure Notes</h1>
-            <p className="text-muted-foreground text-sm">Generate financial statement disclosures per IFRS 16.47–60</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.info("Export to Word/PDF coming soon")}><Download className="w-4 h-4 mr-2" />Export</Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLIFRDSC0001P001"
+  title="IFRS 16 Disclosure"
+  subtitle="Financial statement disclosure notes"
+/>
 
         {/* Period selector */}
         <Card>

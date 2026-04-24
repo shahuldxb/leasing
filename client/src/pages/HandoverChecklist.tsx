@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardList, PlusCircle, Search, CheckCircle2, AlertCircle, Clock, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const CHECKLIST_CONDITIONS = ["NEW","EXCELLENT","GOOD","FAIR","POOR","MISSING","DAMAGED"];
 
@@ -80,19 +81,11 @@ export default function HandoverChecklist() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <ClipboardList className="w-6 h-6 text-[#e60000]" /> Handover &amp; Return Checklists
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Screen ID: VFOPSHOV0001P001 · Digital inspection checklists for furnished property handover and return
-            </p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowCreate(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> New Checklist
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLHNDOVR0001P001"
+  title="Handover Checklist"
+  subtitle="Property handover and return inspection checklist"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

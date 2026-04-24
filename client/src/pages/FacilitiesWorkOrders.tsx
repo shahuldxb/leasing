@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wrench, AlertTriangle, CheckCircle, Clock, Plus, BarChart3, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -53,15 +54,11 @@ export default function FacilitiesWorkOrders() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Facilities Work Orders</h1>
-            <p className="text-sm text-muted-foreground mt-1">Maintenance requests, reactive and planned work orders, contractor assignment and cost tracking</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Raise Work Order
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLWRKORD0001P001"
+  title="Facilities Work Orders"
+  subtitle="Maintenance work order management"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

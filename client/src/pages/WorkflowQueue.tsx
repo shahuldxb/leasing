@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, RefreshCw, Clock, User, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function WorkflowQueue() {
   const [module, setModule]   = useState("all");
@@ -64,8 +65,11 @@ export default function WorkflowQueue() {
       <div className="space-y-4">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Workflow Queue</h1>
-            <p className="page-subtitle">Screen ID: VFWKFACTNS0003P001 · {totalCount} pending tasks</p>
+            <ScreenHeader
+  screenId="VFLWFLQUE0001P001"
+  title="Maker/Checker Queue"
+  subtitle="Pending approvals and maker/checker workflow"
+/>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>
         </div>

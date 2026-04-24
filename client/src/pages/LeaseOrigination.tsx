@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-500", SUBMITTED: "bg-blue-500", UNDER_REVIEW: "bg-amber-500",
@@ -41,43 +42,11 @@ export default function LeaseOrigination() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="w-6 h-6 text-blue-500" />Lease Origination</h1>
-            <p className="text-muted-foreground text-sm">New lease requests, approvals, and pipeline management</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />New Request</Button></DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>New Lease Request</DialogTitle></DialogHeader>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                {[
-                  { label: "Lessor / Landlord", key: "lessor_name", type: "text" },
-                  { label: "Asset Description", key: "asset_description", type: "text" },
-                  { label: "Proposed Start", key: "proposed_start", type: "date" },
-                  { label: "Proposed End", key: "proposed_end", type: "date" },
-                  { label: "Est. Annual Rent", key: "estimated_annual_rent", type: "number" },
-                ].map(f => (
-                  <div key={f.key}><Label>{f.label}</Label><Input type={f.type} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: f.type === "number" ? Number(e.target.value) : e.target.value }))} /></div>
-                ))}
-                <div><Label>Asset Type</Label>
-                  <Select value={form.asset_type} onValueChange={v => setForm(p => ({ ...p, asset_type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{["OFFICE","RETAIL","WAREHOUSE","DATA_CENTRE","VEHICLE","OTHER"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Priority</Label>
-                  <Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v as any }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{["LOW","MEDIUM","HIGH","CRITICAL"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2"><Label>Business Justification</Label><Textarea value={form.business_justification} onChange={e => setForm(p => ({ ...p, business_justification: e.target.value }))} rows={3} /></div>
-              </div>
-              <Button className="mt-4 w-full" onClick={() => create.mutate(form)} disabled={create.isPending}>Submit Request</Button>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEAORG0001P001"
+  title="Lease Origination"
+  subtitle="Legacy lease origination workflow"
+/>
 
         <div className="grid grid-cols-5 gap-3">
           {WORKFLOW.map(s => {

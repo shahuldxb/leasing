@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Info, Shield, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -38,13 +39,11 @@ export default function LeaseExemptions() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Lease Exemptions</h1>
-            <p className="text-muted-foreground text-sm">Short-term and low-value asset lease exemptions — IFRS 16.5–8</p>
-          </div>
-          <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-2" />Add Exemption</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLEAEXM0001P001"
+  title="Lease Exemptions"
+  subtitle="Short-term and low-value lease exemption register"
+/>
 
         {/* Info */}
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">

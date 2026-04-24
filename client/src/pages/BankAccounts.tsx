@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { Building2, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function BankAccounts() {
   const [open, setOpen] = useState(false);
@@ -25,15 +26,11 @@ export default function BankAccounts() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Building2 className="w-6 h-6 text-[#e60000]" /> Bank Accounts</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFBNKACCT0001P001 · Registered bank accounts for reconciliation</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> Add Account
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLBNKACC0001P001"
+  title="Bank Accounts"
+  subtitle="Registered bank accounts for payment processing"
+/>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rows.map((acc: any) => (

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, TrendingUp, Info } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const CURRENCIES = ["AED", "USD", "EUR", "GBP", "SAR", "QAR", "KWD", "BHD", "OMR"];
 
@@ -52,13 +53,11 @@ export default function IBRLibrary() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">IBR Library</h1>
-            <p className="text-muted-foreground text-sm">Incremental Borrowing Rates by currency and lease term — IFRS 16.26</p>
-          </div>
-          <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Add IBR Rate</Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLIBR0001P001"
+  title="IBR Library"
+  subtitle="Incremental borrowing rate library by currency and term"
+/>
 
         {/* Filter */}
         <div className="flex gap-3 items-center">

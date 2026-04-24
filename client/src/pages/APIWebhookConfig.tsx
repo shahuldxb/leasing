@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Code2, Webhook, Key, Plus, Copy, RefreshCw, CheckCircle, XCircle, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const API_ENDPOINTS = [
   { method: "GET", path: "/api/v1/leases", description: "List all lease contracts with pagination", auth: "Bearer", params: "page, pageSize, status, entity" },
@@ -67,13 +68,11 @@ export default function APIWebhookConfig() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">API & Webhook Configuration</h1>
-            <p className="text-sm text-muted-foreground mt-1">REST API documentation, API key management, and outbound webhook event subscriptions</p>
-          </div>
-          <Badge className="text-sm px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30">API v1.0 Active</Badge>
-        </div>
+        <ScreenHeader
+  screenId="VFLAPIWH0001P001"
+  title="API & Webhook Configuration"
+  subtitle="REST API documentation and webhook endpoint management"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

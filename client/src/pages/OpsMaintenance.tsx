@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Wrench, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const TICKET_TYPES = ["Routine Maintenance","Major Repair","Emergency","Structural","HVAC/Power","Cleaning","Security","Compliance Inspection"];
 const RESPONSIBILITY = ["Vodafone","Lessor","Shared"];
@@ -34,15 +35,11 @@ export default function OpsMaintenance() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Wrench className="w-6 h-6 text-[#e60000]" /> Asset Maintenance</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFOPSMNT0001P001 · Maintenance ticketing with responsibility matrix and cost recovery</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setOpen(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> Raise Ticket
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLOPSMNT0001P001"
+  title="Asset Maintenance"
+  subtitle="Maintenance ticket register and repair tracking"
+/>
 
         <div className="grid grid-cols-4 gap-4">
           {[

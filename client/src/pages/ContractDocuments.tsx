@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Upload, Search, Eye, Download } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const MOCK_DOCS = [
   { id: 1, name: "Lease Agreement - Tower Site A.pdf", contract: "VFL-2025-0001", type: "Lease Agreement", uploaded: "2025-01-15", size: "2.4 MB", status: "Active" },
@@ -19,15 +20,11 @@ export default function ContractDocuments() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="w-6 h-6 text-[#e60000]" /> Document Vault</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFCNTDOCV0001P001 · Centralised contract document repository with GPT-4o OCR</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Upload dialog coming soon")}>
-            <Upload className="w-4 h-4 mr-2" /> Upload Document
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLCNTDOC0001P001"
+  title="Contract Documents"
+  subtitle="Document vault for lease contracts"
+/>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

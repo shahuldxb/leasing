@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Printer, ArrowLeft, Car, Home, Link2, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Mock contract data (replace with trpc.masterContracts.getById.useQuery) ──
 const MOCK_CONTRACT = {
@@ -61,6 +62,11 @@ export default function MSCContractViewer() {
     <DashboardLayout>
       {/* Screen controls — hidden on print */}
       <div className="p-6 space-y-4 print:hidden">
+        <ScreenHeader
+          screenId="VFLMSCVWR0001P001"
+          title="Contract Viewer"
+          subtitle="Bilingual EN/AR contract document viewer and print"
+        />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate("/contracts/msc")}>

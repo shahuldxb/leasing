@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCheck, AlertTriangle, Clock, DollarSign, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 type AlertType = "SLA_BREACH" | "INSURANCE_EXPIRY" | "LEASE_EXPIRY" | "PAYMENT_OVERDUE" | "CHEQUE_STALE" | "DOCUMENT_EXPIRY";
 
@@ -122,28 +123,11 @@ export default function AlertCentre() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Bell className="w-6 h-6 text-[#e60000]" /> Alert Centre
-              {unreadCount > 0 && <Badge className="bg-[#e60000] text-white border-0 ml-1">{unreadCount}</Badge>}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFCMPALRT0001P001 · System-wide alerts for SLA breaches, expiries, and anomalies</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              {["all","unread"].map(f => (
-                <button key={f} onClick={() => setFilter(f as any)}
-                  className={`px-4 py-1.5 text-sm capitalize transition-colors ${filter === f ? "bg-[#e60000] text-white" : "bg-card text-muted-foreground hover:bg-muted"}`}>
-                  {f}
-                </button>
-              ))}
-            </div>
-            <Button variant="outline" size="sm" onClick={markAllRead}>
-              <CheckCheck className="w-4 h-4 mr-1" /> Mark All Read
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLALERT0001P001"
+  title="Alert Centre"
+  subtitle="Critical lease events and notification centre"
+/>
 
         <div className="grid grid-cols-4 gap-4">
           {["Critical","High","Medium","Low"].map(s => (

@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Smartphone, Wifi, WifiOff, CheckCircle, Clock, Camera, MapPin, RefreshCw, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const INSPECTIONS = [
   { id: "INS-2026-001", property: "Vodafone HQ — Floor 12", type: "Annual Condition Survey", inspector: "Ahmed Al Rashid", date: "2026-04-20", status: "COMPLETED", photos: 24, findings: 3, synced: true },
@@ -41,20 +42,11 @@ export default function MobileFieldApp() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Mobile Field App</h1>
-            <p className="text-sm text-muted-foreground mt-1">Property inspection management, offline-capable field data capture, photo uploads, and device sync status</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.info("Triggering sync for all online devices...")}>
-              <RefreshCw className="w-4 h-4 mr-2" /> Sync All
-            </Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Download mobile app — iOS App Store / Google Play")}>
-              <Download className="w-4 h-4 mr-2" /> Get App
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLMOBILE0001P001"
+  title="Mobile Field App"
+  subtitle="Mobile inspection and offline sync"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

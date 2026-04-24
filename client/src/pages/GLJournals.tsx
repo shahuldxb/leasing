@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Download } from "lucide-react";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function GLJournals() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -20,19 +21,11 @@ export default function GLJournals() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">GL Journals</h1>
-            <p className="text-sm text-muted-foreground mt-1">Screen ID: VFPAYGLJ0001P001 · IFRS 16 journal entries and manual postings</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2" />Refresh</Button>
-            <Button variant="outline"><Download className="w-4 h-4 mr-2" />Export</Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white">
-              Post Monthly Journals
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLGLJ0001P001"
+  title="GL Journals"
+  subtitle="General ledger journal entries and posting"
+/>
 
         {/* Period Filter */}
         <div className="flex items-end gap-4 bg-card border border-border rounded-xl p-4">

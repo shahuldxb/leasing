@@ -425,3 +425,53 @@
 ### Navigation
 - [x] Add "Master Contracts" section to DashboardLayout sidebar under "Contracts"
 - [x] Wire all 3 new pages in App.tsx
+
+## Gen AI Fill Button (All Data Entry Forms)
+
+- [x] Create tRPC procedure: ai.fillForm — accepts formType + existing partial data, returns structured JSON with realistic field values
+- [x] Create GenAIFillButton component (client/src/components/GenAIFillButton.tsx) — Sparkles icon button with loading spinner, calls ai.fillForm, merges returned values into form state
+- [x] Create useGenAIFill hook (client/src/hooks/useGenAIFill.ts) — wraps the tRPC mutation with loading/error state
+- [x] Add Gen AI button to: NewLease form
+- [x] Add Gen AI button to: MSCRegister (create contract form)
+- [x] Add Gen AI button to: FurnishedAssets (add asset form)
+- [x] Add Gen AI button to: AssetDepositRegister (add deposit form)
+- [x] Add Gen AI button to: HandoverChecklist (create checklist form)
+- [x] Add Gen AI button to: OpsMaintenance (raise ticket form)
+- [x] Add Gen AI button to: OpsInsurance (add policy form)
+- [x] Add Gen AI button to: VendorManagement (add vendor form)
+- [x] Add Gen AI button to: BrokerManagement (add broker form)
+- [x] Add Gen AI button to: LOITracking (add LOI form)
+- [x] Add Gen AI button to: TenantImprovementAllowance (add TI form)
+- [x] Add Gen AI button to: ESignatureIntegration (send for signature form)
+- [x] Add Gen AI button to: SecurityDeposits (add deposit form)
+- [x] Add Gen AI button to: SubLeases (add sub-lease form)
+- [x] Add Gen AI button to: RentReviews (add review form)
+- [x] Add Gen AI button to: LeaseModifications (add modification form)
+- [x] Add Gen AI button to: LeaseTerminations (initiate termination form)
+- [x] Add Gen AI button to: BudgetingForecasting (add budget entry form)
+- [x] Add Gen AI button to: HedgeAccounting (add hedge form)
+- [x] Add Gen AI button to: DeskBooking (add booking form)
+- [x] Add Gen AI button to: FacilitiesWorkOrders (raise work order form)
+- [x] Add Gen AI button to: LeaseComparison (add comparison form)
+- [x] Add Gen AI button to: LessorMaster (add lessor form)
+- [x] Add Gen AI button to: AssetRegistry (add asset form)
+
+## Screen ID, Audit Log & Error Log (All Screens)
+- [x] Create reusable ScreenHeader component (screen ID badge, last modified, audit log trigger, error log trigger)
+- [x] Create AuditLogDrawer component (shows who did what and when per screen, calls auditLog tRPC)
+- [x] Create ErrorLogDrawer component (shows API/form errors per screen with timestamp, calls errorLog tRPC)
+- [x] Create server-side auditLog tRPC router (logAction, getByScreen, getAll)
+- [x] Create server-side errorLog tRPC router (logError, getByScreen, getAll)
+- [x] Add ScreenHeader to all 50+ pages with unique Screen IDs
+- [x] Wire audit log writes on all create/update/delete mutations
+
+## Property Furniture Collection Module
+- [x] Create furniture_collections table (collection_id, property_id, property_name, collection_name, created_at, updated_at)
+- [x] Create furniture_items table (item_id, collection_id, category, name, brand, model, serial_number, condition, quantity, unit_value, total_value, notes, added_at)
+- [x] Create tRPC router: furnitureCollections (list, getByProperty, create, update, delete, getWithItems)
+- [x] Create tRPC router: furnitureItems (listByCollection, create, update, delete, bulkUpsert)
+- [x] Build FurnitureCollections.tsx (list all properties with collection summary — item count, total value, last updated)
+- [x] Build FurnitureCollectionDetail.tsx (full item CRUD for a specific property — inline edit, add row, delete row, Gen AI fill)
+- [x] Add Gen AI fill button to FurnitureCollectionDetail item form
+- [x] Wire navigation in DashboardLayout under "Furnished Assets" section
+- [x] Wire routes in App.tsx

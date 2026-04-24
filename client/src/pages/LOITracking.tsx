@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Clock, CheckCircle, XCircle, Plus, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const LOIS = [
   { id: 1, ref: "LOI-2026-001", property: "DIFC Gate Village — Unit 12", lessor: "DIFC Authority", area_sqm: 1850, rent_pa: 2775000, broker: "JLL UAE", submitted: "2026-04-01", expiry: "2026-04-30", status: "UNDER_NEGOTIATION", notes: "Counter-offer received — 5% above asking" },
@@ -49,15 +50,11 @@ export default function LOITracking() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Letter of Intent (LOI) Tracking</h1>
-            <p className="text-sm text-muted-foreground mt-1">Pre-contract LOI pipeline — from submission through negotiation to lease conversion</p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" /> New LOI
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLLOI0001P001"
+  title="LOI Tracking"
+  subtitle="Letter of Intent tracking for pre-contract stage"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { Sparkles, Send, Database, TrendingUp, Activity } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmtM = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
@@ -80,8 +81,11 @@ export default function MISAnalytics() {
       <div className="space-y-4">
         <div className="page-header">
           <div>
-            <h1 className="page-title">MIS Analytics</h1>
-            <p className="page-subtitle">Screen ID: VFMISANALY0001P001 · Portfolio Intelligence</p>
+            <ScreenHeader
+  screenId="VFLMISALY0001P001"
+  title="Anomaly Detection"
+  subtitle="AI-powered anomaly detection and portfolio intelligence"
+/>
           </div>
         </div>
 

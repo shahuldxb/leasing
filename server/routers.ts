@@ -15,6 +15,8 @@ import { lessorRouter, assetRouter } from "./routers/lessorAsset";
 import { accountingRouter } from "./routers/accounting";
 import { furnishedAssetsRouter, assetDepositRouter, handoverChecklistRouter } from "./routers/furnishedAssets";
 import { masterContractsRouter } from "./routers/masterContracts";
+import { aiFillRouter }         from "./routers/aiFill";
+import { furnitureCollectionsRouter } from "./routers/furnitureCollections";
 import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, reportBuilderRouter, scenarioRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter, terminationRouter, bouncePenaltyRouter, leaseOriginationNewRouter } from "./routers/features";
 
 export const appRouter = router({
@@ -72,6 +74,8 @@ export const appRouter = router({
   assetDeposit:    assetDepositRouter,
   handoverChecklist: handoverChecklistRouter,
   masterContracts: masterContractsRouter,
+  aiFill:          aiFillRouter,
+  furnitureCollections: furnitureCollectionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

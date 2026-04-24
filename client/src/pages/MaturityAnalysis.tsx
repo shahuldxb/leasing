@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Download, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
@@ -42,30 +43,11 @@ export default function MaturityAnalysis() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <BarChart2 className="w-6 h-6 text-violet-500" />
-              Maturity Analysis
-            </h1>
-            <p className="text-muted-foreground text-sm">Undiscounted future cash flows by maturity band — IFRS 16 para 58(b)</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Label className="text-sm">As of</Label>
-              <Input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} className="w-36" />
-            </div>
-            <Select value={leaseType} onValueChange={setLeaseType}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Leases</SelectItem>
-                <SelectItem value="FINANCE">Finance Leases</SelectItem>
-                <SelectItem value="OPERATING">Operating Leases</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={handleExport}><Download className="w-4 h-4 mr-2" />Export CSV</Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLMATALY0001P001"
+  title="Maturity Analysis"
+  subtitle="Lease maturity profile and concentration analysis"
+/>
 
         {/* Summary KPIs */}
         <div className="grid grid-cols-4 gap-4">

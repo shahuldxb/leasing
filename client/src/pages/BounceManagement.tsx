@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   AlertTriangle, RefreshCw, DollarSign, FileText, Settings,
   CheckCircle, XCircle, Eye, ChevronDown
@@ -577,25 +578,11 @@ export default function BounceManagement() {
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <AlertTriangle className="h-6 w-6 text-red-400" />
-              Bounced Cheque Management
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">Record bounces, manage penalties, and issue replacement cheques</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setEditConfig(null); setPenaltyConfigOpen(true); }}
-              className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10">
-              <Settings className="h-4 w-4 mr-2" /> Penalty Config
-            </Button>
-            <Button onClick={() => setRecordBounceOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white">
-              <AlertTriangle className="h-4 w-4 mr-2" /> Record Bounce
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLBNCMGR0001P001"
+  title="Bounce Management"
+  subtitle="Returned cheque and bounce tracking"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

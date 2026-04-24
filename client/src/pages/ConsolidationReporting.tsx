@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Building2, BarChart3, FileText, Download, RefreshCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const ENTITIES = [
   { code: "VF-UAE", name: "Vodafone UAE LLC", type: "Parent", leases: 47, rou_asset: 125400000, lease_liability: 118900000, interco: false },
@@ -47,26 +48,11 @@ export default function ConsolidationReporting() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Consolidation Reporting</h1>
-            <p className="text-sm text-muted-foreground mt-1">Multi-entity consolidation, intercompany lease elimination, and group-level IFRS 16 disclosure</p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="h-9 w-36 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["2026-03", "2025-12", "2025-09", "2025-06"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={() => toast.info("Regenerating consolidated report...")}>
-              <RefreshCw className="w-4 h-4 mr-2" /> Recalculate
-            </Button>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Exporting consolidated report...")}>
-              <Download className="w-4 h-4 mr-2" /> Export
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLCONRPT0001P001"
+  title="Consolidation Reporting"
+  subtitle="Multi-entity consolidation with intercompany elimination"
+/>
 
         {/* Consolidated Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

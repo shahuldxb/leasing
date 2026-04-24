@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, RefreshCw, Download } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: any) => n != null ? `USD ${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—";
 
@@ -36,22 +37,11 @@ export default function ASC842() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-blue-500" />
-              ASC 842 Parallel Accounting
-            </h1>
-            <p className="text-muted-foreground text-sm">US GAAP ASC 842 dual-standard accounting alongside IFRS 16</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => sync.mutate()} disabled={sync.isPending}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${sync.isPending ? "animate-spin" : ""}`} />
-              Sync from IFRS 16
-            </Button>
-            <Button variant="outline" onClick={handleExport}><Download className="w-4 h-4 mr-2" />Export</Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLASC8420001P001"
+  title="ASC 842 Compliance"
+  subtitle="US GAAP lease accounting under ASC 842"
+/>
 
         <div className="grid grid-cols-4 gap-4">
           {[

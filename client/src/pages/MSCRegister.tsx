@@ -14,6 +14,8 @@ import {
   AlertTriangle, Eye, Edit, Trash2, Link2
 } from "lucide-react";
 import { toast } from "sonner";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
@@ -136,19 +138,11 @@ export default function MSCRegister() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FileSignature className="w-6 h-6 text-[#e60000]" /> Master Services Contracts
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Screen ID: VFMSC0001P001 · Bilingual EN/AR contracts governing vehicle fleets and residential home leases
-            </p>
-          </div>
-          <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => setShowCreate(true)}>
-            <PlusCircle className="w-4 h-4 mr-2" /> New Contract
-          </Button>
-        </div>
+        <ScreenHeader
+  screenId="VFLMSCREG0001P001"
+  title="Master Services Contracts"
+  subtitle="Bilingual EN/AR contracts for fleet and residential"
+/>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -306,6 +300,41 @@ export default function MSCRegister() {
         title="New Master Services Contract"
         subtitle="Bilingual EN/AR contract governing a vehicle fleet or residential home portfolio"
         width="2xl"
+        headerAction={
+          <GenAIFillButton
+            formType="msc_contract"
+            existingData={{ contractType: form.contract_type }}
+            onFill={(d) => {
+              setForm(f => ({
+                ...f,
+                title_en: d.titleEn ?? f.title_en,
+                title_ar: d.titleAr ?? f.title_ar,
+                party_b_en: d.partyBEn ?? f.party_b_en,
+                party_b_ar: d.partyBAr ?? f.party_b_ar,
+                effective_date: d.effectiveDate ?? f.effective_date,
+                expiry_date: d.expiryDate ?? f.expiry_date,
+                contract_value: d.contractValue ?? f.contract_value,
+                currency: d.currency ?? f.currency,
+                payment_terms_en: d.paymentTermsEn ?? f.payment_terms_en,
+                payment_terms_ar: d.paymentTermsAr ?? f.payment_terms_ar,
+                scope_en: d.scopeEn ?? f.scope_en,
+                scope_ar: d.scopeAr ?? f.scope_ar,
+                governing_law_en: d.governingLawEn ?? f.governing_law_en,
+                governing_law_ar: d.governingLawAr ?? f.governing_law_ar,
+                jurisdiction_en: d.jurisdictionEn ?? f.jurisdiction_en,
+                jurisdiction_ar: d.jurisdictionAr ?? f.jurisdiction_ar,
+                termination_en: d.terminationEn ?? f.termination_en,
+                termination_ar: d.terminationAr ?? f.termination_ar,
+                warranties_en: d.warrantiesEn ?? f.warranties_en,
+                warranties_ar: d.warrantiesAr ?? f.warranties_ar,
+                signed_by_en: d.signedByEn ?? f.signed_by_en,
+                signed_by_ar: d.signedByAr ?? f.signed_by_ar,
+                witness_en: d.witnessEn ?? f.witness_en,
+                witness_ar: d.witnessAr ?? f.witness_ar,
+              }));
+            }}
+          />
+        }
         footer={
           <>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>

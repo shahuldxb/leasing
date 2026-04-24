@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Leaf, TrendingDown, BarChart3, FileText, Download, Globe, Building2, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 const CARBON_DATA = [
   { entity: "VF-UAE", category: "Office Leases", sqm: 12400, energy_kwh: 2480000, co2_tonnes: 1116, green_certified: true, rating: "LEED Gold" },
@@ -52,23 +53,11 @@ export default function ESGReporting() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">ESG & Sustainability Reporting</h1>
-            <p className="text-sm text-muted-foreground mt-1">TCFD, SASB, GRI disclosures — carbon footprint, energy intensity, and green building certification tracking</p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="h-9 w-24 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["2025", "2024", "2023"].map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => toast.info("Generating ESG report...")}>
-              <Download className="w-4 h-4 mr-2" /> Export Report
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+  screenId="VFLESGRPT0001P001"
+  title="ESG Reporting"
+  subtitle="TCFD/SASB ESG disclosure and reporting"
+/>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
