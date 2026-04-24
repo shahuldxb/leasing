@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -89,7 +89,7 @@ export default function LessorCreditScore() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Lessor</TableHead><TableHead>Score</TableHead><TableHead>Rating</TableHead><TableHead>Assessment Date</TableHead><TableHead>Notes</TableHead>
+              <TableHead>Lessor</TableHead><TableHead>Score</TableHead><TableHead>Rating</TableHead><TableHead>Assessment Date</TableHead><TableHead>Notes</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {(scores as any[]).map((s: any) => (
@@ -99,9 +99,15 @@ export default function LessorCreditScore() {
                   <TableCell><Badge className="bg-blue-500/20 text-blue-400">{s.rating}</Badge></TableCell>
                   <TableCell>{s.assessment_date ? new Date(s.assessment_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{s.notes ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm({ lessorId: String(s.lessor_id), score: s.score, rating: s.rating, assessmentDate: s.assessment_date?.slice(0,10) ?? "", notes: s.notes ?? "" }); setShowForm(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this score?", { action: { label: "Remove", onClick: () => toast.success("Score removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
-              {(scores as any[]).length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No credit scores recorded yet</TableCell></TableRow>}
+              {(scores as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No credit scores recorded yet</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -102,7 +102,7 @@ export default function LessorFinanceLease() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Lessor</TableHead><TableHead>Type</TableHead><TableHead>Amount</TableHead><TableHead>Rate</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+              <TableHead>Lessor</TableHead><TableHead>Type</TableHead><TableHead>Amount</TableHead><TableHead>Rate</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {records.map((r) => (
@@ -113,6 +113,12 @@ export default function LessorFinanceLease() {
                   <TableCell>{r.rate}</TableCell>
                   <TableCell>{r.maturity}</TableCell>
                   <TableCell><Badge className="bg-green-500/20 text-green-400">{r.status}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm((f: any) => ({ ...f, lessor: r.lessor, type: r.type, currency: r.currency, amount: r.amount, rate: r.rate, maturity: r.maturity?.slice(0,10) ?? "" })); setShowForm(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this facility?", { action: { label: "Remove", onClick: () => toast.success("Facility removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

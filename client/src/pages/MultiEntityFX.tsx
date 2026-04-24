@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Globe, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, Globe, DollarSign , Pencil, Trash2} from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -77,7 +77,7 @@ export default function MultiEntityFX() {
             <TabsContent value="entities" className="mt-4">
               <div className="flex justify-end mb-3"><Button size="sm" onClick={() => { setEntityForm({ ...INIT_ENT }); setEntityOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Entity</Button></div>
               <Card><CardContent className="p-0"><Table>
-                <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Name</TableHead><TableHead>Country</TableHead><TableHead>Currency</TableHead><TableHead>Functional CCY</TableHead><TableHead>Consolidation</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Name</TableHead><TableHead>Country</TableHead><TableHead>Currency</TableHead><TableHead>Functional CCY</TableHead><TableHead>Consolidation</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {displayEntities.map((e: any, i: number) => (
                     <TableRow key={i}><TableCell className="font-mono font-semibold">{e.entity_code}</TableCell><TableCell>{e.entity_name}</TableCell><TableCell>{e.country}</TableCell><TableCell><Badge variant="outline">{e.currency}</Badge></TableCell><TableCell><Badge variant="outline">{e.functional_currency}</Badge></TableCell><TableCell>{e.is_consolidation_entity ? <Badge className="bg-purple-600 text-white text-xs">Yes</Badge> : <span className="text-muted-foreground text-xs">No</span>}</TableCell></TableRow>

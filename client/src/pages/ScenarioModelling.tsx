@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, TrendingDown, Play, History, FlaskConical } from "lucide-react";
+import { TrendingUp, TrendingDown, Play, History, FlaskConical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -225,6 +225,11 @@ export default function ScenarioModelling() {
                           {delta > 0 ? "+" : ""}{fmt(delta)}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this scenario?", { action: { label: "Remove", onClick: () => toast.success("Scenario removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      </TableCell>
                       </TableRow>
                     );
                   })}

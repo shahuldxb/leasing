@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft , Pencil, Trash2} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -101,6 +101,7 @@ export default function WorkflowQueue() {
                       <Button size="sm" variant="outline" className="text-green-400 border-green-400" onClick={() => { setSelected(t); setDialogAction("Approve"); setComment(""); setShowForm(true); }}>Approve</Button>
                       <Button size="sm" variant="outline" className="text-red-400 border-red-400" onClick={() => { setSelected(t); setDialogAction("Reject"); setComment(""); setShowForm(true); }}>Reject</Button>
                     </>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this task?", { action: { label: "Remove", onClick: () => toast.success("Task removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </TableCell>
                 </TableRow>
               ))}

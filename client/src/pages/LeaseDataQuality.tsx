@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function LeaseDataQuality() {
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<any>({ ruleName: "", ruleType: "Completeness", severity: "Warning", description: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
   const utils = trpc.useUtils();
@@ -35,7 +36,7 @@ export default function LeaseDataQuality() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Add Quality Rule</h2>
+              <h2 className="font-semibold text-lg">{editId ? "Edit Quality Rule" : "Add Quality Rule"}</h2>
               <p className="text-sm text-muted-foreground">Define a new data quality validation rule</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
@@ -92,7 +93,7 @@ export default function LeaseDataQuality() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Rule Name</TableHead><TableHead>Type</TableHead><TableHead>Severity</TableHead><TableHead>Affected Records</TableHead><TableHead>Status</TableHead>
+              <TableHead>Rule Name</TableHead><TableHead>Type</TableHead><TableHead>Severity</TableHead><TableHead>Affected Records</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {rules.map((r) => (
@@ -102,6 +103,12 @@ export default function LeaseDataQuality() {
                   <TableCell><Badge className={r.severity === "Error" ? "bg-red-500/20 text-red-400" : r.severity === "Warning" ? "bg-amber-500/20 text-amber-400" : "bg-blue-500/20 text-blue-400"}>{r.severity}</Badge></TableCell>
                   <TableCell>{r.affected}</TableCell>
                   <TableCell><Badge className={r.status === "Open" ? "bg-orange-500/20 text-orange-400" : "bg-green-500/20 text-green-400"}>{r.status}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setEditId(r.id); setForm({ ruleName: r.name, ruleType: r.type, severity: r.severity, description: "" }); setShowForm(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this rule?", { action: { label: "Remove", onClick: () => toast.success("Rule removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer, ArrowLeft, Car, Home, Link2, PlusCircle } from "lucide-react";
+import { Printer, ArrowLeft, Car, Home, Link2, PlusCircle , Pencil, Trash2} from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { trpc } from "@/lib/trpc";
@@ -159,6 +159,11 @@ export default function MSCContractViewer() {
                   <TableCell className="text-xs">{a.make_model}</TableCell>
                   <TableCell className="font-mono text-xs">{a.plate_vin}</TableCell>
                   <TableCell className="text-xs">{a.location}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this asset?", { action: { label: "Remove", onClick: () => toast.success("Asset removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

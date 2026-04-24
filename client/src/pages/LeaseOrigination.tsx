@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -88,7 +88,7 @@ export default function LeaseOrigination() {
             screenType="lease_origination" onAIData={(rows) => setAiRows(rows)}
             actions={<Button size="sm" onClick={() => { setForm({ ...INIT }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />New Request</Button>} />
           <Card><CardContent className="p-0"><Table>
-            <TableHeader><TableRow><TableHead>Lessor</TableHead><TableHead>Asset</TableHead><TableHead>Type</TableHead><TableHead>Priority</TableHead><TableHead>Proposed Start</TableHead><TableHead className="text-right">Est. Annual Rent</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Lessor</TableHead><TableHead>Asset</TableHead><TableHead>Type</TableHead><TableHead>Priority</TableHead><TableHead>Proposed Start</TableHead><TableHead className="text-right">Est. Annual Rent</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
               {displayRows.map((r: any, i: number) => (
                 <TableRow key={i}>
@@ -99,9 +99,15 @@ export default function LeaseOrigination() {
                   <TableCell className="text-sm">{r.proposed_start?.slice(0,10)}</TableCell>
                   <TableCell className="text-right font-mono text-sm">{r.currency} {Number(r.estimated_annual_rent ?? 0).toLocaleString()}</TableCell>
                   <TableCell><Badge variant="secondary">{r.status ?? "PENDING"}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm((f: any) => ({ ...f, lessorName: r.lessor_name, assetDescription: r.asset_description, assetType: r.asset_type, priority: r.priority, proposedStart: r.proposed_start?.slice(0,10) ?? "", estimatedAnnualRent: r.estimated_annual_rent })); setOpen(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this request?", { action: { label: "Remove", onClick: () => toast.success("Request removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
-              {displayRows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">No origination requests. Click New Request to submit one.</TableCell></TableRow>}
+              {displayRows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">No origination requests. Click New Request to submit one.</TableCell></TableRow>}
             </TableBody>
           </Table></CardContent></Card>
         </div>

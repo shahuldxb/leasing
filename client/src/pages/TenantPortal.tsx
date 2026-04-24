@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -100,7 +100,7 @@ export default function TenantPortal() {
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Type</TableHead><TableHead>Subject</TableHead><TableHead>Contract</TableHead><TableHead>Priority</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead>
+              <TableHead>Type</TableHead><TableHead>Subject</TableHead><TableHead>Contract</TableHead><TableHead>Priority</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {requests.map((r) => (
@@ -110,7 +110,13 @@ export default function TenantPortal() {
                   <TableCell>{r.contract}</TableCell>
                   <TableCell><Badge className={r.priority === "High" || r.priority === "Urgent" ? "bg-red-500/20 text-red-400" : r.priority === "Medium" ? "bg-amber-500/20 text-amber-400" : "bg-gray-500/20 text-gray-400"}>{r.priority}</Badge></TableCell>
                   <TableCell>{r.date}</TableCell>
-                  <TableCell><Badge className={r.status === "Resolved" ? "bg-green-500/20 text-green-400" : "bg-blue-500/20 text-blue-400"}>{r.status}</Badge></TableCell>
+                  <TableCell><Badge className={r.priority === "High" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}>{r.priority}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm((f: any) => ({ ...f, type: r.type, subject: r.subject, description: r.subject, priority: r.priority })); setShowForm(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this request?", { action: { label: "Remove", onClick: () => toast.success("Request removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

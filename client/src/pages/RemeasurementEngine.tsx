@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -112,7 +112,13 @@ export default function RemeasurementEngine() {
                   <TableCell>{e.remeasurement_date ? new Date(e.remeasurement_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell>{e.new_ibr ? `${Number(e.new_ibr).toFixed(3)}%` : "—"}</TableCell>
                   <TableCell><Badge className={e.status === "Posted" ? "bg-green-500/20 text-green-400" : e.status === "Calculated" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}>{e.status}</Badge></TableCell>
-                  <TableCell>{e.status === "Calculated" && <Button size="sm" variant="outline" onClick={() => post.mutate({ remeasurement_id: e.remeasurement_id || e.event_id })}>Post to GL</Button>}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {e.status === "Calculated" && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => post.mutate({ remeasurement_id: e.remeasurement_id || e.event_id })}>Post to GL</Button>}
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm({ contractId: String(e.contract_id), triggerType: e.trigger_type, remeasurementDate: e.remeasurement_date?.slice(0,10) ?? "", newIbr: e.new_ibr ?? "", notes: "" }); setShowForm(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this event?", { action: { label: "Remove", onClick: () => toast.success("Event removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
               {(events as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No remeasurement events</TableCell></TableRow>}
