@@ -154,7 +154,7 @@ function RecordBounceDialog({ open, onClose, chequeId, chequeNumber, chequeAmoun
                       <SelectValue placeholder="Auto-select by amount" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="" className="text-gray-400">Auto-select by cheque amount</SelectItem>
+                      <SelectItem value="auto" className="text-gray-400">Auto-select by cheque amount</SelectItem>
                       {(configs?.configs ?? []).map((c: any) => (
                         <SelectItem key={c.config_id} value={c.config_id.toString()} className="text-gray-100">
                           {c.config_name} ({c.penalty_code})
@@ -617,7 +617,7 @@ export default function BounceManagement() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="" className="text-gray-300">All Statuses</SelectItem>
+                  <SelectItem value="all" className="text-gray-300">All Statuses</SelectItem>
                   <SelectItem value="BOUNCED" className="text-red-400">Bounced</SelectItem>
                   <SelectItem value="REPLACEMENT_ISSUED" className="text-blue-400">Replacement Issued</SelectItem>
                   <SelectItem value="PENALTY_PENDING" className="text-yellow-400">Penalty Pending</SelectItem>

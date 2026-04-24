@@ -86,7 +86,7 @@ export default function RemeasurementEngine() {
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-40"><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="PENDING">Pending</SelectItem>
               <SelectItem value="POSTED">Posted</SelectItem>
             </SelectContent>

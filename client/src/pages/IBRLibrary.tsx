@@ -16,7 +16,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 const CURRENCIES = ["AED", "USD", "EUR", "GBP", "SAR", "QAR", "KWD", "BHD", "OMR"];
 
 export default function IBRLibrary() {
-  const [filterCurrency, setFilterCurrency] = useState<string>("");
+  const [filterCurrency, setFilterCurrency] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({
@@ -25,7 +25,7 @@ export default function IBRLibrary() {
     source: "", notes: "",
   });
 
-  const { data: rates = [], refetch } = trpc.accounting.ibr.list.useQuery({ currency: filterCurrency || undefined });
+  const { data: rates = [], refetch } = trpc.accounting.ibr.list.useQuery({ currency: filterCurrency === "all" ? undefined : filterCurrency || undefined });
   const upsert = trpc.accounting.ibr.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("IBR rate saved"); } });
   const del = trpc.accounting.ibr.delete.useMutation({ onSuccess: () => { refetch(); toast.success("IBR rate deleted"); } });
 
@@ -65,7 +65,7 @@ export default function IBRLibrary() {
           <Select value={filterCurrency} onValueChange={setFilterCurrency}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Currencies</SelectItem>
+              <SelectItem value="all">All Currencies</SelectItem>
               {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
