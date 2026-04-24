@@ -56,11 +56,11 @@ export default function CriticalDateCalendar() {
               <p className="text-sm text-muted-foreground">{editRow ? "Update the key date event" : "Add a key date event for a lease contract"}</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="lease_modification"
-              onFill={(data) => setForm((f: any) => ({
+              formType="critical_date"
+              onFill={(data: any) => setForm((f: any) => ({
                           ...f,
-                          eventDate: data.modificationDate ?? f.eventDate,
-                          description: data.reason ?? f.description,
+                          eventType: data.eventType ?? f.eventType,
+                          eventDate: data.eventDate ?? f.eventDate,
                           notes: data.notes ?? f.notes,
                         }))}
             /></div>

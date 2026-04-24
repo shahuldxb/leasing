@@ -59,10 +59,11 @@ export default function ContractMilestones() {
               <h2 className="text-lg font-semibold">{editRow ? "Edit Milestone" : "Add Contract Milestone"}</h2>
               <p className="text-xs text-muted-foreground">{editRow ? "Update milestone details" : "Set a key date or milestone for a lease contract"}</p>
             </div>
-            <GenAIFillButton formType="lease_modification" onFill={(data) => setForm(f => ({
+            <GenAIFillButton formType="contract_milestone" onFill={(data: any) => setForm((f: any) => ({
               ...f,
-              dueDate: data.modificationDate ? String(data.modificationDate) : f.dueDate,
-              notes: data.reason ? String(data.reason) : f.notes,
+              type: data.milestoneType ?? f.type,
+              dueDate: data.dueDate ?? f.dueDate,
+              notes: data.notes ?? f.notes,
             }))} />
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">

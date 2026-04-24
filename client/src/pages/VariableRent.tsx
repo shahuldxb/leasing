@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,12 @@ export default function VariableRent() {
   const { data: items = [], refetch } = trpc.accounting.variableRent.list.useQuery({});
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
   const contracts = (contractsData as any)?.rows ?? [];
+  useEffect(() => {
+    if (contracts.length > 0 && !form.contractId && showForm) {
+      setForm((f: any) => ({ ...f, contractId: String(contracts[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts.length, showForm]);
   const create = trpc.accounting.variableRent.record.useMutation({
     onSuccess: () => { refetch(); setShowForm(false); toast.success(editRow ? "Variable rent updated" : "Variable rent recorded"); },
     onError: (e: any) => toast.error(e.message),
@@ -60,11 +66,13 @@ export default function VariableRent() {
             </div>
             <div className="ml-auto">
               <GenAIFillButton
-                formType="rent_review"
-                onFill={(data) => setForm((f: any) => ({
+                formType="variable_rent"
+                onFill={(data: any) => setForm((f: any) => ({
                   ...f,
-                  period: data.reviewDate ?? f.period,
-                  amount: String(data.proposedRent ?? f.amount),
+                  period: data.period ?? f.period,
+                  variableType: data.variableType ?? f.variableType,
+                  amount: data.amount ? String(data.amount) : f.amount,
+                  currency: data.currency ?? f.currency,
                   notes: data.notes ?? f.notes,
                 }))}
               />

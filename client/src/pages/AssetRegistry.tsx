@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,13 @@ export default function AssetRegistry() {
   const assets = [...((assetsData as any)?.assets ?? []), ...aiRows];
   const { data: lessorsData } = trpc.lessor.getLessors.useQuery({});
   const lessors: any[] = (lessorsData as any)?.lessors ?? [];
+  // Auto-select first lessor when data loads
+  useEffect(() => {
+    if (lessors.length > 0 && !form.currentLessorId && showForm) {
+      setForm((p: any) => ({ ...p, currentLessorId: String(lessors[0].lessor_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessors.length, showForm]);
 
   const upsertMutation = trpc.asset.upsertAsset.useMutation({
     onSuccess: () => { refetch(); setShowForm(false); setEditItem(null); toast.success(editItem ? "Asset updated" : "Asset created"); },
@@ -120,7 +127,12 @@ export default function AssetRegistry() {
                 country: data.country ?? p.country,
                 city: data.city ?? p.city,
                 addressLine1: data.address ?? p.addressLine1,
-                floorAreaSqm: data.floorArea ?? p.floorAreaSqm,
+                floorAreaSqm: data.floorArea ? String(data.floorArea) : p.floorAreaSqm,
+                estimatedMarketValue: data.estimatedMarketValue ? String(data.estimatedMarketValue) : p.estimatedMarketValue,
+                lastValuationDate: data.lastValuationDate ?? p.lastValuationDate,
+                makeGoodProvision: data.makeGoodProvision ? String(data.makeGoodProvision) : p.makeGoodProvision,
+                conditionRating: data.conditionRating ?? p.conditionRating,
+                maintenanceResponsibility: data.maintenanceResponsibility ?? p.maintenanceResponsibility,
                 description: data.notes ?? p.description,
               }))} />
             </div>
