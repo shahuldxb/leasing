@@ -59,9 +59,13 @@ export default function OpsMaintenance() {
               <p className="text-xs text-muted-foreground">{editRow ? "Update ticket details" : "Log a new maintenance or repair request"}</p>
             </div>
             <GenAIFillButton formType="maintenance_ticket" onFill={(data) => {
-              if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any }));
-              if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any }));
-              if (data.ticketType !== undefined) setForm(f => ({ ...f, ticketType: data.ticketType as any }));
+              setForm(f => ({
+                ...f,
+                description: data.description ?? data.title ?? f.description,
+                priority: data.priority === "LOW" ? "Low" : data.priority === "HIGH" ? "High" : data.priority === "CRITICAL" ? "Critical" : data.priority ?? f.priority,
+                ticketType: data.category ?? f.ticketType,
+                estimatedCost: data.estimatedCost ? String(data.estimatedCost) : f.estimatedCost,
+              }));
             }} />
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">

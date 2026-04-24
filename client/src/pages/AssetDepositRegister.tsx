@@ -51,11 +51,10 @@ export default function AssetDepositRegister() {
               formType="asset_deposit"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          depositAmount: data.depositAmount ?? f.depositAmount,
-                          depositDate: data.depositDate ?? f.depositDate,
-                          depositType: data.depositType ?? f.depositType,
-                          bankRef: data.bankRef ?? f.bankRef,
-                          notes: data.notes ?? f.notes,
+                          assetDescription: data.assetDescription ?? f.assetDescription,
+                          deposit_amount: data.depositAmount ? String(data.depositAmount) : f.deposit_amount,
+                          deposit_type: data.depositType ?? f.deposit_type,
+                          deposit_currency: data.currency ?? f.deposit_currency,
                         }))}
             /></div>
           </div>
@@ -69,16 +68,16 @@ export default function AssetDepositRegister() {
               </div>
               <div><Label>Asset Description *</Label><Input className="mt-1" value={form.assetDescription} onChange={e => setForm((f: any) => ({ ...f, assetDescription: e.target.value }))} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Deposit Amount *</Label><Input className="mt-1" type="number" value={form.depositAmount} onChange={e => setForm((f: any) => ({ ...f, deposit_amount: e.target.value }))} /></div>
+                <div><Label>Deposit Amount *</Label><Input className="mt-1" type="number" value={form.deposit_amount} onChange={e => setForm((f: any) => ({ ...f, deposit_amount: e.target.value }))} /></div>
                 <div><Label>Currency</Label>
-                  <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, deposit_currency: v }))}>
+                  <Select value={form.deposit_currency} onValueChange={v => setForm((f: any) => ({ ...f, deposit_currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
               <div><Label>Deposit Type</Label>
-                <Select value={form.depositType} onValueChange={v => setForm((f: any) => ({ ...f, deposit_type: v }))}>
+                <Select value={form.deposit_type} onValueChange={v => setForm((f: any) => ({ ...f, deposit_type: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>{["Cash","Cheque","Bank Guarantee","Letter of Credit"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
@@ -86,7 +85,7 @@ export default function AssetDepositRegister() {
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                 <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={createMut.isPending}
-                  onClick={() => createMut.mutate({ deposit_date: new Date().toISOString().split('T')[0], contract_id: Number(form.leaseId), deposit_amount: Number(form.depositAmount), deposit_currency: form.currency, deposit_type: (form.depositType as any) || 'CASH' })}>
+                  onClick={() => createMut.mutate({ deposit_date: new Date().toISOString().split('T')[0], contract_id: Number(form.leaseId), deposit_amount: Number(form.deposit_amount), deposit_currency: form.deposit_currency, deposit_type: (form.deposit_type as any) || 'Cash' })}>
                   {createMut.isPending ? "Saving..." : "Record Deposit"}
                 </Button>
               </div>

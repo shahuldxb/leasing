@@ -40,13 +40,13 @@ export default function TenantPortal() {
               <p className="text-sm text-muted-foreground">Submit a maintenance, document, or service request</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="sub_lease"
+              formType="tenant_request"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          subtenantName: data.subTenantName ?? f.subtenantName,
-                          startDate: data.startDate ?? f.startDate,
-                          endDate: data.endDate ?? f.endDate,
-                          monthlyRent: data.monthlyRent ?? f.monthlyRent,
+                          requestType: data.requestType ?? f.requestType,
+                          subject: data.subject ?? f.subject,
+                          description: data.description ?? f.description,
+                          priority: data.priority ?? f.priority,
                         }))}
             /></div>
           </div>

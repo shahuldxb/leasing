@@ -35,7 +35,7 @@ export default function IBRLibrary() {
               <p className="text-sm text-muted-foreground">Add an Incremental Borrowing Rate for IFRS 16 calculations</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="ibr_library"
+              formType="ibr_form"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
                           currency: data.currency ?? f.currency,

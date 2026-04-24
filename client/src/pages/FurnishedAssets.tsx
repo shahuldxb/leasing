@@ -51,13 +51,10 @@ export default function FurnishedAssets() {
               formType="furnished_asset"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          assetName: data.assetName ?? f.assetName,
-                          assetCategory: data.assetCategory ?? f.assetCategory,
-                          brand: data.brand ?? f.brand,
-                          model: data.model ?? f.model,
+                          itemName: data.assetName ?? f.itemName,
+                          itemType: data.assetCategory ?? f.itemType,
                           serialNumber: data.serialNumber ?? f.serialNumber,
-                          conditionAtHandover: data.conditionAtHandover ?? f.conditionAtHandover,
-                          estimatedValue: data.estimatedValue ?? f.estimatedValue,
+                          condition: data.conditionAtHandover ?? f.condition,
                           notes: data.notes ?? f.notes,
                         }))}
             /></div>

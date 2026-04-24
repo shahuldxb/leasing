@@ -127,8 +127,11 @@ export default function LessorMaster() {
       country: data.country ?? f.country,
       city: data.city ?? f.city,
       addressLine1: data.address_line1 ?? data.addressLine1 ?? f.addressLine1,
+      addressLine2: data.address_line2 ?? data.addressLine2 ?? f.addressLine2,
+      postalCode: data.postal_code ?? data.postalCode ?? f.postalCode,
       website: data.website ?? f.website,
       creditRating: data.credit_rating ?? data.creditRating ?? f.creditRating,
+      paymentTerms: data.paymentTerms ? Number(data.paymentTerms) : f.paymentTerms,
       preferredCurrency: data.preferred_currency ?? data.preferredCurrency ?? f.preferredCurrency,
       status: data.status ?? f.status,
     }));

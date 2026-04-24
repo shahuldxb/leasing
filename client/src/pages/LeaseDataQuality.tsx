@@ -40,10 +40,13 @@ export default function LeaseDataQuality() {
               <p className="text-sm text-muted-foreground">Define a new data quality validation rule</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="new_lease"
+              formType="lease_data_quality"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          notes: data.notes ?? f.notes,
+                          ruleName: data.ruleName ?? f.ruleName,
+                          ruleType: data.ruleType ?? f.ruleType,
+                          severity: data.severity ?? f.severity,
+                          description: data.description ?? f.description,
                         }))}
             /></div>
           </div>

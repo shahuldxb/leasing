@@ -42,10 +42,12 @@ export default function LessorCreditScore() {
               <p className="text-sm text-muted-foreground">Assign a credit score and rating to a lessor</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="lessor"
+              formType="lessor_credit_score"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          lessorName: data.lessorName ?? f.lessorName,
+                          score: data.score ? String(data.score) : f.score,
+                          rating: data.rating ?? f.rating,
+                          assessmentDate: data.assessmentDate ?? f.assessmentDate,
                           notes: data.notes ?? f.notes,
                         }))}
             /></div>
@@ -72,7 +74,7 @@ export default function LessorCreditScore() {
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                 <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={save.isPending}
-                  onClick={() => save.mutate({ lessor_id: Number(form.lessorId), payment_history_score: Number(form.score || 70), financial_stability_score: Number(form.score || 70), dispute_history_score: Number(form.score || 70), compliance_score: Number(form.score || 70), notes: form.notes })}>
+                  onClick={() => save.mutate({ lessor_id: Number(form.lessor_id), payment_history_score: Number(form.score || 70), financial_stability_score: Number(form.score || 70), dispute_history_score: Number(form.score || 70), compliance_score: Number(form.score || 70), notes: form.notes })}>
                   {save.isPending ? "Saving..." : "Save Score"}
                 </Button>
               </div>

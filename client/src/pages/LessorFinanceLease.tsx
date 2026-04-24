@@ -46,11 +46,15 @@ export default function LessorFinanceLease() {
               <p className="text-sm text-muted-foreground">Record a finance lease facility for a lessor</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="lessor"
+              formType="lessor_finance_lease"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          lessorName: data.lessorName ?? f.lessorName,
-                          notes: data.notes ?? f.notes,
+                          financeType: data.financeType ?? f.financeType,
+                          facilityAmount: data.facilityAmount ? String(data.facilityAmount) : f.facilityAmount,
+                          currency: data.currency ?? f.currency,
+                          interestRate: data.interestRate ? String(data.interestRate) : f.interestRate,
+                          maturityDate: data.maturityDate ?? f.maturityDate,
+                          lender: data.lender ?? f.lender,
                         }))}
             /></div>
           </div>

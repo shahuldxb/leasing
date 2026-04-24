@@ -69,13 +69,16 @@ export default function OpsInsurance() {
               <p className="text-xs text-muted-foreground">{editRow ? "Update policy details" : "Add a new insurance policy to the register"}</p>
             </div>
             <GenAIFillButton formType="insurance_policy" onFill={(data) => {
-              if (data.provider !== undefined) setForm(f => ({ ...f, provider: data.provider as any }));
-              if (data.policyNumber !== undefined) setForm(f => ({ ...f, policyNumber: data.policyNumber as any }));
-              if (data.coverageType !== undefined) setForm(f => ({ ...f, coverageType: data.coverageType as any }));
-              if (data.sumInsured !== undefined) setForm(f => ({ ...f, sumInsured: String(data.sumInsured) }));
-              if (data.premiumAmount !== undefined) setForm(f => ({ ...f, premiumAmount: String(data.premiumAmount) }));
-              if (data.startDate !== undefined) setForm(f => ({ ...f, startDate: data.startDate as any }));
-              if (data.endDate !== undefined) setForm(f => ({ ...f, endDate: data.endDate as any }));
+              setForm(f => ({
+                ...f,
+                provider: data.insurer ?? data.provider ?? f.provider,
+                policyNumber: data.policyNumber ?? f.policyNumber,
+                coverageType: data.policyType ?? data.coverageType ?? f.coverageType,
+                sumInsured: data.coverageAmount ? String(data.coverageAmount) : data.sumInsured ? String(data.sumInsured) : f.sumInsured,
+                premiumAmount: data.premium ? String(data.premium) : data.premiumAmount ? String(data.premiumAmount) : f.premiumAmount,
+                startDate: data.startDate ?? f.startDate,
+                endDate: data.endDate ?? f.endDate,
+              }));
             }} />
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">

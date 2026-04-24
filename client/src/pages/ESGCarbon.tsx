@@ -42,12 +42,15 @@ export default function ESGCarbon() {
               <p className="text-sm text-muted-foreground">Record carbon footprint and sustainability metrics for a property</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
-              formType="work_order"
+              formType="esg_carbon"
               onFill={(data) => setForm((f: any) => ({
                           ...f,
-                          title: data.title ?? f.title,
-                          description: data.description ?? f.description,
-                          notes: data.notes ?? f.notes,
+                          reportingPeriod: data.reportingPeriod ?? f.reportingPeriod,
+                          carbonKg: data.carbonKg ? String(data.carbonKg) : f.carbonKg,
+                          energyKwh: data.energyKwh ? String(data.energyKwh) : f.energyKwh,
+                          waterM3: data.waterM3 ? String(data.waterM3) : f.waterM3,
+                          wasteKg: data.wasteKg ? String(data.wasteKg) : f.wasteKg,
+                          renewablePercent: data.renewablePercent ? String(data.renewablePercent) : f.renewablePercent,
                         }))}
             /></div>
           </div>
