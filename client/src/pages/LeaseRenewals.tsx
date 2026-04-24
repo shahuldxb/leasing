@@ -96,7 +96,70 @@ export default function LeaseRenewals() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Contract Id</Label>
+            <Input type="number" value={form.contract_id ?? ""} onChange={e => setForm((f: any) => ({...f, contract_id: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Renewal Type</Label>
+            <Select value={String(form.renewal_type ?? "")} onValueChange={v => setForm((f: any) => ({...f, renewal_type: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="EXTENSION">EXTENSION</SelectItem>
+                  <SelectItem value="RENEGOTIATION">RENEGOTIATION</SelectItem>
+                  <SelectItem value="HOLDOVER">HOLDOVER</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>New Expiry Date</Label>
+            <Input type="date" value={form.new_expiry_date ?? ""} onChange={e => setForm((f: any) => ({...f, new_expiry_date: e.target.value}))} />
+          </div>
+          <div>
+            <Label>New Monthly Payment</Label>
+            <Input type="number" value={form.new_monthly_payment ?? ""} onChange={e => setForm((f: any) => ({...f, new_monthly_payment: e.target.value}))} />
+          </div>
+          <div>
+            <Label>New Ibr</Label>
+            <Input type="number" value={form.new_ibr ?? ""} onChange={e => setForm((f: any) => ({...f, new_ibr: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="DRAFT">DRAFT</SelectItem>
+                  <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
+                  <SelectItem value="APPROVED">APPROVED</SelectItem>
+                  <SelectItem value="REJECTED">REJECTED</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLLEASEREN0001P001"
           title="Lease Renewals"
@@ -164,68 +227,7 @@ export default function LeaseRenewals() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Contract Id</Label>
-            <Input type="number" value={form.contract_id ?? ""} onChange={e => setForm((f: any) => ({...f, contract_id: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Renewal Type</Label>
-            <Select value={String(form.renewal_type ?? "")} onValueChange={v => setForm((f: any) => ({...f, renewal_type: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="EXTENSION">EXTENSION</SelectItem>
-                  <SelectItem value="RENEGOTIATION">RENEGOTIATION</SelectItem>
-                  <SelectItem value="HOLDOVER">HOLDOVER</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>New Expiry Date</Label>
-            <Input type="date" value={form.new_expiry_date ?? ""} onChange={e => setForm((f: any) => ({...f, new_expiry_date: e.target.value}))} />
-          </div>
-          <div>
-            <Label>New Monthly Payment</Label>
-            <Input type="number" value={form.new_monthly_payment ?? ""} onChange={e => setForm((f: any) => ({...f, new_monthly_payment: e.target.value}))} />
-          </div>
-          <div>
-            <Label>New Ibr</Label>
-            <Input type="number" value={form.new_ibr ?? ""} onChange={e => setForm((f: any) => ({...f, new_ibr: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="DRAFT">DRAFT</SelectItem>
-                  <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
-                  <SelectItem value="APPROVED">APPROVED</SelectItem>
-                  <SelectItem value="REJECTED">REJECTED</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

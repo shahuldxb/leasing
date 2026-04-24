@@ -1,103 +1,100 @@
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Leaf, Zap, Droplets, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
-
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const RATINGS = ["Platinum","Gold","Silver","Bronze","None"];
-const RATING_COLORS: Record<string, string> = { Platinum: "bg-violet-500", Gold: "bg-amber-500", Silver: "bg-gray-400", Bronze: "bg-orange-600", None: "bg-gray-600" };
 
 export default function ESGCarbon() {
-  const year = new Date().getFullYear();
-  const [open, setOpen] = useState(false);
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const [form, setForm] = useState({ contract_id: 0, reporting_year: year, reporting_month: new Date().getMonth() + 1, scope1_tonnes: 0, scope2_tonnes: 0, scope3_tonnes: 0, energy_kwh: 0, water_m3: 0, waste_tonnes: 0, green_rating: "None", notes: "" });
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<any>({ contractId: "", reportingPeriod: "", carbonKg: "", energyKwh: "", waterM3: "", wasteKg: "", renewablePercent: "" });
+  const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data: records = [], refetch } = trpc.esgCarbon.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.rows ?? [];
+  const contracts = (contractsData as any)?.contracts ?? [];
+  const save = trpc.esgCarbon.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("ESG record saved"); }, onError: (e: any) => toast.error(e.message) });
 
-  const save = trpc.esgCarbon.upsert.useMutation({ onSuccess: () => { refetch(); setOpen(false); toast.success("ESG record saved"); }, onError: (e: any) => toast.error(e.message) });
-
-  const totalScope1 = (records as any[]).reduce((s: number, r: any) => s + Number(r.scope1_tonnes ?? 0), 0);
-  const totalScope2 = (records as any[]).reduce((s: number, r: any) => s + Number(r.scope2_tonnes ?? 0), 0);
-  const totalScope3 = (records as any[]).reduce((s: number, r: any) => s + Number(r.scope3_tonnes ?? 0), 0);
-  const totalEnergy = (records as any[]).reduce((s: number, r: any) => s + Number(r.energy_kwh ?? 0), 0);
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">Log ESG Carbon Data</h2>
+              <p className="text-sm text-muted-foreground">Record carbon footprint and sustainability metrics for a property</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div><Label>Contract</Label>
+                <Select value={form.contractId} onValueChange={v => setForm((f: any) => ({ ...f, contractId: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
+                  <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.property_name ?? c.contract_id}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Reporting Period (YYYY-MM)</Label><Input className="mt-1" placeholder="2024-01" value={form.reportingPeriod} onChange={e => setForm((f: any) => ({ ...f, reportingPeriod: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Carbon Emissions (kg CO₂)</Label><Input className="mt-1" type="number" value={form.carbonKg} onChange={e => setForm((f: any) => ({ ...f, carbonKg: e.target.value }))} /></div>
+                <div><Label>Energy Consumption (kWh)</Label><Input className="mt-1" type="number" value={form.energyKwh} onChange={e => setForm((f: any) => ({ ...f, energyKwh: e.target.value }))} /></div>
+                <div><Label>Water Usage (m³)</Label><Input className="mt-1" type="number" value={form.waterM3} onChange={e => setForm((f: any) => ({ ...f, waterM3: e.target.value }))} /></div>
+                <div><Label>Waste Generated (kg)</Label><Input className="mt-1" type="number" value={form.wasteKg} onChange={e => setForm((f: any) => ({ ...f, wasteKg: e.target.value }))} /></div>
+                <div><Label>Renewable Energy (%)</Label><Input className="mt-1" type="number" min="0" max="100" value={form.renewablePercent} onChange={e => setForm((f: any) => ({ ...f, renewablePercent: e.target.value }))} /></div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={save.isPending}
+                  onClick={() => save.mutate({ contract_id: Number(form.contractId), reporting_year: Number((form.reportingPeriod || '2024-01').split('-')[0]), reporting_month: Number((form.reportingPeriod || '2024-01').split('-')[1]), scope1_tonnes: Number(form.carbonKg), scope2_tonnes: Number(form.energyKwh), scope3_tonnes: Number(form.waterM3) })}>
+                  {save.isPending ? "Saving..." : "Save ESG Data"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLESGCRB0001P001"
-  title="ESG Carbon Tracker"
-  subtitle="Carbon footprint and sustainability metrics"
-
+          screenId="VFLESGCRB0001P001"
+          title="ESG Carbon Tracker"
+          subtitle="Carbon footprint and sustainability metrics"
           screenType="esg_carbon"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+          onAIData={(rows) => setAiRows(rows)}
+          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
-
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: `Scope 1 — ${year}`, value: `${totalScope1.toFixed(1)} tCO₂e`, icon: <Leaf className="w-4 h-4 text-emerald-500" />, color: "text-emerald-600" },
-            { label: `Scope 2 — ${year}`, value: `${totalScope2.toFixed(1)} tCO₂e`, icon: <Zap className="w-4 h-4 text-amber-500" />, color: "text-amber-600" },
-            { label: `Scope 3 — ${year}`, value: `${totalScope3.toFixed(1)} tCO₂e`, icon: <Leaf className="w-4 h-4 text-blue-500" />, color: "text-blue-600" },
-            { label: `Energy — ${year}`, value: `${(totalEnergy/1000).toFixed(0)} MWh`, icon: <Zap className="w-4 h-4 text-violet-500" />, color: "text-violet-600" },
-          ].map(k => (
-            <Card key={k.label}>
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-1">{k.icon}<p className="text-xs text-muted-foreground">{k.label}</p></div>
-                <p className={`text-xl font-bold ${k.color}`}>{k.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle className="text-base">ESG Records — {year} ({(records as any[]).length} entries)</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Contract</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead className="text-right">Scope 1</TableHead>
-                  <TableHead className="text-right">Scope 2</TableHead>
-                  <TableHead className="text-right">Scope 3</TableHead>
-                  <TableHead className="text-right">Energy (kWh)</TableHead>
-                  <TableHead className="text-right">Water (m³)</TableHead>
-                  <TableHead className="text-right">Waste (t)</TableHead>
-                  <TableHead>Rating</TableHead>
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Contract</TableHead><TableHead>Period</TableHead><TableHead>Carbon (kg)</TableHead><TableHead>Energy (kWh)</TableHead><TableHead>Water (m³)</TableHead><TableHead>Renewable %</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(records as any[]).map((r: any) => (
+                <TableRow key={r.esg_id}>
+                  <TableCell>{r.contract_id}</TableCell>
+                  <TableCell>{r.reporting_period}</TableCell>
+                  <TableCell>{Number(r.carbon_kg).toLocaleString()}</TableCell>
+                  <TableCell>{Number(r.energy_kwh).toLocaleString()}</TableCell>
+                  <TableCell>{Number(r.water_m3).toLocaleString()}</TableCell>
+                  <TableCell>{r.renewable_percent}%</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(records as any[]).map((r: any) => (
-                  <TableRow key={r.carbon_id}>
-                    <TableCell className="font-mono text-xs">{r.contract_ref}</TableCell>
-                    <TableCell className="text-sm">{MONTHS[(r.reporting_month ?? 1) - 1]} {r.reporting_year}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(r.scope1_tonnes ?? 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(r.scope2_tonnes ?? 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(r.scope3_tonnes ?? 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(r.energy_kwh ?? 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(r.water_m3 ?? 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(r.waste_tonnes ?? 0).toFixed(2)}</TableCell>
-                    <TableCell>{r.green_rating && r.green_rating !== "None" ? <Badge className={`${RATING_COLORS[r.green_rating] ?? "bg-gray-500"} text-white text-xs`}>{r.green_rating}</Badge> : <span className="text-muted-foreground text-xs">—</span>}</TableCell>
-                  </TableRow>
-                ))}
-                {(records as any[]).length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">No ESG records for {year}</TableCell></TableRow>}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              ))}
+              {(records as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No ESG data recorded yet</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </DashboardLayout>
   );

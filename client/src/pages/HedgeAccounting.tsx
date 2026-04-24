@@ -1,304 +1,109 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, DollarSign, Shield, Plus, BarChart3 } from "lucide-react";
-import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import { GenAIFillButton } from "@/components/GenAIFillButton";
-import SlidePanel from "@/components/SlidePanel";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-
-const STATUS_COLORS: Record<string, string> = {
-  DESIGNATED: "bg-green-500/20 text-green-400 border-green-500/30",
-  PROSPECTIVE: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  DEDESIGNATED: "bg-red-500/20 text-red-400 border-red-500/30",
-  EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
-};
-
-const HEDGES = [
-  { id: 1, contract_ref: "VF-2024-FX-001", hedged_item: "USD-denominated lease — New York Office", currency: "USD", notional_usd: 2400000, spot_rate: 3.6725, hedge_rate: 3.6500, instrument: "Forward Contract", maturity: "2027-12-31", effectiveness: 98.2, oci_balance: -45200, status: "DESIGNATED" },
-  { id: 2, contract_ref: "VF-2024-FX-002", hedged_item: "GBP-denominated lease — London Hub", currency: "GBP", notional_usd: 1850000, spot_rate: 4.6800, hedge_rate: 4.6200, instrument: "Cross-Currency Swap", maturity: "2026-06-30", effectiveness: 96.7, oci_balance: 28700, status: "DESIGNATED" },
-  { id: 3, contract_ref: "VF-2023-FX-003", hedged_item: "EUR-denominated lease — Frankfurt DC", currency: "EUR", notional_usd: 980000, spot_rate: 4.0100, hedge_rate: 3.9800, instrument: "Forward Contract", maturity: "2025-12-31", effectiveness: 94.1, oci_balance: -12300, status: "PROSPECTIVE" },
-];
-
-const GL_IMPACT = [
-  { period: "Q1 2026", hedged_item_change: -125000, hedging_instrument_change: 118500, ineffectiveness: -6500, oci_movement: 118500, p_and_l: -6500 },
-  { period: "Q2 2026", hedged_item_change: 87000, hedging_instrument_change: -82000, ineffectiveness: 5000, oci_movement: -82000, p_and_l: 5000 },
-  { period: "Q3 2026", hedged_item_change: -45000, hedging_instrument_change: 43200, ineffectiveness: -1800, oci_movement: 43200, p_and_l: -1800 },
-];
+import { toast } from "sonner";
 
 export default function HedgeAccounting() {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<any>({ hedgeType: "Fair Value", notionalAmount: "", currency: "AED", hedgeRatio: "100", startDate: "", endDate: "", instrument: "" });
+  const [aiRows, setAiRows] = useState<any[]>([]);
   const utils = trpc.useUtils();
-  const actionMut = trpc.system.notifyOwner.useMutation({
-    onSuccess: () => toast.success("Action completed successfully"),
-    onError: (e: any) => toast.error(e.message),
-  });
-  const [tab, setTab] = useState("hedges");
-  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const [hedgeForm, setHedgeForm] = useState({ instrument_type: "", notional_amount: "", currency_pair: "", start_date: "", maturity_date: "", strike_rate: "" });
-  const [showDialog, setShowDialog] = useState(false);
+  const actionMut = trpc.system.notifyOwner.useMutation({ onSuccess: () => { setShowForm(false); toast.success("Hedge designation submitted for review"); }, onError: (e: any) => toast.error(e.message) });
 
-  const totalOCI = HEDGES.reduce((s, h) => s + h.oci_balance, 0);
-  const avgEffectiveness = HEDGES.reduce((s, h) => s + h.effectiveness, 0) / HEDGES.length;
-  const designated = HEDGES.filter(h => h.status === "DESIGNATED").length;
+  const hedges = [
+    { id: 1, type: "Fair Value", instrument: "Interest Rate Swap", notional: "5,000,000", currency: "AED", ratio: "100%", status: "Effective" },
+    { id: 2, type: "Cash Flow", instrument: "FX Forward", notional: "2,500,000", currency: "USD", ratio: "85%", status: "Effective" },
+    { id: 3, type: "Net Investment", instrument: "Cross Currency Swap", notional: "10,000,000", currency: "EUR", ratio: "100%", status: "Ineffective" },
+  ];
+
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">New Hedge Designation</h2>
+              <p className="text-sm text-muted-foreground">Designate a new hedging relationship under IFRS 9</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div><Label>Hedge Type</Label>
+                <Select value={form.hedgeType} onValueChange={v => setForm((f: any) => ({ ...f, hedgeType: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Fair Value","Cash Flow","Net Investment"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Hedging Instrument</Label><Input className="mt-1" placeholder="e.g. Interest Rate Swap, FX Forward" value={form.instrument} onChange={e => setForm((f: any) => ({ ...f, instrument: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Notional Amount</Label><Input className="mt-1" type="number" value={form.notionalAmount} onChange={e => setForm((f: any) => ({ ...f, notionalAmount: e.target.value }))} /></div>
+                <div><Label>Currency</Label>
+                  <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Start Date</Label><Input className="mt-1" type="date" value={form.startDate} onChange={e => setForm((f: any) => ({ ...f, startDate: e.target.value }))} /></div>
+                <div><Label>End Date</Label><Input className="mt-1" type="date" value={form.endDate} onChange={e => setForm((f: any) => ({ ...f, endDate: e.target.value }))} /></div>
+              </div>
+              <div><Label>Hedge Ratio (%)</Label><Input className="mt-1" type="number" min="1" max="100" value={form.hedgeRatio} onChange={e => setForm((f: any) => ({ ...f, hedgeRatio: e.target.value }))} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={actionMut.isPending}
+                  onClick={() => actionMut.mutate({ title: "New Hedge Designation", content: JSON.stringify(form) })}>
+                  {actionMut.isPending ? "Submitting..." : "Submit Designation"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLHEDGE0001P001"
+          screenId="VFLHEDGE0001P001"
+          title="Hedge Accounting"
+          subtitle="FX hedge designation and effectiveness testing"
           screenType="hedge_accounting"
           onAIData={(rows) => setAiRows(rows)}
-  title="Hedge Accounting"
-  subtitle="FX hedge designation and effectiveness testing"
-/>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Designated Hedges", value: designated, icon: Shield, color: "text-green-400" },
-            { label: "Avg Effectiveness", value: `${avgEffectiveness.toFixed(1)}%`, icon: BarChart3, color: avgEffectiveness >= 95 ? "text-green-400" : "text-yellow-400" },
-            { label: "OCI Balance (AED)", value: totalOCI >= 0 ? `+${totalOCI.toLocaleString()}` : totalOCI.toLocaleString(), icon: totalOCI >= 0 ? TrendingUp : TrendingDown, color: totalOCI >= 0 ? "text-green-400" : "text-red-400" },
-            { label: "FX Leases", value: HEDGES.length, icon: DollarSign, color: "text-blue-400" },
-          ].map((kpi) => (
-            <Card key={kpi.label} className="bg-card border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <kpi.icon className={`w-8 h-8 ${kpi.color}`} />
-                  <div>
-                    <p className="text-2xl font-bold">{kpi.value}</p>
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="bg-muted/30">
-            <TabsTrigger value="hedges">Hedge Register</TabsTrigger>
-            <TabsTrigger value="effectiveness">Effectiveness Tests</TabsTrigger>
-            <TabsTrigger value="gl-impact">GL Impact</TabsTrigger>
-            <TabsTrigger value="disclosure">IFRS 9 Disclosure</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="hedges" className="mt-4">
-            <Card className="bg-card border-border">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-xs">Contract Ref</TableHead>
-                      <TableHead className="text-xs">Hedged Item</TableHead>
-                      <TableHead className="text-xs">CCY</TableHead>
-                      <TableHead className="text-xs text-right">Notional (AED)</TableHead>
-                      <TableHead className="text-xs text-right">Spot Rate</TableHead>
-                      <TableHead className="text-xs text-right">Hedge Rate</TableHead>
-                      <TableHead className="text-xs">Instrument</TableHead>
-                      <TableHead className="text-xs">Maturity</TableHead>
-                      <TableHead className="text-xs text-right">OCI (AED)</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {HEDGES.map((h) => (
-                      <TableRow key={h.id}>
-                        <TableCell className="font-mono text-xs">{h.contract_ref}</TableCell>
-                        <TableCell className="text-xs max-w-[140px] truncate">{h.hedged_item}</TableCell>
-                        <TableCell className="font-mono text-xs font-bold">{h.currency}</TableCell>
-                        <TableCell className="text-right font-mono text-xs">{(h.notional_usd * h.spot_rate / 1000000).toFixed(2)}M</TableCell>
-                        <TableCell className="text-right font-mono text-xs">{h.spot_rate.toFixed(4)}</TableCell>
-                        <TableCell className="text-right font-mono text-xs">{h.hedge_rate.toFixed(4)}</TableCell>
-                        <TableCell className="text-xs">{h.instrument}</TableCell>
-                        <TableCell className="text-xs">{h.maturity}</TableCell>
-                        <TableCell className={`text-right font-mono text-xs ${h.oci_balance >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {h.oci_balance >= 0 ? "+" : ""}{h.oci_balance.toLocaleString()}
-                        </TableCell>
-                        <TableCell><Badge className={`text-xs border ${STATUS_COLORS[h.status]}`}>{h.status}</Badge></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="effectiveness" className="mt-4">
-            <div className="space-y-4">
-              {HEDGES.map(h => (
-                <Card key={h.id} className="bg-card border-border">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">{h.contract_ref} — {h.hedged_item}</CardTitle>
-                      <Badge className={`text-xs border ${h.effectiveness >= 95 ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"}`}>
-                        {h.effectiveness}% Effective
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="p-3 rounded bg-muted/20">
-                        <p className="text-sm font-bold">{h.effectiveness}%</p>
-                        <p className="text-xs text-muted-foreground">Effectiveness Ratio</p>
-                        <p className="text-xs text-muted-foreground mt-1">{h.effectiveness >= 80 && h.effectiveness <= 125 ? "✓ Within 80-125% band" : "✗ Outside IFRS 9 band"}</p>
-                      </div>
-                      <div className="p-3 rounded bg-muted/20">
-                        <p className="text-sm font-bold">{h.instrument}</p>
-                        <p className="text-xs text-muted-foreground">Hedging Instrument</p>
-                        <p className="text-xs text-muted-foreground mt-1">Matures {h.maturity}</p>
-                      </div>
-                      <div className="p-3 rounded bg-muted/20">
-                        <p className={`text-sm font-bold ${h.oci_balance >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          AED {h.oci_balance >= 0 ? "+" : ""}{h.oci_balance.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">OCI Reserve</p>
-                        <p className="text-xs text-muted-foreground mt-1">Cash flow hedge reserve</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+        />
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Type</TableHead><TableHead>Instrument</TableHead><TableHead>Notional</TableHead><TableHead>Currency</TableHead><TableHead>Ratio</TableHead><TableHead>Status</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {hedges.map((h) => (
+                <TableRow key={h.id}>
+                  <TableCell>{h.type}</TableCell>
+                  <TableCell>{h.instrument}</TableCell>
+                  <TableCell>{h.notional}</TableCell>
+                  <TableCell>{h.currency}</TableCell>
+                  <TableCell>{h.ratio}</TableCell>
+                  <TableCell><Badge className={h.status === "Effective" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>{h.status}</Badge></TableCell>
+                </TableRow>
               ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="gl-impact" className="mt-4">
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-sm">Quarterly GL Impact — Hedge Accounting</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-xs">Period</TableHead>
-                      <TableHead className="text-xs text-right">Hedged Item Change</TableHead>
-                      <TableHead className="text-xs text-right">Instrument Change</TableHead>
-                      <TableHead className="text-xs text-right">Ineffectiveness (P&L)</TableHead>
-                      <TableHead className="text-xs text-right">OCI Movement</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {GL_IMPACT.map((row, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm font-medium">{row.period}</TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${row.hedged_item_change >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {row.hedged_item_change >= 0 ? "+" : ""}{row.hedged_item_change.toLocaleString()}
-                        </TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${row.hedging_instrument_change >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {row.hedging_instrument_change >= 0 ? "+" : ""}{row.hedging_instrument_change.toLocaleString()}
-                        </TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${row.p_and_l >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {row.p_and_l >= 0 ? "+" : ""}{row.p_and_l.toLocaleString()}
-                        </TableCell>
-                        <TableCell className={`text-right font-mono text-sm ${row.oci_movement >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {row.oci_movement >= 0 ? "+" : ""}{row.oci_movement.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="disclosure" className="mt-4">
-            <Card className="bg-card border-border">
-              <CardHeader><CardTitle className="text-sm">IFRS 9 Hedge Accounting Disclosure Note</CardTitle></CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <div className="p-4 rounded-lg bg-muted/20 border border-border">
-                  <p className="font-semibold mb-2">Note 32 — Hedge Accounting</p>
-                  <p className="text-muted-foreground leading-relaxed">
-                    The Group applies cash flow hedge accounting in accordance with IFRS 9 Financial Instruments for certain foreign currency denominated lease obligations. The Group designates forward foreign exchange contracts and cross-currency interest rate swaps as hedging instruments to hedge the variability in cash flows arising from changes in foreign exchange rates on lease payments denominated in USD, GBP, and EUR.
-                  </p>
-                </div>
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="text-left p-3 font-semibold">Currency Pair</th>
-                        <th className="text-right p-3 font-semibold">Notional (AED)</th>
-                        <th className="text-right p-3 font-semibold">Avg Hedge Rate</th>
-                        <th className="text-right p-3 font-semibold">OCI Reserve</th>
-                        <th className="text-right p-3 font-semibold">Effectiveness</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {HEDGES.map((h, i) => (
-                        <tr key={i} className="border-t border-border">
-                          <td className="p-3 font-mono">AED/{h.currency}</td>
-                          <td className="p-3 text-right font-mono">{(h.notional_usd * h.spot_rate / 1000000).toFixed(2)}M</td>
-                          <td className="p-3 text-right font-mono">{h.hedge_rate.toFixed(4)}</td>
-                          <td className={`p-3 text-right font-mono ${h.oci_balance >= 0 ? "text-green-400" : "text-red-400"}`}>{h.oci_balance.toLocaleString()}</td>
-                          <td className="p-3 text-right font-mono">{h.effectiveness}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <SlidePanel open={showDialog} onClose={() => setShowDialog(false)} title="" width="xl">
-          
-            
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="hedge_instrument" onFill={(data) => { if (data.instrument_type !== undefined) setHedgeForm(f => ({ ...f, instrument_type: data.instrument_type as any })); if (data.notional_amount !== undefined) setHedgeForm(f => ({ ...f, notional_amount: data.notional_amount as any })); if (data.currency_pair !== undefined) setHedgeForm(f => ({ ...f, currency_pair: data.currency_pair as any })); if (data.start_date !== undefined) setHedgeForm(f => ({ ...f, start_date: data.start_date as any })); if (data.maturity_date !== undefined) setHedgeForm(f => ({ ...f, maturity_date: data.maturity_date as any })); if (data.strike_rate !== undefined) setHedgeForm(f => ({ ...f, strike_rate: data.strike_rate as any })); }} /></div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-medium">Hedged Lease Contract</Label>
-                  <Input className="mt-1" placeholder="VF-2024-FX-XXX" />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Currency</Label>
-                  <Select>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {["USD", "GBP", "EUR", "JPY", "CHF", "SGD"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Hedging Instrument</Label>
-                  <Select>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="forward">Forward Contract</SelectItem>
-                      <SelectItem value="swap">Cross-Currency Swap</SelectItem>
-                      <SelectItem value="option">FX Option</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Hedge Rate</Label>
-                  <Input type="number" className="mt-1" placeholder="3.6500" step="0.0001" />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Notional Amount (FCY)</Label>
-                  <Input type="number" className="mt-1" placeholder="0.00" />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Maturity Date</Label>
-                  <Input type="date" className="mt-1" />
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="outline" onClick={() => setShowDialog(false)} className="flex-1">Cancel</Button>
-                <Button className="flex-1 bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => { toast.success("Hedge relationship designated"); setShowDialog(false); }}>
-                  Designate Hedge
-                </Button>
-              </div>
-            </div>
-          
-        </SlidePanel>
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </DashboardLayout>
   );

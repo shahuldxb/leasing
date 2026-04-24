@@ -60,56 +60,7 @@ export default function LeaseModifications() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <ScreenHeader
-  screenId="VFLLEAMOD0001P001"
-          screenType="lease_modifications"
-          onAIData={(rows) => setAiRows(rows)}
-  title="Lease Modifications"
-  subtitle="Lease modification and remeasurement processing"
-/>
-
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-xs">Contract Ref</TableHead>
-                <TableHead className="text-xs">Lessor</TableHead>
-                <TableHead className="text-xs">Mod Type</TableHead>
-                <TableHead className="text-xs">Effective Date</TableHead>
-                <TableHead className="text-xs">Old Rent</TableHead>
-                <TableHead className="text-xs">New Rent</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && aiRows.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">Loading…</TableCell></TableRow>
-              ) : (aiRows.length > 0 ? aiRows : (mods as any[])).length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No modifications yet</TableCell></TableRow>
-              ) : (
-                (aiRows.length > 0 ? aiRows : (mods as any[])).map((row: any, i: number) => (
-                  <TableRow key={row.modification_id ?? i}>
-                    <TableCell className="font-mono text-xs">{row.mod_ref ?? row.contract_ref ?? "—"}</TableCell>
-                    <TableCell>{row.lessor_name ?? "—"}</TableCell>
-                    <TableCell><Badge variant="outline">{row.modification_type ?? "—"}</Badge></TableCell>
-                    <TableCell>{row.modification_date ? new Date(row.modification_date).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell className="text-right">{row.liability_adjustment ?? "—"}</TableCell>
-                    <TableCell className="text-right">{row.rou_adjustment ?? "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Badge variant="outline">{row.status ?? "Draft"}</Badge>
-                        <Button variant="ghost" size="sm" onClick={() => { setEditRow(row); setSelectedLease(String(row.contract_id)); setModType(row.modification_type); setEffectiveDate(row.modification_date?.split("T")[0] ?? ""); setOpen(true); }}>Edit</Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteMut.mutate({ modification_id: row.modification_id })}>Del</Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
+      {open && (
         <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
           
             
@@ -161,7 +112,59 @@ export default function LeaseModifications() {
             </div>
           
         </SlidePanel>
-      </div>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
+        <ScreenHeader
+  screenId="VFLLEAMOD0001P001"
+          screenType="lease_modifications"
+          onAIData={(rows) => setAiRows(rows)}
+  title="Lease Modifications"
+  subtitle="Lease modification and remeasurement processing"
+/>
+
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-xs">Contract Ref</TableHead>
+                <TableHead className="text-xs">Lessor</TableHead>
+                <TableHead className="text-xs">Mod Type</TableHead>
+                <TableHead className="text-xs">Effective Date</TableHead>
+                <TableHead className="text-xs">Old Rent</TableHead>
+                <TableHead className="text-xs">New Rent</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && aiRows.length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Loading…</TableCell></TableRow>
+              ) : (aiRows.length > 0 ? aiRows : (mods as any[])).length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No modifications yet</TableCell></TableRow>
+              ) : (
+                (aiRows.length > 0 ? aiRows : (mods as any[])).map((row: any, i: number) => (
+                  <TableRow key={row.modification_id ?? i}>
+                    <TableCell className="font-mono text-xs">{row.mod_ref ?? row.contract_ref ?? "—"}</TableCell>
+                    <TableCell>{row.lessor_name ?? "—"}</TableCell>
+                    <TableCell><Badge variant="outline">{row.modification_type ?? "—"}</Badge></TableCell>
+                    <TableCell>{row.modification_date ? new Date(row.modification_date).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell className="text-right">{row.liability_adjustment ?? "—"}</TableCell>
+                    <TableCell className="text-right">{row.rou_adjustment ?? "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Badge variant="outline">{row.status ?? "Draft"}</Badge>
+                        <Button variant="ghost" size="sm" onClick={() => { setEditRow(row); setSelectedLease(String(row.contract_id)); setModType(row.modification_type); setEffectiveDate(row.modification_date?.split("T")[0] ?? ""); setOpen(true); }}>Edit</Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteMut.mutate({ modification_id: row.modification_id })}>Del</Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

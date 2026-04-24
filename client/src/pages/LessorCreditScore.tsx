@@ -1,90 +1,101 @@
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Star, TrendingUp, Award } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
-
-const RATING_COLORS: Record<string, string> = { AAA: "bg-emerald-600", AA: "bg-emerald-500", A: "bg-blue-500", BBB: "bg-amber-500", BB: "bg-orange-500", B: "bg-red-500", CCC: "bg-red-700", D: "bg-gray-600" };
 
 export default function LessorCreditScore() {
-  const [open, setOpen] = useState(false);
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const [form, setForm] = useState({ lessor_id: 0, payment_history_score: 80, financial_stability_score: 80, dispute_history_score: 80, compliance_score: 80, notes: "" });
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<any>({ lessor_id: "", score: "", rating: "A", assessmentDate: "", notes: "" });
+  const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data: scores = [], refetch } = trpc.lessorCredit.list.useQuery();
   const { data: lessors = [] } = trpc.lessor.getLessors.useQuery({});
+  const save = trpc.lessorCredit.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Credit score saved"); }, onError: (e: any) => toast.error(e.message) });
 
-  const save = trpc.lessorCredit.upsert.useMutation({ onSuccess: () => { refetch(); setOpen(false); toast.success("Credit score saved"); }, onError: (e: any) => toast.error(e.message) });
-
-  const overall = (f: typeof form) => ((f.payment_history_score * 0.4) + (f.financial_stability_score * 0.3) + (f.dispute_history_score * 0.2) + (f.compliance_score * 0.1));
-  const rating = (score: number) => score >= 90 ? "AAA" : score >= 80 ? "AA" : score >= 70 ? "A" : score >= 60 ? "BBB" : score >= 50 ? "BB" : score >= 40 ? "B" : "CCC";
-
-  const avgScore = (scores as any[]).length ? (scores as any[]).reduce((s: number, x: any) => s + Number(x.overall_score ?? 0), 0) / (scores as any[]).length : 0;
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">Record Credit Score</h2>
+              <p className="text-sm text-muted-foreground">Assign a credit score and rating to a lessor</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div><Label>Lessor</Label>
+                <Select value={form.lessorId} onValueChange={v => setForm((f: any) => ({ ...f, lessor_id: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lessor" /></SelectTrigger>
+                  <SelectContent>{(lessors as any[]).map((l: any) => <SelectItem key={l.lessor_id} value={String(l.lessor_id)}>{l.lessor_name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Credit Score (0-1000)</Label><Input className="mt-1" type="number" min="0" max="1000" value={form.score} onChange={e => setForm((f: any) => ({ ...f, score: e.target.value }))} /></div>
+                <div><Label>Rating</Label>
+                  <Select value={form.rating} onValueChange={v => setForm((f: any) => ({ ...f, rating: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["AAA","AA","A","BBB","BB","B","CCC","CC","C","D"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Assessment Date</Label><Input className="mt-1" type="date" value={form.assessmentDate} onChange={e => setForm((f: any) => ({ ...f, assessmentDate: e.target.value }))} /></div>
+              <div><Label>Notes</Label><Input className="mt-1" value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={save.isPending}
+                  onClick={() => save.mutate({ lessor_id: Number(form.lessorId), payment_history_score: Number(form.score || 70), financial_stability_score: Number(form.score || 70), dispute_history_score: Number(form.score || 70), compliance_score: Number(form.score || 70), notes: form.notes })}>
+                  {save.isPending ? "Saving..." : "Save Score"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLLESCRD0001P001"
-  title="Lessor Credit Score"
-  subtitle="Lessor creditworthiness and risk rating"
-
+          screenId="VFLLESCRD0001P001"
+          title="Lessor Credit Score"
+          subtitle="Credit ratings and risk assessment for lessors"
           screenType="lessor_credit_score"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+          onAIData={(rows) => setAiRows(rows)}
+          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
-
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: "Lessors Scored", value: (scores as any[]).length, color: "text-blue-600" },
-            { label: "Average Score", value: avgScore.toFixed(1), color: "text-foreground" },
-            { label: "Investment Grade (≥BBB)", value: (scores as any[]).filter((s: any) => Number(s.overall_score) >= 60).length, color: "text-emerald-600" },
-            { label: "High Risk (<BB)", value: (scores as any[]).filter((s: any) => Number(s.overall_score) < 50).length, color: "text-red-600" },
-          ].map(k => <Card key={k.label}><CardContent className="pt-4"><p className="text-xs text-muted-foreground">{k.label}</p><p className={`text-2xl font-bold ${k.color}`}>{k.value}</p></CardContent></Card>)}
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Award className="w-4 h-4" />Lessor Credit Ratings</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lessor</TableHead>
-                  <TableHead className="text-right">Payment</TableHead>
-                  <TableHead className="text-right">Financial</TableHead>
-                  <TableHead className="text-right">Dispute</TableHead>
-                  <TableHead className="text-right">Compliance</TableHead>
-                  <TableHead className="text-right">Overall</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Scored</TableHead>
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Lessor</TableHead><TableHead>Score</TableHead><TableHead>Rating</TableHead><TableHead>Assessment Date</TableHead><TableHead>Notes</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(scores as any[]).map((s: any) => (
+                <TableRow key={s.credit_id}>
+                  <TableCell>{s.lessor_name ?? s.lessor_id}</TableCell>
+                  <TableCell>{s.score}</TableCell>
+                  <TableCell><Badge className="bg-blue-500/20 text-blue-400">{s.rating}</Badge></TableCell>
+                  <TableCell>{s.assessment_date ? new Date(s.assessment_date).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{s.notes ?? "—"}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(scores as any[]).map((s: any) => (
-                  <TableRow key={s.score_id}>
-                    <TableCell className="font-medium">{s.lessor_name}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(s.payment_history_score ?? 0).toFixed(0)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(s.financial_stability_score ?? 0).toFixed(0)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(s.dispute_history_score ?? 0).toFixed(0)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{Number(s.compliance_score ?? 0).toFixed(0)}</TableCell>
-                    <TableCell className="text-right font-bold font-mono">{Number(s.overall_score ?? 0).toFixed(1)}</TableCell>
-                    <TableCell><Badge className={`${RATING_COLORS[s.credit_rating] ?? "bg-gray-500"} text-white text-xs`}>{s.credit_rating ?? "—"}</Badge></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{s.score_date?.slice(0,10)}</TableCell>
-                  </TableRow>
-                ))}
-                {(scores as any[]).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">No credit assessments yet</TableCell></TableRow>}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              ))}
+              {(scores as any[]).length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No credit scores recorded yet</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -27,7 +27,45 @@ export default function BankRules() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {open && (
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+            <div className="space-y-3">
+              <div><Label className="text-sm font-medium">Rule Name *</Label><Input className="mt-1" value={form.ruleName} onChange={e => setForm(f => ({ ...f, ruleName: e.target.value }))} /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Match Field</Label>
+                  <Select value={form.matchField} onValueChange={v => setForm(f => ({ ...f, matchField: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["description","reference","amount","counterparty"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Operator</Label>
+                  <Select value={form.matchOperator} onValueChange={v => setForm(f => ({ ...f, matchOperator: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["contains","equals","starts_with","ends_with","regex"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-sm font-medium">Value *</Label><Input className="mt-1" value={form.matchValue} onChange={e => setForm(f => ({ ...f, matchValue: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-sm font-medium">GL Account</Label><Input className="mt-1" placeholder="e.g. 2110" value={form.glAccount} onChange={e => setForm(f => ({ ...f, glAccount: e.target.value }))} /></div>
+                <div><Label className="text-sm font-medium">Priority</Label><Input type="number" className="mt-1" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} /></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                onClick={() => upsertMutation.mutate({ ruleName: form.ruleName, ruleType: 'RefMatch', priority: Number(form.priority), refPattern: form.matchValue, description: `${form.matchField} ${form.matchOperator} ${form.matchValue}` })}
+                disabled={upsertMutation.isPending}>Save Rule</Button>
+            </div>
+          
+        </SlidePanel>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLBNKRUL0001P001"
   title="Bank Matching Rules"
@@ -66,43 +104,8 @@ export default function BankRules() {
             </TableBody>
           </Table>
         </div>
-
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="space-y-3">
-              <div><Label className="text-sm font-medium">Rule Name *</Label><Input className="mt-1" value={form.ruleName} onChange={e => setForm(f => ({ ...f, ruleName: e.target.value }))} /></div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-sm font-medium">Match Field</Label>
-                  <Select value={form.matchField} onValueChange={v => setForm(f => ({ ...f, matchField: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["description","reference","amount","counterparty"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Operator</Label>
-                  <Select value={form.matchOperator} onValueChange={v => setForm(f => ({ ...f, matchOperator: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["contains","equals","starts_with","ends_with","regex"].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label className="text-sm font-medium">Value *</Label><Input className="mt-1" value={form.matchValue} onChange={e => setForm(f => ({ ...f, matchValue: e.target.value }))} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">GL Account</Label><Input className="mt-1" placeholder="e.g. 2110" value={form.glAccount} onChange={e => setForm(f => ({ ...f, glAccount: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Priority</Label><Input type="number" className="mt-1" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} /></div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => upsertMutation.mutate({ ruleName: form.ruleName, ruleType: 'RefMatch', priority: Number(form.priority), refPattern: form.matchValue, description: `${form.matchField} ${form.matchOperator} ${form.matchValue}` })}
-                disabled={upsertMutation.isPending}>Save Rule</Button>
-            </div>
-          
-        </SlidePanel>
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

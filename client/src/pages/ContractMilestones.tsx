@@ -36,34 +36,7 @@ export default function ContractMilestones() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <ScreenHeader
-  screenId="VFLCNTMLS0001P001"
-  title="Contract Milestones"
-  subtitle="Key dates and milestone tracking per contract"
-
-          screenType="contract_milestones"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
-        />
-
-        <div className="grid gap-3">
-          {upcoming.map(m => (
-            <div key={m.id} className={`bg-card border rounded-xl p-4 flex items-center justify-between ${m.status === "Overdue" ? "border-red-500/30" : "border-border"}`}>
-              <div className="flex items-center gap-3">
-                {statusIcon(m.status)}
-                <div>
-                  <p className="font-medium text-sm">{m.type}</p>
-                  <p className="text-xs text-muted-foreground">{m.contract} · Due {new Date(m.dueDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge className={m.status === "Overdue" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}>{m.status}</Badge>
-                <Button size="sm" variant="outline" onClick={() => toast.success("Milestone marked complete")}>Complete</Button>
-              </div>
-            </div>
-          ))}
-        </div>
-
+      {open && (
         <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
           
             
@@ -91,7 +64,37 @@ export default function ContractMilestones() {
             </div>
           
         </SlidePanel>
-      </div>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
+        <ScreenHeader
+  screenId="VFLCNTMLS0001P001"
+  title="Contract Milestones"
+  subtitle="Key dates and milestone tracking per contract"
+
+          screenType="contract_milestones"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
+
+        <div className="grid gap-3">
+          {upcoming.map(m => (
+            <div key={m.id} className={`bg-card border rounded-xl p-4 flex items-center justify-between ${m.status === "Overdue" ? "border-red-500/30" : "border-border"}`}>
+              <div className="flex items-center gap-3">
+                {statusIcon(m.status)}
+                <div>
+                  <p className="font-medium text-sm">{m.type}</p>
+                  <p className="text-xs text-muted-foreground">{m.contract} · Due {new Date(m.dueDate).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className={m.status === "Overdue" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}>{m.status}</Badge>
+                <Button size="sm" variant="outline" onClick={() => toast.success("Milestone marked complete")}>Complete</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

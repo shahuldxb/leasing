@@ -96,7 +96,63 @@ export default function NotificationSettings() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Event Type</Label>
+            <Input type="text" value={form.event_type ?? ""} onChange={e => setForm((f: any) => ({...f, event_type: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Channel</Label>
+            <Select value={String(form.channel ?? "")} onValueChange={v => setForm((f: any) => ({...f, channel: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="EMAIL">EMAIL</SelectItem>
+                  <SelectItem value="SMS">SMS</SelectItem>
+                  <SelectItem value="PUSH">PUSH</SelectItem>
+                  <SelectItem value="WEBHOOK">WEBHOOK</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Recipients</Label>
+            <Input type="text" value={form.recipients ?? ""} onChange={e => setForm((f: any) => ({...f, recipients: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Days Before</Label>
+            <Input type="number" value={form.days_before ?? ""} onChange={e => setForm((f: any) => ({...f, days_before: e.target.value}))} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="is_active" checked={!!form.is_active} onChange={e => setForm((f: any) => ({...f, is_active: e.target.checked}))} className="w-4 h-4" />
+            <Label htmlFor="is_active">Is Active</Label>
+          </div>
+          <div>
+            <Label>Template Subject</Label>
+            <Input type="text" value={form.template_subject ?? ""} onChange={e => setForm((f: any) => ({...f, template_subject: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Template Body</Label>
+            <Textarea value={form.template_body ?? ""} onChange={e => setForm((f: any) => ({...f, template_body: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLNOTIFICA0001P001"
           title="Notification Settings"
@@ -162,61 +218,7 @@ export default function NotificationSettings() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Event Type</Label>
-            <Input type="text" value={form.event_type ?? ""} onChange={e => setForm((f: any) => ({...f, event_type: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Channel</Label>
-            <Select value={String(form.channel ?? "")} onValueChange={v => setForm((f: any) => ({...f, channel: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="EMAIL">EMAIL</SelectItem>
-                  <SelectItem value="SMS">SMS</SelectItem>
-                  <SelectItem value="PUSH">PUSH</SelectItem>
-                  <SelectItem value="WEBHOOK">WEBHOOK</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Recipients</Label>
-            <Input type="text" value={form.recipients ?? ""} onChange={e => setForm((f: any) => ({...f, recipients: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Days Before</Label>
-            <Input type="number" value={form.days_before ?? ""} onChange={e => setForm((f: any) => ({...f, days_before: e.target.value}))} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="is_active" checked={!!form.is_active} onChange={e => setForm((f: any) => ({...f, is_active: e.target.checked}))} className="w-4 h-4" />
-            <Label htmlFor="is_active">Is Active</Label>
-          </div>
-          <div>
-            <Label>Template Subject</Label>
-            <Input type="text" value={form.template_subject ?? ""} onChange={e => setForm((f: any) => ({...f, template_subject: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Template Body</Label>
-            <Textarea value={form.template_body ?? ""} onChange={e => setForm((f: any) => ({...f, template_body: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

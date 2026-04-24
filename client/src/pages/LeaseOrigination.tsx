@@ -1,112 +1,100 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, FileText, ArrowRight } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
 
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-500", SUBMITTED: "bg-blue-500", UNDER_REVIEW: "bg-amber-500",
-  APPROVED: "bg-emerald-500", REJECTED: "bg-red-500", CONTRACTED: "bg-violet-500",
-};
-const PRIORITY_COLORS: Record<string, string> = {
-  LOW: "bg-gray-400", MEDIUM: "bg-blue-400", HIGH: "bg-amber-500", CRITICAL: "bg-red-500",
-};
-
-const WORKFLOW = ["DRAFT","SUBMITTED","UNDER_REVIEW","APPROVED","CONTRACTED"];
+const ASSET_TYPES = ["OFFICE","RETAIL","WAREHOUSE","DATA_CENTRE","PARKING","OTHER"];
+const PRIORITIES = ["LOW","MEDIUM","HIGH","CRITICAL"];
+const CURRENCIES = ["AED","USD","EUR","GBP","SAR"];
+const INIT = { lessor_name: "", asset_description: "", asset_type: "OFFICE", proposed_start: "", proposed_end: "", estimated_annual_rent: 0, currency: "AED", business_justification: "", priority: "MEDIUM" as const };
 
 export default function LeaseOrigination() {
   const [open, setOpen] = useState(false);
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const [form, setForm] = useState({ lessor_name: "", asset_description: "", asset_type: "OFFICE", proposed_start: "", proposed_end: "", estimated_annual_rent: 0, currency: "AED", business_justification: "", priority: "MEDIUM" as const });
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
+  const [form, setForm] = useState({ ...INIT });
+  const { data: requests = [], refetch } = trpc.leaseOrigination.list.useQuery();
+  const createMut = trpc.leaseOrigination.create.useMutation({ onSuccess: () => { refetch(); setOpen(false); toast.success("Origination request submitted"); }, onError: (e) => toast.error(e.message) });
+  const displayRows = aiRows.length > 0 ? aiRows : (requests as any[]);
 
-  const { data: items = [], refetch } = trpc.leaseOrigination.list.useQuery();
-  const create = trpc.leaseOrigination.create.useMutation({ onSuccess: () => { refetch(); setOpen(false); toast.success("Lease request created"); }, onError: (e: any) => toast.error(e.message) });
-  const advance = trpc.leaseOrigination.updateStatus.useMutation({ onSuccess: () => { refetch(); toast.success("Status updated"); }, onError: (e: any) => toast.error(e.message) });
-
-  const fmt = (n: any) => n != null ? `${Number(n).toLocaleString()}` : "—";
-
-  const nextStatus = (s: string) => {
-    const i = WORKFLOW.indexOf(s);
-    return i >= 0 && i < WORKFLOW.length - 1 ? WORKFLOW[i + 1] : null;
-  };
+  const priorityColor: Record<string, string> = { LOW: "bg-gray-500", MEDIUM: "bg-blue-500", HIGH: "bg-amber-500", CRITICAL: "bg-red-600" };
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <ScreenHeader
-  screenId="VFLLEAORG0001P001"
-  title="Lease Origination"
-  subtitle="Legacy lease origination workflow"
-
-          screenType="lease_origination"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
-        />
-
-        <div className="grid grid-cols-5 gap-3">
-          {WORKFLOW.map(s => {
-            const count = (items as any[]).filter((i: any) => i.status === s).length;
-            return (
-              <Card key={s} className="text-center">
-                <CardContent className="pt-4">
-                  <Badge className={`${STATUS_COLORS[s]} text-white mb-2`}>{s.replace("_"," ")}</Badge>
-                  <p className="text-3xl font-bold">{count}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+      {open ? (
+        <div className="flex flex-col h-full w-full bg-background">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shrink-0">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)}><ArrowLeft className="w-5 h-5" /></Button>
+              <div><h2 className="text-lg font-semibold">New Lease Origination Request</h2><p className="text-xs text-muted-foreground">Submit a new lease requirement for approval</p></div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button disabled={createMut.isPending} onClick={() => createMut.mutate(form as any)}>{createMut.isPending ? "Submitting..." : "Submit Request"}</Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-8 py-6">
+            <div className="max-w-2xl mx-auto grid grid-cols-2 gap-5">
+              <div className="col-span-2"><Label className="text-xs text-muted-foreground">Lessor / Landlord Name</Label><Input className="mt-1" value={form.lessor_name} onChange={e => setForm(f => ({ ...f, lessor_name: e.target.value }))} /></div>
+              <div className="col-span-2"><Label className="text-xs text-muted-foreground">Asset Description</Label><Input className="mt-1" value={form.asset_description} onChange={e => setForm(f => ({ ...f, asset_description: e.target.value }))} /></div>
+              <div><Label className="text-xs text-muted-foreground">Asset Type</Label>
+                <Select value={form.asset_type} onValueChange={v => setForm(f => ({ ...f, asset_type: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs text-muted-foreground">Priority</Label>
+                <Select value={form.priority} onValueChange={(v: any) => setForm(f => ({ ...f, priority: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs text-muted-foreground">Proposed Start</Label><Input type="date" className="mt-1" value={form.proposed_start} onChange={e => setForm(f => ({ ...f, proposed_start: e.target.value }))} /></div>
+              <div><Label className="text-xs text-muted-foreground">Proposed End</Label><Input type="date" className="mt-1" value={form.proposed_end} onChange={e => setForm(f => ({ ...f, proposed_end: e.target.value }))} /></div>
+              <div><Label className="text-xs text-muted-foreground">Estimated Annual Rent</Label><Input type="number" step="0.01" className="mt-1" value={form.estimated_annual_rent} onChange={e => setForm(f => ({ ...f, estimated_annual_rent: Number(e.target.value) }))} /></div>
+              <div><Label className="text-xs text-muted-foreground">Currency</Label>
+                <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2"><Label className="text-xs text-muted-foreground">Business Justification</Label><Textarea className="mt-1" rows={4} value={form.business_justification} onChange={e => setForm(f => ({ ...f, business_justification: e.target.value }))} /></div>
+            </div>
+          </div>
         </div>
-
-        <Card>
-          <CardHeader><CardTitle className="text-base">Lease Pipeline ({(items as any[]).length} requests)</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lessor</TableHead>
-                  <TableHead>Asset</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead className="text-right">Est. Annual Rent</TableHead>
-                  <TableHead>Proposed Period</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
+      ) : (
+        <div className="p-6 space-y-6">
+          <ScreenHeader screenId="VFLLSEORG0001P001" title="Lease Origination" subtitle="New lease requests, approvals and pipeline management"
+            screenType="lease_origination" onAIData={(rows) => setAiRows(rows)}
+            actions={<Button size="sm" onClick={() => { setForm({ ...INIT }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />New Request</Button>} />
+          <Card><CardContent className="p-0"><Table>
+            <TableHeader><TableRow><TableHead>Lessor</TableHead><TableHead>Asset</TableHead><TableHead>Type</TableHead><TableHead>Priority</TableHead><TableHead>Proposed Start</TableHead><TableHead className="text-right">Est. Annual Rent</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {displayRows.map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{r.lessor_name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{r.asset_description}</TableCell>
+                  <TableCell><Badge variant="outline">{r.asset_type}</Badge></TableCell>
+                  <TableCell><Badge className={`${priorityColor[r.priority] ?? "bg-gray-500"} text-white text-xs`}>{r.priority}</Badge></TableCell>
+                  <TableCell className="text-sm">{r.proposed_start?.slice(0,10)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{r.currency} {Number(r.estimated_annual_rent ?? 0).toLocaleString()}</TableCell>
+                  <TableCell><Badge variant="secondary">{r.status ?? "PENDING"}</Badge></TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(items as any[]).map((item: any) => (
-                  <TableRow key={item.origination_id}>
-                    <TableCell className="font-medium">{item.lessor_name}</TableCell>
-                    <TableCell className="text-sm max-w-[150px] truncate">{item.asset_description}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-xs">{item.asset_type}</Badge></TableCell>
-                    <TableCell><Badge className={`${PRIORITY_COLORS[item.priority]} text-white text-xs`}>{item.priority}</Badge></TableCell>
-                    <TableCell className="text-right font-mono text-sm">{item.currency} {fmt(item.estimated_annual_rent)}</TableCell>
-                    <TableCell className="text-xs">{item.proposed_start?.slice(0,10)} → {item.proposed_end?.slice(0,10)}</TableCell>
-                    <TableCell><Badge className={`${STATUS_COLORS[item.status] ?? "bg-gray-500"} text-white text-xs`}>{item.status?.replace("_"," ")}</Badge></TableCell>
-                    <TableCell>
-                      {nextStatus(item.status) && (
-                        <Button size="sm" variant="outline" onClick={() => advance.mutate({ origination_id: item.origination_id, status: nextStatus(item.status)! })}>
-                          <ArrowRight className="w-3 h-3 mr-1" />{nextStatus(item.status)?.replace("_"," ")}
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(items as any[]).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No lease requests yet</TableCell></TableRow>}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+              ))}
+              {displayRows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">No origination requests. Click New Request to submit one.</TableCell></TableRow>}
+            </TableBody>
+          </Table></CardContent></Card>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

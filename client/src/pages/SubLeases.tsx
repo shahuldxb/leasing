@@ -1,154 +1,106 @@
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { Building2, Plus, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import { GenAIFillButton } from "@/components/GenAIFillButton";
-import SlidePanel from "@/components/SlidePanel";
-
-const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
 export default function SubLeases() {
   const [showForm, setShowForm] = useState(false);
-  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
-  const [form, setForm] = useState({ head_lease_contract_id: 0, sublessee_name: "", sublease_area_sqft: 0, monthly_income: 0, commencement_date: "", expiry_date: "", classification: "OPERATING_SUBLEASE" as const, notes: "" });
+  const [form, setForm] = useState<any>({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" });
+  const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data: subleases = [], refetch } = trpc.subLease.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.rows ?? [];
+  const contracts = (contractsData as any)?.contracts ?? [];
+  const create = trpc.subLease.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Sub-lease created"); }, onError: (e: any) => toast.error(e.message) });
 
-  const create = trpc.subLease.create.useMutation({
-    onSuccess: () => { refetch(); setShowForm(false); toast.success("Sub-lease created"); },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const totalIncome = (subleases as any[]).reduce((s: number, sl: any) => s + Number(sl.monthly_income ?? 0), 0);
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">New Sub-Lease</h2>
+              <p className="text-sm text-muted-foreground">Create a sub-lease arrangement under a master lease contract</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div><Label>Parent Contract</Label>
+                <Select value={form.parentContractId} onValueChange={v => setForm((f: any) => ({ ...f, parentContractId: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select parent contract" /></SelectTrigger>
+                  <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.property_name ?? c.contract_id}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Subtenant Name *</Label><Input className="mt-1" value={form.subtenantName} onChange={e => setForm((f: any) => ({ ...f, subtenantName: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Start Date</Label><Input className="mt-1" type="date" value={form.startDate} onChange={e => setForm((f: any) => ({ ...f, startDate: e.target.value }))} /></div>
+                <div><Label>End Date</Label><Input className="mt-1" type="date" value={form.endDate} onChange={e => setForm((f: any) => ({ ...f, endDate: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Monthly Rent</Label><Input className="mt-1" type="number" value={form.monthlyRent} onChange={e => setForm((f: any) => ({ ...f, monthlyRent: e.target.value }))} /></div>
+                <div><Label>Currency</Label>
+                  <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={create.isPending}
+                  onClick={() => create.mutate({ head_lease_contract_id: Number(form.parentContractId), sublessee_name: form.subtenantName, commencement_date: form.startDate, expiry_date: form.endDate, monthly_income: Number(form.monthlyRent), classification: (form.classification || 'OPERATING_SUBLEASE') as 'FINANCE_SUBLEASE' | 'OPERATING_SUBLEASE' })}>
+                  {create.isPending ? "Creating..." : "Create Sub-Lease"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLSUBLSE0001P001"
+          screenId="VFLSUBLSE0001P001"
+          title="Sub-Leases"
+          subtitle="Sub-lease arrangements and subletting management"
           screenType="sub_leases"
           onAIData={(rows) => setAiRows(rows)}
-  title="Sub-Leases"
-  subtitle="Sub-lease register and income tracking"
-/>
-
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">Active Sub-Leases</p><p className="text-3xl font-bold text-teal-600">{(subleases as any[]).filter((s: any) => s.status === "Active").length}</p></CardContent></Card>
-          <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">Monthly Sub-Lease Income</p><p className="text-3xl font-bold text-emerald-600">{fmt(totalIncome)}</p></CardContent></Card>
-          <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">Annual Income</p><p className="text-3xl font-bold">{fmt(totalIncome * 12)}</p></CardContent></Card>
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle className="text-base">Sub-Lease Register</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Head Lease</TableHead>
-                  <TableHead>Asset</TableHead>
-                  <TableHead>Sublessee</TableHead>
-                  <TableHead>Area (sqft)</TableHead>
-                  <TableHead>Monthly Income</TableHead>
-                  <TableHead>Commencement</TableHead>
-                  <TableHead>Expiry</TableHead>
-                  <TableHead>Classification</TableHead>
-                  <TableHead>Status</TableHead>
+          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+        />
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Parent Contract</TableHead><TableHead>Subtenant</TableHead><TableHead>Start Date</TableHead><TableHead>End Date</TableHead><TableHead>Monthly Rent</TableHead><TableHead>Status</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(subleases as any[]).map((s: any) => (
+                <TableRow key={s.sublease_id}>
+                  <TableCell>{s.parent_contract_id}</TableCell>
+                  <TableCell>{s.subtenant_name}</TableCell>
+                  <TableCell>{s.start_date ? new Date(s.start_date).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell>{s.currency} {Number(s.monthly_rent).toLocaleString()}</TableCell>
+                  <TableCell><Badge className={s.status === "Active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>{s.status}</Badge></TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(subleases as any[]).map((sl: any) => (
-                  <TableRow key={sl.sublease_id}>
-                    <TableCell className="font-mono text-xs">{sl.head_lease_ref}</TableCell>
-                    <TableCell className="text-sm max-w-[120px] truncate">{sl.asset_description}</TableCell>
-                    <TableCell className="font-medium text-sm">{sl.sublessee_name}</TableCell>
-                    <TableCell className="text-sm">{sl.sublease_area_sqft?.toLocaleString() ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-sm">{fmt(sl.monthly_income)}</TableCell>
-                    <TableCell className="text-sm">{sl.commencement_date?.slice(0, 10)}</TableCell>
-                    <TableCell className="text-sm">{sl.expiry_date?.slice(0, 10)}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-xs">{sl.classification?.replace(/_/g, " ")}</Badge></TableCell>
-                    <TableCell><Badge variant={sl.status === "Active" ? "default" : "secondary"} className="text-xs">{sl.status}</Badge></TableCell>
-                  </TableRow>
-                ))}
-                {(subleases as any[]).length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No sub-leases found</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
-          
-            
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="sub_lease" onFill={(data) => { if (data.sub_tenant_name !== undefined) setForm(f => ({ ...f, sub_tenant_name: data.sub_tenant_name as any })); if (data.sub_rent !== undefined) setForm(f => ({ ...f, sub_rent: data.sub_rent as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); if (data.area_sqm !== undefined) setForm(f => ({ ...f, area_sqm: data.area_sqm as any })); if (data.notes !== undefined) setForm(f => ({ ...f, notes: data.notes as any })); }} /></div>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <Label>Head Lease Contract</Label>
-                <Select value={form.head_lease_contract_id.toString()} onValueChange={v => setForm(f => ({ ...f, head_lease_contract_id: parseInt(v) }))}>
-                  <SelectTrigger><SelectValue placeholder="Select head lease..." /></SelectTrigger>
-                  <SelectContent>{(contracts as any[]).map((c: any) => <SelectItem key={c.contract_id} value={c.contract_id.toString()}>{c.contract_ref} — {c.asset_description}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Sublessee Name</Label>
-                <Input value={form.sublessee_name} onChange={e => setForm(f => ({ ...f, sublessee_name: e.target.value }))} placeholder="Company name..." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label>Area (sqft)</Label>
-                  <Input type="number" value={form.sublease_area_sqft} onChange={e => setForm(f => ({ ...f, sublease_area_sqft: parseFloat(e.target.value) }))} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Monthly Income (AED)</Label>
-                  <Input type="number" value={form.monthly_income} onChange={e => setForm(f => ({ ...f, monthly_income: parseFloat(e.target.value) }))} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label>Commencement</Label>
-                  <Input type="date" value={form.commencement_date} onChange={e => setForm(f => ({ ...f, commencement_date: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Expiry</Label>
-                  <Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label>Classification</Label>
-                <Select value={form.classification} onValueChange={v => setForm(f => ({ ...f, classification: v as any }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="OPERATING_SUBLEASE">Operating Sub-Lease</SelectItem>
-                    <SelectItem value="FINANCE_SUBLEASE">Finance Sub-Lease</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Notes</Label>
-                <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} />
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button onClick={() => create.mutate(form)} disabled={create.isPending || !form.head_lease_contract_id || !form.sublessee_name}>
-                {create.isPending ? "Saving..." : "Create Sub-Lease"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
+              ))}
+              {(subleases as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No sub-leases recorded</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </DashboardLayout>
   );

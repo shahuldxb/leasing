@@ -42,7 +42,57 @@ export default function OpsMaintenance() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {open && (
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="maintenance_ticket" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.asset_type !== undefined) setForm(f => ({ ...f, asset_type: data.asset_type as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Lease *</Label>
+                <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
+                  <SelectContent>{leaseList.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Ticket Type</Label>
+                  <Select value={form.ticketType} onValueChange={v => setForm(f => ({ ...f, ticketType: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>{TICKET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Responsibility</Label>
+                  <Select value={form.responsibility} onValueChange={v => setForm(f => ({ ...f, responsibility: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{RESPONSIBILITY.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label className="text-sm font-medium">Description</Label><Input className="mt-1" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Priority</Label>
+                  <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["Low","Normal","High","Critical"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-sm font-medium">Estimated Cost ($)</Label><Input type="number" className="mt-1" value={form.estimatedCost} onChange={e => setForm(f => ({ ...f, estimatedCost: e.target.value }))} /></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                onClick={() => { toast.success("Ticket raised"); setOpen(false); refetch(); }}>Raise Ticket</Button>
+            </div>
+          
+        </SlidePanel>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLOPSMNT0001P001"
           screenType="maintenance"
@@ -98,55 +148,8 @@ export default function OpsMaintenance() {
             </TableBody>
           </Table>
         </div>
-
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="maintenance_ticket" onFill={(data) => { if (data.title !== undefined) setForm(f => ({ ...f, title: data.title as any })); if (data.description !== undefined) setForm(f => ({ ...f, description: data.description as any })); if (data.priority !== undefined) setForm(f => ({ ...f, priority: data.priority as any })); if (data.asset_type !== undefined) setForm(f => ({ ...f, asset_type: data.asset_type as any })); if (data.location !== undefined) setForm(f => ({ ...f, location: data.location as any })); if (data.assigned_to !== undefined) setForm(f => ({ ...f, assigned_to: data.assigned_to as any })); }} /></div>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium">Lease *</Label>
-                <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
-                  <SelectContent>{leaseList.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm font-medium">Ticket Type</Label>
-                  <Select value={form.ticketType} onValueChange={v => setForm(f => ({ ...f, ticketType: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>{TICKET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Responsibility</Label>
-                  <Select value={form.responsibility} onValueChange={v => setForm(f => ({ ...f, responsibility: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{RESPONSIBILITY.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div><Label className="text-sm font-medium">Description</Label><Input className="mt-1" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm font-medium">Priority</Label>
-                  <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["Low","Normal","High","Critical"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label className="text-sm font-medium">Estimated Cost ($)</Label><Input type="number" className="mt-1" value={form.estimatedCost} onChange={e => setForm(f => ({ ...f, estimatedCost: e.target.value }))} /></div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => { toast.success("Ticket raised"); setOpen(false); refetch(); }}>Raise Ticket</Button>
-            </div>
-          
-        </SlidePanel>
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -1,240 +1,109 @@
-/**
- * VodaLease Enterprise — Maker/Checker Workflow Queue
- * Screen ID: VFWKFACTNS0003P001
- */
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, XCircle, RefreshCw, Clock, User, FileText } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
 
 export default function WorkflowQueue() {
-  const [module, setModule]   = useState("all");
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const [outcome, setOutcome] = useState("Pending");
-  const [page, setPage]       = useState(1);
+  const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<any>(null);
-  const [comment, setComment]   = useState("");
-  const [dialogAction, setDialogAction] = useState<"Approve" | "Reject" | null>(null);
+  const [dialogAction, setDialogAction] = useState<"Approve" | "Reject">("Approve");
+  const [comment, setComment] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Pending");
+  const [aiRows, setAiRows] = useState<any[]>([]);
 
-  const { data, isLoading, refetch } = trpc.workflow.getQueue.useQuery({
-    module: module !== "all" ? module : undefined,
-    outcome,
-    page,
-    pageSize: 50,
-  });
+  const { data, isLoading, refetch } = trpc.workflow.getQueue.useQuery({ outcome: filterStatus || undefined });
+  const tasks = (data as any)?.tasks ?? [];
+  const completeTask = trpc.workflow.completeTask.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setSelected(null); toast.success(`Task ${dialogAction === "Approve" ? "approved" : "rejected"}`); }, onError: (e: any) => toast.error(e.message) });
 
-  const completeTask = trpc.workflow.completeTask.useMutation({
-    onSuccess: () => {
-      toast.success(`Task ${dialogAction?.toLowerCase()}d successfully`);
-      setSelected(null);
-      setComment("");
-      setDialogAction(null);
-      refetch();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const rows       = data?.rows ?? [];
-  const totalCount = data?.totalCount ?? 0;
-
-  const openDialog = (row: any, action: "Approve" | "Reject") => {
-    setSelected(row);
-    setDialogAction(action);
-    setComment("");
-  };
-
-  const submitDecision = () => {
-    if (!selected || !dialogAction) return;
-    completeTask.mutate({
-      taskId: selected.task_id,
-      outcome: dialogAction === "Approve" ? "Approved" : "Rejected",
-      comment: comment || undefined,
-      screenId: "VFWKFACTNS0003P001",
-    });
-  };
+  if (showForm && selected) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => { setShowForm(false); setSelected(null); }} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">{dialogAction} Task</h2>
+              <p className="text-sm text-muted-foreground">{selected.description}</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div className="p-4 rounded-lg border border-border bg-muted/30">
+                <p className="text-sm font-medium">Task: {selected.task_type}</p>
+                <p className="text-sm text-muted-foreground mt-1">Entity: {selected.entity_type} #{selected.entity_id}</p>
+                <p className="text-sm text-muted-foreground">Assigned to: {selected.assigned_to ?? "Unassigned"}</p>
+              </div>
+              <div><Label>Comment</Label><Input className="mt-1" placeholder="Add a comment (optional)" value={comment} onChange={e => setComment(e.target.value)} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => { setShowForm(false); setSelected(null); }}>Cancel</Button>
+                <Button className={dialogAction === "Approve" ? "bg-green-600 hover:bg-green-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"} disabled={completeTask.isPending}
+                  onClick={() => completeTask.mutate({ taskId: selected.task_id, outcome: dialogAction === 'Approve' ? 'APPROVED' : 'REJECTED', comment })}>
+                  {completeTask.isPending ? "Processing..." : dialogAction}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="page-header">
-          <div>
-            <ScreenHeader
-  screenId="VFLWFLQUE0001P001"
-  title="Maker/Checker Queue"
-  subtitle="Pending approvals and maker/checker workflow"
-
+      <div className="p-6 space-y-6">
+        <ScreenHeader
+          screenId="VFWKFACTNS0003P001"
+          title="Workflow Queue"
+          subtitle="Pending approvals and task management"
           screenType="workflow_queue"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+          onAIData={(rows) => setAiRows(rows)}
         />
-          </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>
+        <div className="flex gap-3">
+          <Select value={filterStatus || "all"} onValueChange={v => setFilterStatus(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {["Pending","In Progress","Completed","Rejected"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <div className="flex gap-3">
-              <Select value={module} onValueChange={v => { setModule(v); setPage(1); }}>
-                <SelectTrigger className="w-44 h-9"><SelectValue placeholder="Module" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Modules</SelectItem>
-                  <SelectItem value="Lease">Lease</SelectItem>
-                  <SelectItem value="Payables">Payables</SelectItem>
-                  <SelectItem value="Payment">Payment</SelectItem>
-                  <SelectItem value="Contract">Contract</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={outcome} onValueChange={v => { setOutcome(v); setPage(1); }}>
-                <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 border-b">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Task Ref</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Module</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Maker</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Created</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">SLA</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <tr key={i} className="border-b">
-                        {Array.from({ length: 8 }).map((__, j) => (
-                          <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
-                        ))}
-                      </tr>
-                    ))
-                  ) : rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
-                        <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                        No pending tasks in the queue.
-                      </td>
-                    </tr>
-                  ) : (
-                    rows.map((row: any) => (
-                      <tr key={row.task_id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{row.task_ref ?? `TASK-${row.task_id}`}</td>
-                        <td className="px-4 py-3"><span className="badge-draft">{row.module}</span></td>
-                        <td className="px-4 py-3 truncate max-w-48">{row.description}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-muted-foreground">{row.maker_name ?? "—"}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}</td>
-                        <td className="px-4 py-3">
-                          {row.sla_due ? (
-                            <div className="flex items-center gap-1">
-                              <Clock className={`h-3.5 w-3.5 ${new Date(row.sla_due) < new Date() ? "text-red-500" : "text-amber-500"}`} />
-                              <span className={`text-xs ${new Date(row.sla_due) < new Date() ? "text-red-500" : "text-muted-foreground"}`}>
-                                {new Date(row.sla_due).toLocaleDateString()}
-                              </span>
-                            </div>
-                          ) : "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={row.outcome === "Pending" ? "badge-pending" : row.outcome === "Approved" ? "badge-active" : "badge-expired"}>
-                            {row.outcome}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {row.outcome === "Pending" && (
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-green-600 border-green-200 hover:bg-green-50"
-                                onClick={() => openDialog(row, "Approve")}>
-                                <CheckCircle2 className="h-3 w-3" /> Approve
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() => openDialog(row, "Reject")}>
-                                <XCircle className="h-3 w-3" /> Reject
-                              </Button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Task Type</TableHead><TableHead>Entity</TableHead><TableHead>Description</TableHead><TableHead>Assigned To</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {isLoading && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>}
+              {!isLoading && tasks.map((t: any) => (
+                <TableRow key={t.task_id}>
+                  <TableCell>{t.task_type}</TableCell>
+                  <TableCell>{t.entity_type} #{t.entity_id}</TableCell>
+                  <TableCell className="max-w-xs truncate">{t.description}</TableCell>
+                  <TableCell>{t.assigned_to ?? "—"}</TableCell>
+                  <TableCell><Badge className={t.status === "Pending" ? "bg-amber-500/20 text-amber-400" : t.status === "Completed" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>{t.status}</Badge></TableCell>
+                  <TableCell className="flex gap-2">
+                    {t.status === "Pending" && <>
+                      <Button size="sm" variant="outline" className="text-green-400 border-green-400" onClick={() => { setSelected(t); setDialogAction("Approve"); setComment(""); setShowForm(true); }}>Approve</Button>
+                      <Button size="sm" variant="outline" className="text-red-400 border-red-400" onClick={() => { setSelected(t); setDialogAction("Reject"); setComment(""); setShowForm(true); }}>Reject</Button>
+                    </>}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!isLoading && tasks.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No tasks in queue</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-
-      {/* Approval/Rejection Panel */}
-      <SlidePanel
-        open={!!selected}
-        onClose={() => { setSelected(null); setDialogAction(null); }}
-        title={dialogAction === "Approve" ? "Approve Task" : "Reject Task"}
-        subtitle={selected?.description ?? ""}
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => { setSelected(null); setDialogAction(null); }}>Cancel</Button>
-            <Button
-              onClick={submitDecision}
-              disabled={completeTask.isPending || (dialogAction === "Reject" && !comment.trim())}
-              className={dialogAction === "Approve" ? "" : "bg-red-600 hover:bg-red-700"}
-            >
-              {completeTask.isPending ? "Processing..." : `Confirm ${dialogAction}`}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Module</span>
-              <span className="font-medium">{selected?.module}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Description</span>
-              <span className="font-medium truncate max-w-48">{selected?.description}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Maker</span>
-              <span className="font-medium">{selected?.maker_name ?? "—"}</span>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Comment {dialogAction === "Reject" && <span className="text-red-500">*</span>}
-            </label>
-            <Textarea
-              placeholder={dialogAction === "Approve" ? "Optional comment..." : "Reason for rejection (required)"}
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              rows={3}
-            />
-          </div>
-        </div>
-      </SlidePanel>
     </DashboardLayout>
   );
 }

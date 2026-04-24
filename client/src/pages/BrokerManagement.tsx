@@ -96,7 +96,61 @@ export default function BrokerManagement() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Name</Label>
+            <Input type="text" value={form.name ?? ""} onChange={e => setForm((f: any) => ({...f, name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>License No</Label>
+            <Input type="text" value={form.license_no ?? ""} onChange={e => setForm((f: any) => ({...f, license_no: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Contact Email</Label>
+            <Input type="email" value={form.contact_email ?? ""} onChange={e => setForm((f: any) => ({...f, contact_email: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Contact Phone</Label>
+            <Input type="text" value={form.contact_phone ?? ""} onChange={e => setForm((f: any) => ({...f, contact_phone: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Commission Pct</Label>
+            <Input type="number" value={form.commission_pct ?? ""} onChange={e => setForm((f: any) => ({...f, commission_pct: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                  <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLBROKERMA0001P001"
           title="Broker Management"
@@ -164,59 +218,7 @@ export default function BrokerManagement() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Name</Label>
-            <Input type="text" value={form.name ?? ""} onChange={e => setForm((f: any) => ({...f, name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>License No</Label>
-            <Input type="text" value={form.license_no ?? ""} onChange={e => setForm((f: any) => ({...f, license_no: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input type="email" value={form.contact_email ?? ""} onChange={e => setForm((f: any) => ({...f, contact_email: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input type="text" value={form.contact_phone ?? ""} onChange={e => setForm((f: any) => ({...f, contact_phone: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Commission Pct</Label>
-            <Input type="number" value={form.commission_pct ?? ""} onChange={e => setForm((f: any) => ({...f, commission_pct: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                  <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

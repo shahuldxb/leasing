@@ -26,7 +26,42 @@ export default function BankAccounts() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {open && (
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2"><Label className="text-sm font-medium">Bank Name *</Label><Input className="mt-1" value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} /></div>
+              <div className="col-span-2"><Label className="text-sm font-medium">Account Name *</Label><Input className="mt-1" value={form.accountName} onChange={e => setForm(f => ({ ...f, accountName: e.target.value }))} /></div>
+              <div><Label className="text-sm font-medium">Account Number *</Label><Input className="mt-1" value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} /></div>
+              <div><Label className="text-sm font-medium">Currency</Label>
+                <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["USD","GHS","EUR","GBP","ZAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-sm font-medium">Branch Code</Label><Input className="mt-1" value={form.branchCode} onChange={e => setForm(f => ({ ...f, branchCode: e.target.value }))} /></div>
+              <div><Label className="text-sm font-medium">SWIFT Code</Label><Input className="mt-1" value={form.swiftCode} onChange={e => setForm(f => ({ ...f, swiftCode: e.target.value }))} /></div>
+              <div><Label className="text-sm font-medium">Account Type</Label>
+                <Select value={form.accountType} onValueChange={v => setForm(f => ({ ...f, accountType: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Current","Savings","Call"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                onClick={() => createMutation.mutate({ bankName: form.bankName, accountName: form.accountName, accountNumber: form.accountNumber, currency: form.currency, swiftBic: form.swiftCode, accountType: form.accountType })}
+                disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Creating..." : "Create Account"}
+              </Button>
+            </div>
+          
+        </SlidePanel>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLBNKACC0001P001"
   title="Bank Accounts"
@@ -63,40 +98,8 @@ export default function BankAccounts() {
             </div>
           )}
         </div>
-
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2"><Label className="text-sm font-medium">Bank Name *</Label><Input className="mt-1" value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} /></div>
-              <div className="col-span-2"><Label className="text-sm font-medium">Account Name *</Label><Input className="mt-1" value={form.accountName} onChange={e => setForm(f => ({ ...f, accountName: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Account Number *</Label><Input className="mt-1" value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Currency</Label>
-                <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["USD","GHS","EUR","GBP","ZAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label className="text-sm font-medium">Branch Code</Label><Input className="mt-1" value={form.branchCode} onChange={e => setForm(f => ({ ...f, branchCode: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">SWIFT Code</Label><Input className="mt-1" value={form.swiftCode} onChange={e => setForm(f => ({ ...f, swiftCode: e.target.value }))} /></div>
-              <div><Label className="text-sm font-medium">Account Type</Label>
-                <Select value={form.accountType} onValueChange={v => setForm(f => ({ ...f, accountType: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Current","Savings","Call"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => createMutation.mutate({ bankName: form.bankName, accountName: form.accountName, accountNumber: form.accountNumber, currency: form.currency, swiftBic: form.swiftCode, accountType: form.accountType })}
-                disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create Account"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

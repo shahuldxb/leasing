@@ -90,7 +90,55 @@ export default function ESignatureIntegration() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Document Name</Label>
+            <Input type="text" value={form.document_name ?? ""} onChange={e => setForm((f: any) => ({...f, document_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Document Type</Label>
+            <Input type="text" value={form.document_type ?? ""} onChange={e => setForm((f: any) => ({...f, document_type: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Signatories</Label>
+            <Input type="text" value={form.signatories ?? ""} onChange={e => setForm((f: any) => ({...f, signatories: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Provider</Label>
+            <Select value={String(form.provider ?? "")} onValueChange={v => setForm((f: any) => ({...f, provider: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="DOCUSIGN">DOCUSIGN</SelectItem>
+                  <SelectItem value="ADOBE_SIGN">ADOBE_SIGN</SelectItem>
+                  <SelectItem value="HELLOSIGN">HELLOSIGN</SelectItem>
+                  <SelectItem value="MANUAL">MANUAL</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLESIGNATU0001P001"
           title="ESignature Integration"
@@ -156,53 +204,7 @@ export default function ESignatureIntegration() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Document Name</Label>
-            <Input type="text" value={form.document_name ?? ""} onChange={e => setForm((f: any) => ({...f, document_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Document Type</Label>
-            <Input type="text" value={form.document_type ?? ""} onChange={e => setForm((f: any) => ({...f, document_type: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Signatories</Label>
-            <Input type="text" value={form.signatories ?? ""} onChange={e => setForm((f: any) => ({...f, signatories: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Provider</Label>
-            <Select value={String(form.provider ?? "")} onValueChange={v => setForm((f: any) => ({...f, provider: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="DOCUSIGN">DOCUSIGN</SelectItem>
-                  <SelectItem value="ADOBE_SIGN">ADOBE_SIGN</SelectItem>
-                  <SelectItem value="HELLOSIGN">HELLOSIGN</SelectItem>
-                  <SelectItem value="MANUAL">MANUAL</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

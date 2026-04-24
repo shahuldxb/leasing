@@ -90,7 +90,47 @@ export default function APIWebhookConfig() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Webhook Name</Label>
+            <Input type="text" value={form.webhook_name ?? ""} onChange={e => setForm((f: any) => ({...f, webhook_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Endpoint Url</Label>
+            <Input type="text" value={form.endpoint_url ?? ""} onChange={e => setForm((f: any) => ({...f, endpoint_url: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Event Types</Label>
+            <Input type="text" value={form.event_types ?? ""} onChange={e => setForm((f: any) => ({...f, event_types: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Secret Key</Label>
+            <Input type="text" value={form.secret_key ?? ""} onChange={e => setForm((f: any) => ({...f, secret_key: e.target.value}))} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="is_active" checked={!!form.is_active} onChange={e => setForm((f: any) => ({...f, is_active: e.target.checked}))} className="w-4 h-4" />
+            <Label htmlFor="is_active">Is Active</Label>
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLAPIWEBHO0001P001"
           title="APIWebhook Config"
@@ -156,45 +196,7 @@ export default function APIWebhookConfig() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Webhook Name</Label>
-            <Input type="text" value={form.webhook_name ?? ""} onChange={e => setForm((f: any) => ({...f, webhook_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Endpoint Url</Label>
-            <Input type="text" value={form.endpoint_url ?? ""} onChange={e => setForm((f: any) => ({...f, endpoint_url: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Event Types</Label>
-            <Input type="text" value={form.event_types ?? ""} onChange={e => setForm((f: any) => ({...f, event_types: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Secret Key</Label>
-            <Input type="text" value={form.secret_key ?? ""} onChange={e => setForm((f: any) => ({...f, secret_key: e.target.value}))} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="is_active" checked={!!form.is_active} onChange={e => setForm((f: any) => ({...f, is_active: e.target.checked}))} className="w-4 h-4" />
-            <Label htmlFor="is_active">Is Active</Label>
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

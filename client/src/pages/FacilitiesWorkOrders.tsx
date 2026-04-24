@@ -102,76 +102,8 @@ export default function FacilitiesWorkOrders() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <ScreenHeader
-          screenId="VFLFACILITI0001P001"
-          title="Facilities Work Orders"
-          subtitle="Manage facilities work orders records"
-          screenType="workOrder"
-          onAIData={(r) => setAiRows(r)}
-          actions={<Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" />Add New</Button>}
-        />
-
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-          </div>
-        </div>
-
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                <TableHead className="text-xs">Wo Ref</TableHead>
-                <TableHead className="text-xs">Title</TableHead>
-                <TableHead className="text-xs">Category</TableHead>
-                <TableHead className="text-xs">Priority</TableHead>
-                <TableHead className="text-xs">Location</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-xs">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading && aiRows.length === 0 ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        {Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
-                      </TableRow>
-                    ))
-                  ) : filtered.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No records found. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
-                  ) : (
-                    filtered.map((row: any, i: number) => (
-                      <TableRow key={row.wo_id ?? i} className="hover:bg-muted/20">
-                    <TableCell>{row.wo_ref ?? "—"}</TableCell>
-                    <TableCell>{row.title ?? "—"}</TableCell>
-                    <TableCell>{row.category ?? "—"}</TableCell>
-                    <TableCell>{row.priority ?? "—"}</TableCell>
-                    <TableCell>{row.location ?? "—"}</TableCell>
-                    <TableCell>{row.status ?? "—"}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEdit(row)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMut.mutate({ wo_id: row.wo_id })}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <SlidePanel
+      {panelOpen ? (
+        <SlidePanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         title={editRow ? "Edit Record" : "Add New Record"}
@@ -242,6 +174,76 @@ export default function FacilitiesWorkOrders() {
           </div>
         </div>
       </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
+        <ScreenHeader
+          screenId="VFLFACILITI0001P001"
+          title="Facilities Work Orders"
+          subtitle="Manage facilities work orders records"
+          screenType="workOrder"
+          onAIData={(r) => setAiRows(r)}
+          actions={<Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1" />Add New</Button>}
+        />
+
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                <TableHead className="text-xs">Wo Ref</TableHead>
+                <TableHead className="text-xs">Title</TableHead>
+                <TableHead className="text-xs">Category</TableHead>
+                <TableHead className="text-xs">Priority</TableHead>
+                <TableHead className="text-xs">Location</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && aiRows.length === 0 ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}
+                      </TableRow>
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No records found. <button className="text-primary underline" onClick={openAdd}>Add the first one.</button></TableCell></TableRow>
+                  ) : (
+                    filtered.map((row: any, i: number) => (
+                      <TableRow key={row.wo_id ?? i} className="hover:bg-muted/20">
+                    <TableCell>{row.wo_ref ?? "—"}</TableCell>
+                    <TableCell>{row.title ?? "—"}</TableCell>
+                    <TableCell>{row.category ?? "—"}</TableCell>
+                    <TableCell>{row.priority ?? "—"}</TableCell>
+                    <TableCell>{row.location ?? "—"}</TableCell>
+                    <TableCell>{row.status ?? "—"}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(row)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMut.mutate({ wo_id: row.wo_id })}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      )}
     </DashboardLayout>
   );
 }

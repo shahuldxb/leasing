@@ -105,7 +105,76 @@ export default function LOITracking() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Property Name</Label>
+            <Input type="text" value={form.property_name ?? ""} onChange={e => setForm((f: any) => ({...f, property_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Lessor Name</Label>
+            <Input type="text" value={form.lessor_name ?? ""} onChange={e => setForm((f: any) => ({...f, lessor_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Asset Type</Label>
+            <Input type="text" value={form.asset_type ?? ""} onChange={e => setForm((f: any) => ({...f, asset_type: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Location</Label>
+            <Input type="text" value={form.location ?? ""} onChange={e => setForm((f: any) => ({...f, location: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Proposed Start</Label>
+            <Input type="date" value={form.proposed_start ?? ""} onChange={e => setForm((f: any) => ({...f, proposed_start: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Proposed End</Label>
+            <Input type="date" value={form.proposed_end ?? ""} onChange={e => setForm((f: any) => ({...f, proposed_end: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Monthly Rent</Label>
+            <Input type="number" value={form.monthly_rent ?? ""} onChange={e => setForm((f: any) => ({...f, monthly_rent: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Currency</Label>
+            <Input type="text" value={form.currency ?? ""} onChange={e => setForm((f: any) => ({...f, currency: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="DRAFT">DRAFT</SelectItem>
+                  <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
+                  <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
+                  <SelectItem value="REJECTED">REJECTED</SelectItem>
+                  <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLLOITRACK0001P001"
           title="LOITracking"
@@ -173,74 +242,7 @@ export default function LOITracking() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Property Name</Label>
-            <Input type="text" value={form.property_name ?? ""} onChange={e => setForm((f: any) => ({...f, property_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Lessor Name</Label>
-            <Input type="text" value={form.lessor_name ?? ""} onChange={e => setForm((f: any) => ({...f, lessor_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Asset Type</Label>
-            <Input type="text" value={form.asset_type ?? ""} onChange={e => setForm((f: any) => ({...f, asset_type: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Location</Label>
-            <Input type="text" value={form.location ?? ""} onChange={e => setForm((f: any) => ({...f, location: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Proposed Start</Label>
-            <Input type="date" value={form.proposed_start ?? ""} onChange={e => setForm((f: any) => ({...f, proposed_start: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Proposed End</Label>
-            <Input type="date" value={form.proposed_end ?? ""} onChange={e => setForm((f: any) => ({...f, proposed_end: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Monthly Rent</Label>
-            <Input type="number" value={form.monthly_rent ?? ""} onChange={e => setForm((f: any) => ({...f, monthly_rent: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Currency</Label>
-            <Input type="text" value={form.currency ?? ""} onChange={e => setForm((f: any) => ({...f, currency: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={String(form.status ?? "")} onValueChange={v => setForm((f: any) => ({...f, status: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="DRAFT">DRAFT</SelectItem>
-                  <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
-                  <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
-                  <SelectItem value="REJECTED">REJECTED</SelectItem>
-                  <SelectItem value="EXPIRED">EXPIRED</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

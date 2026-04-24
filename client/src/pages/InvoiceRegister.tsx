@@ -58,7 +58,43 @@ export default function InvoiceRegister() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {open && (
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium">Lease *</Label>
+                <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
+                  <SelectContent>{(leases as any[]).map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-sm font-medium">Invoice No *</Label><Input className="mt-1" value={form.invoiceNo} onChange={e => setForm(f => ({ ...f, invoiceNo: e.target.value }))} /></div>
+                <div><Label className="text-sm font-medium">Currency</Label>
+                  <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["USD","GHS","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-sm font-medium">Invoice Date</Label><Input type="date" className="mt-1" value={form.invoiceDate} onChange={e => setForm(f => ({ ...f, invoiceDate: e.target.value }))} /></div>
+                <div><Label className="text-sm font-medium">Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+                <div className="col-span-2"><Label className="text-sm font-medium">Amount *</Label><Input type="number" className="mt-1" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+                <div className="col-span-2"><Label className="text-sm font-medium">Description</Label><Input className="mt-1" placeholder="Invoice description..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleCreate} disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Creating..." : "Create Invoice"}
+              </Button>
+            </div>
+          
+        </SlidePanel>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLINVREG0001P001"
           screenType="payables"
@@ -109,41 +145,8 @@ export default function InvoiceRegister() {
             </TableBody>
           </Table>
         </div>
-
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium">Lease *</Label>
-                <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
-                  <SelectContent>{(leases as any[]).map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Invoice No *</Label><Input className="mt-1" value={form.invoiceNo} onChange={e => setForm(f => ({ ...f, invoiceNo: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Currency</Label>
-                  <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["USD","GHS","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div><Label className="text-sm font-medium">Invoice Date</Label><Input type="date" className="mt-1" value={form.invoiceDate} onChange={e => setForm(f => ({ ...f, invoiceDate: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Due Date</Label><Input type="date" className="mt-1" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-                <div className="col-span-2"><Label className="text-sm font-medium">Amount *</Label><Input type="number" className="mt-1" placeholder="0.00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
-                <div className="col-span-2"><Label className="text-sm font-medium">Description</Label><Input className="mt-1" placeholder="Invoice description..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleCreate} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create Invoice"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

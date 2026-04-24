@@ -50,7 +50,66 @@ export default function OpsInsurance() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {open && (
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+          <div className="flex justify-end mt-2"><GenAIFillButton formType="insurance_policy" onFill={(data) => { if (data.policy_number !== undefined) setForm(f => ({ ...f, policy_number: data.policy_number as any })); if (data.insurer !== undefined) setForm(f => ({ ...f, insurer: data.insurer as any })); if (data.policy_type !== undefined) setForm(f => ({ ...f, policy_type: data.policy_type as any })); if (data.coverage_amount !== undefined) setForm(f => ({ ...f, coverage_amount: data.coverage_amount as any })); if (data.premium !== undefined) setForm(f => ({ ...f, premium: data.premium as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); }} /></div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-sm font-medium">Provider Name *</Label><Input className="mt-1" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
+                <div><Label className="text-sm font-medium">Policy Number *</Label><Input className="mt-1" value={form.policyNumber} onChange={e => setForm(f => ({ ...f, policyNumber: e.target.value }))} /></div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Coverage Type</Label>
+                <Select value={form.coverageType} onValueChange={v => setForm(f => ({ ...f, coverageType: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>{COVERAGE_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-sm font-medium">Sum Insured ($)</Label><Input type="number" className="mt-1" value={form.sumInsured} onChange={e => setForm(f => ({ ...f, sumInsured: e.target.value }))} /></div>
+                <div><Label className="text-sm font-medium">Premium Amount ($)</Label><Input type="number" className="mt-1" value={form.premiumAmount} onChange={e => setForm(f => ({ ...f, premiumAmount: e.target.value }))} /></div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Payment Frequency</Label>
+                <Select value={form.paymentFrequency} onValueChange={v => setForm(f => ({ ...f, paymentFrequency: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{PAYMENT_FREQ.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-sm font-medium">Start Date</Label><Input type="date" className="mt-1" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} /></div>
+                <div><Label className="text-sm font-medium">End Date</Label><Input type="date" className="mt-1" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} /></div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Linked Lease (optional)</Label>
+                <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
+                  <SelectContent>{leaseList.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                onClick={() => addMutation.mutate({
+                  contractId: form.leaseId ? Number(form.leaseId) : undefined,
+                  providerName: form.provider,
+                  policyNumber: form.policyNumber,
+                  coverageType: form.coverageType,
+                  sumInsured: Number(form.sumInsured),
+                  premiumAmount: Number(form.premiumAmount),
+                  paymentFrequency: form.paymentFrequency,
+                  startDate: form.startDate,
+                  endDate: form.endDate,
+                })}>Register Policy</Button>
+            </div>
+          
+        </SlidePanel>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLOPSINS0001P001"
           screenType="insurance"
@@ -109,64 +168,8 @@ export default function OpsInsurance() {
             </TableBody>
           </Table>
         </div>
-
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-          <div className="flex justify-end mt-2"><GenAIFillButton formType="insurance_policy" onFill={(data) => { if (data.policy_number !== undefined) setForm(f => ({ ...f, policy_number: data.policy_number as any })); if (data.insurer !== undefined) setForm(f => ({ ...f, insurer: data.insurer as any })); if (data.policy_type !== undefined) setForm(f => ({ ...f, policy_type: data.policy_type as any })); if (data.coverage_amount !== undefined) setForm(f => ({ ...f, coverage_amount: data.coverage_amount as any })); if (data.premium !== undefined) setForm(f => ({ ...f, premium: data.premium as any })); if (data.start_date !== undefined) setForm(f => ({ ...f, start_date: data.start_date as any })); if (data.end_date !== undefined) setForm(f => ({ ...f, end_date: data.end_date as any })); }} /></div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Provider Name *</Label><Input className="mt-1" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Policy Number *</Label><Input className="mt-1" value={form.policyNumber} onChange={e => setForm(f => ({ ...f, policyNumber: e.target.value }))} /></div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Coverage Type</Label>
-                <Select value={form.coverageType} onValueChange={v => setForm(f => ({ ...f, coverageType: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>{COVERAGE_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Sum Insured ($)</Label><Input type="number" className="mt-1" value={form.sumInsured} onChange={e => setForm(f => ({ ...f, sumInsured: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">Premium Amount ($)</Label><Input type="number" className="mt-1" value={form.premiumAmount} onChange={e => setForm(f => ({ ...f, premiumAmount: e.target.value }))} /></div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Payment Frequency</Label>
-                <Select value={form.paymentFrequency} onValueChange={v => setForm(f => ({ ...f, paymentFrequency: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{PAYMENT_FREQ.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-sm font-medium">Start Date</Label><Input type="date" className="mt-1" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} /></div>
-                <div><Label className="text-sm font-medium">End Date</Label><Input type="date" className="mt-1" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} /></div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Linked Lease (optional)</Label>
-                <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
-                  <SelectContent>{leaseList.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => addMutation.mutate({
-                  contractId: form.leaseId ? Number(form.leaseId) : undefined,
-                  providerName: form.provider,
-                  policyNumber: form.policyNumber,
-                  coverageType: form.coverageType,
-                  sumInsured: Number(form.sumInsured),
-                  premiumAmount: Number(form.premiumAmount),
-                  paymentFrequency: form.paymentFrequency,
-                  startDate: form.startDate,
-                  endDate: form.endDate,
-                })}>Register Policy</Button>
-            </div>
-          
-        </SlidePanel>
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

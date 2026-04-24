@@ -25,7 +25,43 @@ export default function PaymentRuns() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {open && (
+        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
+          
+            
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Payment Date *</Label>
+                <Input type="date" className="mt-1" value={payDate} onChange={e => setPayDate(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Bank File Format *</Label>
+                <Select value={bankFormat} onValueChange={setBankFormat}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SWIFT">SWIFT MT103</SelectItem>
+                    <SelectItem value="EFT">EFT (Local)</SelectItem>
+                    <SelectItem value="SEPA">SEPA Credit Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+                All approved invoices due on or before the payment date will be included in this run.
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
+                onClick={() => createRunMutation.mutate({ runDate: payDate, currency: 'USD', invoices: [], bankFileFormat: bankFormat as 'SWIFT' | 'EFT' })}
+                disabled={!payDate || createRunMutation.isPending}>
+                {createRunMutation.isPending ? "Processing..." : "Generate Run"}
+              </Button>
+            </div>
+          
+        </SlidePanel>
+      )}
+      {!open && (
+        <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLPAYRUN0001P001"
   title="Payment Runs"
@@ -66,41 +102,8 @@ export default function PaymentRuns() {
             </TableBody>
           </Table>
         </div>
-
-        <SlidePanel open={open} onClose={() => setOpen(false)} title="" width="xl">
-          
-            
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">Payment Date *</Label>
-                <Input type="date" className="mt-1" value={payDate} onChange={e => setPayDate(e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Bank File Format *</Label>
-                <Select value={bankFormat} onValueChange={setBankFormat}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SWIFT">SWIFT MT103</SelectItem>
-                    <SelectItem value="EFT">EFT (Local)</SelectItem>
-                    <SelectItem value="SEPA">SEPA Credit Transfer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
-                All approved invoices due on or before the payment date will be included in this run.
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-                onClick={() => createRunMutation.mutate({ runDate: payDate, currency: 'USD', invoices: [], bankFileFormat: bankFormat as 'SWIFT' | 'EFT' })}
-                disabled={!payDate || createRunMutation.isPending}>
-                {createRunMutation.isPending ? "Processing..." : "Generate Run"}
-              </Button>
-            </div>
-          
-        </SlidePanel>
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

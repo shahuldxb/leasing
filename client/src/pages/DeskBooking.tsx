@@ -102,7 +102,63 @@ export default function DeskBooking() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Desk Number</Label>
+            <Input type="text" value={form.desk_number ?? ""} onChange={e => setForm((f: any) => ({...f, desk_number: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Floor Level</Label>
+            <Input type="text" value={form.floor_level ?? ""} onChange={e => setForm((f: any) => ({...f, floor_level: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Building</Label>
+            <Input type="text" value={form.building ?? ""} onChange={e => setForm((f: any) => ({...f, building: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Booked By Name</Label>
+            <Input type="text" value={form.booked_by_name ?? ""} onChange={e => setForm((f: any) => ({...f, booked_by_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Booked By Email</Label>
+            <Input type="email" value={form.booked_by_email ?? ""} onChange={e => setForm((f: any) => ({...f, booked_by_email: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Booking Date</Label>
+            <Input type="date" value={form.booking_date ?? ""} onChange={e => setForm((f: any) => ({...f, booking_date: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Start Time</Label>
+            <Input type="time" value={form.start_time ?? ""} onChange={e => setForm((f: any) => ({...f, start_time: e.target.value}))} />
+          </div>
+          <div>
+            <Label>End Time</Label>
+            <Input type="time" value={form.end_time ?? ""} onChange={e => setForm((f: any) => ({...f, end_time: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLDESKBOOK0001P001"
           title="Desk Booking"
@@ -170,61 +226,7 @@ export default function DeskBooking() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Desk Number</Label>
-            <Input type="text" value={form.desk_number ?? ""} onChange={e => setForm((f: any) => ({...f, desk_number: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Floor Level</Label>
-            <Input type="text" value={form.floor_level ?? ""} onChange={e => setForm((f: any) => ({...f, floor_level: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Building</Label>
-            <Input type="text" value={form.building ?? ""} onChange={e => setForm((f: any) => ({...f, building: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Booked By Name</Label>
-            <Input type="text" value={form.booked_by_name ?? ""} onChange={e => setForm((f: any) => ({...f, booked_by_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Booked By Email</Label>
-            <Input type="email" value={form.booked_by_email ?? ""} onChange={e => setForm((f: any) => ({...f, booked_by_email: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Booking Date</Label>
-            <Input type="date" value={form.booking_date ?? ""} onChange={e => setForm((f: any) => ({...f, booking_date: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Start Time</Label>
-            <Input type="time" value={form.start_time ?? ""} onChange={e => setForm((f: any) => ({...f, start_time: e.target.value}))} />
-          </div>
-          <div>
-            <Label>End Time</Label>
-            <Input type="time" value={form.end_time ?? ""} onChange={e => setForm((f: any) => ({...f, end_time: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Textarea value={form.notes ?? ""} onChange={e => setForm((f: any) => ({...f, notes: e.target.value}))} rows={3} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

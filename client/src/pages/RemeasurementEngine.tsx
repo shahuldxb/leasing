@@ -1,214 +1,114 @@
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw, Plus, CheckCircle, Clock, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
-
-const EVENT_TYPES = [
-  { value: "EXTENSION_EXERCISE", label: "Extension Option Exercised" },
-  { value: "TERMINATION_EXERCISE", label: "Termination Option Exercised" },
-  { value: "PURCHASE_OPTION", label: "Purchase Option Reassessment" },
-  { value: "MODIFICATION", label: "Lease Modification" },
-  { value: "CPI_UPDATE", label: "CPI / Index Update" },
-  { value: "RATE_REVISION", label: "IBR Rate Revision" },
-  { value: "SCOPE_CHANGE", label: "Scope Change" },
-];
-
-const fmt = (n: number | null | undefined) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
 export default function RemeasurementEngine() {
-  const [filterStatus, setFilterStatus] = useState("");
-  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ contract_id: 0, event_type: "RATE_REVISION", event_date: new Date().toISOString().slice(0, 10), trigger_description: "", new_ibr: 5.5, new_remaining_term: 36 });
-  const [calcResult, setCalcResult] = useState<any>(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [form, setForm] = useState<any>({ contractId: "", triggerType: "Modification", remeasurementDate: "", newIbr: "", notes: "" });
+  const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data: events = [], refetch } = trpc.accounting.remeasurement.list.useQuery({ status: filterStatus || undefined });
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = contractsData?.rows ?? [];
+  const contracts = (contractsData as any)?.contracts ?? [];
+  const create = trpc.accounting.remeasurement.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Remeasurement event created"); }, onError: (e: any) => toast.error(e.message) });
+  const post = trpc.accounting.remeasurement.post.useMutation({ onSuccess: () => { refetch(); toast.success("Remeasurement posted to GL"); }, onError: (e: any) => toast.error(e.message) });
 
-  const create = trpc.accounting.remeasurement.create.useMutation({
-    onSuccess: (data) => {
-      setCalcResult(data);
-      refetch();
-      toast.success("Remeasurement calculated successfully");
-    },
-  });
-  const post = trpc.accounting.remeasurement.post.useMutation({
-    onSuccess: () => { refetch(); toast.success("Remeasurement posted to contracts"); },
-  });
-
-  const statusColor = (s: string) => {
-    if (s === "POSTED") return "default";
-    if (s === "PENDING") return "secondary";
-    return "outline";
-  };
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">New Remeasurement Event</h2>
+              <p className="text-sm text-muted-foreground">Trigger an IFRS 16 lease liability remeasurement</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div><Label>Contract</Label>
+                <Select value={form.contractId} onValueChange={v => setForm((f: any) => ({ ...f, contractId: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
+                  <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.property_name ?? c.contract_id}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Trigger Type</Label>
+                <Select value={form.triggerType} onValueChange={v => setForm((f: any) => ({ ...f, triggerType: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Modification","IBR Change","Rent Review","Extension","Termination"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Remeasurement Date</Label><Input className="mt-1" type="date" value={form.remeasurementDate} onChange={e => setForm((f: any) => ({ ...f, remeasurementDate: e.target.value }))} /></div>
+                <div><Label>New IBR (%)</Label><Input className="mt-1" type="number" step="0.001" value={form.newIbr} onChange={e => setForm((f: any) => ({ ...f, newIbr: e.target.value }))} /></div>
+              </div>
+              <div><Label>Notes</Label><Input className="mt-1" value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={create.isPending}
+                  onClick={() => create.mutate({ contract_id: Number(form.contractId), event_type: form.triggerType || 'MODIFICATION', event_date: form.remeasurementDate, trigger_description: form.triggerDescription || form.triggerType || 'Modification', new_ibr: Number(form.newIbr), new_remaining_term: Number(form.newRemainingTerm || 12) })}>
+                  {create.isPending ? "Creating..." : "Create Event"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLREMEAS0001P001"
-  title="Remeasurement Engine"
-  subtitle="IFRS 16 lease remeasurement calculator"
-
+          screenId="VFLRMSENG0001P001"
+          title="Remeasurement Engine"
+          subtitle="IFRS 16 lease liability remeasurement events"
           screenType="remeasurement_engine"
-          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+          onAIData={(rows) => setAiRows(rows)}
+          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
-
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "Pending Review", status: "PENDING", color: "text-amber-600" },
-            { label: "Posted", status: "POSTED", color: "text-emerald-600" },
-            { label: "Total Events", status: "", color: "text-blue-600" },
-          ].map(s => (
-            <Card key={s.label}>
-              <CardContent className="pt-4">
-                <p className="text-sm text-muted-foreground">{s.label}</p>
-                <p className={`text-3xl font-bold ${s.color}`}>
-                  {s.status ? (events as any[]).filter((e: any) => e.status === s.status).length : (events as any[]).length}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Filter */}
-        <div className="flex gap-3 items-center">
-          <Label>Status:</Label>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="All" /></SelectTrigger>
+        <div className="flex gap-3">
+          <Select value={filterStatus || "all"} onValueChange={v => setFilterStatus(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-              <SelectItem value="POSTED">Posted</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {["Pending","Calculated","Posted"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-
-        {/* Events table */}
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><RefreshCw className="w-4 h-4" />Remeasurement Events</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Contract</TableHead>
-                  <TableHead>Event Type</TableHead>
-                  <TableHead>Event Date</TableHead>
-                  <TableHead>Old Liability</TableHead>
-                  <TableHead>New Liability</TableHead>
-                  <TableHead>Adjustment</TableHead>
-                  <TableHead>New IBR</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Contract</TableHead><TableHead>Trigger</TableHead><TableHead>Date</TableHead><TableHead>New IBR</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(events as any[]).map((e: any) => (
+                <TableRow key={e.event_id}>
+                  <TableCell>{e.contract_id}</TableCell>
+                  <TableCell>{e.trigger_type}</TableCell>
+                  <TableCell>{e.remeasurement_date ? new Date(e.remeasurement_date).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell>{e.new_ibr ? `${Number(e.new_ibr).toFixed(3)}%` : "—"}</TableCell>
+                  <TableCell><Badge className={e.status === "Posted" ? "bg-green-500/20 text-green-400" : e.status === "Calculated" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}>{e.status}</Badge></TableCell>
+                  <TableCell>{e.status === "Calculated" && <Button size="sm" variant="outline" onClick={() => post.mutate({ remeasurement_id: e.remeasurement_id || e.event_id })}>Post to GL</Button>}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(events as any[]).map((e: any) => (
-                  <TableRow key={e.remeasurement_id}>
-                    <TableCell className="font-mono text-sm">{e.contract_ref}</TableCell>
-                    <TableCell className="text-sm">{EVENT_TYPES.find(t => t.value === e.event_type)?.label ?? e.event_type}</TableCell>
-                    <TableCell>{e.event_date?.slice(0, 10)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{fmt(e.old_liability)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{fmt(e.new_liability)}</TableCell>
-                    <TableCell className={`text-right font-mono text-sm font-bold ${Number(e.liability_adjustment) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                      {Number(e.liability_adjustment) >= 0 ? "+" : ""}{fmt(e.liability_adjustment)}
-                    </TableCell>
-                    <TableCell className="text-sm">{Number(e.new_ibr).toFixed(2)}%</TableCell>
-                    <TableCell><Badge variant={statusColor(e.status)}>{e.status}</Badge></TableCell>
-                    <TableCell className="text-right">
-                      {e.status === "PENDING" && (
-                        <Button size="sm" variant="outline" onClick={() => post.mutate({ remeasurement_id: e.remeasurement_id })}>
-                          <CheckCircle className="w-3.5 h-3.5 mr-1" />Post
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(events as any[]).length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No remeasurement events found</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* New remeasurement dialog */}
-        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
-          
-            
-            {!calcResult ? (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <Label>Contract</Label>
-                  <Select value={form.contract_id.toString()} onValueChange={v => setForm(f => ({ ...f, contract_id: parseInt(v) }))}>
-                    <SelectTrigger><SelectValue placeholder="Select contract..." /></SelectTrigger>
-                    <SelectContent>
-                      {contracts.map((c: any) => <SelectItem key={c.contract_id} value={c.contract_id.toString()}>{c.contract_ref} — {c.asset_description}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Event Type</Label>
-                  <Select value={form.event_type} onValueChange={v => setForm(f => ({ ...f, event_type: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{EVENT_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label>Event Date</Label>
-                    <Input type="date" value={form.event_date} onChange={e => setForm(f => ({ ...f, event_date: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>New IBR (%)</Label>
-                    <Input type="number" step="0.01" value={form.new_ibr} onChange={e => setForm(f => ({ ...f, new_ibr: parseFloat(e.target.value) }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>New Remaining Term (months)</Label>
-                    <Input type="number" value={form.new_remaining_term} onChange={e => setForm(f => ({ ...f, new_remaining_term: parseInt(e.target.value) }))} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label>Trigger Description</Label>
-                  <Textarea value={form.trigger_description} onChange={e => setForm(f => ({ ...f, trigger_description: e.target.value }))} placeholder="Describe the event triggering remeasurement..." rows={2} />
-                </div>
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-                  <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-                  <Button onClick={() => create.mutate(form)} disabled={create.isPending || !form.contract_id}>
-                    {create.isPending ? "Calculating..." : "Calculate"}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200">
-                  <p className="font-bold text-emerald-700 dark:text-emerald-300 mb-3">Remeasurement Calculated</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><p className="text-muted-foreground">New Liability</p><p className="font-bold">{fmt(calcResult.newLiability)}</p></div>
-                    <div><p className="text-muted-foreground">Adjustment</p><p className={`font-bold ${calcResult.liabilityAdj >= 0 ? "text-emerald-600" : "text-red-600"}`}>{calcResult.liabilityAdj >= 0 ? "+" : ""}{fmt(calcResult.liabilityAdj)}</p></div>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">The remeasurement has been saved as PENDING. Post it to update the contract values.</p>
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-                  <Button onClick={() => setShowForm(false)}>Close</Button>
-                </div>
-              </div>
-            )}
-          
-        </SlidePanel>
+              ))}
+              {(events as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No remeasurement events</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </DashboardLayout>
   );

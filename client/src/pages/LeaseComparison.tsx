@@ -81,7 +81,39 @@ export default function LeaseComparison() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Comparison Name</Label>
+            <Input type="text" value={form.comparison_name ?? ""} onChange={e => setForm((f: any) => ({...f, comparison_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Description</Label>
+            <Textarea value={form.description ?? ""} onChange={e => setForm((f: any) => ({...f, description: e.target.value}))} rows={3} />
+          </div>
+          <div>
+            <Label>Contract Ids</Label>
+            <Input type="text" value={form.contract_ids ?? ""} onChange={e => setForm((f: any) => ({...f, contract_ids: e.target.value}))} />
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLLEASECOM0001P001"
           title="Lease Comparison"
@@ -143,37 +175,7 @@ export default function LeaseComparison() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Comparison Name</Label>
-            <Input type="text" value={form.comparison_name ?? ""} onChange={e => setForm((f: any) => ({...f, comparison_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Description</Label>
-            <Textarea value={form.description ?? ""} onChange={e => setForm((f: any) => ({...f, description: e.target.value}))} rows={3} />
-          </div>
-          <div>
-            <Label>Contract Ids</Label>
-            <Input type="text" value={form.contract_ids ?? ""} onChange={e => setForm((f: any) => ({...f, contract_ids: e.target.value}))} />
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

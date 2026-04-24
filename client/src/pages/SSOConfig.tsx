@@ -96,7 +96,62 @@ export default function SSOConfig() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      {panelOpen ? (
+        <SlidePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title={editRow ? "Edit Record" : "Add New Record"}
+        subtitle="Fill in the details below"
+        width="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMut.isPending}>
+              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Provider Name</Label>
+            <Input type="text" value={form.provider_name ?? ""} onChange={e => setForm((f: any) => ({...f, provider_name: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Provider Type</Label>
+            <Select value={String(form.provider_type ?? "")} onValueChange={v => setForm((f: any) => ({...f, provider_type: v}))} >
+              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="SAML">SAML</SelectItem>
+                  <SelectItem value="OIDC">OIDC</SelectItem>
+                  <SelectItem value="OAUTH2">OAUTH2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Entity Id</Label>
+            <Input type="text" value={form.entity_id ?? ""} onChange={e => setForm((f: any) => ({...f, entity_id: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Sso Url</Label>
+            <Input type="text" value={form.sso_url ?? ""} onChange={e => setForm((f: any) => ({...f, sso_url: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Logout Url</Label>
+            <Input type="text" value={form.logout_url ?? ""} onChange={e => setForm((f: any) => ({...f, logout_url: e.target.value}))} />
+          </div>
+          <div>
+            <Label>Certificate</Label>
+            <Textarea value={form.certificate ?? ""} onChange={e => setForm((f: any) => ({...f, certificate: e.target.value}))} rows={3} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="is_active" checked={!!form.is_active} onChange={e => setForm((f: any) => ({...f, is_active: e.target.checked}))} className="w-4 h-4" />
+            <Label htmlFor="is_active">Is Active</Label>
+          </div>
+        </div>
+      </SlidePanel>
+      ) : (
+        <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLSSOCONFI0001P001"
           title="SSOConfig"
@@ -162,60 +217,7 @@ export default function SSOConfig() {
           </CardContent>
         </Card>
       </div>
-
-      <SlidePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        title={editRow ? "Edit Record" : "Add New Record"}
-        subtitle="Fill in the details below"
-        width="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setPanelOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={createMut.isPending}>
-              {createMut.isPending ? "Saving…" : editRow ? "Update" : "Create"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <Label>Provider Name</Label>
-            <Input type="text" value={form.provider_name ?? ""} onChange={e => setForm((f: any) => ({...f, provider_name: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Provider Type</Label>
-            <Select value={String(form.provider_type ?? "")} onValueChange={v => setForm((f: any) => ({...f, provider_type: v}))} >
-              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="SAML">SAML</SelectItem>
-                  <SelectItem value="OIDC">OIDC</SelectItem>
-                  <SelectItem value="OAUTH2">OAUTH2</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Entity Id</Label>
-            <Input type="text" value={form.entity_id ?? ""} onChange={e => setForm((f: any) => ({...f, entity_id: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Sso Url</Label>
-            <Input type="text" value={form.sso_url ?? ""} onChange={e => setForm((f: any) => ({...f, sso_url: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Logout Url</Label>
-            <Input type="text" value={form.logout_url ?? ""} onChange={e => setForm((f: any) => ({...f, logout_url: e.target.value}))} />
-          </div>
-          <div>
-            <Label>Certificate</Label>
-            <Textarea value={form.certificate ?? ""} onChange={e => setForm((f: any) => ({...f, certificate: e.target.value}))} rows={3} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="is_active" checked={!!form.is_active} onChange={e => setForm((f: any) => ({...f, is_active: e.target.checked}))} className="w-4 h-4" />
-            <Label htmlFor="is_active">Is Active</Label>
-          </div>
-        </div>
-      </SlidePanel>
+      )}
     </DashboardLayout>
   );
 }

@@ -1,188 +1,108 @@
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, TrendingUp, Info } from "lucide-react";
+import { ArrowLeft, Trash2, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
-import SlidePanel from "@/components/SlidePanel";
-
-const CURRENCIES = ["AED", "USD", "EUR", "GBP", "SAR", "QAR", "KWD", "BHD", "OMR"];
 
 export default function IBRLibrary() {
-  const [filterCurrency, setFilterCurrency] = useState<string>("all");
-  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({
-    currency: "AED", lease_term_min: 0, lease_term_max: 60,
-    rate_pct: 5.5, effective_from: "", effective_to: "",
-    source: "", notes: "",
-  });
+  const [filterCurrency, setFilterCurrency] = useState("all");
+  const [form, setForm] = useState<any>({ currency: "AED", tenor: "", rate: "", effectiveDate: "", source: "" });
+  const [aiRows, setAiRows] = useState<any[]>([]);
 
-  const { data: rates = [], refetch } = trpc.accounting.ibr.list.useQuery({ currency: filterCurrency === "all" ? undefined : filterCurrency || undefined });
-  const upsert = trpc.accounting.ibr.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("IBR rate saved"); } });
+  const { data: rates = [], refetch } = trpc.accounting.ibr.list.useQuery({ currency: filterCurrency === "all" ? undefined : filterCurrency });
+  const upsert = trpc.accounting.ibr.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("IBR rate saved"); }, onError: (e: any) => toast.error(e.message) });
   const del = trpc.accounting.ibr.delete.useMutation({ onSuccess: () => { refetch(); toast.success("IBR rate deleted"); } });
 
-  const openNew = () => {
-    setEditing(null);
-    setForm({ currency: "AED", lease_term_min: 0, lease_term_max: 60, rate_pct: 5.5, effective_from: new Date().toISOString().slice(0, 10), effective_to: "", source: "Central Bank UAE", notes: "" });
-    setShowForm(true);
-  };
-  const openEdit = (r: any) => {
-    setEditing(r);
-    setForm({ currency: r.currency, lease_term_min: r.lease_term_min, lease_term_max: r.lease_term_max, rate_pct: r.rate_pct, effective_from: r.effective_from?.slice(0, 10) ?? "", effective_to: r.effective_to?.slice(0, 10) ?? "", source: r.source ?? "", notes: r.notes ?? "" });
-    setShowForm(true);
-  };
-  const save = () => {
-    upsert.mutate({ ...form, ibr_id: editing?.ibr_id, effective_to: form.effective_to || null });
-  };
-
-  // Group by currency
-  const grouped = rates.reduce((acc: Record<string, any[]>, r: any) => {
-    acc[r.currency] = acc[r.currency] || [];
-    acc[r.currency].push(r);
-    return acc;
-  }, {});
+  if (showForm) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div>
+              <h2 className="font-semibold text-lg">Add IBR Rate</h2>
+              <p className="text-sm text-muted-foreground">Add an Incremental Borrowing Rate for IFRS 16 calculations</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Currency</Label>
+                  <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>{["AED","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Tenor (months)</Label><Input className="mt-1" type="number" value={form.tenor} onChange={e => setForm((f: any) => ({ ...f, tenor: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Rate (%)</Label><Input className="mt-1" type="number" step="0.001" value={form.rate} onChange={e => setForm((f: any) => ({ ...f, rate: e.target.value }))} /></div>
+                <div><Label>Effective Date</Label><Input className="mt-1" type="date" value={form.effectiveDate} onChange={e => setForm((f: any) => ({ ...f, effectiveDate: e.target.value }))} /></div>
+              </div>
+              <div><Label>Source</Label><Input className="mt-1" placeholder="e.g. Central Bank, Bloomberg" value={form.source} onChange={e => setForm((f: any) => ({ ...f, source: e.target.value }))} /></div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={upsert.isPending}
+                  onClick={() => upsert.mutate({ currency: form.currency, lease_term_min: Number(form.tenor || 1), lease_term_max: Number(form.tenor || 60), rate_pct: Number(form.rate), effective_from: form.effectiveDate, source: form.source })}>
+                  {upsert.isPending ? "Saving..." : "Save Rate"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-  screenId="VFLIBR0001P001"
+          screenId="VFLIBR0001P001"
+          title="IBR Library"
+          subtitle="Incremental Borrowing Rates for IFRS 16 lease calculations"
           screenType="ibr_library"
           onAIData={(rows) => setAiRows(rows)}
-  title="IBR Library"
-  subtitle="Incremental borrowing rate library by currency and term"
-/>
-
-        {/* Filter */}
-        <div className="flex gap-3 items-center">
-          <Label>Filter by Currency:</Label>
+          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+        />
+        <div className="flex gap-3">
           <Select value={filterCurrency} onValueChange={setFilterCurrency}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="All" /></SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Currencies</SelectItem>
-              {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {["AED","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-
-        {/* Info card */}
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-          <CardContent className="pt-4 flex gap-3">
-            <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              The IBR is the rate a lessee would have to pay to borrow over a similar term, with a similar security, the funds necessary to obtain an asset of similar value to the right-of-use asset. IBRs are applied when the interest rate implicit in the lease cannot be readily determined (IFRS 16.26).
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Rates table per currency */}
-        {Object.entries(grouped).map(([currency, cRates]) => (
-          <Card key={currency}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                {currency} — Incremental Borrowing Rates
-                <Badge variant="outline">{(cRates as any[]).length} bands</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Term Band (months)</TableHead>
-                    <TableHead>Rate (%)</TableHead>
-                    <TableHead>Effective From</TableHead>
-                    <TableHead>Effective To</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(cRates as any[]).map((r: any) => (
-                    <TableRow key={r.ibr_id}>
-                      <TableCell className="font-mono">{r.lease_term_min}–{r.lease_term_max} months</TableCell>
-                      <TableCell className="font-bold text-emerald-600">{Number(r.rate_pct).toFixed(2)}%</TableCell>
-                      <TableCell>{r.effective_from?.slice(0, 10)}</TableCell>
-                      <TableCell>{r.effective_to?.slice(0, 10) ?? <span className="text-muted-foreground">Open</span>}</TableCell>
-                      <TableCell className="text-sm">{r.source}</TableCell>
-                      <TableCell>
-                        <Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? "Active" : "Inactive"}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => del.mutate({ ibr_id: r.ibr_id })}><Trash2 className="w-3.5 h-3.5" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ))}
-
-        {rates.length === 0 && (
-          <Card><CardContent className="py-12 text-center text-muted-foreground">No IBR rates found. Add your first rate to get started.</CardContent></Card>
-        )}
-
-        {/* Form dialog */}
-        <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="" width="xl">
-          
-            
-              
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Currency</Label>
-                <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Rate (%)</Label>
-                <Input type="number" step="0.01" value={form.rate_pct} onChange={e => setForm(f => ({ ...f, rate_pct: parseFloat(e.target.value) }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Term Min (months)</Label>
-                <Input type="number" value={form.lease_term_min} onChange={e => setForm(f => ({ ...f, lease_term_min: parseInt(e.target.value) }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Term Max (months)</Label>
-                <Input type="number" value={form.lease_term_max} onChange={e => setForm(f => ({ ...f, lease_term_max: parseInt(e.target.value) }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Effective From</Label>
-                <Input type="date" value={form.effective_from} onChange={e => setForm(f => ({ ...f, effective_from: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Effective To (optional)</Label>
-                <Input type="date" value={form.effective_to} onChange={e => setForm(f => ({ ...f, effective_to: e.target.value }))} />
-              </div>
-              <div className="space-y-1 col-span-2">
-                <Label>Source</Label>
-                <Input value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. Central Bank UAE, Bloomberg" />
-              </div>
-              <div className="space-y-1 col-span-2">
-                <Label>Notes</Label>
-                <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional notes" />
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 mt-4">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button onClick={save} disabled={upsert.isPending}>{upsert.isPending ? "Saving..." : "Save"}</Button>
-            </div>
-          
-        </SlidePanel>
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Currency</TableHead><TableHead>Tenor (mo)</TableHead><TableHead>Rate (%)</TableHead><TableHead>Effective Date</TableHead><TableHead>Source</TableHead><TableHead>Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(rates as any[]).map((r: any) => (
+                <TableRow key={r.ibr_id}>
+                  <TableCell>{r.currency}</TableCell>
+                  <TableCell>{r.tenor}</TableCell>
+                  <TableCell>{Number(r.rate).toFixed(3)}%</TableCell>
+                  <TableCell>{r.effective_date ? new Date(r.effective_date).toLocaleDateString() : "—"}</TableCell>
+                  <TableCell>{r.source ?? "—"}</TableCell>
+                  <TableCell><Button size="sm" variant="ghost" onClick={() => del.mutate({ ibr_id: r.ibr_id })}><Trash2 className="w-4 h-4 text-red-400" /></Button></TableCell>
+                </TableRow>
+              ))}
+              {(rates as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No IBR rates configured</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </DashboardLayout>
   );
