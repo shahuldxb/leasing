@@ -29,8 +29,10 @@ export default function InvoiceRegister() {
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState(INIT);
 
-  const { data: invoices = [], refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 50 });
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const { data: invoicesData, refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 50 });
+  const invoices: any[] = (invoicesData as any)?.rows ?? [];
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
 
   const createMutation = trpc.payables.createInvoice.useMutation({
     onSuccess: () => { toast.success("Invoice created"); setShowForm(false); refetch(); },
@@ -76,7 +78,7 @@ export default function InvoiceRegister() {
     });
   }
 
-  const rows: any[] = Array.isArray(invoices) ? invoices : (invoices as any)?.invoices ?? [];
+  const rows: any[] = invoices;
 
   if (showForm) {
     return (
@@ -104,7 +106,7 @@ export default function InvoiceRegister() {
                 <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
                   <SelectContent>
-                    {((leases as any)?.rows ?? []).map((l: any) => (
+                    {leases.map((l: any) => (
                       <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref} — {l.asset_description}</SelectItem>
                     ))}
                   </SelectContent>

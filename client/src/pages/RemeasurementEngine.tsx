@@ -20,7 +20,7 @@ export default function RemeasurementEngine() {
 
   const { data: events = [], refetch } = trpc.accounting.remeasurement.list.useQuery({ status: filterStatus || undefined });
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
   const create = trpc.accounting.remeasurement.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Remeasurement event created"); }, onError: (e: any) => toast.error(e.message) });
   const post = trpc.accounting.remeasurement.post.useMutation({ onSuccess: () => { refetch(); toast.success("Remeasurement posted to GL"); }, onError: (e: any) => toast.error(e.message) });
 

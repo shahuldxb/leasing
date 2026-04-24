@@ -20,7 +20,7 @@ export default function OpsDocuments() {
     onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted"); },
     onError: (e) => toast.error(e.message),
   });
-  const rows: any[] = Array.isArray(data) ? data : (data as any)?.documents ?? [];
+  const rows: any[] = (data as any)?.rows ?? [];
   const today = new Date();
 
   const expiringSoon = rows.filter((r: any) => {

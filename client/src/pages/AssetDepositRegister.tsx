@@ -29,7 +29,8 @@ export default function AssetDepositRegister() {
   }
 
   const { data: deposits = [], refetch } = trpc.assetDeposit.listAll.useQuery({});
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
   const utils = trpc.useUtils();
   const createMut = trpc.assetDeposit.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Deposit recorded"); }, onError: (e: any) => toast.error(e.message) });
   const releaseMut = trpc.assetDeposit.release.useMutation({ onSuccess: () => { refetch(); toast.success("Deposit released"); }, onError: (e: any) => toast.error(e.message) });

@@ -21,7 +21,7 @@ export default function WorkflowQueue() {
   const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data, isLoading, refetch } = trpc.workflow.getQueue.useQuery({ outcome: filterStatus || undefined });
-  const tasks = (data as any)?.tasks ?? [];
+  const tasks = (data as any)?.rows ?? [];
   const completeTask = trpc.workflow.completeTask.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setSelected(null); toast.success(`Task ${dialogAction === "Approve" ? "approved" : "rejected"}`); }, onError: (e: any) => toast.error(e.message) });
 
   if (showForm && selected) {

@@ -32,7 +32,7 @@ export default function GLJournals() {
     onSuccess: () => { utils.glJournal.list.invalidate(); toast.success("Journal deleted"); },
     onError: (e) => toast.error(e.message),
   });
-  const rows: any[] = Array.isArray(data) ? data : (data as any)?.invoices ?? [];
+  const rows: any[] = (data as any)?.rows ?? [];
 
   return (
     <DashboardLayout>

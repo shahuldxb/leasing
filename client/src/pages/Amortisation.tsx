@@ -15,7 +15,8 @@ export default function Amortisation() {
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
   const { data: schedule, isLoading } = trpc.lease.getAmortisationSchedule.useQuery(
     { contractId: selectedId! },
     { enabled: !!selectedId }

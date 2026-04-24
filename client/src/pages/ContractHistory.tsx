@@ -9,14 +9,14 @@ import { toast } from "sonner";
 
 export default function ContractHistory() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const { data: contracts = [], isLoading } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
+  const { data: contractsData, isLoading } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
+  const rows: any[] = (contractsData as any)?.rows ?? [];
 
   const utils = trpc.useUtils();
   const submitForApprovalMut = trpc.lease.submitForApproval.useMutation({
     onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted for approval"); },
     onError: (e) => toast.error(e.message),
   });
-  const rows: any[] = Array.isArray(contracts) ? contracts : (contracts as any)?.leases ?? [];
 
   return (
     <DashboardLayout>

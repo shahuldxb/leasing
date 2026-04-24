@@ -26,7 +26,8 @@ export default function LeaseModifications() {
   const [editRow, setEditRow] = useState<any>(null);
 
   const utils = trpc.useUtils();
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
 
   const createMut = trpc.leaseModification.create.useMutation({
     onSuccess: () => { utils.leaseModification.list.invalidate(); toast.success("Modification created"); setShowForm(false); },

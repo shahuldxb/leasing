@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function CriticalDateCalendar() {
   const [form, setForm] = useState<any>({ contractId: "", eventType: "Expiry", eventDate: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  function openAdd() { setEditRow(null); setForm({ contractId: "", eventType: "Expiry", eventDate: "", notes: "" }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ contractId: contracts[0] ? String(contracts[0].contract_id) : "", eventType: "Expiry", eventDate: "", notes: "" }); setShowForm(true); }
   function openEdit(e: any) {
     setEditRow(e);
     setForm({ contractId: String(e.contract_id ?? ""), eventType: e.event_type ?? "Expiry", eventDate: e.event_date ? new Date(e.event_date).toISOString().slice(0,10) : "", notes: e.notes ?? e.description ?? "" });
@@ -32,7 +32,14 @@ export default function CriticalDateCalendar() {
 
   const { data: events = [], refetch } = trpc.criticalDates.list.useQuery({ daysAhead: 365 });
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
+  // Auto-select first contract when data loads
+  useEffect(() => {
+    if (contracts.length > 0 && !form.contractId) {
+      setForm((f: any) => ({ ...f, contractId: String(contracts[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts.length]);
   const create = trpc.criticalDates.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Critical date added"); }, onError: (e: any) => toast.error(e.message) });
   const dismiss = trpc.criticalDates.dismiss.useMutation({ onSuccess: () => { refetch(); toast.success("Event dismissed"); } });
 

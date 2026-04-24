@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function SubLeases() {
   const [form, setForm] = useState<any>({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  function openAdd() { setEditRow(null); setForm({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ parentContractId: contracts[0] ? String(contracts[0].contract_id) : "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" }); setShowForm(true); }
   function openEdit(s: any) {
     setEditRow(s);
     setForm({ parentContractId: String(s.parent_contract_id ?? s.head_lease_contract_id ?? ""), subtenantName: s.subtenant_name ?? s.sublessee_name ?? "", startDate: s.start_date ? new Date(s.start_date).toISOString().slice(0,10) : "", endDate: s.end_date ? new Date(s.end_date).toISOString().slice(0,10) : "", monthlyRent: String(s.monthly_rent ?? s.monthly_income ?? ""), currency: s.currency ?? "AED" });
@@ -32,7 +32,14 @@ export default function SubLeases() {
 
   const { data: subleases = [], refetch } = trpc.subLease.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
+  // Auto-select first contract when data loads
+  useEffect(() => {
+    if (contracts.length > 0 && !form.parentContractId) {
+      setForm((f: any) => ({ ...f, parentContractId: String(contracts[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts.length]);
   const create = trpc.subLease.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Sub-lease created"); }, onError: (e: any) => toast.error(e.message) });
 
   if (showForm) {

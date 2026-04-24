@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,15 @@ export default function LessorCreditScore() {
   const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data: scores = [], refetch } = trpc.lessorCredit.list.useQuery();
-  const { data: lessors = [] } = trpc.lessor.getLessors.useQuery({});
+  const { data: lessorsData } = trpc.lessor.getLessors.useQuery({});
+  const lessors: any[] = (lessorsData as any)?.lessors ?? [];
+  // Auto-select first lessor when data loads
+  useEffect(() => {
+    if (lessors.length > 0 && !form.lessor_id) {
+      setForm((f: any) => ({ ...f, lessor_id: String(lessors[0].lessor_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessors.length]);
   const save = trpc.lessorCredit.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Credit score saved"); }, onError: (e: any) => toast.error(e.message) });
 
   if (showForm) {
@@ -45,7 +53,7 @@ export default function LessorCreditScore() {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">
               <div><Label>Lessor</Label>
-                <Select value={form.lessorId} onValueChange={v => setForm((f: any) => ({ ...f, lessor_id: v }))}>
+                <Select value={form.lessor_id} onValueChange={v => setForm((f: any) => ({ ...f, lessor_id: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lessor" /></SelectTrigger>
                   <SelectContent>{(lessors as any[]).map((l: any) => <SelectItem key={l.lessor_id} value={String(l.lessor_id)}>{l.lessor_name}</SelectItem>)}</SelectContent>
                 </Select>

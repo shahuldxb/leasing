@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,15 @@ export default function LessorFinanceLease() {
   const [aiRows, setAiRows] = useState<any[]>([]);
   const utils = trpc.useUtils();
   const actionMut = trpc.system.notifyOwner.useMutation({ onSuccess: () => { setShowForm(false); toast.success("Finance lease submitted for review"); }, onError: (e: any) => toast.error(e.message) });
-  const { data: lessors = [] } = trpc.lessor.getLessors.useQuery({});
+  const { data: lessorsData } = trpc.lessor.getLessors.useQuery({});
+  const lessors: any[] = (lessorsData as any)?.lessors ?? [];
+  // Auto-select first lessor when data loads
+  useEffect(() => {
+    if (lessors.length > 0 && !form.lessorId) {
+      setForm((f: any) => ({ ...f, lessorId: String(lessors[0].lessor_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessors.length]);
 
   const records = [
     { id: 1, lessor: "Al Futtaim Properties", type: "Finance Lease", amount: "25,000,000", currency: "AED", rate: "4.5%", maturity: "2028-12-31", status: "Active" },

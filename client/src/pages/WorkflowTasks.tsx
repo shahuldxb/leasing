@@ -30,7 +30,7 @@ const statusColor = (s: string) => {
 export default function WorkflowTasks() {
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const { data, refetch, isLoading } = trpc.workflow.getMyTasks.useQuery({ status: "Pending" });
-  const dbTasks: any[] = Array.isArray(data) ? data : (data as any)?.tasks ?? [];
+  const dbTasks: any[] = (data as any)?.rows ?? [];
   const tasks = aiRows.length > 0 ? aiRows as any[] : dbTasks;
 
   const completeMutation = trpc.workflow.completeTask.useMutation({

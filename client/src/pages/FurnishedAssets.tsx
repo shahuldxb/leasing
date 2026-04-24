@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,19 @@ export default function FurnishedAssets() {
 
   const { data: assets = [], isLoading, refetch } = trpc.furnishedAssets.listByLease.useQuery({ contract_id: 0 });
   const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
-  const leases = (leasesData as any)?.contracts ?? [];
+  const leases = (leasesData as any)?.rows ?? [];
+  // Auto-select first lease when data loads
+  useEffect(() => {
+    if (leases.length > 0 && !form.contractId) {
+      setForm((f: any) => ({ ...f, contractId: String(leases[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leases.length]);
   const createMut = trpc.furnishedAssets.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Furnished asset added"); }, onError: (e: any) => toast.error(e.message) });
   const updateMut = trpc.furnishedAssets.update.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setEditItem(null); toast.success("Asset updated"); }, onError: (e: any) => toast.error(e.message) });
   const deleteMut = trpc.furnishedAssets.delete.useMutation({ onSuccess: () => { refetch(); toast.success("Asset removed"); }, onError: (e: any) => toast.error(e.message) });
 
-  const openAdd = () => { setEditItem(null); setForm({ contractId: "", itemName: "", itemType: "Furniture", quantity: "1", condition: "Good", serialNumber: "", notes: "" }); setShowForm(true); };
+  const openAdd = () => { setEditItem(null); setForm({ contractId: leases[0] ? String(leases[0].contract_id) : "", itemName: "", itemType: "Furniture", quantity: "1", condition: "Good", serialNumber: "", notes: "" }); setShowForm(true); };
   const openEdit = (a: any) => { setEditItem(a); setForm({ contractId: String(a.contract_id ?? ""), itemName: a.item_name ?? "", itemType: a.item_type ?? "Furniture", quantity: String(a.quantity ?? 1), condition: a.condition ?? "Good", serialNumber: a.serial_number ?? "", notes: a.notes ?? "" }); setShowForm(true); };
 
   if (showForm) {

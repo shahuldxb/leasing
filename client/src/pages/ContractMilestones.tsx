@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,15 @@ export default function ContractMilestones() {
       action: { label: "Confirm Delete", onClick: () => toast.success("Milestone deleted") },
     });
   }
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
+  // Auto-select first lease when data loads
+  useEffect(() => {
+    if (leases.length > 0 && !form.leaseId) {
+      setForm((f: any) => ({ ...f, leaseId: String(leases[0].contract_id), type: f.type || MILESTONE_TYPES[0] }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leases.length]);
 
   const today = new Date();
   const upcoming = [
@@ -64,7 +72,7 @@ export default function ContractMilestones() {
                 <Select value={form.leaseId} onValueChange={v => setForm(f => ({ ...f, leaseId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select lease..." /></SelectTrigger>
                   <SelectContent>
-                    {((leases as any)?.rows ?? []).map((l: any) => (
+                    {leases.map((l: any) => (
                       <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref}</SelectItem>
                     ))}
                   </SelectContent>

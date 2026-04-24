@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,20 @@ export default function LeaseExemptions() {
   const [form, setForm] = useState<any>({ ...INIT_FORM });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  const { data: exemptions = [], refetch } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
+  const { data: exemptionsData, refetch } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
+  const exemptions: any[] = (exemptionsData as any)?.rows ?? [];
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
+  // Auto-select first contract when data loads
+  useEffect(() => {
+    if (contracts.length > 0 && !form.contractId) {
+      setForm((f: any) => ({ ...f, contractId: String(contracts[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts.length]);
   const create = { mutate: (_: any) => { refetch(); setShowForm(false); toast.success(editRow ? "Exemption updated" : "Exemption recorded"); }, isPending: false };
 
-  function openAdd() { setEditRow(null); setForm({ ...INIT_FORM }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ ...INIT_FORM, contractId: contracts[0] ? String(contracts[0].contract_id) : "" }); setShowForm(true); }
   function openEdit(row: any) {
     setEditRow(row);
     setForm({

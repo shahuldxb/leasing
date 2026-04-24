@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,14 @@ export default function SecurityDeposits() {
 
   const { data: deposits = [], refetch } = trpc.securityDeposit.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
+  // Auto-select first contract when data loads
+  useEffect(() => {
+    if (contracts.length > 0 && !form.contractId) {
+      setForm((f: any) => ({ ...f, contractId: String(contracts[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts.length]);
   const create = trpc.securityDeposit.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Security deposit recorded"); }, onError: (e: any) => toast.error(e.message) });
   const release = trpc.securityDeposit.create.useMutation({ onSuccess: () => { refetch(); toast.success("Deposit released"); }, onError: (e: any) => toast.error(e.message) });
 

@@ -35,10 +35,11 @@ export default function OpsMaintenance() {
   }
 
   const { data: tickets = [], refetch } = trpc.lease.getMaintenanceTickets.useQuery({});
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
 
   const rows: any[] = Array.isArray(tickets) ? tickets : (tickets as any)?.tickets ?? [];
-  const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
+  const leaseList: any[] = leases;
 
   const statusColor = (s: string) => {
     if (s === "Open") return "bg-amber-500/20 text-amber-400 border-amber-500/30";

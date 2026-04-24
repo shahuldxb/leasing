@@ -10,8 +10,9 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function PayablesApprovals() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
-  const { data: invoices = [], refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 100, status: "Pending" });
-  const rows: any[] = Array.isArray(invoices) ? invoices : (invoices as any)?.invoices ?? [];
+  const { data: invoicesData, refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 100, status: "Pending" });
+  const invoices: any[] = (invoicesData as any)?.rows ?? [];
+  const rows: any[] = invoices;
 
   const approveMutation = trpc.payables.approveInvoice.useMutation({
     onSuccess: (d: any) => { toast.success(`Invoice ${d?.new_status ?? "updated"}`); refetch(); },

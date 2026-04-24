@@ -23,7 +23,7 @@ export default function WorkflowMonitor() {
     onSuccess: () => { utils.workflow.getQueue.invalidate(); toast.success("Task completed"); },
     onError: (e) => toast.error(e.message),
   });
-  const rows: any[] = Array.isArray(data) ? data : (data as any)?.tasks ?? [];
+  const rows: any[] = (data as any)?.rows ?? [];
 
   return (
     <DashboardLayout>

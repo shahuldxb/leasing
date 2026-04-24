@@ -19,7 +19,7 @@ export default function TenantPortal() {
   const utils = trpc.useUtils();
   const actionMut = trpc.system.notifyOwner.useMutation({ onSuccess: () => { setShowForm(false); toast.success("Request submitted successfully"); }, onError: (e: any) => toast.error(e.message) });
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
 
   const requests = [
     { id: 1, type: "Maintenance", subject: "AC unit not working", priority: "High", contract: "Villa 12B", status: "Open", date: "2024-01-15" },

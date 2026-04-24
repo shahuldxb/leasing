@@ -11,7 +11,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 export default function WorkflowEscalations() {
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data, refetch } = trpc.workflow.getQueue.useQuery({ page: 1, pageSize: 100 });
-  const tasks: any[] = (Array.isArray(data) ? data : (data as any)?.tasks ?? []).filter((t: any) => t.is_overdue);
+  const tasks: any[] = ((data as any)?.rows ?? []).filter((t: any) => t.is_overdue);
 
   const completeMutation = trpc.workflow.completeTask.useMutation({
     onSuccess: () => { toast.success("Task escalated"); refetch(); },

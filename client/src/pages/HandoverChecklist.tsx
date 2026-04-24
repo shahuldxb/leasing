@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function HandoverChecklist() {
   const [form, setForm] = useState<any>({ contractId: "", handoverType: "Move-In", handoverDate: "", notes: "", items: [] });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  function openAdd() { setEditRow(null); setForm({ contractId: "", handoverType: "Move-In", handoverDate: "", notes: "", items: [] }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ contractId: leases[0] ? String(leases[0].contract_id) : "", handoverType: "Move-In", handoverDate: "", notes: "", items: [] }); setShowForm(true); }
   function openEdit(row: any) {
     setEditRow(row);
     setForm({ contractId: String(row.contract_id ?? ""), handoverType: row.handover_type ?? "Move-In", handoverDate: row.handover_date ? new Date(row.handover_date).toISOString().slice(0,10) : "", notes: row.notes ?? "", items: [] });
@@ -30,7 +30,14 @@ export default function HandoverChecklist() {
 
   const { data: checklists = [], isLoading, refetch } = trpc.handoverChecklist.listByLease.useQuery({ contract_id: 0 });
   const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
-  const leases = (leasesData as any)?.contracts ?? [];
+  const leases = (leasesData as any)?.rows ?? [];
+  // Auto-select first lease when data loads
+  useEffect(() => {
+    if (leases.length > 0 && !form.contractId) {
+      setForm((f: any) => ({ ...f, contractId: String(leases[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leases.length]);
   const createMut = trpc.handoverChecklist.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Checklist created"); }, onError: (e: any) => toast.error(e.message) });
   const signOffMut = trpc.handoverChecklist.signOff.useMutation({ onSuccess: () => { refetch(); toast.success("Checklist signed off"); }, onError: (e: any) => toast.error(e.message) });
 

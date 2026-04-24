@@ -21,7 +21,7 @@ export default function VariableRent() {
 
   const { data: items = [], refetch } = trpc.accounting.variableRent.list.useQuery({});
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
   const create = trpc.accounting.variableRent.record.useMutation({
     onSuccess: () => { refetch(); setShowForm(false); toast.success(editRow ? "Variable rent updated" : "Variable rent recorded"); },
     onError: (e: any) => toast.error(e.message),

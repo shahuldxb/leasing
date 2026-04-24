@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +40,16 @@ export default function LeaseOptionsBreaks() {
   }
   function handleDeleteOpt(o: any) { toast("Delete option for contract " + o.contract_ref + "?", { action: { label: "Confirm Delete", onClick: () => toast.success("Option deleted") } }); }
   function handleDeleteBrk(b: any) { toast("Delete break clause?", { action: { label: "Confirm Delete", onClick: () => toast.success("Break clause deleted") } }); }
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
+  // Auto-select first contract when data loads
+  useEffect(() => {
+    if (leases.length > 0 && !optForm.contractId) {
+      setOptForm(f => ({ ...f, contractId: leases[0].contract_id }));
+      setBrkForm(f => ({ ...f, contractId: leases[0].contract_id }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leases.length]);
   const { data: options = [], refetch: refetchOpts } = trpc.leaseOptions.list.useQuery({ contractId: undefined });
   const upsertOpt = trpc.leaseOptions.upsert.useMutation({ onSuccess: () => { refetchOpts(); setOptionOpen(false); toast.success("Option saved"); }, onError: (e) => toast.error(e.message) });
   const upsertBrk = trpc.leaseOptions.upsert.useMutation({ onSuccess: () => { setBreakOpen(false); toast.success("Break clause saved"); }, onError: (e) => toast.error(e.message) });
@@ -65,7 +75,12 @@ export default function LeaseOptionsBreaks() {
           <div className="flex-1 overflow-y-auto px-8 py-6">
             {optionOpen ? (
               <div className="max-w-xl mx-auto grid grid-cols-2 gap-5">
-                <div><Label className="text-xs text-muted-foreground">Contract ID</Label><Input type="number" className="mt-1" value={optForm.contractId} onChange={e => setOptForm(f => ({ ...f, contractId: Number(e.target.value) }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Contract</Label>
+                  <Select value={String(optForm.contractId)} onValueChange={v => setOptForm(f => ({ ...f, contractId: Number(v) }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
+                    <SelectContent>{leases.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.property_name ?? l.contract_ref ?? l.contract_id}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
                 <div><Label className="text-xs text-muted-foreground">Option Type</Label>
                   <Select value={optForm.option_type} onValueChange={(v: any) => setOptForm(f => ({ ...f, option_type: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -79,7 +94,12 @@ export default function LeaseOptionsBreaks() {
               </div>
             ) : (
               <div className="max-w-xl mx-auto grid grid-cols-2 gap-5">
-                <div><Label className="text-xs text-muted-foreground">Contract ID</Label><Input type="number" className="mt-1" value={brkForm.contractId} onChange={e => setBrkForm(f => ({ ...f, contractId: Number(e.target.value) }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Contract</Label>
+                  <Select value={String(brkForm.contractId)} onValueChange={v => setBrkForm(f => ({ ...f, contractId: Number(v) }))}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
+                    <SelectContent>{leases.map((l: any) => <SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.property_name ?? l.contract_ref ?? l.contract_id}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
                 <div><Label className="text-xs text-muted-foreground">Break Date</Label><Input type="date" className="mt-1" value={brkForm.break_date} onChange={e => setBrkForm(f => ({ ...f, break_date: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Notice Deadline</Label><Input type="date" className="mt-1" value={brkForm.notice_deadline} onChange={e => setBrkForm(f => ({ ...f, notice_deadline: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Penalty Amount (AED)</Label><Input type="number" step="0.01" className="mt-1" value={brkForm.penalty_amount} onChange={e => setBrkForm(f => ({ ...f, penalty_amount: Number(e.target.value) }))} /></div>

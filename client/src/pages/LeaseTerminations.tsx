@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function LeaseTerminations() {
   const [form, setForm] = useState<any>({ contract_id: "", terminationDate: "", reason: "Mutual Agreement", penaltyAmount: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  function openAdd() { setEditRow(null); setForm({ contract_id: "", terminationDate: "", reason: "Mutual Agreement", penaltyAmount: "", notes: "" }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ contract_id: contracts[0] ? String(contracts[0].contract_id) : "", terminationDate: "", reason: "Mutual Agreement", penaltyAmount: "", notes: "" }); setShowForm(true); }
   function openEdit(row: any) {
     setEditRow(row);
     setForm({ contract_id: String(row.contract_id ?? ""), terminationDate: row.termination_date ? new Date(row.termination_date).toISOString().slice(0,10) : "", reason: row.reason ?? "Mutual Agreement", penaltyAmount: String(row.penalty_amount ?? ""), notes: row.notes ?? "" });
@@ -30,7 +30,14 @@ export default function LeaseTerminations() {
 
   const { data: terminations = [], refetch } = trpc.termination.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
-  const contracts = (contractsData as any)?.contracts ?? [];
+  const contracts = (contractsData as any)?.rows ?? [];
+  // Auto-select first contract when data loads
+  useEffect(() => {
+    if (contracts.length > 0 && !form.contract_id) {
+      setForm((f: any) => ({ ...f, contract_id: String(contracts[0].contract_id) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts.length]);
   const initiateMut = trpc.termination.initiate.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Termination initiated"); }, onError: (e: any) => toast.error(e.message) });
   const approveMut = trpc.termination.approve.useMutation({ onSuccess: () => { refetch(); toast.success("Termination approved"); }, onError: (e: any) => toast.error(e.message) });
   const rejectMut = trpc.termination.reject.useMutation({ onSuccess: () => { refetch(); toast.success("Termination rejected"); }, onError: (e: any) => toast.error(e.message) });
@@ -62,7 +69,7 @@ export default function LeaseTerminations() {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">
               <div><Label>Contract</Label>
-                <Select value={form.contractId} onValueChange={v => setForm((f: any) => ({ ...f, contract_id: v }))}>
+                <Select value={form.contract_id} onValueChange={v => setForm((f: any) => ({ ...f, contract_id: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
                   <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.property_name ?? c.contract_id}</SelectItem>)}</SelectContent>
                 </Select>

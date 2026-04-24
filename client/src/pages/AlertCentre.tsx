@@ -53,7 +53,7 @@ export default function AlertCentre() {
     onError: (e) => toast.error(e.message),
   });
 
-  const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
+  const leaseList: any[] = (leases as any)?.rows ?? [];
   const insuranceList: any[] = Array.isArray(insurance) ? insurance : [];
   const chequeList: any[] = Array.isArray(cheques) ? cheques : [];
   const today = new Date();

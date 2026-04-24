@@ -35,13 +35,14 @@ export default function OpsInsurance() {
   }
 
   const { data, refetch } = trpc.lease.getInsurancePolicies.useQuery({});
-  const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
+  const leases: any[] = (leasesData as any)?.rows ?? [];
 
   const utils = trpc.useUtils();
   const addMutation = { mutate: (_: any) => { toast.success("Policy registered"); setShowForm(false); refetch(); }, isPending: false };
 
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.policies ?? [];
-  const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
+  const leaseList: any[] = leases;
 
   const today = new Date();
   const expiringSoon = rows.filter((r: any) => {

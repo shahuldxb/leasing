@@ -16,7 +16,7 @@ export default function BankHistory() {
     onSuccess: () => toast.success("Reconciliation report sent"),
     onError: (e) => toast.error(e.message),
   });
-  const rows: any[] = Array.isArray(data) ? data : (data as any)?.sessions ?? [];
+  const rows: any[] = (data as any)?.sessions ?? [];
   return (
     <DashboardLayout>
       <ScreenHeader
