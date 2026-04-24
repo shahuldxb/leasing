@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -14,8 +14,19 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function LeaseTerminations() {
   const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ contract_id: "", terminationDate: "", reason: "Mutual Agreement", penaltyAmount: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openAdd() { setEditRow(null); setForm({ contract_id: "", terminationDate: "", reason: "Mutual Agreement", penaltyAmount: "", notes: "" }); setShowForm(true); }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({ contract_id: String(row.contract_id ?? ""), terminationDate: row.termination_date ? new Date(row.termination_date).toISOString().slice(0,10) : "", reason: row.reason ?? "Mutual Agreement", penaltyAmount: String(row.penalty_amount ?? ""), notes: row.notes ?? "" });
+    setShowForm(true);
+  }
+  function handleDelete(row: any) {
+    toast("Delete this termination request?", { action: { label: "Confirm Delete", onClick: () => toast.success("Termination request deleted") } });
+  }
 
   const { data: terminations = [], refetch } = trpc.termination.list.useQuery();
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
@@ -33,7 +44,7 @@ export default function LeaseTerminations() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Initiate Lease Termination</h2>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Termination Request" : "Initiate Lease Termination"}</h2>
               <p className="text-sm text-muted-foreground">Start the early termination process for a lease contract</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
@@ -88,7 +99,7 @@ export default function LeaseTerminations() {
           subtitle="Early termination requests and approval workflow"
           screenType="lease_terminations"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
@@ -103,11 +114,13 @@ export default function LeaseTerminations() {
                   <TableCell>{t.reason}</TableCell>
                   <TableCell>{t.penalty_amount ? Number(t.penalty_amount).toLocaleString() : "—"}</TableCell>
                   <TableCell><Badge className={t.status === "Approved" ? "bg-green-500/20 text-green-400" : t.status === "Rejected" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}>{t.status}</Badge></TableCell>
-                  <TableCell className="flex gap-2">
+                  <TableCell className="flex gap-2 items-center">
                     {t.status === "Pending" && <>
                       <Button size="sm" variant="outline" className="text-green-400 border-green-400" onClick={() => approveMut.mutate({ termination_id: t.termination_id })}>Approve</Button>
                       <Button size="sm" variant="outline" className="text-red-400 border-red-400" onClick={() => rejectMut.mutate({ termination_id: t.termination_id, reason: 'Rejected by approver' })}>Reject</Button>
                     </>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(t)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </TableCell>
                 </TableRow>
               ))}

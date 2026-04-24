@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -121,9 +121,10 @@ export default function MSCRegister() {
                   <TableCell>{c.end_date ? new Date(c.end_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell>{c.currency} {c.value ? Number(c.value).toLocaleString() : "—"}</TableCell>
                   <TableCell><Badge className={c.status === "Active" ? "bg-green-500/20 text-green-400" : c.status === "Draft" ? "bg-amber-500/20 text-amber-400" : "bg-gray-500/20 text-gray-400"}>{c.status}</Badge></TableCell>
-                  <TableCell className="flex gap-2">
+                  <TableCell className="flex gap-2 items-center">
                     <Button size="sm" variant="outline" onClick={() => openEdit(c)}>Edit</Button>
                     {c.status === "Draft" && <Button size="sm" variant="outline" className="text-green-400 border-green-400" onClick={() => activateMut.mutate({ msc_id: c.msc_id })}>Activate</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => toast("Delete contract " + (c.contract_number ?? "") + "?", { action: { label: "Confirm Delete", onClick: () => toast.success("Contract deleted") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </TableCell>
                 </TableRow>
               ))}

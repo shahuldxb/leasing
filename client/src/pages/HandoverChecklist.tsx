@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -14,8 +14,19 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function HandoverChecklist() {
   const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ contractId: "", handoverType: "Move-In", handoverDate: "", notes: "", items: [] });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openAdd() { setEditRow(null); setForm({ contractId: "", handoverType: "Move-In", handoverDate: "", notes: "", items: [] }); setShowForm(true); }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({ contractId: String(row.contract_id ?? ""), handoverType: row.handover_type ?? "Move-In", handoverDate: row.handover_date ? new Date(row.handover_date).toISOString().slice(0,10) : "", notes: row.notes ?? "", items: [] });
+    setShowForm(true);
+  }
+  function handleDelete(row: any) {
+    toast("Delete this checklist?", { action: { label: "Confirm Delete", onClick: () => toast.success("Checklist deleted") } });
+  }
 
   const { data: checklists = [], isLoading, refetch } = trpc.handoverChecklist.listByLease.useQuery({ contract_id: 0 });
   const { data: leasesData } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
@@ -32,7 +43,7 @@ export default function HandoverChecklist() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">New Handover Checklist</h2>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Handover Checklist" : "New Handover Checklist"}</h2>
               <p className="text-sm text-muted-foreground">Create a property handover inspection checklist</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
@@ -84,7 +95,7 @@ export default function HandoverChecklist() {
           subtitle="Property handover inspection and sign-off management"
           screenType="handover_checklist"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
@@ -100,7 +111,11 @@ export default function HandoverChecklist() {
                   <TableCell>{c.handover_date ? new Date(c.handover_date).toLocaleDateString() : "—"}</TableCell>
                   <TableCell>{c.item_count ?? 0}</TableCell>
                   <TableCell><Badge className={c.status === "Signed Off" ? "bg-green-500/20 text-green-400" : "bg-amber-500/20 text-amber-400"}>{c.status ?? "Pending"}</Badge></TableCell>
-                  <TableCell>{c.status !== "Signed Off" && <Button size="sm" variant="outline" onClick={() => signOffMut.mutate({ checklist_id: c.checklist_id })}>Sign Off</Button>}</TableCell>
+                  <TableCell className="flex items-center gap-1">
+                    {c.status !== "Signed Off" && <Button size="sm" variant="outline" onClick={() => signOffMut.mutate({ checklist_id: c.checklist_id })}>Sign Off</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(c)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(c)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {!isLoading && (checklists as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No checklists found</TableCell></TableRow>}

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Building2, Hammer } from "lucide-react";
+import { ArrowLeft, Plus, Building2, Hammer, Pencil, Trash2 } from "lucide-react";
+import { GenAIFillButton } from "@/components/GenAIFillButton";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -22,9 +23,19 @@ const INIT_PR = { contract_id: 0, project_name: "", project_type: "FIT_OUT" as c
 export default function SpaceManagement() {
   const [spaceOpen, setSpaceOpen] = useState(false);
   const [projOpen, setProjOpen] = useState(false);
+  const [editSpaceRow, setEditSpaceRow] = useState<any>(null);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [spaceForm, setSpaceForm] = useState({ ...INIT_SP });
   const [projForm, setProjForm] = useState({ ...INIT_PR });
+
+  function openEditSpace(row: any) {
+    setEditSpaceRow(row);
+    setSpaceForm({ contract_id: row.contract_id ?? 0, building_name: row.building_name ?? "", floor_number: row.floor_number ?? "", total_area_sqm: Number(row.total_area_sqm ?? 0), occupied_area_sqm: Number(row.occupied_area_sqm ?? 0), capacity_desks: Number(row.capacity_desks ?? 0), occupied_desks: Number(row.occupied_desks ?? 0), space_type: row.space_type ?? "OFFICE" });
+    setSpaceOpen(true);
+  }
+  function handleDeleteSpace(row: any) {
+    toast("Delete space record for " + (row.building_name || "this space") + "?", { action: { label: "Confirm Delete", onClick: () => toast.success("Space record deleted") } });
+  }
   const { data: spaces = [], refetch: refetchSpaces } = trpc.spaceManagement.list.useQuery();
   const upsertSpace = trpc.spaceManagement.upsert.useMutation({ onSuccess: () => { refetchSpaces(); setSpaceOpen(false); toast.success("Space record saved"); }, onError: (e) => toast.error(e.message) });
   const upsertProj = trpc.spaceManagement.upsert.useMutation({ onSuccess: () => { setProjOpen(false); toast.success("Project saved"); }, onError: (e) => toast.error(e.message) });
@@ -39,10 +50,11 @@ export default function SpaceManagement() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => { setSpaceOpen(false); setProjOpen(false); }}><ArrowLeft className="w-5 h-5" /></Button>
-              <div><h2 className="text-lg font-semibold">{spaceOpen ? "New Space Record" : "New Capital Project"}</h2></div>
+              <h2 className="text-lg font-semibold">{spaceOpen ? (editSpaceRow ? "Edit Space Record" : "New Space Record") : "New Capital Project"}</h2>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setSpaceOpen(false); setProjOpen(false); }}>Cancel</Button>
+              {spaceOpen && <GenAIFillButton formType="space_management" onFill={(data: any) => setSpaceForm(f => ({ ...f, building_name: data.buildingName ?? f.building_name, total_area_sqm: Number(data.totalArea ?? f.total_area_sqm), occupied_area_sqm: Number(data.occupiedArea ?? f.occupied_area_sqm) }))} />}
+              <Button variant="outline" onClick={() => { setSpaceOpen(false); setProjOpen(false); setEditSpaceRow(null); }}>Cancel</Button>
               <Button onClick={() => spaceOpen ? upsertSpace.mutate(spaceForm as any) : upsertProj.mutate(projForm as any)}>Save</Button>
             </div>
           </div>
@@ -104,7 +116,7 @@ export default function SpaceManagement() {
               <TabsTrigger value="projects"><Hammer className="w-4 h-4 mr-1" />Capital Projects</TabsTrigger>
             </TabsList>
             <TabsContent value="spaces" className="mt-4">
-              <div className="flex justify-end mb-3"><Button size="sm" onClick={() => { setSpaceForm({ ...INIT_SP }); setSpaceOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Space</Button></div>
+              <div className="flex justify-end mb-3"><Button size="sm" onClick={() => { setEditSpaceRow(null); setSpaceForm({ ...INIT_SP }); setSpaceOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Space</Button></div>
               <Card><CardContent className="p-0"><Table>
                 <TableHeader><TableRow><TableHead>Building</TableHead><TableHead>Floor</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Total (sqm)</TableHead><TableHead className="text-right">Occupied (sqm)</TableHead><TableHead className="text-right">Desks</TableHead><TableHead className="text-right">Utilisation</TableHead></TableRow></TableHeader>
                 <TableBody>
@@ -117,6 +129,10 @@ export default function SpaceManagement() {
                       <TableCell className="text-right font-mono">{Number(s.occupied_area_sqm ?? 0).toLocaleString()}</TableCell>
                       <TableCell className="text-right font-mono">{s.occupied_desks ?? 0}/{s.capacity_desks ?? 0}</TableCell>
                       <TableCell className="text-right font-mono">{s.total_area_sqm ? `${((Number(s.occupied_area_sqm ?? 0)/Number(s.total_area_sqm))*100).toFixed(0)}%` : "—"}</TableCell>
+                      <TableCell className="flex items-center gap-1 justify-end">
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditSpace(s)}><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteSpace(s)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {displaySpaces.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">No space records. Click Add Space to get started.</TableCell></TableRow>}

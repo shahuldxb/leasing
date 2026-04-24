@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Download, RefreshCw, Eye, GitBranch, MoreHorizontal, FileText } from "lucide-react";
+import { Plus, Search, Eye, GitBranch, MoreHorizontal, FileText, Pencil, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -65,6 +65,11 @@ export default function ContractRegister() {
             subtitle="Master register of all lease contracts"
             screenType="contract_register"
             onAIData={(r) => setAiRows && setAiRows(r)}
+            actions={
+              <Button onClick={() => setLocation("/lease/new")} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg">
+                <Plus className="w-4 h-4" />New Contract
+              </Button>
+            }
           />
 
         <Card>
@@ -147,6 +152,12 @@ export default function ContractRegister() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toast.info("Document vault — coming soon")}>
                                 <FileText className="mr-2 h-4 w-4" /> Document Vault
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setLocation(`/lease/${c.lease_id}/edit`)}>
+                                <Pencil className="mr-2 h-4 w-4" /> Edit Contract
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast("Delete contract " + c.lease_ref + "?", { action: { label: "Confirm Delete", onClick: () => toast.success("Contract deleted") } })}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

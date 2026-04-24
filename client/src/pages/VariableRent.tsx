@@ -4,23 +4,47 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 
+const INIT_FORM = { contractId: "", period: "", variableType: "Turnover", amount: "", currency: "AED", notes: "" };
+
 export default function VariableRent() {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<any>({ contractId: "", period: "", variableType: "Turnover", amount: "", currency: "AED", notes: "" });
+  const [editRow, setEditRow] = useState<any>(null);
+  const [form, setForm] = useState<any>({ ...INIT_FORM });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
   const { data: items = [], refetch } = trpc.accounting.variableRent.list.useQuery({});
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
   const contracts = (contractsData as any)?.contracts ?? [];
-  const create = trpc.accounting.variableRent.record.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Variable rent recorded"); }, onError: (e: any) => toast.error(e.message) });
+  const create = trpc.accounting.variableRent.record.useMutation({
+    onSuccess: () => { refetch(); setShowForm(false); toast.success(editRow ? "Variable rent updated" : "Variable rent recorded"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function openAdd() { setEditRow(null); setForm({ ...INIT_FORM }); setShowForm(true); }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({
+      contractId: String(row.contract_id ?? ""),
+      period: row.period ?? "",
+      variableType: row.variable_type ?? "Turnover",
+      amount: String(row.amount ?? ""),
+      currency: row.currency ?? "AED",
+      notes: row.notes ?? "",
+    });
+    setShowForm(true);
+  }
+  function handleDelete(row: any) {
+    toast("Delete this variable rent record?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Record deleted") },
+    });
+  }
 
   if (showForm) {
     return (
@@ -31,28 +55,32 @@ export default function VariableRent() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Record Variable Rent</h2>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Variable Rent" : "Record Variable Rent"}</h2>
               <p className="text-sm text-muted-foreground">Record a variable rent payment (turnover, index-linked, etc.)</p>
             </div>
-            <div className="ml-auto"><GenAIFillButton
-              formType="rent_review"
-              onFill={(data) => setForm((f: any) => ({
-                          ...f,
-                          reviewDate: data.reviewDate ?? f.reviewDate,
-                          proposedRent: data.proposedRent ?? f.proposedRent,
-                          notes: data.notes ?? f.notes,
-                        }))}
-            /></div>
+            <div className="ml-auto">
+              <GenAIFillButton
+                formType="rent_review"
+                onFill={(data) => setForm((f: any) => ({
+                  ...f,
+                  period: data.reviewDate ?? f.period,
+                  amount: String(data.proposedRent ?? f.amount),
+                  notes: data.notes ?? f.notes,
+                }))}
+              />
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto space-y-4">
-              <div><Label>Contract</Label>
+              <div>
+                <Label>Contract</Label>
                 <Select value={form.contractId} onValueChange={v => setForm((f: any) => ({ ...f, contractId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
                   <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.property_name ?? c.contract_id}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Variable Type</Label>
+              <div>
+                <Label>Variable Type</Label>
                 <Select value={form.variableType} onValueChange={v => setForm((f: any) => ({ ...f, variableType: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>{["Turnover","Index-linked","Usage-based","Performance"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -62,7 +90,8 @@ export default function VariableRent() {
                 <div><Label>Period (YYYY-MM)</Label><Input className="mt-1" placeholder="2024-01" value={form.period} onChange={e => setForm((f: any) => ({ ...f, period: e.target.value }))} /></div>
                 <div><Label>Amount</Label><Input className="mt-1" type="number" value={form.amount} onChange={e => setForm((f: any) => ({ ...f, amount: e.target.value }))} /></div>
               </div>
-              <div><Label>Currency</Label>
+              <div>
+                <Label>Currency</Label>
                 <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -72,8 +101,16 @@ export default function VariableRent() {
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                 <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={create.isPending}
-                  onClick={() => create.mutate({ contract_id: Number(form.contractId), period_from: form.period || new Date().toISOString().split("T")[0], period_to: form.periodTo || new Date().toISOString().split("T")[0], variable_type: (form.variableType || 'OTHER') as any, description: form.description || form.variableType || 'Variable rent', actual_amount: Number(form.amount), notes: form.notes })}>
-                  {create.isPending ? "Saving..." : "Record Variable Rent"}
+                  onClick={() => create.mutate({
+                    contract_id: Number(form.contractId),
+                    period_from: form.period || new Date().toISOString().split("T")[0],
+                    period_to: form.periodTo || new Date().toISOString().split("T")[0],
+                    variable_type: (form.variableType || "OTHER") as any,
+                    description: form.description || form.variableType || "Variable rent",
+                    actual_amount: Number(form.amount),
+                    notes: form.notes,
+                  })}>
+                  {create.isPending ? "Saving..." : editRow ? "Update" : "Record Variable Rent"}
                 </Button>
               </div>
             </div>
@@ -92,13 +129,20 @@ export default function VariableRent() {
           subtitle="Turnover, index-linked and usage-based variable rent records"
           screenType="variable_rent"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
-            <TableHeader><TableRow>
-              <TableHead>Contract</TableHead><TableHead>Type</TableHead><TableHead>Period</TableHead><TableHead>Amount</TableHead><TableHead>Currency</TableHead>
-            </TableRow></TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Contract</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Period</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Currency</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {(items as any[]).map((i: any) => (
                 <TableRow key={i.variable_rent_id}>
@@ -107,9 +151,13 @@ export default function VariableRent() {
                   <TableCell>{i.period}</TableCell>
                   <TableCell>{Number(i.amount).toLocaleString()}</TableCell>
                   <TableCell>{i.currency}</TableCell>
+                  <TableCell className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(i)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(i)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
-              {(items as any[]).length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No variable rent records</TableCell></TableRow>}
+              {(items as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No variable rent records</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

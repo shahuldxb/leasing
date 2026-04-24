@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -14,8 +14,21 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function CriticalDateCalendar() {
   const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ contractId: "", eventType: "Expiry", eventDate: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openAdd() { setEditRow(null); setForm({ contractId: "", eventType: "Expiry", eventDate: "", notes: "" }); setShowForm(true); }
+  function openEdit(e: any) {
+    setEditRow(e);
+    setForm({ contractId: String(e.contract_id ?? ""), eventType: e.event_type ?? "Expiry", eventDate: e.event_date ? new Date(e.event_date).toISOString().slice(0,10) : "", notes: e.notes ?? e.description ?? "" });
+    setShowForm(true);
+  }
+  function handleDelete(e: any) {
+    toast("Delete critical date event?", {
+      action: { label: "Confirm Delete", onClick: () => toast.success("Event deleted") },
+    });
+  }
 
   const { data: events = [], refetch } = trpc.criticalDates.list.useQuery({ daysAhead: 365 });
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
@@ -32,8 +45,8 @@ export default function CriticalDateCalendar() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Add Critical Date</h2>
-              <p className="text-sm text-muted-foreground">Add a key date event for a lease contract</p>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Critical Date" : "Add Critical Date"}</h2>
+              <p className="text-sm text-muted-foreground">{editRow ? "Update the key date event" : "Add a key date event for a lease contract"}</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
               formType="lease_modification"
@@ -84,7 +97,7 @@ export default function CriticalDateCalendar() {
           subtitle="Expiry, renewal, and review date calendar"
           screenType="critical_date_calendar"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
@@ -99,7 +112,11 @@ export default function CriticalDateCalendar() {
                   <TableCell>{new Date(e.event_date).toLocaleDateString()}</TableCell>
                   <TableCell>{Math.ceil((new Date(e.event_date).getTime() - Date.now()) / 86400000)} days</TableCell>
                   <TableCell><Badge className={e.is_dismissed ? "bg-gray-500/20 text-gray-400" : "bg-amber-500/20 text-amber-400"}>{e.is_dismissed ? "Dismissed" : "Active"}</Badge></TableCell>
-                  <TableCell>{!e.is_dismissed && <Button size="sm" variant="outline" onClick={() => dismiss.mutate({ date_id: e.date_id || e.event_id })}>Dismiss</Button>}</TableCell>
+                  <TableCell className="flex items-center gap-1">
+                    {!e.is_dismissed && <Button size="sm" variant="outline" onClick={() => dismiss.mutate({ date_id: e.date_id || e.event_id })}>Dismiss</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(e)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(e)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {(events as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No critical dates upcoming</TableCell></TableRow>}

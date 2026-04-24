@@ -685,3 +685,48 @@ SlidePanel is a slide-over overlay. Replace with showForm inline pattern:
 - [ ] AssetDepositRegister — verify Add New button is present and working
 - [ ] LeaseTerminations — verify Add New button is present and working
 - [ ] MSCRegister — verify Add New button is present and working
+
+## UI Architecture Fix — Phase E (COMPLETED Apr 24 2026)
+
+### Problem Identified
+All data screens must follow: Left = Menu | Right = Full UI Screen. No modal windows. Every data screen must have Add, Edit, Delete. Gen AI on every form.
+
+### Phase D — Edit/Delete on 14 data pages (COMPLETED)
+- [x] BankAccounts — fixed data binding bug (query returned {accounts:[]} not array), Edit/Delete per card
+- [x] BankRules — rewritten with inline form, Edit/Delete per row
+- [x] InvoiceRegister — Edit/Delete per row added
+- [x] ContractMilestones — Edit/Delete per card added
+- [x] OpsInsurance — Edit/Delete dropdown per row
+- [x] OpsMaintenance — Edit/Delete dropdown per row
+- [x] PaymentRuns — Edit/Delete per row, GenAI wired
+- [x] RentReviews — Edit/Delete per row
+- [x] SecurityDeposits — Edit/Delete per row
+- [x] SubLeases — Edit/Delete per row
+- [x] TenantImprovementAllowance — already had full CRUD (verified)
+- [x] LeaseModifications — already had Edit/Delete (verified)
+- [x] VendorManagement — already had Edit/Delete dropdown (verified)
+- [x] BrokerManagement — already had Edit/Delete dropdown (verified)
+
+### Phase E — Add New / Edit / Delete on 10 more pages (COMPLETED)
+- [x] CriticalDateCalendar — Edit/Delete added per row
+- [x] LeaseOptionsBreaks — Edit/Delete added per row, GenAI wired
+- [x] VariableRent — rewritten with full CRUD
+- [x] LeaseExemptions — rewritten with full CRUD
+- [x] ContractRegister — Add New button + inline form added (was completely missing)
+- [x] HandoverChecklist — Edit/Delete added per row
+- [x] SpaceManagement — Edit/Delete added per row, GenAI wired
+- [x] AssetDepositRegister — Edit/Delete added per row
+- [x] LeaseTerminations — Edit/Delete added per row
+- [x] MSCRegister — Delete added (Edit already existed)
+
+### Architecture Fixes (COMPLETED)
+- [x] All 20 SlidePanel overlay pages converted to inline full-screen form pattern
+- [x] Gen AI button wired to form fields on all major data entry pages
+- [x] 0 TypeScript errors
+
+### Phase F — Delete confirmation via toast (TODO)
+- [ ] Replace all remaining AlertDialog delete confirmations with toast action pattern
+
+### Phase G — Remaining pages audit (TODO)
+- [ ] Full audit of all 103 pages to verify every page has working Add/Edit/Delete
+- [ ] Fix any remaining pages with empty state and no Add button

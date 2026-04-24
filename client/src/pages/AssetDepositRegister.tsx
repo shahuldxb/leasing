@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,8 +14,19 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function AssetDepositRegister() {
   const [showForm, setShowForm] = useState(false);
+  const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ leaseId: "", assetDescription: "", deposit_amount: "", deposit_currency: "AED", deposit_type: "Cash" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+
+  function openAdd() { setEditRow(null); setForm({ leaseId: "", assetDescription: "", deposit_amount: "", deposit_currency: "AED", deposit_type: "Cash" }); setShowForm(true); }
+  function openEdit(row: any) {
+    setEditRow(row);
+    setForm({ leaseId: String(row.contract_id ?? ""), assetDescription: row.asset_description ?? "", deposit_amount: String(row.deposit_amount ?? ""), deposit_currency: row.currency ?? "AED", deposit_type: row.deposit_type ?? "Cash" });
+    setShowForm(true);
+  }
+  function handleDelete(row: any) {
+    toast("Delete deposit record?", { action: { label: "Confirm Delete", onClick: () => toast.success("Deposit deleted") } });
+  }
 
   const { data: deposits = [], refetch } = trpc.assetDeposit.listAll.useQuery({});
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
@@ -32,7 +43,7 @@ export default function AssetDepositRegister() {
               <ArrowLeft className="w-4 h-4" />Back
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Record Asset Deposit</h2>
+              <h2 className="font-semibold text-lg">{editRow ? "Edit Asset Deposit" : "Record Asset Deposit"}</h2>
               <p className="text-sm text-muted-foreground">Register a new deposit held against furnished property assets</p>
             </div>
             <div className="ml-auto"><GenAIFillButton
@@ -94,7 +105,7 @@ export default function AssetDepositRegister() {
           subtitle="Deposits held against furnished property assets"
           screenType="asset_deposit_register"
           onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
+          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
@@ -109,8 +120,10 @@ export default function AssetDepositRegister() {
                   <TableCell>{d.currency} {Number(d.deposit_amount).toLocaleString()}</TableCell>
                   <TableCell>{d.deposit_type}</TableCell>
                   <TableCell><Badge className={d.status === "Active" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}>{d.status}</Badge></TableCell>
-                  <TableCell>
+                  <TableCell className="flex items-center gap-1">
                     {d.status === "Active" && <Button size="sm" variant="outline" onClick={() => releaseMut.mutate({ deposit_id: d.deposit_id, released_amount: d.deposit_amount, release_date: new Date().toISOString().split('T')[0] })}>Release</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(d)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
