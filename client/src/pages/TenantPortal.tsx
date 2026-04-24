@@ -48,6 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function TenantPortal() {
   const [tab, setTab] = useState("overview");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requests, setRequests] = useState(REQUESTS);
   const [form, setForm] = useState({ type: "Maintenance", subject: "", description: "", lease: "", priority: "MEDIUM" });
@@ -63,7 +64,10 @@ export default function TenantPortal() {
   screenId="VFLTENPTL0001P001"
   title="Tenant Portal"
   subtitle="Self-service portal for tenants and lessees"
-/>
+
+          screenType="tenant_portal"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

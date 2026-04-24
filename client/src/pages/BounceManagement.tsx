@@ -534,6 +534,7 @@ function PenaltyConfigDialog({ open, onClose, config }: { open: boolean; onClose
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function BounceManagement() {
   const [activeTab, setActiveTab] = useState('history');
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [recordBounceOpen, setRecordBounceOpen] = useState(false);
   const [replacementOpen, setReplacementOpen] = useState(false);
   const [penaltyConfigOpen, setPenaltyConfigOpen] = useState(false);
@@ -582,7 +583,10 @@ export default function BounceManagement() {
   screenId="VFLBNCMGR0001P001"
   title="Bounce Management"
   subtitle="Returned cheque and bounce tracking"
-/>
+
+          screenType="bounce_management"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

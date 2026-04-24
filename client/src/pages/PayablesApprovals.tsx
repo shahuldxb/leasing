@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function PayablesApprovals() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data: invoices = [], refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 100, status: "Pending" });
   const rows: any[] = Array.isArray(invoices) ? invoices : (invoices as any)?.invoices ?? [];
 
@@ -22,7 +24,10 @@ export default function PayablesApprovals() {
   screenId="VFLPAYAPP0001P001"
   title="Payables Approvals"
   subtitle="Invoice approval queue and maker/checker"
-/>
+
+          screenType="payables_approvals"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

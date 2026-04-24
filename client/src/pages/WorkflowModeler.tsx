@@ -409,6 +409,7 @@ function PropertiesPanel({ element }: { element: ElementInfo | null }) {
 export default function WorkflowModeler() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [selectedProcess, setSelectedProcess] = useState("lease_approval");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const [propsPanelOpen, setPropsPanelOpen] = useState(true);

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,6 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function WorkflowMonitor() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data } = trpc.workflow.getQueue.useQuery({ page: 1, pageSize: 100 });
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.tasks ?? [];
 
@@ -22,7 +24,10 @@ export default function WorkflowMonitor() {
   screenId="VFLWFLMON0001P001"
   title="Workflow Monitor"
   subtitle="Active workflow instances and status"
-/>
+
+          screenType="workflow_monitor"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

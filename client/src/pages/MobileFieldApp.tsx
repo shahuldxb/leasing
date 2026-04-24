@@ -33,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function MobileFieldApp() {
   const [tab, setTab] = useState("inspections");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
 
   const completed = INSPECTIONS.filter(i => i.status === "COMPLETED").length;
   const pending = INSPECTIONS.filter(i => i.status === "PENDING").length;
@@ -46,7 +47,10 @@ export default function MobileFieldApp() {
   screenId="VFLMOBILE0001P001"
   title="Mobile Field App"
   subtitle="Mobile inspection and offline sync"
-/>
+
+          screenType="mobile_field_app"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

@@ -17,6 +17,7 @@ const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { m
 
 export default function MaturityAnalysis() {
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [leaseType, setLeaseType] = useState("ALL");
 
   const { data, isLoading, refetch } = trpc.accounting.reporting.maturityAnalysis.useQuery();
@@ -47,7 +48,10 @@ export default function MaturityAnalysis() {
   screenId="VFLMATALY0001P001"
   title="Maturity Analysis"
   subtitle="Lease maturity profile and concentration analysis"
-/>
+
+          screenType="maturity_analysis"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Summary KPIs */}
         <div className="grid grid-cols-4 gap-4">

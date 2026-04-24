@@ -14,6 +14,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function PaymentRuns() {
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [payDate, setPayDate] = useState("");
   const [bankFormat, setBankFormat] = useState("SWIFT");
 
@@ -29,7 +30,10 @@ export default function PaymentRuns() {
   screenId="VFLPAYRUN0001P001"
   title="Payment Runs"
   subtitle="Payment run creation and bank file generation"
-/>
+
+          screenType="payment_runs"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-3 gap-4">
           {[

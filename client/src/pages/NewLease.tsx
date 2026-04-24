@@ -26,6 +26,7 @@ const FREQ_OPTIONS = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
 export default function NewLease() {
   const [step, setStep] = useState(1);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [, setLocation] = useLocation();
 
   // Step 1 — Lessor
@@ -120,7 +121,10 @@ export default function NewLease() {
   screenId="VFLNEWLEA0001P001"
   title="New Lease Origination"
   subtitle="IFRS 16 compliant lease creation wizard"
-/>
+
+          screenType="new_lease"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Step Indicator */}
         <div className="flex items-center mb-8">

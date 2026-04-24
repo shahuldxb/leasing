@@ -57,6 +57,7 @@ export default function FurnitureCollectionDetail() {
   const collectionId = match ? parseInt(params!.id) : 0;
 
   const [showPanel, setShowPanel] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [editItemId, setEditItemId] = useState<number | null>(null);
   const [form, setForm] = useState({ ...EMPTY_ITEM });
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(CATEGORIES));
@@ -183,6 +184,9 @@ export default function FurnitureCollectionDetail() {
           screenId="VFLPROPFUR0002P001"
           title={collection?.collection_name || "Furniture Collection"}
           subtitle={collection?.property_name || "Property furniture and appliance inventory"}
+        
+          screenType="furniture_collection_detail"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
         />
 
         {/* Back + actions */}

@@ -42,6 +42,7 @@ PERMITTED USE: The premises shall be used solely for general office purposes.`;
 
 export default function AIAbstraction() {
   const [leaseText, setLeaseText] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [result, setResult] = useState<any>(null);
 
   const abstract = trpc.aiAbstraction.abstract.useMutation({
@@ -65,7 +66,10 @@ export default function AIAbstraction() {
   screenId="VFLAIABT0001P001"
   title="AI Lease Abstraction"
   subtitle="GPT-4o OCR extraction from lease documents"
-/>
+
+          screenType="ai_abstraction"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

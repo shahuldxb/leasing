@@ -27,6 +27,7 @@ const EVENT_TYPES = ["EXPIRY", "RENEWAL_OPTION", "BREAK_OPTION", "RENT_REVIEW", 
 
 export default function CriticalDateCalendar() {
   const [showForm, setShowForm] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [filter, setFilter] = useState({ urgency: "", type: "", search: "" });
   const [form, setForm] = useState({ contract_id: 0, event_type: "EXPIRY", event_date: "", notice_days_required: 30, description: "", action_required: "" });
 
@@ -59,7 +60,10 @@ export default function CriticalDateCalendar() {
   screenId="VFLCRTCAL0001P001"
   title="Critical Date Calendar"
   subtitle="Expiry, renewal, and review date calendar"
-/>
+
+          screenType="critical_date_calendar"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Urgency summary */}
         <div className="grid grid-cols-4 gap-4">

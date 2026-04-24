@@ -10,6 +10,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function OpsDocuments() {
   const [search, setSearch] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   // Documents are stored per lease — use lease register as data source
   const { data } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200, search: search || undefined });
   const rows: any[] = Array.isArray(data) ? data : (data as any)?.documents ?? [];
@@ -37,7 +38,10 @@ export default function OpsDocuments() {
   screenId="VFLOPSDOC0001P001"
   title="Document Expiry Tracker"
   subtitle="Lease document expiry and renewal tracking"
-/>
+
+          screenType="ops_documents"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {expiringSoon.length > 0 && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">

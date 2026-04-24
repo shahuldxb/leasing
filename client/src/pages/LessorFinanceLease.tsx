@@ -36,6 +36,7 @@ const GL_ENTRIES = [
 
 export default function LessorFinanceLease() {
   const [tab, setTab] = useState("receivables");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [selectedLease, setSelectedLease] = useState<any>(SAMPLE_RECEIVABLES[0]);
   const [showNewDialog, setShowNewDialog] = useState(false);
 
@@ -51,7 +52,10 @@ export default function LessorFinanceLease() {
   screenId="VFLLESFIN0001P001"
   title="Lessor Finance Lease"
   subtitle="Lessor-side finance lease receivable accounting"
-/>
+
+          screenType="lessor_finance_lease"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

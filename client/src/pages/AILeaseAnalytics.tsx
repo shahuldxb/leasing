@@ -53,6 +53,7 @@ const CANNED_RESPONSES: Record<string, string> = {
 
 export default function AILeaseAnalytics() {
   const [tab, setTab] = useState("chat");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Hello! I'm your VodaLease AI assistant. I can answer questions about your lease portfolio, run analyses, identify risks, and generate insights. What would you like to know?", timestamp: new Date().toLocaleTimeString() },
   ]);
@@ -90,7 +91,10 @@ export default function AILeaseAnalytics() {
   screenId="VFLAIALY0001P001"
   title="AI Lease Analytics"
   subtitle="Natural language insights and predictive analytics"
-/>
+
+          screenType="ai_lease_analytics"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="bg-muted/30">

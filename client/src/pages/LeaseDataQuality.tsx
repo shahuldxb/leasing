@@ -56,6 +56,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 export default function LeaseDataQuality() {
   const [tab, setTab] = useState("scores");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [rules, setRules] = useState(VALIDATION_RULES);
   const [showRuleDialog, setShowRuleDialog] = useState(false);
   const [ruleForm, setRuleForm] = useState({ name: "", field: "", rule: "", severity: "WARNING" });
@@ -72,7 +73,10 @@ export default function LeaseDataQuality() {
   screenId="VFLLEADQ0001P001"
   title="Lease Data Quality"
   subtitle="Abstraction quality scoring and duplicate detection"
-/>
+
+          screenType="lease_data_quality"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

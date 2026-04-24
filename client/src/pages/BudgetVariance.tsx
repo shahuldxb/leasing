@@ -20,6 +20,7 @@ const pct = (n: any) => n != null ? `${Number(n).toFixed(1)}%` : "—";
 export default function BudgetVariance() {
   const year = new Date().getFullYear();
   const [bvOpen, setBvOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [ccOpen, setCcOpen] = useState(false);
   const [bvForm, setBvForm] = useState({ contract_id: 0, budget_year: year, budget_month: new Date().getMonth() + 1, budgeted_amount: 0, actual_amount: 0, cost_centre: "", notes: "" });
   const [ccForm, setCcForm] = useState({ contract_id: 0, cost_centre_code: "", cost_centre_name: "", allocation_pct: 100, effective_from: "", effective_to: "" });
@@ -44,7 +45,10 @@ export default function BudgetVariance() {
   screenId="VFLBDGVAR0001P001"
   title="Budget Variance Analysis"
   subtitle="Actual vs budget variance reporting"
-/>
+
+          screenType="budget_variance"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

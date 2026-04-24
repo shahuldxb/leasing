@@ -31,6 +31,7 @@ const fmt = (v: any) => {
 
 export default function ReportBuilder() {
   const [reportType, setReportType] = useState("LEASE_REGISTER");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [fromDate, setFromDate] = useState("2025-01-01");
   const [toDate, setToDate] = useState("2025-12-31");
   const [result, setResult] = useState<{ columns: string[]; rows: any[] } | null>(null);
@@ -66,7 +67,10 @@ export default function ReportBuilder() {
   screenId="VFLRPTBLD0001P001"
   title="Report Builder"
   subtitle="Custom report builder with drag-and-drop fields"
-/>
+
+          screenType="report_builder"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

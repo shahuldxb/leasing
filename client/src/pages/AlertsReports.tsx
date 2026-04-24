@@ -20,6 +20,7 @@ const STATUS_COLORS: Record<string, string> = { ACTIVE: "bg-emerald-500", PAUSED
 
 export default function AlertsReports() {
   const [alertOpen, setAlertOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [alertForm, setAlertForm] = useState({ event_type: "EXPIRY", days_before: 30, recipient_roles: "", is_active: true, email_template: "" });
   const [reportForm, setReportForm] = useState({ report_name: "", report_type: "LEASE_REGISTER", cron_expression: "0 0 8 1 * *", recipients: "", output_format: "EXCEL" as "EXCEL" | "CSV" | "PDF" });
@@ -37,7 +38,10 @@ export default function AlertsReports() {
   screenId="VFLALRPT0001P001"
   title="Alerts & Reports"
   subtitle="Scheduled reports and alert configuration"
-/>
+
+          screenType="alerts_reports"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ const MOCK_ASSETS = [
 ];
 
 export default function MSCContractViewer() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [, navigate] = useLocation();
   const c = MOCK_CONTRACT;
 
@@ -66,6 +68,9 @@ export default function MSCContractViewer() {
           screenId="VFLMSCVWR0001P001"
           title="Contract Viewer"
           subtitle="Bilingual EN/AR contract document viewer and print"
+        
+          screenType="msc_contract_viewer"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
         />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

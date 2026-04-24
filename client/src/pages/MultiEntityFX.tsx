@@ -18,6 +18,7 @@ const fmt = (n: any, ccy = "AED") => n != null ? `${ccy} ${Number(n).toLocaleStr
 
 export default function MultiEntityFX() {
   const [entityOpen, setEntityOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [fxOpen, setFxOpen] = useState(false);
   const [entityForm, setEntityForm] = useState({ entity_code: "", entity_name: "", country: "AE", currency: "AED", functional_currency: "AED", is_consolidation_entity: false, parent_entity_id: undefined as number | undefined });
   const [fxForm, setFxForm] = useState({ contract_id: 0, from_currency: "USD", to_currency: "AED", exchange_rate: 0, translation_date: "", rou_asset_fc: 0, lease_liability_fc: 0 });
@@ -38,7 +39,10 @@ export default function MultiEntityFX() {
   screenId="VFLMULTFX0001P001"
   title="Multi-Entity & FX"
   subtitle="Multi-entity consolidation and FX accounting"
-/>
+
+          screenType="multi_entity_fx"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

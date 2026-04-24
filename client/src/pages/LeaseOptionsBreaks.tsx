@@ -19,6 +19,7 @@ const daysUntil = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) 
 
 export default function LeaseOptionsBreaks() {
   const [optionOpen, setOptionOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [breakOpen, setBreakOpen] = useState(false);
   const [optForm, setOptForm] = useState({ contract_id: 0, option_type: "RENEWAL" as const, exercise_deadline: "", notice_period_days: 90, new_term_months: 0, new_rent: 0, purchase_price: 0, reasonably_certain: false, notes: "" });
   const [brkForm, setBrkForm] = useState({ contract_id: 0, break_date: "", notice_deadline: "", penalty_amount: 0, conditions: "", status: "ACTIVE" as const });
@@ -40,7 +41,10 @@ export default function LeaseOptionsBreaks() {
   screenId="VFLLEAOPT0001P001"
   title="Lease Options & Breaks"
   subtitle="Extension options and break clause management"
-/>
+
+          screenType="lease_options_breaks"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

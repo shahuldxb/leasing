@@ -19,6 +19,7 @@ const pct = (used: any, total: any) => total ? `${((Number(used) / Number(total)
 
 export default function SpaceManagement() {
   const [spaceOpen, setSpaceOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [projOpen, setProjOpen] = useState(false);
   const [spaceForm, setSpaceForm] = useState<{ contract_id: number; building_name: string; floor_number: string; total_area_sqm: number; occupied_area_sqm: number; capacity_desks: number; occupied_desks: number; space_type: "OFFICE" | "RETAIL" | "WAREHOUSE" | "DATA_CENTRE" | "PARKING" | "OTHER" }>({ contract_id: 0, building_name: "", floor_number: "", total_area_sqm: 0, occupied_area_sqm: 0, capacity_desks: 0, occupied_desks: 0, space_type: "OFFICE" });
   const [projForm, setProjForm] = useState<{ contract_id: number; project_name: string; project_type: "FIT_OUT" | "REFURBISHMENT" | "EXPANSION" | "MAINTENANCE" | "OTHER"; budget_amount: number; committed_amount: number; actual_spend: number; start_date: string; expected_completion: string; status: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD" | "CANCELLED"; project_manager: string; notes: string }>({ contract_id: 0, project_name: "", project_type: "FIT_OUT", budget_amount: 0, committed_amount: 0, actual_spend: 0, start_date: "", expected_completion: "", status: "PLANNED", project_manager: "", notes: "" });
@@ -44,7 +45,10 @@ export default function SpaceManagement() {
   screenId="VFLSPCMGR0001P001"
   title="Space Management"
   subtitle="Floor plan and space utilisation management"
-/>
+
+          screenType="space_management"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

@@ -50,6 +50,7 @@ const MOCK_PORTFOLIO = [
 
 export default function MISAnalytics() {
   const [nlQuery, setNlQuery]   = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [queryResult, setQueryResult] = useState<{ sql: string; explanation: string; data: any[] } | null>(null);
   const [queryLoading, setQueryLoading] = useState(false);
 
@@ -85,7 +86,10 @@ export default function MISAnalytics() {
   screenId="VFLMISALY0001P001"
   title="Anomaly Detection"
   subtitle="AI-powered anomaly detection and portfolio intelligence"
-/>
+
+          screenType="mis_analytics"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
           </div>
         </div>
 

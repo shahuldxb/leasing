@@ -15,6 +15,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("users");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [thresholdForm, setThresholdForm] = useState({ module: "", minAmount: "", maxAmount: "", approverRole: "" });
   const [thresholdOpen, setThresholdOpen] = useState(false);
 
@@ -34,7 +35,10 @@ export default function AdminPanel() {
   screenId="VFLADMIN0001P001"
   title="User Management & RBAC"
   subtitle="User accounts, roles, and permission management"
-/>
+
+          screenType="admin_panel"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

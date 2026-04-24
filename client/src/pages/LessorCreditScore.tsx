@@ -17,6 +17,7 @@ const RATING_COLORS: Record<string, string> = { AAA: "bg-emerald-600", AA: "bg-e
 
 export default function LessorCreditScore() {
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ lessor_id: 0, payment_history_score: 80, financial_stability_score: 80, dispute_history_score: 80, compliance_score: 80, notes: "" });
 
   const { data: scores = [], refetch } = trpc.lessorCredit.list.useQuery();
@@ -36,7 +37,10 @@ export default function LessorCreditScore() {
   screenId="VFLLESCRD0001P001"
   title="Lessor Credit Score"
   subtitle="Lessor creditworthiness and risk rating"
-/>
+
+          screenType="lessor_credit_score"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           {[

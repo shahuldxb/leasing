@@ -17,6 +17,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function WorkflowQueue() {
   const [module, setModule]   = useState("all");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [outcome, setOutcome] = useState("Pending");
   const [page, setPage]       = useState(1);
   const [selected, setSelected] = useState<any>(null);
@@ -69,7 +70,10 @@ export default function WorkflowQueue() {
   screenId="VFLWFLQUE0001P001"
   title="Maker/Checker Queue"
   subtitle="Pending approvals and maker/checker workflow"
-/>
+
+          screenType="workflow_queue"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>
         </div>

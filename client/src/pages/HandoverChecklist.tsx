@@ -43,6 +43,7 @@ const MOCK_ITEMS = [
 
 export default function HandoverChecklist() {
   const [search, setSearch] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [filterType, setFilterType] = useState("ALL");
   const [showCreate, setShowCreate] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<typeof MOCK_CHECKLISTS[0] | null>(null);
@@ -86,7 +87,10 @@ export default function HandoverChecklist() {
   screenId="VFLHNDOVR0001P001"
   title="Handover Checklist"
   subtitle="Property handover and return inspection checklist"
-/>
+
+          screenType="handover_checklist"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

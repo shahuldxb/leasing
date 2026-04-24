@@ -24,6 +24,7 @@ const CRITERIA = [
 
 export default function LeaseClassification() {
   const [showForm, setShowForm] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [standard, setStandard] = useState<"IFRS16" | "ASC842">("IFRS16");
   const [criteria, setCriteria] = useState<Record<string, boolean>>({
@@ -70,7 +71,10 @@ export default function LeaseClassification() {
   screenId="VFLLEACLS0001P001"
   title="Lease Classification"
   subtitle="Finance vs operating lease classification engine"
-/>
+
+          screenType="lease_classification"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

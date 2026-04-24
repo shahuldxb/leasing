@@ -18,6 +18,7 @@ const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { m
 
 export default function LeaseExemptions() {
   const [showForm, setShowForm] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<{ contract_id: number; exemption_type: "SHORT_TERM" | "LOW_VALUE"; asset_fair_value: number; annual_expense: number; notes: string }>({ contract_id: 0, exemption_type: "SHORT_TERM", asset_fair_value: 0, annual_expense: 0, notes: "" });
 
   const { data: exemptions = [], refetch } = trpc.accounting.exemption.list.useQuery({});
@@ -43,7 +44,10 @@ export default function LeaseExemptions() {
   screenId="VFLLEAEXM0001P001"
   title="Lease Exemptions"
   subtitle="Short-term and low-value lease exemption register"
-/>
+
+          screenType="lease_exemptions"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Info */}
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">

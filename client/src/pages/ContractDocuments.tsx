@@ -15,6 +15,7 @@ const MOCK_DOCS = [
 
 export default function ContractDocuments() {
   const [search, setSearch] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const filtered = MOCK_DOCS.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.contract.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -24,7 +25,10 @@ export default function ContractDocuments() {
   screenId="VFLCNTDOC0001P001"
   title="Contract Documents"
   subtitle="Document vault for lease contracts"
-/>
+
+          screenType="contract_documents"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

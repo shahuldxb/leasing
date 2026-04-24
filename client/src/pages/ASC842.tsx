@@ -13,6 +13,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 const fmt = (n: any) => n != null ? `USD ${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—";
 
 export default function ASC842() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data: leases = [], isLoading, refetch } = trpc.asc842.list.useQuery();
   const sync = trpc.asc842.syncFromIFRS16.useMutation({
     onSuccess: (r: any) => { refetch(); toast.success(`Synced ${r.synced} leases to ASC 842`); },
@@ -41,7 +42,10 @@ export default function ASC842() {
   screenId="VFLASC8420001P001"
   title="ASC 842 Compliance"
   subtitle="US GAAP lease accounting under ASC 842"
-/>
+
+          screenType="asc842"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           {[

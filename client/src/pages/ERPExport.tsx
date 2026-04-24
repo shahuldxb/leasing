@@ -18,6 +18,7 @@ const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { m
 
 export default function ERPExport() {
   const [erpSystem, setErpSystem] = useState("SAP S/4HANA");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [fromDate, setFromDate] = useState("2025-01-01");
   const [toDate, setToDate] = useState("2025-03-31");
   const [exportType, setExportType] = useState("GL_JOURNALS");
@@ -50,7 +51,10 @@ export default function ERPExport() {
   screenId="VFLERPEXP0001P001"
   title="ERP Export"
   subtitle="GL journal export to SAP, Oracle, and other ERP systems"
-/>
+
+          screenType="erp_export"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

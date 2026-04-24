@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
@@ -5,6 +6,7 @@ import { DollarSign } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function MISCashflow() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const { data: forecast } = trpc.mis.getCashFlowForecast.useQuery({ months: 12 });
   const rows: any[] = Array.isArray(forecast) ? forecast : (forecast as any)?.forecast ?? [];
 
@@ -23,7 +25,10 @@ export default function MISCashflow() {
   screenId="VFLMISCSH0001P001"
   title="Cash Flow Forecast"
   subtitle="Portfolio cash flow projection and analysis"
-/>
+
+          screenType="mis_cashflow"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

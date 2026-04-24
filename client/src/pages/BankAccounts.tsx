@@ -13,6 +13,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function BankAccounts() {
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ bankName: "", accountName: "", accountNumber: "", currency: "USD", branchCode: "", swiftCode: "", accountType: "Current" });
 
   const { data: accounts = [], refetch } = trpc.bankRecon.listAccounts.useQuery({});
@@ -30,7 +31,10 @@ export default function BankAccounts() {
   screenId="VFLBNKACC0001P001"
   title="Bank Accounts"
   subtitle="Registered bank accounts for payment processing"
-/>
+
+          screenType="bank_accounts"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rows.map((acc: any) => (

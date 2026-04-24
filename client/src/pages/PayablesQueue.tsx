@@ -32,6 +32,7 @@ const fmt = (n: number) =>
 
 export default function PayablesQueue() {
   const [search, setSearch]   = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [status, setStatus]   = useState("all");
   const [page, setPage]       = useState(1);
   const PAGE_SIZE = 50;
@@ -59,7 +60,10 @@ export default function PayablesQueue() {
   screenId="VFLPAYQUE0001P001"
   title="Payables Queue"
   subtitle="Outstanding payables and payment scheduling"
-/>
+
+          screenType="payables_queue"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>

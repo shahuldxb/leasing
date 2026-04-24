@@ -10,6 +10,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function BankImport() {
   const [accountId, setAccountId] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [dragging, setDragging] = useState(false);
   const [imported, setImported] = useState(false);
 
@@ -39,7 +40,10 @@ export default function BankImport() {
   screenId="VFLBNKIMP0001P001"
   title="Bank Statement Import"
   subtitle="Upload and parse bank statement files"
-/>
+
+          screenType="bank_import"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

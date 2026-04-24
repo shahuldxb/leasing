@@ -40,6 +40,7 @@ const SENT_LOG = [
 
 export default function NotificationSettings() {
   const [tab, setTab] = useState("rules");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [rules, setRules] = useState(SAMPLE_RULES);
   const [form, setForm] = useState({
@@ -87,7 +88,10 @@ export default function NotificationSettings() {
   screenId="VFLNOTIFC0001P001"
   title="Notification Settings"
   subtitle="Email alert configuration for critical lease dates"
-/>
+
+          screenType="notification_settings"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

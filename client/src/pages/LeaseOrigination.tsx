@@ -26,6 +26,7 @@ const WORKFLOW = ["DRAFT","SUBMITTED","UNDER_REVIEW","APPROVED","CONTRACTED"];
 
 export default function LeaseOrigination() {
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ lessor_name: "", asset_description: "", asset_type: "OFFICE", proposed_start: "", proposed_end: "", estimated_annual_rent: 0, currency: "AED", business_justification: "", priority: "MEDIUM" as const });
 
   const { data: items = [], refetch } = trpc.leaseOrigination.list.useQuery();
@@ -46,7 +47,10 @@ export default function LeaseOrigination() {
   screenId="VFLLEAORG0001P001"
   title="Lease Origination"
   subtitle="Legacy lease origination workflow"
-/>
+
+          screenType="lease_origination"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-5 gap-3">
           {WORKFLOW.map(s => {

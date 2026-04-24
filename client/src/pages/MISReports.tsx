@@ -23,6 +23,7 @@ const REPORT_TEMPLATES = [
 
 export default function MISReports() {
   const [selectedReport, setSelectedReport] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10));
   const [toDate, setToDate] = useState(new Date().toISOString().slice(0,10));
   const [format, setFormat] = useState("PDF");
@@ -39,7 +40,10 @@ export default function MISReports() {
   screenId="VFLMISRPT0001P001"
   title="MIS Reports"
   subtitle="Management information system reports and board pack"
-/>
+
+          screenType="mis_reports"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

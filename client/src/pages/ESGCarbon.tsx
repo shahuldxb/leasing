@@ -20,6 +20,7 @@ const RATING_COLORS: Record<string, string> = { Platinum: "bg-violet-500", Gold:
 export default function ESGCarbon() {
   const year = new Date().getFullYear();
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ contract_id: 0, reporting_year: year, reporting_month: new Date().getMonth() + 1, scope1_tonnes: 0, scope2_tonnes: 0, scope3_tonnes: 0, energy_kwh: 0, water_m3: 0, waste_tonnes: 0, green_rating: "None", notes: "" });
 
   const { data: records = [], refetch } = trpc.esgCarbon.list.useQuery();
@@ -40,7 +41,10 @@ export default function ESGCarbon() {
   screenId="VFLESGCRB0001P001"
   title="ESG Carbon Tracker"
   subtitle="Carbon footprint and sustainability metrics"
-/>
+
+          screenType="esg_carbon"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           {[

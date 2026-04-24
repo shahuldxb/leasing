@@ -28,6 +28,7 @@ const fmt = (n: number | null | undefined) => n != null ? `AED ${Number(n).toLoc
 
 export default function RemeasurementEngine() {
   const [filterStatus, setFilterStatus] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ contract_id: 0, event_type: "RATE_REVISION", event_date: new Date().toISOString().slice(0, 10), trigger_description: "", new_ibr: 5.5, new_remaining_term: 36 });
   const [calcResult, setCalcResult] = useState<any>(null);
@@ -60,7 +61,10 @@ export default function RemeasurementEngine() {
   screenId="VFLREMEAS0001P001"
   title="Remeasurement Engine"
   subtitle="IFRS 16 lease remeasurement calculator"
-/>
+
+          screenType="remeasurement_engine"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Summary */}
         <div className="grid grid-cols-3 gap-4">

@@ -17,6 +17,7 @@ const fmtK = (n: number | null | undefined) => n != null ? `AED ${(Number(n) / 1
 
 export default function IFRS16Disclosure() {
   const [periodEnd, setPeriodEnd] = useState("2025-03-31");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [submitted, setSubmitted] = useState("2025-03-31");
 
   const { data, isLoading, refetch } = trpc.accounting.reporting.disclosureNote.useQuery({ periodEnd: submitted });
@@ -37,7 +38,10 @@ export default function IFRS16Disclosure() {
   screenId="VFLIFRDSC0001P001"
   title="IFRS 16 Disclosure"
   subtitle="Financial statement disclosure notes"
-/>
+
+          screenType="ifrs16_disclosure"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Period selector */}
         <Card>

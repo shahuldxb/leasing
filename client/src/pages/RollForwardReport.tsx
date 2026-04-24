@@ -16,6 +16,7 @@ const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { m
 
 export default function RollForwardReport() {
   const [fromDate, setFromDate] = useState("2025-01-01");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [toDate, setToDate] = useState("2025-03-31");
   const [submitted, setSubmitted] = useState({ from: "2025-01-01", to: "2025-03-31" });
 
@@ -41,7 +42,10 @@ export default function RollForwardReport() {
   screenId="VFLRLFWD0001P001"
   title="Roll Forward Report"
   subtitle="ROU asset and lease liability roll-forward"
-/>
+
+          screenType="roll_forward_report"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* Period selector */}
         <Card>

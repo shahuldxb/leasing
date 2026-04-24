@@ -26,6 +26,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function VariableRent() {
   const [showForm, setShowForm] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ contract_id: 0, variable_type: "TURNOVER_BASED" as const, description: "", base_amount: 0, variable_rate_pct: 0, threshold_amount: 0, period_from: "", period_to: "", actual_amount: 0, notes: "" });
 
   const { data: items = [], refetch } = trpc.accounting.variableRent.list.useQuery({});
@@ -46,7 +47,10 @@ export default function VariableRent() {
   screenId="VFLVARNT0001P001"
   title="Variable Rent"
   subtitle="Variable and contingent rent tracking"
-/>
+
+          screenType="variable_rent"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-3 gap-4">
           <Card><CardContent className="pt-4"><p className="text-sm text-muted-foreground">Total Variable Rent (YTD)</p><p className="text-3xl font-bold text-amber-600">{fmt(totalActual)}</p></CardContent></Card>

@@ -21,6 +21,7 @@ const TEMPLATES = [
 
 export default function BulkOperations() {
   const [dragOver, setDragOver] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [importType, setImportType] = useState("LEASE_REGISTER");
   const [parseResult, setParseResult] = useState<any>(null);
@@ -72,7 +73,10 @@ export default function BulkOperations() {
   screenId="VFLBLKOPS0001P001"
   title="Bulk Operations"
   subtitle="Mass update and bulk action processing"
-/>
+
+          screenType="bulk_operations"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

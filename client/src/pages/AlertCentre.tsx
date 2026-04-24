@@ -39,6 +39,7 @@ const TYPE_ICONS: Record<AlertType, React.ReactNode> = {
 // Derive alerts from live data
 export default function AlertCentre() {
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
   const { data: kpis } = trpc.mis.getDashboardKPIs.useQuery();
@@ -127,7 +128,10 @@ export default function AlertCentre() {
   screenId="VFLALERT0001P001"
   title="Alert Centre"
   subtitle="Critical lease events and notification centre"
-/>
+
+          screenType="alert_centre"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           {["Critical","High","Medium","Low"].map(s => (

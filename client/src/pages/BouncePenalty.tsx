@@ -16,6 +16,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function BouncePenalty() {
   const [cfgOpen, setCfgOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [bounceOpen, setBounceOpen] = useState(false);
   const [editCfg, setEditCfg] = useState<any>(null);
   const [cfgForm, setCfgForm] = useState({ penalty_code: "", penalty_name: "", pct_rate: "", flat_amount: "", dr_gl_account: "", cr_gl_account: "", is_active: true });
@@ -66,7 +67,10 @@ export default function BouncePenalty() {
   screenId="VFLBNCPEN0001P001"
   title="Bounce Penalty Register"
   subtitle="Penalty calculation and recovery for bounced cheques"
-/>
+
+          screenType="bounce_penalty"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-4">

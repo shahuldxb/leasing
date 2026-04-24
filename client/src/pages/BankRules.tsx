@@ -14,6 +14,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function BankRules() {
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ ruleName: "", matchField: "description", matchOperator: "contains", matchValue: "", glAccount: "", priority: "1" });
 
   const { data: rulesData, refetch } = trpc.bankRecon.getRules.useQuery();
@@ -31,7 +32,10 @@ export default function BankRules() {
   screenId="VFLBNKRUL0001P001"
   title="Bank Matching Rules"
   subtitle="Configurable auto-matching rules for bank reconciliation"
-/>
+
+          screenType="bank_rules"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>

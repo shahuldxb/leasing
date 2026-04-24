@@ -15,6 +15,7 @@ const MILESTONE_TYPES = ["Rent Review Date","Renewal Decision Deadline","Break C
 
 export default function ContractMilestones() {
   const [open, setOpen] = useState(false);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState({ leaseId: "", type: "", dueDate: "", notes: "" });
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200 });
 
@@ -34,7 +35,10 @@ export default function ContractMilestones() {
   screenId="VFLCNTMLS0001P001"
   title="Contract Milestones"
   subtitle="Key dates and milestone tracking per contract"
-/>
+
+          screenType="contract_milestones"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
 
         <div className="grid gap-3">
           {upcoming.map(m => (

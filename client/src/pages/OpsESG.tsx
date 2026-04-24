@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Leaf } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -18,13 +19,17 @@ const ESG_METRICS = [
 ];
 
 export default function OpsESG() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   return (
     <DashboardLayout>
       <ScreenHeader
   screenId="VFLOPSESG0001P001"
   title="ESG Dashboard"
   subtitle="Environmental, social, and governance metrics"
-/>
+
+          screenType="ops_esg"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

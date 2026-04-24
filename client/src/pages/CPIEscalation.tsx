@@ -17,6 +17,7 @@ const fmt = (n: number | null | undefined) => n != null ? `AED ${Number(n).toLoc
 
 export default function CPIEscalation() {
   const [applyDialog, setApplyDialog] = useState<any>(null);
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [newRent, setNewRent] = useState("");
 
   const { data: escalations = [], refetch } = trpc.accounting.escalation.escalations.useQuery({});
@@ -40,7 +41,10 @@ export default function CPIEscalation() {
   screenId="VFLCPIESC0001P001"
   title="CPI Escalation Engine"
   subtitle="Consumer price index-linked rent escalation"
-/>
+
+          screenType="cpi_escalation"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }

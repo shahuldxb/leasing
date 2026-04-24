@@ -19,6 +19,7 @@ const SAMPLE_QUERIES = [
 
 export default function MISAIQuery() {
   const [query, setQuery] = useState("");
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
   const [result, setResult] = useState<any>(null);
 
   const queryMutation = trpc.genai.naturalLanguageQuery.useMutation({
@@ -41,7 +42,10 @@ export default function MISAIQuery() {
   screenId="VFLMISAIQ0001P001"
   title="AI Query"
   subtitle="Natural language text-to-SQL analytics"
-/>
+
+          screenType="mis_ai_query"
+          onAIData={(rows) => setAiRecord(rows[0] ?? null)}
+        />
     </DashboardLayout>
   );
 }
