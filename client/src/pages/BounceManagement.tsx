@@ -17,7 +17,9 @@ export default function BounceManagement() {
   const [form, setForm] = useState<any>({ chequeId: "", bounceDate: "", bounceReason: "Insufficient Funds", waiverReason: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  const { data: bounces = [], refetch } = trpc.bounceRecon.getPenaltyConfigs.useQuery({});
+  // FIX: use getBounceHistory (returns {bounces:[...]}) not getPenaltyConfigs (returns {configs:[...]})
+  const { data: bouncesData, refetch } = trpc.bounceRecon.getBounceHistory.useQuery({});
+  const bounces: any[] = (bouncesData as any)?.bounces ?? [];
   const utils = trpc.useUtils();
   const recordMutation = trpc.bounceRecon.recordBounce.useMutation({
     onSuccess: () => { refetch(); setShowForm(false); toast.success("Bounce recorded successfully"); },
