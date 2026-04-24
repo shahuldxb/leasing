@@ -11,6 +11,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function Amortisation() {
   const [leaseId, setLeaseId] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data: leases = [] } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
@@ -27,6 +28,8 @@ export default function Amortisation() {
     <DashboardLayout>
       <ScreenHeader
   screenId="VFLAMORT0001P001"
+          screenType="amortisation"
+          onAIData={(rows) => setAiRows(rows)}
   title="Amortisation Schedule"
   subtitle="IFRS 16 right-of-use asset amortisation schedule"
 />

@@ -31,6 +31,7 @@ const ACCOUNT_TYPES = ["Current", "Savings", "Fixed"];
 
 export default function LessorMaster() {
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
@@ -164,7 +165,7 @@ export default function LessorMaster() {
   };
 
   const detail = detailQuery.data;
-  const lessors = (listQuery.data?.lessors ?? []) as Record<string, string | number | boolean | null>[];
+  const lessors = aiRows.length > 0 ? aiRows as any[] : ((listQuery.data?.lessors ?? []) as Record<string, string | number | boolean | null>[]);
   const total = listQuery.data?.total ?? 0;
 
   return (
@@ -275,6 +276,8 @@ export default function LessorMaster() {
             {/* Detail Header */}
             <ScreenHeader
   screenId="VFLLESMAS0001P001"
+          screenType="lessor_master"
+          onAIData={(rows) => setAiRows(rows)}
   title="Lessor Master"
   subtitle="Lessor profile and contact management"
 />

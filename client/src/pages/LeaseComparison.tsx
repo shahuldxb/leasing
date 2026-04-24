@@ -44,6 +44,7 @@ const ROWS: { label: string; key: keyof Lease; format: (v: unknown) => string; l
 
 export default function LeaseComparison() {
   const [leaseA, setLeaseA] = useState(LEASE_OPTIONS[0].id);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [leaseB, setLeaseB] = useState(LEASE_OPTIONS[3].id);
 
   const a = LEASE_OPTIONS.find(l => l.id === leaseA)!;
@@ -60,6 +61,8 @@ export default function LeaseComparison() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLLEACMP0001P001"
+          screenType="lease_comparison"
+          onAIData={(rows) => setAiRows(rows)}
   title="Lease Comparison"
   subtitle="Side-by-side lease benchmarking and comparison"
 />

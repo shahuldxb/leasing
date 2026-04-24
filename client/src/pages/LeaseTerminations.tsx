@@ -34,6 +34,7 @@ const GL_ENTRIES = [
 
 export default function LeaseTerminations() {
   const [open, setOpen] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [showReject, setShowReject] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedTermination, setSelectedTermination] = useState<any>(null);
@@ -92,6 +93,8 @@ export default function LeaseTerminations() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLLEATRM0001P001"
+          screenType="lease_terminations"
+          onAIData={(rows) => setAiRows(rows)}
   title="Lease Terminations"
   subtitle="Termination initiation and penalty calculation"
 />

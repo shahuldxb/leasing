@@ -41,6 +41,7 @@ const SAMPLE_ORDERS = [
 
 export default function FacilitiesWorkOrders() {
   const [tab, setTab] = useState("orders");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [orders, setOrders] = useState(SAMPLE_ORDERS);
   const [showDialog, setShowDialog] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -57,6 +58,8 @@ export default function FacilitiesWorkOrders() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLWRKORD0001P001"
+          screenType="work_orders"
+          onAIData={(rows) => setAiRows(rows)}
   title="Facilities Work Orders"
   subtitle="Maintenance work order management"
 />

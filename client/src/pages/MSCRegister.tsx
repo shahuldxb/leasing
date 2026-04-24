@@ -97,6 +97,7 @@ const EMPTY_FORM = {
 export default function MSCRegister() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [filterType, setFilterType] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [showCreate, setShowCreate] = useState(false);
@@ -140,6 +141,8 @@ export default function MSCRegister() {
         {/* Header */}
         <ScreenHeader
   screenId="VFLMSCREG0001P001"
+          screenType="msc_register"
+          onAIData={(rows) => setAiRows(rows)}
   title="Master Services Contracts"
   subtitle="Bilingual EN/AR contracts for fleet and residential"
 />

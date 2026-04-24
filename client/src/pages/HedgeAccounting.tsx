@@ -35,6 +35,7 @@ const GL_IMPACT = [
 
 export default function HedgeAccounting() {
   const [tab, setTab] = useState("hedges");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [hedgeForm, setHedgeForm] = useState({ instrument_type: "", notional_amount: "", currency_pair: "", start_date: "", maturity_date: "", strike_rate: "" });
   const [showDialog, setShowDialog] = useState(false);
 
@@ -47,6 +48,8 @@ export default function HedgeAccounting() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLHEDGE0001P001"
+          screenType="hedge_accounting"
+          onAIData={(rows) => setAiRows(rows)}
   title="Hedge Accounting"
   subtitle="FX hedge designation and effectiveness testing"
 />

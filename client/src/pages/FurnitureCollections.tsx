@@ -49,6 +49,7 @@ const EMPTY_FORM = {
 export default function FurnitureCollections() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [filterType, setFilterType] = useState("ALL");
   const [showPanel, setShowPanel] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -124,6 +125,8 @@ export default function FurnitureCollections() {
       <div className="p-6 space-y-5">
         <ScreenHeader
           screenId="VFLPROPFUR0001P001"
+          screenType="furniture_collections"
+          onAIData={(rows) => setAiRows(rows)}
           title="Property Furniture Collections"
           subtitle="Manage furniture and appliance inventories per flat or villa"
         />

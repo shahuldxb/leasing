@@ -36,6 +36,7 @@ const MOCK_DEDUCTIONS = [
 
 export default function AssetDepositRegister() {
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [showAdd, setShowAdd] = useState(false);
   const [showRelease, setShowRelease] = useState(false);
@@ -95,6 +96,8 @@ export default function AssetDepositRegister() {
         {/* Header */}
         <ScreenHeader
   screenId="VFLASSDEP0001P001"
+          screenType="asset_deposits"
+          onAIData={(rows) => setAiRows(rows)}
   title="Asset Deposit Register"
   subtitle="Deposits held against furnished assets per lease"
 />

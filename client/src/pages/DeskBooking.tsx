@@ -39,6 +39,10 @@ export default function DeskBooking() {
   const [tab, setTab] = useState("overview");
   const [showDialog, setShowDialog] = useState(false);
   const [bookings, setBookings] = useState<any[]>(BOOKINGS);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
+  // Merge AI-generated rows with real data
+  const displayBookings = aiRows.length > 0 ? aiRows as typeof bookings : bookings;
+
   const [form, setForm] = useState({ type: "desk", floor: "", resource: "", employee: "", date: "", start: "09:00", end: "18:00" });
 
   const totalDesks = FLOORS.reduce((s, f) => s + f.total_desks, 0);
@@ -51,6 +55,8 @@ export default function DeskBooking() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLDSBBKG0001P001"
+          screenType="desk_booking"
+          onAIData={(rows) => setAiRows(rows)}
   title="Desk & Room Booking"
   subtitle="Hot-desk and meeting room booking management"
 />

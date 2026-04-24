@@ -35,6 +35,7 @@ const COMMISSIONS = [
 
 export default function BrokerManagement() {
   const [tab, setTab] = useState("brokers");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [newBroker, setNewBroker] = useState({ name: "", agency: "", email: "", phone: "", license_number: "", specialization: "" });
   const [search, setSearch] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -52,6 +53,8 @@ export default function BrokerManagement() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLBRKRMG0001P001"
+          screenType="brokers"
+          onAIData={(rows) => setAiRows(rows)}
   title="Broker & Agent Management"
   subtitle="Broker profiles linked to lease origination"
 />

@@ -22,6 +22,7 @@ const statusColor: Record<string, string> = {
 
 export default function InvoiceRegister() {
   const [open, setOpen] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ leaseId: "", invoiceNo: "", invoiceDate: "", dueDate: "", amount: "", currency: "USD", description: "" });
 
   const { data: invoices = [], refetch } = trpc.payables.getInvoiceRegister.useQuery({ page: 1, pageSize: 50 });
@@ -60,6 +61,8 @@ export default function InvoiceRegister() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLINVREG0001P001"
+          screenType="payables"
+          onAIData={(rows) => setAiRows(rows)}
   title="Invoice Register"
   subtitle="Lease payment invoices and approval queue"
 />

@@ -17,6 +17,7 @@ const CURRENCIES = ["AED", "USD", "EUR", "GBP", "SAR", "QAR", "KWD", "BHD", "OMR
 
 export default function IBRLibrary() {
   const [filterCurrency, setFilterCurrency] = useState<string>("all");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({
@@ -55,6 +56,8 @@ export default function IBRLibrary() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLIBR0001P001"
+          screenType="ibr_library"
+          onAIData={(rows) => setAiRows(rows)}
   title="IBR Library"
   subtitle="Incremental borrowing rate library by currency and term"
 />

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function LeaseRenewals() {
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const { data: leases = [], refetch } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 200, status: "Active" });
 
   const allLeases = (leases as any[]);
@@ -35,6 +36,8 @@ export default function LeaseRenewals() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLLEAREN0001P001"
+          screenType="lease_renewals"
+          onAIData={(rows) => setAiRows(rows)}
   title="Lease Renewals"
   subtitle="Renewal pipeline and negotiation tracking"
 />

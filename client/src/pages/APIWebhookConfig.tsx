@@ -51,6 +51,10 @@ const SAMPLE_WEBHOOKS = [
 export default function APIWebhookConfig() {
   const [tab, setTab] = useState("api-docs");
   const [webhooks, setWebhooks] = useState(SAMPLE_WEBHOOKS);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
+  // Merge AI-generated rows with real data
+  const displayWebhooks = aiRows.length > 0 ? aiRows as typeof webhooks : webhooks;
+
   const [showWebhookDialog, setShowWebhookDialog] = useState(false);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
   const [newWebhook, setNewWebhook] = useState({ name: "", url: "", events: [] as string[], secret: "" });
@@ -70,6 +74,8 @@ export default function APIWebhookConfig() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLAPIWH0001P001"
+          screenType="api_webhooks"
+          onAIData={(rows) => setAiRows(rows)}
   title="API & Webhook Configuration"
   subtitle="REST API documentation and webhook endpoint management"
 />

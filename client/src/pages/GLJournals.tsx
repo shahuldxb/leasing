@@ -11,6 +11,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function GLJournals() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [status, setStatus] = useState("all");
 
@@ -23,6 +24,8 @@ export default function GLJournals() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLGLJ0001P001"
+          screenType="gl_journals"
+          onAIData={(rows) => setAiRows(rows)}
   title="GL Journals"
   subtitle="General ledger journal entries and posting"
 />

@@ -18,6 +18,7 @@ const RESPONSIBILITY = ["Vodafone","Lessor","Shared"];
 
 export default function OpsMaintenance() {
   const [open, setOpen] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ leaseId: "", ticketType: "", description: "", responsibility: "Lessor", priority: "Normal", estimatedCost: "" });
 
   const { data: tickets = [], refetch } = trpc.lease.getMaintenanceTickets.useQuery({});
@@ -38,6 +39,8 @@ export default function OpsMaintenance() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLOPSMNT0001P001"
+          screenType="maintenance"
+          onAIData={(rows) => setAiRows(rows)}
   title="Asset Maintenance"
   subtitle="Maintenance ticket register and repair tracking"
 />

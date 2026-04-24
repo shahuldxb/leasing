@@ -19,6 +19,7 @@ const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { m
 
 export default function SubLeases() {
   const [showForm, setShowForm] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ head_lease_contract_id: 0, sublessee_name: "", sublease_area_sqft: 0, monthly_income: 0, commencement_date: "", expiry_date: "", classification: "OPERATING_SUBLEASE" as const, notes: "" });
 
   const { data: subleases = [], refetch } = trpc.subLease.list.useQuery();
@@ -37,6 +38,8 @@ export default function SubLeases() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLSUBLSE0001P001"
+          screenType="sub_leases"
+          onAIData={(rows) => setAiRows(rows)}
   title="Sub-Leases"
   subtitle="Sub-lease register and income tracking"
 />

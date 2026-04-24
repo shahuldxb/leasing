@@ -43,6 +43,7 @@ const TARGETS = [
 
 export default function ESGReporting() {
   const [tab, setTab] = useState("overview");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [year, setYear] = useState("2025");
 
   const totalCO2 = CARBON_DATA.reduce((s, d) => s + d.co2_tonnes, 0);
@@ -55,6 +56,8 @@ export default function ESGReporting() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLESGRPT0001P001"
+          screenType="esg_reporting"
+          onAIData={(rows) => setAiRows(rows)}
   title="ESG Reporting"
   subtitle="TCFD/SASB ESG disclosure and reporting"
 />

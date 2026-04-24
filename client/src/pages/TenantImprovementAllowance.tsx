@@ -37,6 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function TenantImprovementAllowance() {
   const [tab, setTab] = useState("overview");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [tiForm, setTiForm] = useState({ lease_ref: "", property_name: "", allowance_amount: "", scope_of_work: "", contractor: "", completion_date: "" });
   const [showDialog, setShowDialog] = useState(false);
 
@@ -50,6 +51,8 @@ export default function TenantImprovementAllowance() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLTIALL0001P001"
+          screenType="ti_allowance"
+          onAIData={(rows) => setAiRows(rows)}
   title="Tenant Improvement Allowance"
   subtitle="TI allowance tracking and amortisation"
 />

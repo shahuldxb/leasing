@@ -5,13 +5,14 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Download, Filter, RefreshCw, Eye, Edit, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
@@ -36,6 +37,7 @@ export default function LeaseRegister() {
   const [status, setStatus]       = useState("all");
   const [assetType, setAssetType] = useState("all");
   const [page, setPage]           = useState(1);
+  const [aiLeases, setAiLeases]   = useState<Record<string, unknown>[]>([]);
   const PAGE_SIZE = 50;
 
   const { data, isLoading, refetch } = trpc.lease.getLeaseRegister.useQuery({
@@ -48,31 +50,35 @@ export default function LeaseRegister() {
     sortDirection: "DESC",
   });
 
-  const leases     = data?.rows ?? [];
-  const totalCount = data?.totalCount ?? 0;
+  // Merge AI-generated rows with real data (AI rows take precedence when present)
+  const leases     = aiLeases.length > 0 ? aiLeases as any[] : (data?.rows ?? []);
+  const totalCount = aiLeases.length > 0 ? aiLeases.length : (data?.totalCount ?? 0);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Lease Register</h1>
-            <p className="page-subtitle">Screen ID: VFLSEREGLS0001P001 · {totalCount} leases</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Download className="h-3.5 w-3.5" /> Export
-            </Button>
-            <Button size="sm" onClick={() => setLocation("/leases/new")} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> New Lease
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+          screenId="VFLSEREGLS0001P001"
+          title="Lease Register"
+          subtitle={`IFRS 16 active lease portfolio · ${totalCount} leases`}
+          icon={<FileText className="w-6 h-6 text-[#e60000]" />}
+          screenType="lease_register"
+          onAIData={(rows) => setAiLeases(rows)}
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => { refetch(); setAiLeases([]); }} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+              <Button size="sm" onClick={() => setLocation("/leases/new")} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> New Lease
+              </Button>
+            </div>
+          }
+        />
 
         {/* Filters */}
         <Card>
@@ -138,7 +144,7 @@ export default function LeaseRegister() {
                   </tr>
                 </thead>
                 <tbody>
-                  {isLoading ? (
+                  {isLoading && aiLeases.length === 0 ? (
                     Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i} className="border-b">
                         {Array.from({ length: 10 }).map((__, j) => (
@@ -153,18 +159,18 @@ export default function LeaseRegister() {
                       </td>
                     </tr>
                   ) : (
-                    leases.map((lease: any) => (
-                      <tr key={lease.lease_id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                    leases.map((lease: any, idx: number) => (
+                      <tr key={lease.lease_id ?? idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{lease.lease_ref}</td>
                         <td className="px-4 py-3 truncate max-w-36">{lease.lessor_name}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.asset_type}</td>
                         <td className="px-4 py-3 truncate max-w-40">{lease.asset_name}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{lease.lease_liability ? fmt(lease.lease_liability) : "—"}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{lease.monthly_payment ? fmt(lease.monthly_payment) : "—"}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{lease.lease_liability ? fmt(Number(lease.lease_liability)) : "—"}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{lease.monthly_payment ? fmt(Number(lease.monthly_payment)) : "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.commencement_date ? new Date(lease.commencement_date).toLocaleDateString() : "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.expiry_date ? new Date(lease.expiry_date).toLocaleDateString() : "—"}</td>
                         <td className="px-4 py-3">
-                          <span className={STATUS_COLORS[lease.status] ?? "badge-draft"}>{lease.status}</span>
+                          <Badge className={STATUS_COLORS[lease.status] ?? "badge-draft"}>{lease.status}</Badge>
                         </td>
                         <td className="px-4 py-3">
                           <DropdownMenu>

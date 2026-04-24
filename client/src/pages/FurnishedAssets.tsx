@@ -48,6 +48,7 @@ const MOCK_ASSETS = [
 
 export default function FurnishedAssets() {
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [filterCategory, setFilterCategory] = useState("ALL");
   const [filterCondition, setFilterCondition] = useState("ALL");
   const [showAdd, setShowAdd] = useState(false);
@@ -68,7 +69,7 @@ export default function FurnishedAssets() {
   const leaseList: any[] = Array.isArray(leases) ? leases : (leases as any)?.leases ?? [];
 
   // Use mock data since DB tables may not exist yet
-  const assets = MOCK_ASSETS;
+  const assets = aiRows.length > 0 ? aiRows as any[] : (MOCK_ASSETS);
 
   const filtered = assets.filter(a => {
     const matchSearch = !search || a.asset_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -105,6 +106,8 @@ export default function FurnishedAssets() {
         {/* Header */}
         <ScreenHeader
   screenId="VFLFRNASS0001P001"
+          screenType="furnished_assets"
+          onAIData={(rows) => setAiRows(rows)}
   title="Furnished Assets"
   subtitle="Asset inventory per lease property"
 />

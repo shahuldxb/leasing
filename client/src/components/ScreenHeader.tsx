@@ -8,9 +8,10 @@ import {
 } from "@/components/ui/sheet";
 import {
   ClipboardList, AlertCircle, Clock, User, Monitor, CheckCircle2,
-  XCircle, Info, ChevronRight,
+  XCircle, Info, Sparkles, Loader2,
 } from "lucide-react";
-
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,18 @@ interface ScreenHeaderProps {
   icon?: ReactNode;
   /** Optional extra actions to show in the header toolbar */
   actions?: ReactNode;
+  /**
+   * Screen type key for the AI data generator (e.g. "lease_register").
+   * When provided, a "Gen AI" button appears that populates the screen with
+   * realistic sample data via the aiFill.generateScreenData tRPC mutation.
+   */
+  screenType?: string;
+  /**
+   * Callback fired when the AI has generated data.
+   * The parent component receives the rows array and can use it to
+   * temporarily replace its table/list state.
+   */
+  onAIData?: (rows: Record<string, unknown>[]) => void;
 }
 
 // ── Mock data generators (replaced by live tRPC once DB is seeded) ────────────
@@ -60,7 +73,7 @@ function mockAuditEntries(screenId: string): AuditEntry[] {
   ];
 }
 
-function mockErrorEntries(screenId: string): ErrorEntry[] {
+function mockErrorEntries(_screenId: string): ErrorEntry[] {
   return [
     { id: 1, message: "Database connection timeout on lease query", code: "MSSQL_TIMEOUT", user: "System", timestamp: new Date(Date.now() - 7_200_000).toISOString(), resolved: true },
     { id: 2, message: "IFRS 16 computation failed: IBR rate missing", code: "IFRS16_MISSING_IBR", user: "Ahmed Al Rashidi", timestamp: new Date(Date.now() - 14_400_000).toISOString(), resolved: false },
@@ -228,6 +241,58 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
   );
 }
 
+// ── GenAIScreenButton ─────────────────────────────────────────────────────────
+
+function GenAIScreenButton({
+  screenType,
+  onAIData,
+}: {
+  screenType: string;
+  onAIData: (rows: Record<string, unknown>[]) => void;
+}) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generate = trpc.aiFill.generateScreenData.useMutation();
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const result = await generate.mutateAsync({ screenType });
+      if (result.rows && result.rows.length > 0) {
+        onAIData(result.rows as Record<string, unknown>[]);
+        toast.success(`Gen AI generated ${result.rows.length} sample records`, {
+          description: "Showing temporary demo data — not saved to database",
+          duration: 4000,
+        });
+      } else {
+        toast.info("Gen AI returned no data for this screen type");
+      }
+    } catch (err) {
+      toast.error("Gen AI failed to generate data", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleGenerate}
+      disabled={isGenerating}
+      size="sm"
+      className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-0 text-xs h-7 px-3 font-semibold shadow-md shadow-violet-900/30"
+      title="Generate realistic sample data for this screen using AI"
+    >
+      {isGenerating ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : (
+        <Sparkles className="w-3.5 h-3.5" />
+      )}
+      {isGenerating ? "Generating…" : "Gen AI"}
+    </Button>
+  );
+}
+
 // ── ScreenHeader (main export) ────────────────────────────────────────────────
 
 /**
@@ -236,6 +301,7 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
  * Features:
  * - Screen ID badge (e.g. VFLSENEWLS0001P001)
  * - Page title + optional icon and subtitle
+ * - **Gen AI button** — generates realistic temporary sample data for the screen
  * - Audit Log drawer (who did what and when)
  * - Error Log drawer (API/form errors with unresolved count badge)
  * - Optional extra action buttons
@@ -243,9 +309,11 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
  * Usage:
  *   <ScreenHeader
  *     screenId="VFLSENEWLS0001P001"
- *     title="New Lease Origination"
- *     subtitle="IFRS 16 compliant lease creation"
+ *     title="Lease Register"
+ *     subtitle="IFRS 16 active lease portfolio"
  *     icon={<FileText className="w-6 h-6 text-[#e60000]" />}
+ *     screenType="lease_register"
+ *     onAIData={(rows) => setLeases(rows)}
  *     actions={<Button>Export</Button>}
  *   />
  */
@@ -255,6 +323,8 @@ export function ScreenHeader({
   subtitle,
   icon,
   actions,
+  screenType,
+  onAIData,
 }: ScreenHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-4 mb-6">
@@ -282,6 +352,10 @@ export function ScreenHeader({
 
       {/* Right: toolbar */}
       <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+        {/* Gen AI button — prominent, always first if screenType is provided */}
+        {screenType && onAIData && (
+          <GenAIScreenButton screenType={screenType} onAIData={onAIData} />
+        )}
         <AuditLogDrawer screenId={screenId} />
         <ErrorLogDrawer screenId={screenId} />
         {actions}

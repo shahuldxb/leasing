@@ -335,7 +335,692 @@ const FORM_PROMPTS: Record<string, { description: string; schema: Record<string,
   },
 };
 
+// ─── Screen data generation prompts ─────────────────────────────────────────
+const SCREEN_PROMPTS: Record<string, { description: string; count: number; rowSchema: Record<string, string> }> = {
+  lease_register: {
+    description: "Active IFRS 16 leases in a UAE enterprise portfolio",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      lease_ref: "Like LEASE-2024-001",
+      lease_name: "Descriptive name e.g. 'Dubai Marina Office'",
+      lessor_name: "UAE property company",
+      asset_class: "One of: OFFICE, RETAIL, WAREHOUSE, RESIDENTIAL, VEHICLE",
+      commencement_date: "ISO date YYYY-MM-DD",
+      expiry_date: "ISO date YYYY-MM-DD 2-5 years later",
+      monthly_rent: "Number 20000-500000",
+      currency: "AED",
+      status: "One of: ACTIVE, PENDING_APPROVAL, EXPIRED, TERMINATED",
+      rou_asset: "Number close to monthly_rent * lease months",
+      lease_liability: "Number slightly less than rou_asset",
+    },
+  },
+  payables: {
+    description: "Lease payment invoices and payables in a UAE enterprise",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      invoice_ref: "Like INV-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      lessor_name: "UAE property company",
+      invoice_date: "ISO date YYYY-MM-DD recent",
+      due_date: "ISO date YYYY-MM-DD 30 days after invoice",
+      amount: "Number 20000-500000",
+      currency: "AED",
+      status: "One of: PENDING, APPROVED, PAID, OVERDUE",
+      description: "Invoice description",
+    },
+  },
+  bank_reconciliation: {
+    description: "Bank statement transactions for lease payment reconciliation",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      transaction_date: "ISO date YYYY-MM-DD recent",
+      description: "Bank transaction description",
+      debit: "Number or empty string",
+      credit: "Number or empty string",
+      balance: "Running balance number",
+      reference: "Bank reference number",
+      status: "One of: MATCHED, UNMATCHED, PARTIAL",
+      matched_invoice: "Invoice ref or empty string",
+    },
+  },
+  cheque_inventory: {
+    description: "Cheque book inventory for lease payments in UAE",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      cheque_number: "6-digit number",
+      bank_name: "UAE bank name",
+      account_number: "UAE bank account number",
+      payee: "Payee name",
+      amount: "Number 20000-500000",
+      issue_date: "ISO date YYYY-MM-DD",
+      due_date: "ISO date YYYY-MM-DD",
+      status: "One of: BLANK, ISSUED, PRESENTED, CLEARED, BOUNCED, CANCELLED",
+      lease_ref: "Like LEASE-2024-001",
+    },
+  },
+  maintenance: {
+    description: "Asset maintenance tickets for leased properties in UAE",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      ticket_ref: "Like TKT-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      issue_type: "One of: HVAC, PLUMBING, ELECTRICAL, STRUCTURAL, CLEANING, SECURITY",
+      description: "Issue description",
+      priority: "One of: LOW, MEDIUM, HIGH, CRITICAL",
+      status: "One of: OPEN, IN_PROGRESS, RESOLVED, CLOSED",
+      reported_date: "ISO date YYYY-MM-DD",
+      assigned_to: "Technician name",
+      estimated_cost: "Number 500-50000",
+    },
+  },
+  insurance: {
+    description: "Insurance policies for leased properties in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      policy_ref: "Like POL-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      insurer: "UAE insurance company",
+      policy_type: "One of: PROPERTY, LIABILITY, CONTENTS, COMPREHENSIVE",
+      coverage_amount: "Number 500000-10000000",
+      premium_annual: "Number 5000-100000",
+      start_date: "ISO date YYYY-MM-DD",
+      expiry_date: "ISO date YYYY-MM-DD 1 year later",
+      status: "One of: ACTIVE, EXPIRING_SOON, EXPIRED",
+    },
+  },
+  security_deposits: {
+    description: "Security deposits held for leased properties in UAE",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      deposit_ref: "Like DEP-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      lessor_name: "UAE property company",
+      deposit_amount: "Number 50000-500000",
+      currency: "AED",
+      deposit_date: "ISO date YYYY-MM-DD",
+      expected_release: "ISO date YYYY-MM-DD at lease end",
+      bank_name: "UAE bank",
+      bank_ref: "Bank reference",
+      status: "One of: HELD, PARTIALLY_RELEASED, RELEASED, FORFEITED",
+    },
+  },
+  sub_leases: {
+    description: "Sub-lease agreements where the company is sub-lessor in UAE",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      sublease_ref: "Like SL-2024-001",
+      parent_lease_ref: "Like LEASE-2024-001",
+      sub_lessee: "Company name",
+      property: "Property name",
+      area_sqm: "Number 100-2000",
+      monthly_income: "Number 10000-200000",
+      start_date: "ISO date YYYY-MM-DD",
+      end_date: "ISO date YYYY-MM-DD",
+      status: "One of: ACTIVE, EXPIRED, PENDING",
+    },
+  },
+  rent_reviews: {
+    description: "Scheduled rent reviews for leased properties in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      lessor: "UAE property company",
+      review_date: "ISO date YYYY-MM-DD upcoming",
+      current_rent: "Number 20000-500000",
+      proposed_rent: "Number slightly higher than current",
+      review_type: "One of: CPI, Fixed, Market, Negotiated",
+      status: "One of: Pending, Agreed, Upcoming, Disputed",
+      basis: "Review basis e.g. CPI + 3%",
+    },
+  },
+  lease_modifications: {
+    description: "IFRS 16 lease modifications and remeasurements in UAE",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      modification_ref: "Like MOD-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      modification_type: "One of: EXTENSION, REDUCTION, SCOPE_CHANGE, RENT_CHANGE",
+      effective_date: "ISO date YYYY-MM-DD",
+      old_liability: "Number",
+      new_liability: "Number",
+      gain_loss: "Number positive or negative",
+      status: "One of: PENDING, APPROVED, POSTED",
+      notes: "Modification notes",
+    },
+  },
+  lease_terminations: {
+    description: "Lease terminations and early exits in UAE portfolio",
+    count: 4,
+    rowSchema: {
+      id: "Sequential number",
+      termination_ref: "Like TERM-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      termination_date: "ISO date YYYY-MM-DD",
+      reason: "One of: BUSINESS_CLOSURE, RELOCATION, COST_REDUCTION, MUTUAL_AGREEMENT",
+      penalty_amount: "Number 0-500000",
+      rou_derecognition: "Number",
+      liability_derecognition: "Number",
+      status: "One of: PENDING, APPROVED, COMPLETED",
+    },
+  },
+  lease_renewals: {
+    description: "Lease renewal negotiations in UAE portfolio",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      renewal_ref: "Like REN-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      current_expiry: "ISO date YYYY-MM-DD upcoming",
+      proposed_new_expiry: "ISO date YYYY-MM-DD 2-3 years later",
+      current_rent: "Number",
+      proposed_rent: "Number slightly higher",
+      status: "One of: UNDER_NEGOTIATION, AGREED, DECLINED, PENDING_APPROVAL",
+      notes: "Renewal notes",
+    },
+  },
+  msc_register: {
+    description: "Master Services Contracts governing vehicle fleets and residential homes in UAE",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      msc_ref: "Like MSC-2024-001",
+      title_en: "Contract title in English",
+      contract_type: "One of: FLEET, RESIDENTIAL",
+      party_a_en: "Client company name",
+      party_b_en: "Service provider company name",
+      effective_date: "ISO date YYYY-MM-DD",
+      expiry_date: "ISO date YYYY-MM-DD 2-3 years later",
+      contract_value: "Number 500000-10000000",
+      linked_assets: "Number 5-50",
+      status: "One of: ACTIVE, EXPIRED, DRAFT, UNDER_REVIEW",
+    },
+  },
+  furnished_assets: {
+    description: "Furniture and appliance inventory for furnished residential leases in UAE",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      asset_code: "Like FA-001",
+      name: "Item name e.g. 'Leather Sofa 3-Seater'",
+      category: "One of: FURNITURE, APPLIANCE, ELECTRONICS, FIXTURE, KITCHEN",
+      room: "One of: Living Room, Bedroom, Kitchen, Bathroom, Office",
+      brand: "Brand name",
+      model: "Model number or name",
+      condition: "One of: EXCELLENT, GOOD, FAIR, POOR",
+      purchase_value: "Number 500-50000",
+      current_value: "Number less than purchase",
+      quantity: "Number 1-4",
+    },
+  },
+  asset_deposits: {
+    description: "Asset/furniture deposits for furnished properties in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      deposit_ref: "Like AD-2024-001",
+      property: "Property name",
+      tenant: "Tenant company or person name",
+      deposit_amount: "Number 10000-100000",
+      currency: "AED",
+      deposit_date: "ISO date YYYY-MM-DD",
+      assets_covered: "Number 5-20",
+      status: "One of: HELD, PARTIALLY_RELEASED, RELEASED",
+      bank_ref: "Bank reference",
+    },
+  },
+  vendors: {
+    description: "Vendor and contractor records for property maintenance in UAE",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      vendor_code: "Like VND-001",
+      company_name: "UAE company name",
+      category: "One of: HVAC, PLUMBING, ELECTRICAL, CLEANING, SECURITY, IT, GENERAL",
+      contact_person: "Contact name",
+      phone: "+971 XX XXX XXXX",
+      email: "Professional email",
+      trade_license: "UAE trade license number",
+      rating: "Number 1-5",
+      status: "One of: APPROVED, PENDING, BLACKLISTED",
+      last_engagement: "ISO date YYYY-MM-DD",
+    },
+  },
+  brokers: {
+    description: "Real estate brokers and agents for lease origination in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      broker_code: "Like BRK-001",
+      name: "Full name",
+      agency: "Real estate agency name",
+      rera_number: "RERA registration number",
+      phone: "+971 XX XXX XXXX",
+      email: "Professional email",
+      specialization: "One of: COMMERCIAL, RESIDENTIAL, INDUSTRIAL, MIXED",
+      deals_ytd: "Number 1-20",
+      commission_ytd: "Number 50000-500000",
+      status: "One of: ACTIVE, INACTIVE",
+    },
+  },
+  loi_tracking: {
+    description: "Letters of Intent for pre-contract lease negotiations in UAE",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      loi_ref: "Like LOI-2024-001",
+      property: "Property name",
+      lessor: "Lessor company",
+      proposed_area: "Number sqm",
+      proposed_rent: "Number monthly AED",
+      loi_date: "ISO date YYYY-MM-DD",
+      expiry_date: "ISO date YYYY-MM-DD 30 days later",
+      status: "One of: DRAFT, SUBMITTED, ACCEPTED, REJECTED, CONVERTED",
+      notes: "LOI notes",
+    },
+  },
+  gl_journals: {
+    description: "General ledger journal entries for IFRS 16 lease accounting",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      journal_ref: "Like JNL-2024-001",
+      posting_date: "ISO date YYYY-MM-DD",
+      description: "Journal description",
+      debit_account: "GL account code like 1200",
+      credit_account: "GL account code like 2100",
+      amount: "Number 10000-500000",
+      currency: "AED",
+      lease_ref: "Like LEASE-2024-001",
+      status: "One of: DRAFT, POSTED, REVERSED",
+    },
+  },
+  amortisation: {
+    description: "IFRS 16 amortisation schedule entries for a lease",
+    count: 12,
+    rowSchema: {
+      period: "Month number 1-12",
+      payment_date: "ISO date YYYY-MM-DD monthly",
+      opening_liability: "Number decreasing each period",
+      interest_charge: "Number (opening * IBR/12)",
+      principal_payment: "Number (payment - interest)",
+      lease_payment: "Number (consistent monthly payment)",
+      closing_liability: "Number (opening - principal)",
+      rou_depreciation: "Number (ROU / lease months)",
+      rou_closing: "Number decreasing each period",
+    },
+  },
+  ibr_library: {
+    description: "Incremental borrowing rates by currency and term for IFRS 16 in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      currency: "One of: AED, USD, EUR, GBP, SAR",
+      lease_term_min: "Number months",
+      lease_term_max: "Number months",
+      rate_pct: "Number 4.5-8.5",
+      effective_from: "ISO date YYYY-MM-DD",
+      source: "Central bank or financial source",
+      is_active: "true",
+    },
+  },
+  workflow_tasks: {
+    description: "Pending workflow approval tasks in a lease management system",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      task_ref: "Like TASK-2024-001",
+      workflow_type: "One of: LEASE_APPROVAL, INVOICE_APPROVAL, PAYMENT_RUN, MODIFICATION",
+      subject: "Task subject description",
+      requested_by: "Requester name",
+      assigned_to: "Approver name",
+      created_date: "ISO date YYYY-MM-DD",
+      due_date: "ISO date YYYY-MM-DD",
+      priority: "One of: LOW, MEDIUM, HIGH, URGENT",
+      status: "One of: PENDING, IN_REVIEW, ESCALATED",
+    },
+  },
+  audit_log: {
+    description: "System audit log entries for a lease management platform",
+    count: 10,
+    rowSchema: {
+      id: "Sequential number",
+      timestamp: "ISO datetime recent",
+      user: "Username",
+      action: "One of: CREATE, UPDATE, DELETE, APPROVE, REJECT, LOGIN, EXPORT",
+      module: "One of: Lease, Payables, Workflow, Security, Reports",
+      record_ref: "Reference like LEASE-2024-001",
+      description: "Action description",
+      ip_address: "IP address like 192.168.1.x",
+      result: "One of: SUCCESS, FAILED",
+    },
+  },
+  error_log: {
+    description: "System error log entries for a lease management platform",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      timestamp: "ISO datetime recent",
+      severity: "One of: INFO, WARNING, ERROR, CRITICAL",
+      module: "Module name",
+      error_code: "Error code like ERR-001",
+      message: "Error message description",
+      user: "Username or SYSTEM",
+      resolved: "true or false",
+    },
+  },
+  work_orders: {
+    description: "Facilities work orders for leased properties in UAE",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      wo_ref: "Like WO-2024-001",
+      property: "Property name",
+      category: "One of: HVAC, PLUMBING, ELECTRICAL, CLEANING, STRUCTURAL",
+      description: "Work description",
+      vendor: "Vendor company name",
+      raised_date: "ISO date YYYY-MM-DD",
+      scheduled_date: "ISO date YYYY-MM-DD",
+      cost_estimate: "Number 1000-100000",
+      status: "One of: OPEN, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED",
+    },
+  },
+  desk_booking: {
+    description: "Desk and meeting room bookings in leased office spaces in UAE",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      booking_ref: "Like BKG-001",
+      space_name: "Desk or room name",
+      space_type: "One of: HOT_DESK, MEETING_ROOM, PRIVATE_OFFICE, PHONE_BOOTH",
+      booked_by: "Employee name",
+      booking_date: "ISO date YYYY-MM-DD",
+      start_time: "Time like 09:00",
+      end_time: "Time like 17:00",
+      floor: "Floor number or name",
+      status: "One of: CONFIRMED, CHECKED_IN, COMPLETED, CANCELLED",
+    },
+  },
+  esg_reporting: {
+    description: "ESG and carbon footprint data for leased properties in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      property: "Property name",
+      period: "Quarter like Q1 2024",
+      electricity_kwh: "Number 10000-500000",
+      water_m3: "Number 100-5000",
+      carbon_tonnes: "Number 5-500",
+      waste_tonnes: "Number 1-50",
+      green_rating: "One of: LEED Gold, LEED Silver, BREEAM, None",
+      renewable_pct: "Number 0-100",
+      notes: "ESG notes",
+    },
+  },
+  hedge_accounting: {
+    description: "FX hedge instruments for foreign currency leases in UAE",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      instrument_ref: "Like HED-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      instrument_type: "One of: FORWARD, OPTION, SWAP, COLLAR",
+      currency_pair: "Like USD/AED",
+      notional_amount: "Number 500000-10000000",
+      strike_rate: "Number 3.5-4.0",
+      start_date: "ISO date YYYY-MM-DD",
+      maturity_date: "ISO date YYYY-MM-DD 1 year later",
+      fair_value: "Number positive or negative",
+      status: "One of: ACTIVE, MATURED, CANCELLED",
+    },
+  },
+  consolidation: {
+    description: "Multi-entity lease consolidation data for a UAE group",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      entity: "Subsidiary company name",
+      country: "UAE or GCC country",
+      lease_count: "Number 5-50",
+      total_rou: "Number millions",
+      total_liability: "Number millions",
+      intercompany_elimination: "Number",
+      currency: "AED",
+      period: "Like Q1 2024",
+      status: "One of: DRAFT, REVIEWED, APPROVED",
+    },
+  },
+  budgeting: {
+    description: "Lease cost budget vs actual for a UAE enterprise",
+    count: 8,
+    rowSchema: {
+      id: "Sequential number",
+      cost_center: "Department or cost center",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      budget_annual: "Number",
+      actual_ytd: "Number less than budget",
+      forecast_annual: "Number close to budget",
+      variance: "Number positive or negative",
+      variance_pct: "Number percentage",
+      period: "Like FY2024",
+    },
+  },
+  furniture_collections: {
+    description: "Furniture collection packs assigned to residential properties in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      collection_name: "Like 'Villa A-101 Furniture Pack'",
+      property_id: "Like PROP-001",
+      property_name: "Villa or flat name",
+      item_count: "Number 10-40",
+      total_value: "Number 50000-500000",
+      condition: "One of: EXCELLENT, GOOD, FAIR",
+      last_inspection: "ISO date YYYY-MM-DD",
+      status: "One of: ACTIVE, NEEDS_REVIEW, ARCHIVED",
+    },
+  },
+  lessor_master: {
+    description: "Lessor/landlord master records for UAE lease portfolio",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      lessor_code: "Like LSR-001",
+      company_name: "UAE property company",
+      contact_person: "Contact name",
+      phone: "+971 XX XXX XXXX",
+      email: "Professional email",
+      city: "UAE city",
+      active_leases: "Number 1-20",
+      total_portfolio_value: "Number millions AED",
+      payment_terms: "Like Net 30",
+      status: "One of: ACTIVE, INACTIVE",
+    },
+  },
+  asset_registry: {
+    description: "Physical asset registry for leased properties in UAE",
+    count: 7,
+    rowSchema: {
+      id: "Sequential number",
+      asset_code: "Like ASSET-001",
+      asset_name: "Asset name",
+      asset_type: "One of: BUILDING, VEHICLE, EQUIPMENT, LAND, FIXTURE",
+      location: "UAE location",
+      purchase_value: "Number",
+      current_value: "Number less than purchase",
+      depreciation_rate: "Number 5-25",
+      condition: "One of: EXCELLENT, GOOD, FAIR, POOR",
+      lease_ref: "Like LEASE-2024-001",
+      status: "One of: ACTIVE, DISPOSED, UNDER_MAINTENANCE",
+    },
+  },
+  ti_allowance: {
+    description: "Tenant improvement allowance records for commercial leases in UAE",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      ti_ref: "Like TI-2024-001",
+      lease_ref: "Like LEASE-2024-001",
+      property: "Property name",
+      lessor: "Lessor name",
+      allowance_agreed: "Number 100000-2000000",
+      claimed_to_date: "Number less than agreed",
+      remaining: "Number",
+      claim_deadline: "ISO date YYYY-MM-DD",
+      status: "One of: ACTIVE, FULLY_CLAIMED, EXPIRED",
+    },
+  },
+  esignature: {
+    description: "E-signature requests for lease documents in UAE",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      request_ref: "Like ESIG-2024-001",
+      document_name: "Document name",
+      lease_ref: "Like LEASE-2024-001",
+      sent_to: "Signatory name",
+      sent_date: "ISO date YYYY-MM-DD",
+      signed_date: "ISO date YYYY-MM-DD or empty",
+      provider: "One of: DocuSign, Adobe Sign, HelloSign",
+      status: "One of: SENT, VIEWED, SIGNED, DECLINED, EXPIRED",
+    },
+  },
+  lease_comparison: {
+    description: "Market lease comparison and benchmarking data for UAE properties",
+    count: 6,
+    rowSchema: {
+      id: "Sequential number",
+      property_name: "Property name",
+      location: "UAE location",
+      asset_class: "One of: OFFICE, RETAIL, WAREHOUSE, RESIDENTIAL",
+      floor_area: "Number sqm",
+      monthly_rent: "Number AED",
+      rent_per_sqm: "Number AED/sqm",
+      lease_term_months: "Number",
+      fit_out_contribution: "Number AED",
+      vs_portfolio_avg: "Percentage like +12% or -5%",
+    },
+  },
+  sso_config: {
+    description: "SSO/SAML identity provider configurations for enterprise login",
+    count: 3,
+    rowSchema: {
+      id: "Sequential number",
+      provider_name: "Like Microsoft Azure AD",
+      entity_id: "SAML entity ID URL",
+      sso_url: "SSO login URL",
+      certificate_expiry: "ISO date YYYY-MM-DD",
+      user_count: "Number 50-500",
+      last_login: "ISO datetime",
+      status: "One of: ACTIVE, INACTIVE, TESTING",
+    },
+  },
+  api_webhooks: {
+    description: "API webhook configurations for lease system integrations",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      webhook_name: "Webhook name",
+      endpoint_url: "HTTPS URL",
+      event_type: "One of: lease.created, payment.due, approval.required, document.signed",
+      last_triggered: "ISO datetime",
+      success_rate: "Number 90-100",
+      status: "One of: ACTIVE, PAUSED, ERROR",
+    },
+  },
+};
+
 export const aiFillRouter = router({
+  generateScreenData: protectedProcedure
+    .input(
+      z.object({
+        screenType: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const screenConfig = SCREEN_PROMPTS[input.screenType];
+      if (!screenConfig) {
+        // Return generic data for unknown screen types
+        return { rows: [], screenType: input.screenType, generated: true };
+      }
+
+      const schemaDescription = Object.entries(screenConfig.rowSchema)
+        .map(([key, desc]) => `  "${key}": ${desc}`)
+        .join(",\n");
+
+      const systemPrompt = `You are a data generation assistant for VodaLease Enterprise, an IFRS 16 lease management platform used by companies in the UAE. Generate realistic, professional, and internally consistent sample data. All monetary values in AED unless specified. Dates should be realistic. Names should be realistic UAE/Middle East names or international companies operating in UAE. Return ONLY valid JSON, no markdown, no explanation.`;
+
+      const userPrompt = `Generate ${screenConfig.count} realistic sample records for: ${screenConfig.description}.
+
+Return ONLY a valid JSON object with a "rows" array containing exactly ${screenConfig.count} objects, each with these fields:
+{
+  "rows": [
+    {
+${schemaDescription}
+    }
+  ]
+}`;
+
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "screen_data",
+            strict: false,
+            schema: {
+              type: "object",
+              properties: {
+                rows: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
+                },
+              },
+              required: ["rows"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const rawContent = response.choices?.[0]?.message?.content;
+      if (!rawContent) throw new Error("No response from AI");
+      const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+
+      try {
+        const parsed = JSON.parse(content);
+        return { rows: parsed.rows || [], screenType: input.screenType, generated: true };
+      } catch {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return { rows: parsed.rows || [], screenType: input.screenType, generated: true };
+        }
+        throw new Error("Failed to parse AI response as JSON");
+      }
+    }),
+
   fillForm: protectedProcedure
     .input(
       z.object({

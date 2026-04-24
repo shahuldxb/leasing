@@ -41,6 +41,10 @@ const STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 
 export default function LOITracking() {
   const [lois, setLois] = useState(LOIS);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
+  // Merge AI-generated rows with real data
+  const displayLois = aiRows.length > 0 ? aiRows as typeof lois : lois;
+
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({ property: "", lessor: "", area_sqm: "", rent_pa: "", broker: "", expiry: "", notes: "" });
 
@@ -53,6 +57,8 @@ export default function LOITracking() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLLOI0001P001"
+          screenType="loi_tracking"
+          onAIData={(rows) => setAiRows(rows)}
   title="LOI Tracking"
   subtitle="Letter of Intent tracking for pre-contract stage"
 />

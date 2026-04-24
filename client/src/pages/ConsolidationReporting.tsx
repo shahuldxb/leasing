@@ -37,6 +37,7 @@ const CONSOLIDATED = {
 
 export default function ConsolidationReporting() {
   const [tab, setTab] = useState("overview");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [period, setPeriod] = useState("2026-03");
   const [intercoLeases, setIntercoLeases] = useState(INTERCO_LEASES);
 
@@ -50,6 +51,8 @@ export default function ConsolidationReporting() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLCONRPT0001P001"
+          screenType="consolidation"
+          onAIData={(rows) => setAiRows(rows)}
   title="Consolidation Reporting"
   subtitle="Multi-entity consolidation with intercompany elimination"
 />

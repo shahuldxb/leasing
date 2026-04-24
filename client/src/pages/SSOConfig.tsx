@@ -14,6 +14,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 export default function SSOConfig() {
   const [tab, setTab] = useState("saml");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [samlEnabled, setSamlEnabled] = useState(false);
   const [oidcEnabled, setOidcEnabled] = useState(false);
   const [samlConfig, setSamlConfig] = useState({
@@ -47,6 +48,8 @@ export default function SSOConfig() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLSSOCFG0001P001"
+          screenType="sso_config"
+          onAIData={(rows) => setAiRows(rows)}
   title="SSO Configuration"
   subtitle="SAML 2.0 / OIDC single sign-on configuration"
 />

@@ -25,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function RentReviews() {
   const [completing, setCompleting] = useState<any>(null);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [completeForm, setCompleteForm] = useState({ agreed_new_rent: 0, effective_date: "", notes: "" });
 
   const { data: reviews = [], refetch } = trpc.rentReview.list.useQuery();
@@ -42,6 +43,8 @@ export default function RentReviews() {
       <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFLRNTRV0001P001"
+          screenType="rent_reviews"
+          onAIData={(rows) => setAiRows(rows)}
           title="Rent Reviews"
           subtitle="Scheduled rent review tracking and completion"
         />

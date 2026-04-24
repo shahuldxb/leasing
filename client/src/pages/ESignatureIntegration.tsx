@@ -46,6 +46,7 @@ const AUDIT_TRAIL = [
 
 export default function ESignatureIntegration() {
   const [tab, setTab] = useState("envelopes");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({ document: "", provider: "DocuSign", signatories: "" });
 
@@ -57,6 +58,8 @@ export default function ESignatureIntegration() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLESIGN0001P001"
+          screenType="esignature"
+          onAIData={(rows) => setAiRows(rows)}
   title="E-Signature Integration"
   subtitle="DocuSign and e-signature workflow for lease documents"
 />

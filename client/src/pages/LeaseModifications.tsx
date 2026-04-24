@@ -17,6 +17,7 @@ const MOD_TYPES = ["Rent Change","Term Extension","Term Reduction","Scope Change
 
 export default function LeaseModifications() {
   const [open, setOpen] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [selectedLease, setSelectedLease] = useState("");
   const [modType, setModType] = useState("");
   const [effectiveDate, setEffectiveDate] = useState("");
@@ -40,6 +41,8 @@ export default function LeaseModifications() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLLEAMOD0001P001"
+          screenType="lease_modifications"
+          onAIData={(rows) => setAiRows(rows)}
   title="Lease Modifications"
   subtitle="Lease modification and remeasurement processing"
 />

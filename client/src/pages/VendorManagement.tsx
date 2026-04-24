@@ -44,6 +44,10 @@ function StarRating({ rating }: { rating: number }) {
 export default function VendorManagement() {
   const [tab, setTab] = useState("vendors");
   const [vendors, setVendors] = useState(SAMPLE_VENDORS);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
+  // Merge AI-generated rows with real data
+  const displayVendors = aiRows.length > 0 ? aiRows as typeof vendors : vendors;
+
   const [showDialog, setShowDialog] = useState(false);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ name: "", category: "", contact: "", phone: "", trn: "" });
@@ -61,6 +65,8 @@ export default function VendorManagement() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLVNDMGR0001P001"
+          screenType="vendors"
+          onAIData={(rows) => setAiRows(rows)}
   title="Vendor Management"
   subtitle="Vendor and contractor management"
 />

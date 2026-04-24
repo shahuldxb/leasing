@@ -68,6 +68,7 @@ const EMPTY_FORM: AssetFormData = {
 
 export default function AssetRegistry() {
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [assetType, setAssetType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -101,7 +102,7 @@ export default function AssetRegistry() {
     onError: (err) => toast.error(err.message),
   });
 
-  const assets = ((assetsData as Record<string, unknown>)?.assets as Record<string, unknown>[]) || [];
+  const assets = aiRows.length > 0 ? aiRows as any[] : (((assetsData as Record<string, unknown>)?.assets as Record<string, unknown>[]) || []);
   const total = ((assetsData as Record<string, unknown>)?.total as number) || 0;
   const totalPages = Math.ceil(total / 20);
 
@@ -164,6 +165,8 @@ export default function AssetRegistry() {
         {/* Header */}
         <ScreenHeader
   screenId="VFLASSREG0001P001"
+          screenType="asset_registry"
+          onAIData={(rows) => setAiRows(rows)}
   title="Asset Registry"
   subtitle="Master register of all leased assets"
 />

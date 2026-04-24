@@ -45,6 +45,7 @@ const SCENARIO_RESULTS = [
 
 export default function BudgetingForecasting() {
   const [tab, setTab] = useState("budget");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [year, setYear] = useState("2026");
   const [entity, setEntity] = useState("ALL");
 
@@ -59,6 +60,8 @@ export default function BudgetingForecasting() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLBDGFRC0001P001"
+          screenType="budgeting"
+          onAIData={(rows) => setAiRows(rows)}
   title="Budgeting & Cash Flow Forecasting"
   subtitle="Annual budget planning and cash flow projection"
 />

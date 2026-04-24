@@ -18,6 +18,7 @@ const PAYMENT_FREQ = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
 export default function OpsInsurance() {
   const [open, setOpen] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ provider: "", policyNumber: "", coverageType: "", sumInsured: "", premiumAmount: "", paymentFrequency: "Annual", startDate: "", endDate: "", leaseId: "" });
 
   const { data, refetch } = trpc.lease.getInsurancePolicies.useQuery({});
@@ -46,6 +47,8 @@ export default function OpsInsurance() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLOPSINS0001P001"
+          screenType="insurance"
+          onAIData={(rows) => setAiRows(rows)}
   title="Insurance Register"
   subtitle="Insurance policy register per lease"
 />

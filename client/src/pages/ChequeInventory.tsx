@@ -433,6 +433,7 @@ function ActionDialog({ open, onClose, cheque, action, theme }: {
 export default function ChequeInventory() {
   const [theme, setTheme] = useState<Theme>("dark");
   const [activeTab, setActiveTab] = useState("register");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
   const [showBookDialog, setShowBookDialog] = useState(false);
   const [actionDialog, setActionDialog] = useState<{ open: boolean; cheque: any; action: string }>({ open: false, cheque: null, action: "" });
@@ -479,6 +480,8 @@ export default function ChequeInventory() {
         {/* ── Header ─────────────────────────────────────────── */}
         <ScreenHeader
   screenId="VFLCHQINV0001P001"
+          screenType="cheque_inventory"
+          onAIData={(rows) => setAiRows(rows)}
   title="Cheque Inventory"
   subtitle="Cheque book management and tracking"
 />

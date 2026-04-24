@@ -20,6 +20,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 export default function ComplianceErrors() {
   const [search, setSearch] = useState("");
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [severity, setSeverity] = useState("all");
 
   const { data } = trpc.compliance.getAuditLog.useQuery({
@@ -38,6 +39,8 @@ export default function ComplianceErrors() {
     <DashboardLayout>
       <ScreenHeader
   screenId="VFLCMPERR0001P001"
+          screenType="error_log"
+          onAIData={(rows) => setAiRows(rows)}
   title="Error Log"
   subtitle="System error log and exception management"
 />

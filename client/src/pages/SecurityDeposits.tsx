@@ -21,6 +21,7 @@ const TYPE_ICONS: Record<string, string> = { CASH: "💵", BANK_GUARANTEE: "🏦
 
 export default function SecurityDeposits() {
   const [showForm, setShowForm] = useState(false);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ contract_id: 0, deposit_amount: 0, deposit_type: "CASH" as const, deposit_date: "", expected_return_date: "", bank_name: "", guarantee_number: "", notes: "" });
 
   const { data: deposits = [], refetch } = trpc.securityDeposit.list.useQuery();
@@ -41,6 +42,8 @@ export default function SecurityDeposits() {
       <div className="p-6 space-y-6">
         <ScreenHeader
   screenId="VFLSECDEP0001P001"
+          screenType="security_deposits"
+          onAIData={(rows) => setAiRows(rows)}
   title="Security Deposits"
   subtitle="Security deposit register and release management"
 />
