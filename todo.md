@@ -391,24 +391,24 @@
 ## Furnished Property Assets & Asset Deposit Module
 
 ### Database & Backend
-- [ ] Create table: lease.furnished_assets (asset_id, contract_id, asset_category, asset_name, brand, model, serial_number, condition_at_handover, estimated_value, photo_url, notes)
-- [ ] Create table: lease.asset_deposits (deposit_id, contract_id, deposit_amount, deposit_currency, deposit_date, deposit_type, bank_ref, status, released_amount, release_date, notes)
-- [ ] Create table: lease.asset_handover_checklist (checklist_id, contract_id, checklist_type [HANDOVER/RETURN], conducted_date, conducted_by, overall_condition, notes, signed_off)
-- [ ] Create table: lease.asset_checklist_items (item_id, checklist_id, asset_id, condition_at_check, damage_description, repair_cost_estimate, deduct_from_deposit, photo_url)
-- [ ] Create table: lease.asset_deposit_deductions (deduction_id, deposit_id, asset_id, deduction_reason, deduction_amount, approved_by, approved_date)
-- [ ] Create tRPC router: furnishedAssets — list, create, update, delete, getByLease
-- [ ] Create tRPC router: assetDeposits — list, create, release, deduct, getByLease
-- [ ] Create tRPC router: handoverChecklists — list, create, complete, getByLease, addItem
+- [x] Create table: lease.furnished_assets (asset_id, contract_id, asset_category, asset_name, brand, model, serial_number, condition_at_handover, estimated_value, photo_url, notes)
+- [x] Create table: lease.asset_deposits (deposit_id, contract_id, deposit_amount, deposit_currency, deposit_date, deposit_type, bank_ref, status, released_amount, release_date, notes)
+- [x] Create table: lease.asset_handover_checklist (checklist_id, contract_id, checklist_type [HANDOVER/RETURN], conducted_date, conducted_by, overall_condition, notes, signed_off)
+- [x] Create table: lease.asset_checklist_items (item_id, checklist_id, asset_id, condition_at_check, damage_description, repair_cost_estimate, deduct_from_deposit, photo_url)
+- [x] Create table: lease.asset_deposit_deductions (deduction_id, deposit_id, asset_id, deduction_reason, deduction_amount, approved_by, approved_date)
+- [x] Create tRPC router: furnishedAssets — list, create, update, delete, getByLease
+- [x] Create tRPC router: assetDeposits — list, create, release, deduct, getByLease
+- [x] Create tRPC router: handoverChecklists — list, create, complete, getByLease, addItem
 
 ### Frontend Pages
-- [ ] Build FurnishedAssets.tsx — asset inventory per lease with category grouping, condition badges, photo upload, estimated value totals
-- [ ] Build AssetDepositRegister.tsx — asset deposit register separate from security deposits, with release workflow and deduction tracking
-- [ ] Build HandoverChecklist.tsx — digital handover/return checklist with per-asset condition, damage photos, repair cost estimation, deposit deduction calculation
-- [ ] Build AssetDepositDeductions.tsx — deduction management screen showing deposit balance, approved deductions, remaining refund amount
+- [x] Build FurnishedAssets.tsx — asset inventory per lease with category grouping, condition badges, photo upload, estimated value totals
+- [x] Build AssetDepositRegister.tsx — asset deposit register separate from security deposits, with release workflow and deduction tracking
+- [x] Build HandoverChecklist.tsx — digital handover/return checklist with per-asset condition, damage photos, repair cost estimation, deposit deduction calculation
+- [x] Build AssetDepositDeductions.tsx — deduction management screen showing deposit balance, approved deductions, remaining refund amount
 
 ### Navigation
-- [ ] Add "Furnished Assets" section to DashboardLayout sidebar under "Operational"
-- [ ] Wire all 4 new pages in App.tsx
+- [x] Add "Furnished Assets" section to DashboardLayout sidebar under "Operational"
+- [x] Wire all 4 new pages in App.tsx
 
 ## Master Services Contract (MSC) Module
 

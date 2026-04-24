@@ -212,6 +212,9 @@ const menuItems: NavItem[] = [
       { label: "Desk Booking",        path: "/ops/desk-booking" },
       { label: "Work Orders",          path: "/ops/work-orders" },
       { label: "Vendor Management",    path: "/ops/vendors" },
+      { label: "Furnished Assets",     path: "/ops/furnished-assets" },
+      { label: "Asset Deposits",       path: "/ops/asset-deposits" },
+      { label: "Handover Checklist",   path: "/ops/handover-checklist" },
     ],
   },
   {
