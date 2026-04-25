@@ -1174,7 +1174,7 @@ export const aiFillRouter = router({
         .map(([key, desc]) => `  "${key}": ${desc}`)
         .join(",\n");
 
-      const systemPrompt = `You are a data generation assistant for VodaLease Enterprise, an IFRS 16 lease management platform used by companies in the UAE. Generate realistic, professional, and internally consistent sample data. All monetary values in AED unless specified. Dates should be realistic. Names should be realistic UAE/Middle East names or international companies operating in UAE. Return ONLY valid JSON, no markdown, no explanation.`;
+      const systemPrompt = `You are a data generation assistant for VodaLease Enterprise, an IFRS 16 lease management platform used by Vodafone Qatar. Generate realistic, professional, and internally consistent sample data. All monetary values in QAR unless specified. Dates should be realistic. Names should be realistic Qatar/GCC names or international companies operating in Qatar. Country is always Qatar (QA). City is always Doha unless otherwise specified. Return ONLY valid JSON, no markdown, no explanation.`;
 
       const userPrompt = `Generate ${screenConfig.count} realistic sample records for: ${screenConfig.description}.
 
@@ -1192,27 +1192,7 @@ ${schemaDescription}
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "screen_data",
-            strict: false,
-            schema: {
-              type: "object",
-              properties: {
-                rows: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    additionalProperties: true,
-                  },
-                },
-              },
-              required: ["rows"],
-              additionalProperties: false,
-            },
-          },
-        },
+
       });
 
       const rawContent = response.choices?.[0]?.message?.content;
@@ -1253,7 +1233,7 @@ ${schemaDescription}
         ? `\n\nExisting partial data to build upon:\n${JSON.stringify(input.existingData, null, 2)}`
         : "";
 
-      const systemPrompt = `You are a data generation assistant for VodaLease Enterprise, an IFRS 16 lease management platform used by companies in the UAE. Generate realistic, professional, and internally consistent sample data for lease management forms. All monetary values should be in AED unless specified. Dates should be realistic and internally consistent. Names should be realistic UAE/Middle East names or international company names operating in UAE.`;
+      const systemPrompt = `You are a data generation assistant for VodaLease Enterprise, an IFRS 16 lease management platform used by Vodafone Qatar. Generate realistic, professional, and internally consistent sample data for lease management forms. All monetary values should be in QAR unless specified. Dates should be realistic and internally consistent. Names should be realistic Qatar/GCC names or international company names operating in Qatar. Country is always Qatar (QA). City is always Doha unless otherwise specified.`;
 
       const userPrompt = `Generate realistic sample data for: ${formConfig.description}.${existingContext}
 
@@ -1267,20 +1247,6 @@ ${schemaDescription}
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "form_fill_data",
-            strict: false,
-            schema: {
-              type: "object",
-              properties: Object.fromEntries(
-                Object.keys(formConfig.schema).map((key) => [key, { type: "string" }])
-              ),
-              additionalProperties: true,
-            },
-          },
-        },
       });
 
       const rawContent = response.choices?.[0]?.message?.content;
