@@ -130,7 +130,7 @@ export default function NewLease() {
               email:         data.lessorEmail          ?? l.email,
               phone:         data.lessorPhone          ?? l.phone,
               address:       data.propertyAddress      ?? l.address,
-              country:       data.country              ?? "QA",
+              country:       "QA",
               taxId:         data.taxId                ?? l.taxId,
             }));
             setAsset(a => ({
@@ -138,7 +138,7 @@ export default function NewLease() {
               assetType: data.assetClass ?? a.assetType,
               assetName: data.leaseName  ?? a.assetName,
               location:  data.city       ?? a.location,
-              country:   data.country    ?? "QA",
+              country:   "QA",
               assetCode: data.assetCode  ?? a.assetCode,
               gpsLat:    data.gpsLat     ?? a.gpsLat,
               gpsLng:    data.gpsLng     ?? a.gpsLng,
@@ -193,7 +193,7 @@ export default function NewLease() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <Label className={labelCls}>Lessor / Company Name *</Label>
-                  <Input className={inputCls} placeholder="e.g. Ghana Tower Company Ltd" value={lessor.name} onChange={e => setLessor(l => ({ ...l, name: e.target.value }))} />
+                  <Input className={inputCls} placeholder="e.g. Barwa Real Estate Company" value={lessor.name} onChange={e => setLessor(l => ({ ...l, name: e.target.value }))} />
                 </div>
                 <div>
                   <Label className={labelCls}>Contact Person</Label>
@@ -205,7 +205,7 @@ export default function NewLease() {
                 </div>
                 <div>
                   <Label className={labelCls}>Phone</Label>
-                  <Input className={inputCls} placeholder="+233 XX XXX XXXX" value={lessor.phone} onChange={e => setLessor(l => ({ ...l, phone: e.target.value }))} />
+                  <Input className={inputCls} placeholder="+974 XXXX XXXX" value={lessor.phone} onChange={e => setLessor(l => ({ ...l, phone: e.target.value }))} />
                 </div>
                 <div>
                   <Label className={labelCls}>Tax / VAT ID</Label>
@@ -218,11 +218,17 @@ export default function NewLease() {
                 <div>
                   <Label className={labelCls}>Country</Label>
                   <Select value={lessor.country} onValueChange={v => setLessor(l => ({ ...l, country: v }))}>
-                    <SelectTrigger className={inputCls}><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {["Ghana","Kenya","Tanzania","Mozambique","South Africa","Nigeria","Zambia","Ethiopia","Egypt","Other"].map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
+                      <SelectItem value="QA">Qatar</SelectItem>
+                      <SelectItem value="AE">UAE</SelectItem>
+                      <SelectItem value="SA">Saudi Arabia</SelectItem>
+                      <SelectItem value="KW">Kuwait</SelectItem>
+                      <SelectItem value="BH">Bahrain</SelectItem>
+                      <SelectItem value="OM">Oman</SelectItem>
+                      <SelectItem value="GB">United Kingdom</SelectItem>
+                      <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -733,3 +733,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] LessorMaster rewritten with DashboardLayout (was missing global sidebar)
 - [x] Edit/Delete added to: AdminPanel, IBRLibrary, GLJournals, ChequeInventory, BounceManagement, BouncePenalty, BudgetVariance, ESGCarbon, HedgeAccounting, LeaseDataQuality, LessorCreditScore, RemeasurementEngine, LeaseOrigination, LessorFinanceLease, ScenarioModelling, TenantPortal, WorkflowQueue, MSCContractViewer, MultiEntityFX
 - [x] 0 TypeScript errors
+
+## Country Field Fix (Apr 25)
+- [x] NewLease.tsx — Country field in Step 1 always defaults to Qatar (QA), Gen AI always fills country as Qatar
