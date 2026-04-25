@@ -182,6 +182,18 @@ const MASTER_ITEMS: MasterItem[] = [
   { code: "OUT-BBQ-001", name: "BBQ Grill", brand: "Weber", spec: "Gas, 3-Burner, Stainless", category: "Outdoor & Garden", subCategory: "BBQ & Grills", priceQAR: 2200 },
 ];
 
+const SUB_CATEGORY_MAP: Record<Category, string[]> = {
+  "Furniture": ["Sofas", "Living Room", "Dining", "Beds", "Desks", "Chairs", "Storage"],
+  "Storage & Wardrobes": ["Wardrobes", "Storage"],
+  "Bedding & Linen": ["Duvets & Covers", "Sheets", "Pillows", "Towels"],
+  "Kitchen Appliances": ["Refrigerators", "Ovens", "Dishwashers", "Small Appliances"],
+  "Laundry": ["Washing Machines", "Dryers", "Combos", "Ironing"],
+  "Cooling & Heating": ["Air Conditioners", "Fans", "Water Heaters"],
+  "Electronics": ["Televisions", "Audio", "Networking"],
+  "Lighting & Fixtures": ["Ceiling Lights", "Lamps", "Curtains", "Outdoor Lights"],
+  "Office & Study": ["Desks", "Chairs", "Storage"],
+  "Outdoor & Garden": ["Outdoor Furniture", "BBQ & Grills"],
+};
 const CATEGORIES: Category[] = [
   "Furniture", "Storage & Wardrobes", "Bedding & Linen",
   "Kitchen Appliances", "Laundry", "Cooling & Heating",
@@ -574,7 +586,7 @@ export default function AssetRegistry() {
                     </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground">Category *</Label>
-                      <Select value={libForm.category} onValueChange={v => setLibForm(f => ({ ...f, category: v as Category }))}>
+                      <Select value={libForm.category} onValueChange={v => setLibForm(f => ({ ...f, category: v as Category, subCategory: "" }))}>
                         <SelectTrigger className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5">
                           <SelectValue />
                         </SelectTrigger>
@@ -585,8 +597,16 @@ export default function AssetRegistry() {
                     </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground">Sub-Category *</Label>
-                      <Input className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5"
-                        value={libForm.subCategory} onChange={e => setLibForm(f => ({ ...f, subCategory: e.target.value }))} placeholder="e.g. Sofas" />
+                      <Select value={libForm.subCategory} onValueChange={v => setLibForm(f => ({ ...f, subCategory: v }))}>
+                        <SelectTrigger className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5">
+                          <SelectValue placeholder="Select sub-category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(SUB_CATEGORY_MAP[libForm.category] ?? []).map(sc => (
+                            <SelectItem key={sc} value={sc}>{sc}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground">Brand</Label>
