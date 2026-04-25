@@ -929,3 +929,15 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add Lessee summary card to Review & Post step (Step 6)
 - [x] Extend aiFill new_lease schema with 10 lessee fields
 - [x] TypeScript: 0 errors
+
+## Sub-Asset Attachment — Lessee-First Selection (Apr 25)
+- [x] Create dbo.sp_GetLesseeList SP (returns lessor_id, lessee_name, lessee_type, staff_number, position, department, grade, place_of_work, contact_email, contact_phone from lessor.lessors where lessee_name IS NOT NULL)
+- [x] Create dbo.sp_GetLeaseByLessee SP (given lessorId, joins lease.contracts via lease.lessors using lessor_ref/legal_name match, returns top 1 active/draft contract)
+- [x] Add tRPC procedure lessor.getLesseeList (publicProcedure in lessorRouter)
+- [x] Add tRPC procedure lessor.getLeaseByLessee (publicProcedure in lessorRouter, input: lessorId)
+- [x] Update LeaseSubAssets.tsx: add Lessee selector as first control above Lease Number (amber-bordered)
+- [x] On lessee selection, auto-call getLeaseByLessee via useEffect and pre-fill the Lease Number dropdown
+- [x] Show lessee detail strip (position, dept, grade, location) below selector
+- [x] Show red warning if lessee has no linked lease
+- [x] Keep rest of attach/status cycle unchanged
+- [x] TypeScript: 0 errors

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { execSPP, execSPPMulti, SPPParam } from "../db-sqlserver";
 
 // ─── Lessor Router ────────────────────────────────────────────────────────────
@@ -277,6 +277,55 @@ export const lessorRouter = router({
       ];
       return await execSPP("sp_GetLessorAssets", params);
     }),
+
+  // ── getLesseeList: all lessors that have a lessee name set ────────────────
+  getLesseeList: publicProcedure.query(async () => {
+    const rows = await execSPP("dbo.sp_GetLesseeList", []);
+    return rows.map((r: any) => ({
+      lessorId:     r.lessor_id     as number,
+      lesseeName:   r.lessee_name   as string,
+      lesseeType:   (r.lessee_type  ?? "Staff") as string,
+      staffNumber:  (r.staff_number ?? "")       as string,
+      employeeId:   (r.employee_id  ?? "")       as string,
+      grade:        (r.grade        ?? "")       as string,
+      position:     (r.position     ?? "")       as string,
+      department:   (r.department   ?? "")       as string,
+      placeOfWork:  (r.place_of_work ?? "")      as string,
+      contactEmail: (r.contact_email ?? "")      as string,
+      contactPhone: (r.contact_phone ?? "")      as string,
+      lessorName:   (r.lessor_name  ?? "")       as string,
+      lessorCode:   (r.lessor_code  ?? "")       as string,
+    }));
+  }),
+
+  // ── getLeaseByLessee: given lessorId, returns their linked lease contract ────
+  getLeaseByLessee: publicProcedure
+    .input(z.object({ lessorId: z.number() }))
+    .query(async ({ input }) => {
+      const rows = await execSPP("dbo.sp_GetLeaseByLessee", [
+        { name: "LessorId", type: "Int", value: input.lessorId },
+      ]);
+      if (!rows || rows.length === 0) return null;
+      const r = rows[0];
+      return {
+        contractId:       r.contract_id       as number,
+        leaseRef:         (r.lease_ref        ?? "") as string,
+        assetName:        (r.asset_name       ?? "") as string,
+        assetType:        (r.asset_type       ?? "") as string,
+        status:           (r.status           ?? "") as string,
+        commencementDate: r.commencement_date  ?? null,
+        expiryDate:       r.expiry_date        ?? null,
+        currency:         (r.currency         ?? "QAR") as string,
+        monthlyPayment:   (r.monthly_payment  ?? 0)  as number,
+        lessorName:       (r.lessor_name      ?? "") as string,
+        lesseeName:       (r.lessee_name      ?? "") as string,
+        lesseeType:       (r.lessee_type      ?? "") as string,
+        staffNumber:      (r.staff_number     ?? "") as string,
+        position:         (r.position         ?? "") as string,
+        department:       (r.department       ?? "") as string,
+      };
+    }),
+
 });
 
 // ─── Asset Router ─────────────────────────────────────────────────────────────

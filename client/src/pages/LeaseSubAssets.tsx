@@ -13,7 +13,7 @@
  * Every attach and status change is recorded in sub_asset_transactions.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -106,10 +106,31 @@ export default function LeaseSubAssets() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
+  // ── Lessee selector ─────────────────────────────────────────────────────────
+  const { data: lessees = [], isLoading: loadingLessees } = trpc.lessor.getLesseeList.useQuery();
+  const [selectedLessorId, setSelectedLessorId] = useState<number | null>(null);
+  const selectedLessee = (lessees as any[]).find((l: any) => l.lessorId === selectedLessorId) ?? null;
+
+  // Auto-fetch the lease linked to the selected lessee
+  const { data: lesseeLeaseData, isLoading: loadingLesseeLease } = trpc.lessor.getLeaseByLessee.useQuery(
+    { lessorId: selectedLessorId! },
+    { enabled: selectedLessorId !== null }
+  );
+
   // ── Lease selector ──────────────────────────────────────────────────────────
   const { data: leases = [], isLoading: loadingLeases } = trpc.asset.getLeaseList.useQuery();
   const [selectedLeaseId, setSelectedLeaseId] = useState<string>("");
   const selectedLease = (leases as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId);
+
+  // When lessee's lease is found, auto-select it in the Lease dropdown
+  useEffect(() => {
+    if (selectedLessorId !== null && lesseeLeaseData && !loadingLesseeLease) {
+      const foundId = String(lesseeLeaseData.contractId);
+      if (foundId && foundId !== selectedLeaseId) {
+        setSelectedLeaseId(foundId);
+      }
+    }
+  }, [lesseeLeaseData, loadingLesseeLease, selectedLessorId]);
 
   // ── Attached sets for selected lease ────────────────────────────────────────
   const { data: rawSets = [], isLoading: loadingSets, refetch: refetchSets } =
@@ -405,42 +426,98 @@ export default function LeaseSubAssets() {
           </div>
         </div>
 
-        {/* ── Lease Selector ──────────────────────────────────────────────────── */}
+        {/* ── Lessee + Lease Selector ──────────────────────────────────────────── */}
         <div className="px-6 py-4 border-b border-white/5 bg-[#0d0f1a] shrink-0">
-          <div className="max-w-xl">
-            <Label className="text-xs text-muted-foreground mb-1.5 block">Select Lease</Label>
-            {loadingLeases ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading leases…
-              </div>
-            ) : (
-              <Select value={selectedLeaseId} onValueChange={setSelectedLeaseId}>
-                <SelectTrigger className="bg-[#13161f] border-white/10 text-white h-10">
-                  <SelectValue placeholder="— Choose a lease to view its sub-assets —" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#13161f] border-white/10 text-white">
-                  {(leases as any[]).map((l: any) => (
-                    <SelectItem key={l.leaseId} value={l.leaseId}>
-                      <span className="font-mono text-amber-400 mr-2">{l.leaseRef ?? l.leaseId}</span>
-                      <span className="text-gray-300">{l.assetName ?? ""}</span>
-                      {l.lessorName && <span className="text-gray-500 ml-2">· {l.lessorName}</span>}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {/* Lease summary strip */}
-          {selectedLease && (
-            <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
-              <span><span className="text-white font-medium">Ref:</span> {selectedLease.leaseRef ?? selectedLeaseId}</span>
-              {selectedLease.assetName && <span><span className="text-white font-medium">Property:</span> {selectedLease.assetName}</span>}
-              {selectedLease.lessorName && <span><span className="text-white font-medium">Lessor:</span> {selectedLease.lessorName}</span>}
-              
-              <span className="ml-auto font-semibold text-amber-400">{attachedSets.length} set(s) attached</span>
+            {/* Lessee selector — primary entry point */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                <User className="h-3 w-3" /> Select Lessee
+                <span className="text-amber-400 ml-1">(choose first)</span>
+              </Label>
+              {loadingLessees ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading lessees…
+                </div>
+              ) : (
+                <Select
+                  value={selectedLessorId !== null ? String(selectedLessorId) : ""}
+                  onValueChange={(v) => {
+                    setSelectedLessorId(v ? Number(v) : null);
+                    setSelectedLeaseId("");
+                  }}
+                >
+                  <SelectTrigger className="bg-[#13161f] border-amber-500/30 text-white h-10">
+                    <SelectValue placeholder="— Choose a lessee / staff member —" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#13161f] border-white/10 text-white">
+                    {(lessees as any[]).map((l: any) => (
+                      <SelectItem key={l.lessorId} value={String(l.lessorId)}>
+                        <span className="font-medium text-white mr-2">{l.lesseeName}</span>
+                        {l.staffNumber && <span className="text-gray-400 text-xs mr-1">#{l.staffNumber}</span>}
+                        {l.lesseeType && (
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                            l.lesseeType === "Staff" ? "bg-blue-500/20 text-blue-300" :
+                            l.lesseeType === "Client" ? "bg-emerald-500/20 text-emerald-300" :
+                            "bg-gray-500/20 text-gray-300"
+                          }`}>{l.lesseeType}</span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {selectedLessee && (
+                <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+                  {selectedLessee.position && <span><span className="text-white">Position:</span> {selectedLessee.position}</span>}
+                  {selectedLessee.department && <span><span className="text-white">Dept:</span> {selectedLessee.department}</span>}
+                  {selectedLessee.grade && <span><span className="text-white">Grade:</span> {selectedLessee.grade}</span>}
+                  {selectedLessee.placeOfWork && <span><span className="text-white">Location:</span> {selectedLessee.placeOfWork}</span>}
+                </div>
+              )}
+              {selectedLessorId && !loadingLesseeLease && !lesseeLeaseData && (
+                <p className="text-xs text-red-400 mt-1.5">No lease found for this lessee — select manually below.</p>
+              )}
             </div>
-          )}
+
+            {/* Lease selector — auto-populated from lessee, or manual override */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                Lease Number
+                {loadingLesseeLease && <Loader2 className="h-3 w-3 animate-spin ml-1 text-amber-400" />}
+              </Label>
+              {loadingLeases ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading leases…
+                </div>
+              ) : (
+                <Select value={selectedLeaseId} onValueChange={setSelectedLeaseId}>
+                  <SelectTrigger className="bg-[#13161f] border-white/10 text-white h-10">
+                    <SelectValue placeholder="— Auto-filled from lessee or choose manually —" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#13161f] border-white/10 text-white">
+                    {(leases as any[]).map((l: any) => (
+                      <SelectItem key={l.leaseId} value={l.leaseId}>
+                        <span className="font-mono text-amber-400 mr-2">{l.leaseRef ?? l.leaseId}</span>
+                        <span className="text-gray-300">{l.assetName ?? ""}</span>
+                        {l.lessorName && <span className="text-gray-500 ml-2">· {l.lessorName}</span>}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {selectedLease && (
+                <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+                  <span><span className="text-white">Ref:</span> {selectedLease.leaseRef ?? selectedLeaseId}</span>
+                  {selectedLease.assetName && <span><span className="text-white">Property:</span> {selectedLease.assetName}</span>}
+                  {selectedLease.lessorName && <span><span className="text-white">Lessor:</span> {selectedLease.lessorName}</span>}
+                  <span className="ml-auto font-semibold text-amber-400">{attachedSets.length} set(s) attached</span>
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
 
         {/* ── Content ─────────────────────────────────────────────────────────── */}
