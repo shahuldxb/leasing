@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,17 @@ import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function RentReviews() {
+  const [showSample, setShowSample] = useState(false);
+
+  const handleAltKeys = useCallback((e: KeyboardEvent) => {
+    if (e.altKey && e.key === "1") { e.preventDefault(); setShowSample(false); }
+    if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(true); }
+  }, []);
+  useEffect(() => {
+    window.addEventListener("keydown", handleAltKeys);
+    return () => window.removeEventListener("keydown", handleAltKeys);
+  }, [handleAltKeys]);
+
   const [showForm, setShowForm] = useState(false);
   const [completing, setCompleting] = useState<any>(null);
   const [editRow, setEditRow] = useState<any>(null);
@@ -86,7 +97,17 @@ export default function RentReviews() {
           onAIData={(rows) => setAiRows(rows)}
         />
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          
+        {showSample && (
+          <div className="bg-card border border-primary/30 rounded-xl p-5 mb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Sample Record (Qatar)</h3>
+              <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setShowSample(false)}>✕ Close</button>
+            </div>
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono bg-muted/30 rounded p-3">{'review_date: "2025-09-01", current_rent: 45000, agreed_new_rent: 49500, effective_date: "2025-10-01", notes: "10% increase per QRERA rental index 2025"'}</pre>
+          </div>
+        )}
+        <Table>
             <TableHeader><TableRow>
               <TableHead>Contract</TableHead><TableHead>Review Date</TableHead><TableHead>Current Rent</TableHead><TableHead>New Rent</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead>
             </TableRow></TableHeader>

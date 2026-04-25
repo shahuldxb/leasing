@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,17 @@ import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 
 export default function SubLeases() {
+  const [showSample, setShowSample] = useState(false);
+
+  const handleAltKeys = useCallback((e: KeyboardEvent) => {
+    if (e.altKey && e.key === "1") { e.preventDefault(); setShowSample(false); }
+    if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(true); }
+  }, []);
+  useEffect(() => {
+    window.addEventListener("keydown", handleAltKeys);
+    return () => window.removeEventListener("keydown", handleAltKeys);
+  }, [handleAltKeys]);
+
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" });
@@ -114,7 +125,17 @@ export default function SubLeases() {
           actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
         />
         <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
+          
+        {showSample && (
+          <div className="bg-card border border-primary/30 rounded-xl p-5 mb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Sample Record (Qatar)</h3>
+              <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setShowSample(false)}>✕ Close</button>
+            </div>
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono bg-muted/30 rounded p-3">{'sublessee_name: "Ooredoo Qatar Q.S.C.", monthly_income: 18500, commencement_date: "2025-03-01", expiry_date: "2027-02-28", classification: "OPERATING_SUBLEASE", sublease_area_sqft: 1200, notes: "Sub-let of server room, West Bay Tower"'}</pre>
+          </div>
+        )}
+        <Table>
             <TableHeader><TableRow>
               <TableHead>Parent Contract</TableHead><TableHead>Subtenant</TableHead><TableHead>Start Date</TableHead><TableHead>End Date</TableHead><TableHead>Monthly Rent</TableHead><TableHead>Status</TableHead><TableHead className="w-24">Actions</TableHead>
             </TableRow></TableHeader>
