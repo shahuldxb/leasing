@@ -112,7 +112,7 @@ export default function SubAssetTransactionLog() {
   const [filterLeaseId,   setFilterLeaseId]   = useState<string>("all");
   const [filterSetId,     setFilterSetId]     = useState<string>("all");
   const [filterAction,    setFilterAction]    = useState<string>("all");
-  const [filterEntityType,setFilterEntityType]= useState<string>("all");
+
   const [filterUser,      setFilterUser]      = useState<string>("");
   const [filterDateFrom,  setFilterDateFrom]  = useState<string>("");
   const [filterDateTo,    setFilterDateTo]    = useState<string>("");
@@ -144,12 +144,11 @@ export default function SubAssetTransactionLog() {
   }, [filterLeaseId]);
   const leaseHasData = filterLeaseId !== "all";
   const txnInput = useMemo(() => ({
-    entityType: filterEntityType !== "all" ? filterEntityType : undefined,
     action:     filterAction     !== "all" ? filterAction     : undefined,
     changedBy:  filterUser.trim() || undefined,
     dateFrom:   filterDateFrom   || undefined,
     dateTo:     filterDateTo     || undefined,
-  }), [filterEntityType, filterAction, filterUser, filterDateFrom, filterDateTo]);
+  }), [filterAction, filterUser, filterDateFrom, filterDateTo]);
   // Only fetch transactions after a lease is selected
   const { data: txnData, isLoading, refetch, isFetching } = trpc.asset.getSubAssetTxns.useQuery(
     txnInput,
@@ -334,8 +333,8 @@ export default function SubAssetTransactionLog() {
                 </Select>
               </div>
             </div>
-            {/* Row 2: Action + Entity Type + Changed By + Date From + Date To */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+            {/* Row 2: Action + Changed By + Date From + Date To */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {/* Action */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Action</Label>
@@ -347,21 +346,6 @@ export default function SubAssetTransactionLog() {
                     <SelectItem value="all">All Actions</SelectItem>
                     {["INSERT","UPDATE","DELETE","ATTACH","STATUS_CHANGE","OWNERSHIP_CHANGE","ITEM_ADD","ITEM_EDIT","ITEM_DELETE"].map(a => (
                       <SelectItem key={a} value={a}>{a.replace(/_/g," ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Entity Type */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Entity Type</Label>
-                <Select value={filterEntityType} onValueChange={setFilterEntityType}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-border">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {["SET","ITEM","LEASE_SUB_ASSET"].map(t => (
-                      <SelectItem key={t} value={t}>{t.replace(/_/g," ")}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -389,7 +373,7 @@ export default function SubAssetTransactionLog() {
               </Button>
               <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => {
                 setFilterLeaseId("all"); setFilterSetId("all"); setFilterAction("all");
-                setFilterEntityType("all"); setFilterUser(""); setFilterDateFrom(""); setFilterDateTo(""); setSelectedId(null);
+                setFilterUser(""); setFilterDateFrom(""); setFilterDateTo(""); setSelectedId(null);
               }}>
                 <X className="w-3.5 h-3.5" /> Clear
               </Button>
