@@ -872,3 +872,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Each action logs a transaction to sub_asset_transactions
 - [x] Action buttons are context-sensitive (greyed out when no row selected)
 - [x] Ownership change also logs a transaction (OWNERSHIP_CHANGE action)
+
+## Lease Dropdown Fix
+- [x] Fix sp_GetLeaseList to return all leases with leaseRef and description/asset name
+- [x] Update SubAssetTransactionLog.tsx dropdown to show leaseRef + description

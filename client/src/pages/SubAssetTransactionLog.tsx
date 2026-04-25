@@ -7,7 +7,7 @@
  * Action toolbar: Add (Attach), Edit (Status), Delete, Returned, Write Off, Replaced, Condemned.
  * Ownership toggle per record: Lease ↔ Lessor.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -128,8 +128,21 @@ export default function SubAssetTransactionLog() {
 
   // ── Data queries ─────────────────────────────────────────────
   const { data: leases = [] }  = trpc.asset.getLeaseList.useQuery();
-  const { data: allSets = [] } = trpc.asset.getSubAssetGroups.useQuery();
-
+  const { data: allSets = [] }  = trpc.asset.getSubAssetGroups.useQuery();
+  // Sub-Asset sets for the selected lease only
+  const { data: leaseSubAssets = [], refetch: refetchLSA } = trpc.asset.getLeaseSubAssets.useQuery(
+    { leaseId: filterLeaseId !== "all" ? filterLeaseId : "" },
+    { enabled: filterLeaseId !== "all" }
+  );
+  // Reset set filter when lease changes
+  const prevLeaseId = useRef(filterLeaseId);
+  useEffect(() => {
+    if (prevLeaseId.current !== filterLeaseId) {
+      setFilterSetId("all");
+      prevLeaseId.current = filterLeaseId;
+    }
+  }, [filterLeaseId]);
+  const leaseHasData = filterLeaseId !== "all";
   const txnInput = useMemo(() => ({
     entityType: filterEntityType !== "all" ? filterEntityType : undefined,
     action:     filterAction     !== "all" ? filterAction     : undefined,
@@ -137,14 +150,12 @@ export default function SubAssetTransactionLog() {
     dateFrom:   filterDateFrom   || undefined,
     dateTo:     filterDateTo     || undefined,
   }), [filterEntityType, filterAction, filterUser, filterDateFrom, filterDateTo]);
-
-  const { data: txnData, isLoading, refetch, isFetching } = trpc.asset.getSubAssetTxns.useQuery(txnInput);
-  const txnRaw = Array.isArray(txnData) ? txnData : (txnData as any)?.rows ?? [];
-
-  const { data: leaseSubAssets = [], refetch: refetchLSA } = trpc.asset.getLeaseSubAssets.useQuery(
-    { leaseId: filterLeaseId !== "all" ? filterLeaseId : "" },
-    { enabled: filterLeaseId !== "all" }
+  // Only fetch transactions after a lease is selected
+  const { data: txnData, isLoading, refetch, isFetching } = trpc.asset.getSubAssetTxns.useQuery(
+    txnInput,
+    { enabled: leaseHasData }
   );
+  const txnRaw = Array.isArray(txnData) ? txnData : (txnData as any)?.rows ?? [];
 
   // ── Mutations ─────────────────────────────────────────────────
   const statusMut = trpc.asset.updateSubAssetStatus.useMutation({
@@ -295,7 +306,8 @@ export default function SubAssetTransactionLog() {
                   <SelectItem value="all">All Leases</SelectItem>
                   {(leases as any[]).map((l: any) => (
                     <SelectItem key={l.leaseId} value={l.leaseId}>
-                      {l.leaseRef}{l.assetName ? ` — ${l.assetName}` : ""}
+                      <span className="font-mono text-[#e60000]">{l.leaseRef}</span>
+                      {l.assetName ? <span className="text-muted-foreground ml-1">— {l.assetName}</span> : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -310,10 +322,11 @@ export default function SubAssetTransactionLog() {
                   <SelectValue placeholder="All Sets" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Sets</SelectItem>
-                  {(allSets as any[]).map((s: any) => (
-                    <SelectItem key={s.assetId} value={String(s.assetId)}>
-                      {s.assetCode} · {s.setName}
+                  <SelectItem value="all">{filterLeaseId === "all" ? "Select a lease first" : "All Sets"}</SelectItem>
+                  {filterLeaseId !== "all" && (leaseSubAssets as any[]).map((lsa: any) => (
+                    <SelectItem key={lsa.leaseSubAssetId} value={String(lsa.leaseSubAssetId)}>
+                      <span className="font-mono text-[#e60000]">{lsa.assetCode}</span>
+                      <span className="text-muted-foreground ml-1">· {lsa.setName}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -452,7 +465,14 @@ export default function SubAssetTransactionLog() {
                   {isLoading && (
                     <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">Loading transactions…</td></tr>
                   )}
-                  {!isLoading && txns.length === 0 && (
+                  {!leaseHasData && (
+                    <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">
+                      <span className="flex flex-col items-center gap-1">
+                        <span className="text-sm">Select a Lease Number above to view its transaction history.</span>
+                      </span>
+                    </td></tr>
+                  )}
+                  {leaseHasData && !isLoading && txns.length === 0 && (
                     <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No transactions found for the selected filters.</td></tr>
                   )}
                   {(txns as any[]).flatMap((t: any) => {
