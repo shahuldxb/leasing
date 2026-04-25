@@ -779,3 +779,24 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] AssetRegistry.tsx — each item row gets Edit (pencil) and Delete (trash) icon buttons
 - [x] AssetRegistry.tsx — inline form to add/edit item: Name, Category, Sub-Category, Brand, Model, Spec, Unit Price (QAR)
 - [x] AssetRegistry.tsx — custom items persist alongside built-in library items
+
+## Sub-Asset Set Selector in New Lease (Apr 25)
+- [ ] NewLease.tsx Step 2 — add "Sub-Asset Sets" section with multi-select from saved sets (getSubAssetGroups)
+- [ ] Show each selected set as a card with set code, name, item count, total QAR value
+- [ ] Allow removing a selected set with an X button
+- [ ] Pass selected set IDs in the lease creation payload (subAssetSetIds field)
+- [ ] Step 5 Review — show attached sub-asset sets summary table
+- [ ] Update todo.md when complete
+
+## Sub-Asset Transaction Log (Apr 25)
+- [x] Create sp_LogSubAssetTransaction SP (txn_id, action, entity_type, entity_id, entity_code, entity_name, before_json, after_json, changed_by, changed_at, screen_id, ip_address)
+- [x] Create sp_GetSubAssetTransactions SP (filter by entity_id, action, date range, user)
+- [x] Add tRPC procedures: asset.logSubAssetTxn, asset.getSubAssetTxns to lessorAsset router
+- [x] Wire logSubAssetTxn call in AssetRegistry.tsx on every upsertSubAssetGroup mutation (INSERT/UPDATE)
+- [x] Wire logSubAssetTxn call in AssetRegistry.tsx on every deleteSubAssetGroup mutation (DELETE)
+- [x] Wire logSubAssetTxn call in AssetRegistry.tsx on every custom item add/edit/delete (localStorage ops)
+- [x] Build SubAssetTransactionLog.tsx — full transaction log screen with filters (action, date, user)
+- [x] Show before/after JSON diff in expandable row for each transaction
+- [x] Add "Transaction Log" button in Sub-Asset Registry header linking to the log screen
+- [x] Wire route /sub-asset-registry/transactions in App.tsx
+- [x] Add Transaction Log link in sidebar under Sub-Asset Registry

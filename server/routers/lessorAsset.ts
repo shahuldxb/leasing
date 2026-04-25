@@ -556,4 +556,79 @@ export const assetRouter = router({
       const rows = await execSPP("sp_AddAssetInsurance", params);
       return rows[0];
     }),
+
+  // ── Sub-Asset Transaction Log ───────────────────────────────────────────
+  logSubAssetTxn: protectedProcedure
+    .input(z.object({
+      action:      z.string(),           // INSERT | UPDATE | DELETE | ITEM_ADD | ITEM_EDIT | ITEM_DELETE
+      entityType:  z.string(),           // SET | LIBRARY_ITEM
+      entityId:    z.number().int().optional(),
+      entityCode:  z.string().optional(),
+      entityName:  z.string().optional(),
+      beforeJson:  z.string().optional(),
+      afterJson:   z.string().optional(),
+      screenId:    z.string().optional(),
+      sessionRef:  z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const params: SPPParam[] = [
+        { name: "Action",     type: "VarChar",  value: input.action },
+        { name: "EntityType", type: "VarChar",  value: input.entityType },
+        { name: "EntityId",   type: "Int",      value: input.entityId ?? null },
+        { name: "EntityCode", type: "NVarChar", value: input.entityCode ?? null },
+        { name: "EntityName", type: "NVarChar", value: input.entityName ?? null },
+        { name: "BeforeJson", type: "NVarChar", value: input.beforeJson ?? null },
+        { name: "AfterJson",  type: "NVarChar", value: input.afterJson ?? null },
+        { name: "ChangedBy",  type: "NVarChar", value: ctx.user?.name ?? "system" },
+        { name: "ScreenId",   type: "VarChar",  value: input.screenId ?? "VFLSASSET001" },
+        { name: "IpAddress",  type: "VarChar",  value: null },
+        { name: "SessionRef", type: "NVarChar", value: input.sessionRef ?? null },
+      ];
+      const rows = await execSPP("sp_LogSubAssetTransaction", params);
+      return rows[0] as { txn_id: number };
+    }),
+
+  getSubAssetTxns: protectedProcedure
+    .input(z.object({
+      entityId:   z.number().int().optional(),
+      entityType: z.string().optional(),
+      action:     z.string().optional(),
+      changedBy:  z.string().optional(),
+      dateFrom:   z.string().optional(),
+      dateTo:     z.string().optional(),
+      page:       z.number().int().default(1),
+      pageSize:   z.number().int().default(100),
+    }))
+    .query(async ({ input }) => {
+      const params: SPPParam[] = [
+        { name: "EntityId",   type: "Int",      value: input.entityId ?? null },
+        { name: "EntityType", type: "VarChar",  value: input.entityType ?? null },
+        { name: "Action",     type: "VarChar",  value: input.action ?? null },
+        { name: "ChangedBy",  type: "NVarChar", value: input.changedBy ?? null },
+        { name: "DateFrom",   type: "DateTime2",value: input.dateFrom ?? null },
+        { name: "DateTo",     type: "DateTime2",value: input.dateTo ?? null },
+        { name: "PageNumber", type: "Int",      value: input.page },
+        { name: "PageSize",   type: "Int",      value: input.pageSize },
+      ];
+      const sets = await execSPPMulti("sp_GetSubAssetTransactions", params);
+      const total = (sets[0]?.[0] as any)?.total_count ?? 0;
+      const rows  = (sets[1] ?? []) as Record<string, unknown>[];
+      return {
+        total,
+        rows: rows.map(r => ({
+          txnId:      r.txn_id      as number,
+          action:     r.action      as string,
+          entityType: r.entity_type as string,
+          entityId:   r.entity_id   as number | null,
+          entityCode: r.entity_code as string | null,
+          entityName: r.entity_name as string | null,
+          beforeJson: r.before_json as string | null,
+          afterJson:  r.after_json  as string | null,
+          changedBy:  r.changed_by  as string,
+          changedAt:  r.changed_at  as string,
+          screenId:   r.screen_id   as string | null,
+          sessionRef: r.session_ref as string | null,
+        })),
+      };
+    }),
 });

@@ -128,5 +128,14 @@ export async function execSPPOne<T = Record<string, any>>(
   return rows.length > 0 ? rows[0] : null;
 }
 
+/**
+ * Execute raw SQL (DDL / batch statements). Use ONLY for migrations and setup.
+ * Application logic MUST use stored procedures via execSPP.
+ */
+export async function execRaw(sql_text: string): Promise<void> {
+  const pool = await getPool();
+  await pool.request().batch(sql_text);
+}
+
 // Re-export sql types for convenience
 export { sql };

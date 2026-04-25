@@ -11,8 +11,9 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
-  Plus, Minus, Trash2, CheckCircle2, Package, Search, Edit2, Tag, Loader2, Pencil, X
+  Plus, Minus, Trash2, CheckCircle2, Package, Search, Edit2, Tag, Loader2, Pencil, X, ScrollText
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MASTER ITEM LIBRARY — 300+ items with QAR prices
@@ -216,6 +217,7 @@ interface SetLine {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AssetRegistry() {
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
 
   // ── DB queries / mutations ───────────────────────────────────────────────
   const { data: savedSetsRaw = [], isLoading: loadingSets } = trpc.asset.getSubAssetGroups.useQuery();
@@ -227,6 +229,7 @@ export default function AssetRegistry() {
     onSuccess: () => { utils.asset.getSubAssetGroups.invalidate(); },
     onError: (e) => toast.error(`Delete failed: ${e.message}`),
   });
+  const logTxnMutation = trpc.asset.logSubAssetTxn.useMutation();
 
   // Parse saved sets from DB rows
   const savedSets = useMemo(() => savedSetsRaw.map(r => {
@@ -312,11 +315,22 @@ export default function AssetRegistry() {
     setLibFormMode("edit");
   }  function deleteLibItem(code: string) {
     const isCustom = customItems.some(i => i.code === code);
+    const itemToDelete = allItems.find(i => i.code === code);
     if (isCustom) {
       setCustomItems(prev => prev.filter(i => i.code !== code));
     } else {
       setDeletedMasterCodes(prev => [...prev, code]);
     }
+    // Log the item deletion
+    logTxnMutation.mutate({
+      action:     "ITEM_DELETE",
+      entityType: "LIBRARY_ITEM",
+      entityCode: code,
+      entityName: itemToDelete?.name ?? code,
+      beforeJson: itemToDelete ? JSON.stringify(itemToDelete) : undefined,
+      afterJson:  undefined,
+      screenId:   "VFLSASSET001",
+    });
     toast.success("Item removed from library");
   }
   function saveLibItem() {
@@ -325,14 +339,28 @@ export default function AssetRegistry() {
     const price = parseFloat(libForm.priceQAR);
     if (isNaN(price) || price <= 0) { toast.error("Enter a valid price"); return; }
     if (libFormMode === "edit" && libEditCode) {
+      const beforeItem = allItems.find(i => i.code === libEditCode);
+      const updatedItem = { ...beforeItem, name: libForm.name.trim(), category: libForm.category, subCategory: libForm.subCategory.trim(), brand: libForm.brand.trim() || undefined, spec: libForm.spec.trim() || undefined, priceQAR: price };
       setCustomItems(prev => prev.map(i => i.code === libEditCode
         ? { ...i, name: libForm.name.trim(), category: libForm.category, subCategory: libForm.subCategory.trim(), brand: libForm.brand.trim() || undefined, spec: libForm.spec.trim() || undefined, priceQAR: price }
         : i
       ));
+      logTxnMutation.mutate({
+        action: "ITEM_EDIT", entityType: "LIBRARY_ITEM",
+        entityCode: libEditCode, entityName: libForm.name.trim(),
+        beforeJson: beforeItem ? JSON.stringify(beforeItem) : undefined,
+        afterJson: JSON.stringify(updatedItem), screenId: "VFLSASSET001",
+      });
       toast.success("Item updated");
     } else {
       const code = `CUST-${Date.now()}`;
-      setCustomItems(prev => [...prev, { code, name: libForm.name.trim(), category: libForm.category, subCategory: libForm.subCategory.trim(), brand: libForm.brand.trim() || undefined, spec: libForm.spec.trim() || undefined, priceQAR: price }]);
+      const newItem = { code, name: libForm.name.trim(), category: libForm.category, subCategory: libForm.subCategory.trim(), brand: libForm.brand.trim() || undefined, spec: libForm.spec.trim() || undefined, priceQAR: price };
+      setCustomItems(prev => [...prev, newItem]);
+      logTxnMutation.mutate({
+        action: "ITEM_ADD", entityType: "LIBRARY_ITEM",
+        entityCode: code, entityName: libForm.name.trim(),
+        beforeJson: undefined, afterJson: JSON.stringify(newItem), screenId: "VFLSASSET001",
+      });
       toast.success("Item added to library");
     }
     setLibFormMode("idle");
@@ -422,6 +450,9 @@ export default function AssetRegistry() {
     const tagsJson = JSON.stringify(draftLines.map(l => ({
       code: l.item.code, qty: l.qty, serialNumbers: l.serialNumbers, leaseDate: l.leaseDate, warrantyExpiry: l.warrantyExpiry,
     })));
+    // Capture before-state for UPDATE
+    const beforeSet = editingAssetId ? savedSets.find(s => s.assetId === editingAssetId) : null;
+    const beforeJson = beforeSet ? JSON.stringify({ name: beforeSet.name, description: beforeSet.description, lines: beforeSet.lines.map(l => ({ code: l.item.code, qty: l.qty, serialNumbers: l.serialNumbers })) }) : null;
     try {
       const result = await upsertMutation.mutateAsync({
         assetId: editingAssetId ?? undefined,
@@ -429,14 +460,39 @@ export default function AssetRegistry() {
         description: draftDesc.trim(),
         tags: tagsJson,
       });
+      const action = builderMode === "new" ? "INSERT" : "UPDATE";
+      const afterJson = JSON.stringify({ name: draftName.trim(), description: draftDesc.trim(), assetCode: result?.asset_code, lines: draftLines.map(l => ({ code: l.item.code, name: l.item.name, qty: l.qty, serialNumbers: l.serialNumbers, leaseDate: l.leaseDate, warrantyExpiry: l.warrantyExpiry })) });
+      logTxnMutation.mutate({
+        action,
+        entityType: "SET",
+        entityId:   result?.asset_id ?? editingAssetId ?? undefined,
+        entityCode: result?.asset_code ?? undefined,
+        entityName: draftName.trim(),
+        beforeJson: beforeJson ?? undefined,
+        afterJson,
+        screenId:   "VFLSASSET001",
+      });
       toast.success(builderMode === "new" ? `Set "${draftName}" saved as ${result?.asset_code ?? ""}` : "Set updated successfully");
       cancelDraft();
     } catch { /* handled by onError */ }
   }
 
   async function deleteSet(assetId: number) {
+    // Capture before-state for DELETE log
+    const setToDelete = savedSets.find(s => s.assetId === assetId);
+    const beforeJson = setToDelete ? JSON.stringify({ name: setToDelete.name, description: setToDelete.description, assetCode: setToDelete.assetCode, lines: setToDelete.lines.map(l => ({ code: l.item.code, name: l.item.name, qty: l.qty })) }) : undefined;
     try {
       await deleteMutation.mutateAsync({ assetId });
+      logTxnMutation.mutate({
+        action:     "DELETE",
+        entityType: "SET",
+        entityId:   assetId,
+        entityCode: setToDelete?.assetCode ?? undefined,
+        entityName: setToDelete?.name ?? undefined,
+        beforeJson,
+        afterJson:  undefined,
+        screenId:   "VFLSASSET001",
+      });
       if (selectedAssetId === assetId) setSelectedAssetId(null);
       toast.success("Set deleted");
     } catch { /* handled by onError */ }
@@ -457,10 +513,16 @@ export default function AssetRegistry() {
                 Sub-Asset Groups
                 {loadingSets && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-1" />}
               </CardTitle>
-              <Button size="sm" className="h-8 bg-red-600 hover:bg-red-700 text-white gap-1.5"
-                onClick={startNew} disabled={builderMode !== "idle"}>
-                <Plus className="h-3.5 w-3.5" /> New Set
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-border"
+                  onClick={() => setLocation("/sub-asset-registry/transactions")}>
+                  <ScrollText className="h-3.5 w-3.5" /> Transaction Log
+                </Button>
+                <Button size="sm" className="h-8 bg-red-600 hover:bg-red-700 text-white gap-1.5"
+                  onClick={startNew} disabled={builderMode !== "idle"}>
+                  <Plus className="h-3.5 w-3.5" /> New Set
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">

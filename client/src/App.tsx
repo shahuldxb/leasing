@@ -118,8 +118,9 @@ import MSCRegister           from "./pages/MSCRegister";
 import MSCContractViewer     from "./pages/MSCContractViewer";
 
 // Lessor & Asset
-import LessorMaster       from "./pages/LessorMaster";
-import AssetRegistry      from "./pages/AssetRegistry";
+import LessorMaster              from "./pages/LessorMaster";
+import AssetRegistry             from "./pages/AssetRegistry";
+import SubAssetTransactionLog    from "./pages/SubAssetTransactionLog";
 
 // P2/P3 New Features
 import MaturityAnalysis   from "./pages/MaturityAnalysis";
@@ -224,8 +225,10 @@ function Router() {
       <Route path="/scenarios"               component={ScenarioModelling} />
 
       {/* Lessor & Asset */}
-      <Route path="/lessor-master"           component={LessorMaster} />
-      <Route path="/asset-registry"          component={AssetRegistry} />
+      <Route path="/lessor-master"                    component={LessorMaster} />
+      <Route path="/asset-registry"                   component={AssetRegistry} />
+      <Route path="/sub-asset-registry"               component={AssetRegistry} />
+      <Route path="/sub-asset-registry/transactions"  component={SubAssetTransactionLog} />
 
       {/* Alerts & Admin */}
       <Route path="/alerts"                  component={AlertCentre} />
