@@ -436,40 +436,49 @@ export default function SubAssetTransactionLog() {
                 </Select>
               </div>
 
-              {/* Sub-Asset Group selector — master list from Asset Registry */}
+              {/* Sub-Asset Group selector — shows only groups attached to this lease */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">
                   Sub-Asset Group
-                  {loadingSets && leaseSelected && <span className="ml-2 text-[10px] text-muted-foreground animate-pulse">Loading lease data…</span>}
+                  {loadingSets && leaseSelected && <span className="ml-2 text-[10px] text-muted-foreground animate-pulse">Loading…</span>}
+                  {leaseSelected && !loadingSets && (
+                    <span className="ml-2 text-[10px] text-muted-foreground">{leaseSets.length} attached</span>
+                  )}
                 </Label>
-                <Select
-                  value={selectedAssetId}
-                  onValueChange={setSelectedAssetId}
-                >
-                  <SelectTrigger className="bg-background border-border">
-                    <SelectValue placeholder="— Select a set —" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Select a set —</SelectItem>
-                    {(allAvailSets as any[]).map((s: any) => {
-                      // Check if this group is attached to the selected lease
-                      const leaseSet = leaseSelected
-                        ? (leaseSets as any[]).find((ls: any) => ls.assetId === s.assetId)
-                        : null;
-                      return (
-                        <SelectItem key={s.assetId} value={String(s.assetId)}>
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedAssetId}
+                    onValueChange={setSelectedAssetId}
+                    disabled={!leaseSelected}
+                  >
+                    <SelectTrigger className="bg-background border-border flex-1">
+                      <SelectValue placeholder={leaseSelected ? (loadingSets ? "Loading…" : leaseSets.length === 0 ? "No groups attached yet" : "— Select a set —") : "— Select a lease first —"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Select a set —</SelectItem>
+                      {(leaseSets as any[]).map((s: any) => (
+                        <SelectItem key={s.leaseSubAssetId ?? s.assetId} value={String(s.assetId)}>
                           <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
                           <span>{s.setName}</span>
-                          {leaseSet && (
-                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded border ${STATUS_BADGE[leaseSet.status] ?? "bg-muted text-muted-foreground"}`}>
-                              {leaseSet.status}
-                            </span>
-                          )}
+                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded border ${STATUS_BADGE[s.status] ?? "bg-muted text-muted-foreground"}`}>
+                            {s.status}
+                          </span>
                         </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {/* Add button — opens master-list picker to attach a new group */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-3 border-green-600 text-green-500 hover:bg-green-600/10 shrink-0"
+                    disabled={!leaseSelected}
+                    onClick={() => { resetAttachDialog(); setAttachOpen(true); }}
+                    title="Attach a new sub-asset group to this lease"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -756,15 +765,6 @@ export default function SubAssetTransactionLog() {
                     {" · "}{rec.setName ?? rec.currentSetName}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-                    {/* Add / Attach button — always first */}
-                    <button
-                      onClick={() => { resetAttachDialog(); setAttachOpen(true); }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 cursor-pointer text-emerald-400"
-                    >
-                      <Link2 className="w-5 h-5 text-emerald-400" />
-                      <span>Add</span>
-                      <span className="text-[10px] text-muted-foreground font-normal text-center leading-tight">Attach to lease</span>
-                    </button>
                     {ACTIONS.map(action => {
                       const Icon = action.icon;
                       const disabled = isTerminal && action.id !== "BackIn";
