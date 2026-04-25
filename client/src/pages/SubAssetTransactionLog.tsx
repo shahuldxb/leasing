@@ -221,7 +221,7 @@ export default function SubAssetTransactionLog() {
     if (!selectedSetRecord) return [];
     try {
       // Prefer per-lease tagsWithSerials (saved on attach/edit) over master setTags
-    const raw = (selectedSetRecord as any).tagsWithSerials ?? (selectedSetRecord as any).setTags;
+    const raw = (selectedSetRecord as any).tagsWithSerials ?? (selectedSetRecord as any).setTags ?? (selectedSetRecord as any).tags;
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed.map((item: any) => {
@@ -564,12 +564,14 @@ export default function SubAssetTransactionLog() {
                         <span className="mx-2 text-muted-foreground">·</span>
                         {rec.setName ?? rec.currentSetName}
                       </p>
-                      <p className="text-xs text-muted-foreground">Lease: {rec.leaseRef ?? rec.leaseId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isAlreadyAttached ? `Lease: ${rec.leaseRef ?? rec.leaseId}` : <span className="text-amber-400 font-medium">Not yet attached to this lease</span>}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded border text-xs font-medium ${STATUS_BADGE[rec.status] ?? "bg-muted text-muted-foreground"}`}>
-                      {rec.status}
+                    <span className={`px-2.5 py-1 rounded border text-xs font-medium ${isAlreadyAttached ? (STATUS_BADGE[rec.status] ?? "bg-muted text-muted-foreground") : "bg-amber-500/20 text-amber-400 border-amber-500/30"}`}>
+                      {isAlreadyAttached ? rec.status : "Not Attached"}
                     </span>
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => refetchSets()}>
                       <RefreshCw className="w-3 h-3" /> Refresh
