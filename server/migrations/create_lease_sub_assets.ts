@@ -42,16 +42,17 @@ async function run() {
   `);
   await execRaw(`
     CREATE PROCEDURE asset.sp_AttachSubAssetToLease
-      @lease_id    NVARCHAR(50),
-      @lease_ref   NVARCHAR(100),
-      @asset_id    INT,
-      @asset_code  NVARCHAR(50),
-      @set_name    NVARCHAR(200),
-      @created_by  NVARCHAR(200)
+      @lease_id          NVARCHAR(50),
+      @lease_ref         NVARCHAR(100),
+      @asset_id          INT,
+      @asset_code        NVARCHAR(50),
+      @set_name          NVARCHAR(200),
+      @tags_with_serials NVARCHAR(MAX) = NULL,
+      @created_by        NVARCHAR(200)
     AS
     BEGIN
       SET NOCOUNT ON;
-      -- Prevent duplicate active attachment
+      -- Prevent duplicate active attachment on the same lease
       IF EXISTS (
         SELECT 1 FROM asset.lease_sub_assets
         WHERE lease_id = @lease_id AND asset_id = @asset_id AND status = 'Active'
@@ -62,9 +63,9 @@ async function run() {
       END
 
       INSERT INTO asset.lease_sub_assets
-        (lease_id, lease_ref, asset_id, asset_code, set_name, status, status_date, created_by, created_at)
+        (lease_id, lease_ref, asset_id, asset_code, set_name, tags_with_serials, status, status_date, created_by, created_at)
       VALUES
-        (@lease_id, @lease_ref, @asset_id, @asset_code, @set_name, 'Active', CAST(GETUTCDATE() AS DATE), @created_by, GETUTCDATE());
+        (@lease_id, @lease_ref, @asset_id, @asset_code, @set_name, @tags_with_serials, 'Active', CAST(GETUTCDATE() AS DATE), @created_by, GETUTCDATE());
 
       SELECT SCOPE_IDENTITY() AS lease_sub_asset_id, 'OK' AS message;
     END

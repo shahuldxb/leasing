@@ -220,7 +220,8 @@ export default function SubAssetTransactionLog() {
   const setItems = useMemo(() => {
     if (!selectedSetRecord) return [];
     try {
-      const raw = (selectedSetRecord as any).setTags ?? (selectedSetRecord as any).tagsWithSerials;
+      // Prefer per-lease tagsWithSerials (saved on attach/edit) over master setTags
+    const raw = (selectedSetRecord as any).tagsWithSerials ?? (selectedSetRecord as any).setTags;
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed.map((item: any) => {

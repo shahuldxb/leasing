@@ -753,6 +753,7 @@ export const assetRouter = router({
         createdAt:         r.created_at           as string,
         updatedBy:         r.updated_by           as string | null,
         updatedAt:         r.updated_at           as string | null,
+        tagsWithSerials:   r.tags_with_serials    as string | null,
         setTags:           r.set_tags             as string | null,
       }));
     }),
