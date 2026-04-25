@@ -429,13 +429,16 @@ export default function AssetRegistry() {
                       {selectedSet.description && <span className="text-xs text-muted-foreground">{selectedSet.description}</span>}
                       <span className="ml-auto text-xs text-muted-foreground">{selectedSet.lines.reduce((a, l) => a + l.qty, 0)} units · QAR {selectedSet.lines.reduce((a, l) => a + l.qty * l.item.priceQAR, 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                       {selectedSet.lines.map(l => (
-                        <div key={l.item.code} className="flex items-center gap-1.5 bg-[#13161f] rounded px-2 py-1 border border-white/5">
-                          <span className="text-xs text-gray-300">{l.item.name}</span>
-                          {l.item.brand && <span className="text-[10px] text-muted-foreground">{l.item.brand}</span>}
-                          <Badge variant="outline" className="text-[10px] px-1 h-4 border-white/10 text-gray-400">×{l.qty}</Badge>
-                          <span className="text-[10px] text-amber-400">QAR {(l.qty * l.item.priceQAR).toLocaleString()}</span>
+                        <div key={l.item.code} className="flex flex-col gap-0.5 bg-[#13161f] rounded-lg px-3 py-2 border border-white/5">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-medium text-gray-200 truncate">{l.item.name}</span>
+                            <Badge variant="outline" className="text-[10px] px-1 h-4 border-white/10 text-gray-400 shrink-0">×{l.qty}</Badge>
+                          </div>
+                          {l.item.brand && <span className="text-[10px] text-blue-400">{l.item.brand}</span>}
+                          {l.item.spec && <span className="text-[10px] text-muted-foreground truncate">{l.item.spec}</span>}
+                          <span className="text-[10px] font-semibold text-amber-400 mt-0.5">QAR {(l.qty * l.item.priceQAR).toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -487,7 +490,7 @@ export default function AssetRegistry() {
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto px-4 pb-4">
-              <div className="grid grid-cols-1 gap-1.5">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-1.5">
                 {filteredItems.map(item => (
                   <button key={item.code}
                     onClick={() => addToDraft(item)}
