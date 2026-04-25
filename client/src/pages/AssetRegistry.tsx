@@ -245,6 +245,12 @@ export default function AssetRegistry() {
   }), [savedSetsRaw]);
 
   // ── Custom items (persisted in localStorage) ───────────────────────────
+  const [deletedMasterCodes, setDeletedMasterCodes] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("vfl_deleted_master") || "[]"); } catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem("vfl_deleted_master", JSON.stringify(deletedMasterCodes));
+  }, [deletedMasterCodes]);
   const [customItems, setCustomItems] = useState<MasterItem[]>(() => {
     try { return JSON.parse(localStorage.getItem("vfl_custom_items") || "[]"); } catch { return []; }
   });
@@ -279,7 +285,10 @@ export default function AssetRegistry() {
     return Array.from(new Set(MASTER_ITEMS.filter(i => i.category === libCategory).map(i => i.subCategory)));
   }, [libCategory]);
 
-  const allItems = useMemo(() => [...MASTER_ITEMS, ...customItems], [customItems]);
+  const allItems = useMemo(() => [
+    ...MASTER_ITEMS.filter(m => !deletedMasterCodes.includes(m.code)),
+    ...customItems,
+  ], [customItems, deletedMasterCodes]);
   const filteredItems = useMemo(() => {
     return allItems.filter(item => {
       if (libCategory !== "all" && item.category !== libCategory) return false;
@@ -301,9 +310,13 @@ export default function AssetRegistry() {
     setLibForm({ name: item.name, category: item.category, subCategory: item.subCategory, brand: item.brand ?? "", spec: item.spec ?? "", priceQAR: String(item.priceQAR) });
     setLibEditCode(item.code);
     setLibFormMode("edit");
-  }
-  function deleteLibItem(code: string) {
-    setCustomItems(prev => prev.filter(i => i.code !== code));
+  }  function deleteLibItem(code: string) {
+    const isCustom = customItems.some(i => i.code === code);
+    if (isCustom) {
+      setCustomItems(prev => prev.filter(i => i.code !== code));
+    } else {
+      setDeletedMasterCodes(prev => [...prev, code]);
+    }
     toast.success("Item removed from library");
   }
   function saveLibItem() {
