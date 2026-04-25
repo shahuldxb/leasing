@@ -28,7 +28,7 @@ export default function NewLease() {
   const [, setLocation] = useLocation();
 
   // Step 1 — Lessor
-  const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "" });
+  const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "", contractPreparedDate: new Date().toISOString().split("T")[0], createdDate: new Date().toISOString().split("T")[0] });
   // Step 2 — Asset
   const [asset, setAsset] = useState({ assetType: "Villa", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
   // Step 3 — Financial
@@ -231,6 +231,14 @@ export default function NewLease() {
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label className={labelCls}>Contract Prepared Date *</Label>
+                  <Input type="date" className={inputCls} value={lessor.contractPreparedDate} onChange={e => setLessor(l => ({ ...l, contractPreparedDate: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className={labelCls}>Created Date</Label>
+                  <Input type="date" className={inputCls} value={lessor.createdDate} onChange={e => setLessor(l => ({ ...l, createdDate: e.target.value }))} />
                 </div>
               </div>
             </div>

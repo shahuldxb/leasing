@@ -754,3 +754,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] DashboardLayout.tsx — rename "Asset Registry" nav label to "Sub-Asset Registry"
 - [x] AssetRegistry.tsx — add Purchase Date and Warranty Expiry date fields to set builder items
 - [x] LessorMaster.tsx — add date fields (Contract Start Date, Contract End Date, Registration Date)
+
+## New Lease Date Fields (Apr 25)
+- [x] NewLease.tsx — add Contract Prepared Date and Created Date fields (Step 1 or Review step)
