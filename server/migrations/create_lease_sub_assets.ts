@@ -131,11 +131,11 @@ async function run() {
         CONVERT(NVARCHAR(30), lsa.created_at, 120) AS created_at,
         lsa.updated_by,
         CONVERT(NVARCHAR(30), lsa.updated_at, 120) AS updated_at,
-        -- Join back to get latest set name from sub_asset_groups
-        ISNULL(sag.set_name, lsa.set_name) AS current_set_name,
-        sag.tags AS set_tags
+        -- Join back to get latest set name from asset.assets (SUB_ASSET_GROUP records)
+        ISNULL(a.asset_name, lsa.set_name) AS current_set_name,
+        a.tags AS set_tags
       FROM asset.lease_sub_assets lsa
-      LEFT JOIN asset.sub_asset_groups sag ON sag.asset_id = lsa.asset_id
+      LEFT JOIN asset.assets a ON a.asset_id = lsa.asset_id
       WHERE lsa.lease_id = @lease_id
       ORDER BY lsa.created_at DESC;
     END

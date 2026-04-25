@@ -2,14 +2,16 @@
  * VodaLease Enterprise — Sub-Asset Transaction Log
  * Screen ID: VFLSEASTTXN0001P001
  *
- * Full audit trail for all sub-asset operations on a lease.
- * Filters: Lease Number, Sub-Asset Set, Action, Entity Type, Changed By, Date range.
- * Action toolbar: Add (Attach), Edit (Status), Delete, Returned, Write Off, Replaced, Condemned.
- * Ownership toggle per record: Lease ↔ Lessor.
+ * Workflow:
+ *   1. Select a Lease Number → Sub-Asset Set dropdown populates with sets on that lease
+ *   2. Select a Sub-Asset Set → action toolbar activates
+ *   3. Click an action (Add/Return/Write Off/Replace/Condemn) → dialog → records transaction
+ *   4. Transaction History table shows all transactions for the selected lease/set
  */
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -17,16 +19,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, RefreshCw, Filter, X, ChevronDown, ChevronRight,
-  Plus, Pencil, Trash2, RotateCcw, ShieldOff, Repeat2, Skull,
-  Building2, FileText, Package,
+  Plus, RotateCcw, ShieldOff, Repeat2, Skull, Trash2, Pencil,
+  Building2, Package,
 } from "lucide-react";
 
-// ── Status badge colours ─────────────────────────────────────
+// ── Badge colour maps ────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
   Active:    "bg-green-500/20 text-green-400 border-green-500/30",
   Cancelled: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -36,7 +37,6 @@ const STATUS_BADGE: Record<string, string> = {
   WriteOff:  "bg-orange-500/20 text-orange-400 border-orange-500/30",
   Condemned: "bg-rose-700/20 text-rose-400 border-rose-700/30",
 };
-
 const ACTION_BADGE: Record<string, string> = {
   INSERT:           "bg-green-500/20 text-green-400",
   UPDATE:           "bg-blue-500/20 text-blue-400",
@@ -51,409 +51,402 @@ const ACTION_BADGE: Record<string, string> = {
 
 // ── Action definitions ───────────────────────────────────────
 const ACTIONS = [
-  { id: "add",       label: "Add",       icon: Plus,      status: null,        color: "text-green-400",  desc: "Attach a new sub-asset set to this lease" },
-  { id: "edit",      label: "Edit",      icon: Pencil,    status: null,        color: "text-blue-400",   desc: "Edit status or details of selected record" },
-  { id: "delete",    label: "Delete",    icon: Trash2,    status: "Cancelled", color: "text-red-400",    desc: "Cancel / remove selected sub-asset from lease" },
-  { id: "returned",  label: "Returned",  icon: RotateCcw, status: "Returned",  color: "text-blue-400",   desc: "Mark as returned to lessor" },
-  { id: "writeoff",  label: "Write Off", icon: ShieldOff, status: "WriteOff",  color: "text-orange-400", desc: "Write off — asset lost or unrecoverable" },
-  { id: "replaced",  label: "Replaced",  icon: Repeat2,   status: "Replaced",  color: "text-purple-400", desc: "Replace with another asset" },
-  { id: "condemned", label: "Condemned", icon: Skull,     status: "Condemned", color: "text-rose-400",   desc: "Condemn — asset beyond repair" },
+  { id: "returned",  label: "Returned",  icon: RotateCcw, newStatus: "Returned",  color: "text-blue-400",   btnClass: "border-blue-500/40 text-blue-400 hover:bg-blue-500/10" },
+  { id: "writeoff",  label: "Write Off", icon: ShieldOff, newStatus: "WriteOff",  color: "text-orange-400", btnClass: "border-orange-500/40 text-orange-400 hover:bg-orange-500/10" },
+  { id: "replaced",  label: "Replaced",  icon: Repeat2,   newStatus: "Replaced",  color: "text-purple-400", btnClass: "border-purple-500/40 text-purple-400 hover:bg-purple-500/10" },
+  { id: "condemned", label: "Condemned", icon: Skull,     newStatus: "Condemned", color: "text-rose-400",   btnClass: "border-rose-500/40 text-rose-400 hover:bg-rose-500/10" },
+  { id: "backin",    label: "Back In",   icon: RefreshCw, newStatus: "BackIn",    color: "text-cyan-400",   btnClass: "border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10" },
+  { id: "cancelled", label: "Cancel",    icon: Trash2,    newStatus: "Cancelled", color: "text-red-400",    btnClass: "border-red-500/40 text-red-400 hover:bg-red-500/10" },
 ];
 
-// ── JSON Diff Viewer ─────────────────────────────────────────
-function JsonDiffViewer({ before, after }: { before: string | null; after: string | null }) {
-  const parse = (s: string | null) => { try { return s ? JSON.parse(s) : null; } catch { return s; } };
-  const b = parse(before); const a = parse(after);
-  if (!b && !a) return <p className="text-xs text-muted-foreground italic">No snapshot data</p>;
-  const allKeys = Array.from(new Set([
-    ...(b && typeof b === "object" ? Object.keys(b) : []),
-    ...(a && typeof a === "object" ? Object.keys(a) : []),
-  ]));
-  if (typeof b !== "object" || typeof a !== "object") {
+// ── Item diff viewer — parses tags_with_serials JSON ─────────
+function ItemDiffViewer({ before, after }: { before: string | null; after: string | null }) {
+  const parse = (s: string | null): unknown => { try { return s ? JSON.parse(s) : null; } catch { return s; } };
+  const b = parse(before);
+  const a = parse(after);
+
+  // If after is an array of items (ATTACH transaction)
+  const renderItemTable = (items: unknown, label: string, colour: string) => {
+    if (!Array.isArray(items) || items.length === 0) return null;
     return (
-      <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-        {before && <div className="bg-red-500/10 border border-red-500/20 rounded p-2 overflow-auto max-h-40 whitespace-pre-wrap text-red-300">{before}</div>}
-        {after  && <div className="bg-green-500/10 border border-green-500/20 rounded p-2 overflow-auto max-h-40 whitespace-pre-wrap text-green-300">{after}</div>}
+      <div className="mb-3">
+        <p className={`text-xs font-semibold mb-1 ${colour}`}>{label}</p>
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="border-b border-border bg-muted/20">
+              <th className="text-left py-1 px-2 font-medium text-muted-foreground">Code</th>
+              <th className="text-left py-1 px-2 font-medium text-muted-foreground">Name</th>
+              <th className="text-left py-1 px-2 font-medium text-muted-foreground">Qty</th>
+              <th className="text-left py-1 px-2 font-medium text-muted-foreground">Serial Numbers</th>
+              <th className="text-left py-1 px-2 font-medium text-muted-foreground">Lease Date</th>
+              <th className="text-left py-1 px-2 font-medium text-muted-foreground">Warranty Expiry</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(items as Record<string,unknown>[]).map((item, i) => (
+              <tr key={i} className="border-b border-border/40">
+                <td className="py-1 px-2 font-mono text-[#e60000]">{String(item.code ?? "—")}</td>
+                <td className="py-1 px-2">{String(item.name ?? "—")}</td>
+                <td className="py-1 px-2 text-center">{String(item.qty ?? 1)}</td>
+                <td className="py-1 px-2 font-mono">
+                  {Array.isArray(item.serialNumbers)
+                    ? (item.serialNumbers as string[]).filter(Boolean).join(", ") || <span className="text-muted-foreground italic">—</span>
+                    : <span className="text-muted-foreground italic">—</span>}
+                </td>
+                <td className="py-1 px-2">{String(item.leaseDate ?? "—")}</td>
+                <td className="py-1 px-2">{String(item.warrantyExpiry ?? "—")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
+  };
+
+  // ATTACH: before=null, after=array
+  if (!b && Array.isArray(a)) {
+    return <div>{renderItemTable(a, "Items Attached", "text-green-400")}</div>;
   }
-  const str = (v: unknown) => v === undefined || v === null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v);
+
+  // STATUS_CHANGE: both are objects with status field
+  if (b && typeof b === "object" && !Array.isArray(b) && a && typeof a === "object" && !Array.isArray(a)) {
+    const bObj = b as Record<string,unknown>;
+    const aObj = a as Record<string,unknown>;
+    const allKeys = Array.from(new Set([...Object.keys(bObj), ...Object.keys(aObj)]));
+    const str = (v: unknown) => v === undefined || v === null ? "—" : String(v);
+    return (
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left py-1 pr-3 text-muted-foreground font-medium w-32">Field</th>
+            <th className="text-left py-1 pr-3 text-red-400 font-medium">Before</th>
+            <th className="text-left py-1 text-green-400 font-medium">After</th>
+          </tr>
+        </thead>
+        <tbody>
+          {allKeys.map(k => {
+            const bv = str(bObj[k]); const av = str(aObj[k]);
+            const changed = bv !== av;
+            return (
+              <tr key={k} className={`border-b border-border/50 ${changed ? "bg-amber-500/5" : ""}`}>
+                <td className="py-1 pr-3 font-mono text-muted-foreground">{k}</td>
+                <td className={`py-1 pr-3 font-mono ${changed ? "text-red-400 line-through opacity-70" : "text-foreground"}`}>{bv}</td>
+                <td className={`py-1 font-mono ${changed ? "text-green-400 font-semibold" : "text-foreground"}`}>{av}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  }
+
+  // Fallback: raw display
   return (
-    <table className="w-full text-xs border-collapse">
-      <thead>
-        <tr className="border-b border-border">
-          <th className="text-left py-1 pr-3 text-muted-foreground font-medium w-32">Field</th>
-          <th className="text-left py-1 pr-3 text-red-400 font-medium">Before</th>
-          <th className="text-left py-1 text-green-400 font-medium">After</th>
-        </tr>
-      </thead>
-      <tbody>
-        {allKeys.map(k => {
-          const bv = str((b as any)?.[k]); const av = str((a as any)?.[k]);
-          const changed = bv !== av;
-          return (
-            <tr key={k} className={`border-b border-border/50 ${changed ? "bg-amber-500/5" : ""}`}>
-              <td className="py-1 pr-3 font-mono text-muted-foreground">{k}</td>
-              <td className={`py-1 pr-3 font-mono ${changed ? "text-red-400 line-through opacity-70" : "text-foreground"}`}>{bv}</td>
-              <td className={`py-1 font-mono ${changed ? "text-green-400 font-semibold" : "text-foreground"}`}>{av}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+      {before && <div className="bg-red-500/10 border border-red-500/20 rounded p-2 overflow-auto max-h-40 whitespace-pre-wrap text-red-300">{before}</div>}
+      {after  && <div className="bg-green-500/10 border border-green-500/20 rounded p-2 overflow-auto max-h-40 whitespace-pre-wrap text-green-300">{after}</div>}
+    </div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────
+// ── Main Component ───────────────────────────────────────────
 export default function SubAssetTransactionLog() {
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
 
-  // ── Filter state ─────────────────────────────────────────────
-  const [filterLeaseId,   setFilterLeaseId]   = useState<string>("all");
-  const [filterSetId,     setFilterSetId]     = useState<string>("all");
-  const [filterAction,    setFilterAction]    = useState<string>("all");
+  // ── Step 1: Lease selection ──────────────────────────────
+  const [selectedLeaseId,  setSelectedLeaseId]  = useState<string>("none");
+  const [selectedLeaseRef, setSelectedLeaseRef] = useState<string>("");
 
-  const [filterUser,      setFilterUser]      = useState<string>("");
-  const [filterDateFrom,  setFilterDateFrom]  = useState<string>("");
-  const [filterDateTo,    setFilterDateTo]    = useState<string>("");
-  const [expandedRow,     setExpandedRow]     = useState<number | null>(null);
-  const [selectedId,      setSelectedId]      = useState<number | null>(null);
+  // ── Step 2: Sub-Asset Set selection ─────────────────────
+  const [selectedSetRecordId, setSelectedSetRecordId] = useState<string>("none"); // lease_sub_asset_id
+  const [selectedSetRecord,   setSelectedSetRecord]   = useState<Record<string,unknown> | null>(null);
 
-  // ── Action dialog state ───────────────────────────────────────
-  const [actionDialog,    setActionDialog]    = useState<{ open: boolean; actionId: string; record: any | null }>({ open: false, actionId: "", record: null });
-  const [actionReason,    setActionReason]    = useState("");
-  const [actionDate,      setActionDate]      = useState(new Date().toISOString().split("T")[0]);
-  const [actionNotes,     setActionNotes]     = useState("");
-  const [actionReplaceSet,setActionReplaceSet]= useState<string>("none");
+  // ── Filters ──────────────────────────────────────────────
+  const [filterAction,   setFilterAction]   = useState<string>("all");
+  const [filterUser,     setFilterUser]     = useState<string>("");
+  const [filterDateFrom, setFilterDateFrom] = useState<string>("");
+  const [filterDateTo,   setFilterDateTo]   = useState<string>("");
+  const [expandedRow,    setExpandedRow]    = useState<number | null>(null);
 
-  // ── Data queries ─────────────────────────────────────────────
-  const { data: leases = [] }  = trpc.asset.getLeaseList.useQuery();
-  const { data: allSets = [] }  = trpc.asset.getSubAssetGroups.useQuery();
-  // Sub-Asset sets for the selected lease only
-  const { data: leaseSubAssets = [], refetch: refetchLSA } = trpc.asset.getLeaseSubAssets.useQuery(
-    { leaseId: filterLeaseId !== "all" ? filterLeaseId : "" },
-    { enabled: filterLeaseId !== "all" }
+  // ── Action dialog ─────────────────────────────────────────
+  const [actionDialog, setActionDialog] = useState<{
+    open: boolean; actionId: string; label: string; newStatus: string;
+  }>({ open: false, actionId: "", label: "", newStatus: "" });
+  const [actionDate,    setActionDate]    = useState<string>("");
+  const [actionReason,  setActionReason]  = useState<string>("");
+  const [actionNotes,   setActionNotes]   = useState<string>("");
+  const [actionReplaceSet, setActionReplaceSet] = useState<string>("none");
+
+  // ── Queries ───────────────────────────────────────────────
+  const { data: leaseList = [] } = trpc.asset.getLeaseList.useQuery();
+
+  // Sets attached to selected lease
+  const leaseSelected = selectedLeaseId !== "none";
+  const { data: leaseSets = [], refetch: refetchSets } = trpc.asset.getLeaseSubAssets.useQuery(
+    { leaseId: selectedLeaseId },
+    { enabled: leaseSelected }
   );
-  // Reset set filter when lease changes
-  const prevLeaseId = useRef(filterLeaseId);
-  useEffect(() => {
-    if (prevLeaseId.current !== filterLeaseId) {
-      setFilterSetId("all");
-      prevLeaseId.current = filterLeaseId;
-    }
-  }, [filterLeaseId]);
-  const leaseHasData = filterLeaseId !== "all";
+
+  // All available sets (for Replace action)
+  const { data: allAvailSets = [] } = trpc.asset.getSubAssetGroups.useQuery();
+
+  // Transaction history
   const txnInput = useMemo(() => ({
-    action:     filterAction     !== "all" ? filterAction     : undefined,
-    changedBy:  filterUser.trim() || undefined,
-    dateFrom:   filterDateFrom   || undefined,
-    dateTo:     filterDateTo     || undefined,
-  }), [filterAction, filterUser, filterDateFrom, filterDateTo]);
-  // Only fetch transactions after a lease is selected
-  const { data: txnData, isLoading, refetch, isFetching } = trpc.asset.getSubAssetTxns.useQuery(
-    txnInput,
-    { enabled: leaseHasData }
-  );
-  const txnRaw = Array.isArray(txnData) ? txnData : (txnData as any)?.rows ?? [];
+    entityId:  selectedSetRecord ? Number((selectedSetRecord as any).leaseSubAssetId) : undefined,
+    action:    filterAction !== "all" ? filterAction : undefined,
+    changedBy: filterUser.trim() || undefined,
+    dateFrom:  filterDateFrom || undefined,
+    dateTo:    filterDateTo   || undefined,
+  }), [selectedSetRecord, filterAction, filterUser, filterDateFrom, filterDateTo]);
 
-  // ── Mutations ─────────────────────────────────────────────────
-  const statusMut = trpc.asset.updateSubAssetStatus.useMutation({
-    onSuccess: () => { toast.success("Status updated"); refetch(); refetchLSA(); closeActionDialog(); },
-    onError: e => toast.error("Error: " + e.message),
+  const setSelected = selectedSetRecordId !== "none";
+  const {
+    data: txnData,
+    isLoading: txnLoading,
+    refetch: refetchTxns,
+    isFetching: txnFetching,
+  } = trpc.asset.getSubAssetTxns.useQuery(txnInput, { enabled: leaseSelected });
+
+  const txns = ((txnData as any)?.rows ?? []) as any[];
+
+  // ── Mutations ─────────────────────────────────────────────
+  const statusMutation = trpc.asset.updateSubAssetStatus.useMutation({
+    onSuccess: () => {
+      toast.success(`Status updated to ${actionDialog.newStatus}`);
+      closeActionDialog();
+      refetchTxns();
+      refetchSets();
+    },
+    onError: (e) => toast.error(e.message),
   });
-  const ownerMut = trpc.asset.changeSubAssetOwnership.useMutation({
-    onSuccess: () => { toast.success("Ownership updated"); refetch(); refetchLSA(); },
-    onError: e => toast.error("Error: " + e.message),
-  });
-  const attachMut = trpc.asset.attachSubAssetToLease.useMutation({
-    onSuccess: () => { toast.success("Set attached to lease"); refetch(); refetchLSA(); closeActionDialog(); },
-    onError: e => toast.error("Error: " + e.message),
-  });
 
-  // ── Filtered txns ─────────────────────────────────────────────
-  const txns = useMemo(() => {
-    let list = txnRaw as any[];
-    if (filterLeaseId !== "all") {
-      const leaseSetIds = new Set((leaseSubAssets as any[]).map((lsa: any) => lsa.leaseSubAssetId));
-      list = list.filter(t => leaseSetIds.has(t.entityId));
-    }
-    if (filterSetId !== "all") {
-      list = list.filter(t => String(t.entityId) === filterSetId);
-    }
-    return list;
-  }, [txnRaw, filterLeaseId, filterSetId, leaseSubAssets]);
-
-  const selectedRecord = useMemo(() =>
-    (leaseSubAssets as any[]).find((lsa: any) => lsa.leaseSubAssetId === selectedId) ?? null,
-    [leaseSubAssets, selectedId]
-  );
-
-  const selectedLease = (leases as any[]).find((l: any) => l.leaseId === filterLeaseId);
-
-  function openActionDialog(actionId: string) {
-    if (actionId === "add") {
-      setActionDialog({ open: true, actionId, record: null });
-    } else {
-      if (!selectedRecord) { toast.warning("Select a sub-asset record first from the grid above"); return; }
-      setActionDialog({ open: true, actionId, record: selectedRecord });
-    }
-    setActionReason(""); setActionDate(new Date().toISOString().split("T")[0]);
-    setActionNotes(""); setActionReplaceSet("none");
+  // ── Handlers ─────────────────────────────────────────────
+  function handleLeaseChange(leaseId: string) {
+    setSelectedLeaseId(leaseId);
+    const lease = (leaseList as any[]).find((l: any) => String(l.leaseId) === leaseId);
+    setSelectedLeaseRef(lease?.leaseRef ?? "");
+    setSelectedSetRecordId("none");
+    setSelectedSetRecord(null);
+    setExpandedRow(null);
   }
-  function closeActionDialog() { setActionDialog({ open: false, actionId: "", record: null }); }
 
-  function submitAction() {
-    const { actionId, record } = actionDialog;
-    const actionDef = ACTIONS.find(a => a.id === actionId);
-    if (!actionDef) return;
-    if (actionId === "add") {
-      if (filterLeaseId === "all") { toast.warning("Select a lease first using the Lease Number filter"); return; }
-      if (actionReplaceSet === "none") { toast.warning("Select a sub-asset set to attach"); return; }
-      const set = (allSets as any[]).find((s: any) => String(s.assetId) === actionReplaceSet);
-      if (!set) return;
-      attachMut.mutate({ leaseId: filterLeaseId, assetId: set.assetId, assetCode: set.assetCode, setName: set.setName, tagsWithSerials: set.tags });
-      return;
-    }
-    if (!record) return;
-    statusMut.mutate({
-      leaseSubAssetId:   record.leaseSubAssetId,
-      newStatus:         (actionDef.status ?? "Cancelled") as "Active" | "Cancelled" | "Returned" | "BackIn" | "Replaced" | "WriteOff" | "Condemned",
-      statusDate:        actionDate,
-      reason:            actionReason || undefined,
-      replacedByAssetId: actionReplaceSet !== "none" ? Number(actionReplaceSet) : undefined,
-      notes:             actionNotes || undefined,
+  function handleSetChange(recordId: string) {
+    setSelectedSetRecordId(recordId);
+    const rec = (leaseSets as any[]).find((s: any) => String(s.leaseSubAssetId) === recordId);
+    setSelectedSetRecord(rec ?? null);
+    setExpandedRow(null);
+  }
+
+  function openAction(actionId: string) {
+    if (!setSelected) { toast.error("Select a Sub-Asset Set first"); return; }
+    const a = ACTIONS.find(x => x.id === actionId);
+    if (!a) return;
+    setActionDate(new Date().toISOString().split("T")[0]);
+    setActionReason("");
+    setActionNotes("");
+    setActionReplaceSet("none");
+    setActionDialog({ open: true, actionId, label: a.label, newStatus: a.newStatus });
+  }
+
+  function closeActionDialog() {
+    setActionDialog({ open: false, actionId: "", label: "", newStatus: "" });
+  }
+
+  async function confirmAction() {
+    if (!selectedSetRecord) return;
+    const rec = selectedSetRecord as any;
+    await statusMutation.mutateAsync({
+      leaseSubAssetId: rec.leaseSubAssetId,
+      newStatus: actionDialog.newStatus as "Active" | "Cancelled" | "Returned" | "BackIn" | "Replaced" | "WriteOff" | "Condemned",
+      statusDate: actionDate || new Date().toISOString().split("T")[0],
+      reason: actionReason || undefined,
+      notes: actionNotes || undefined,
+      replacedByAssetId: actionReplaceSet !== "none" ? parseInt(actionReplaceSet) : undefined,
     });
   }
 
+  function clearFilters() {
+    setFilterAction("all");
+    setFilterUser("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+  }
+
+  // ── Render ────────────────────────────────────────────────
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex-1 overflow-auto p-6 space-y-4">
-          <ScreenHeader
-            screenId="VFLSEASTTXN0001P001"
-            title="Sub-Asset Transaction Log"
-            subtitle="Full audit trail — Add, Edit, Status changes, Ownership transfers"
-          />
+      <div className="flex flex-col h-full">
+        <ScreenHeader
+          screenId="VFLSEASTTXN0001P001"
+          title="Sub-Asset Transaction Log"
+          subtitle="Audit trail for all sub-asset operations on a lease"
+          actions={
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setLocation("/sub-asset-registry")}>
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Sub-Asset Registry
+            </Button>
+          }
+        />
 
-          {/* Back link */}
-          <button
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setLocation("/sub-asset-registry")}
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Sub-Asset Registry
-          </button>
+        <div className="flex-1 overflow-auto p-4 space-y-4">
 
-          {/* ── Action Toolbar ──────────────────────────────── */}
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 border border-border rounded-lg">
-            <span className="text-xs font-semibold text-muted-foreground mr-1">Actions:</span>
-            {ACTIONS.map(a => {
-              const Icon = a.icon;
-              const disabled = a.id !== "add" && !selectedRecord;
-              return (
-                <Button
-                  key={a.id}
-                  size="sm"
-                  variant="outline"
-                  className={`h-8 gap-1.5 text-xs ${a.color} border-border bg-transparent hover:bg-muted/60 disabled:opacity-40`}
-                  disabled={disabled}
-                  title={a.desc}
-                  onClick={() => openActionDialog(a.id)}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {a.label}
-                </Button>
-              );
-            })}
-            {/* Ownership toggle — shown when a record is selected */}
-            {selectedRecord && (
-              <div className="ml-auto flex items-center gap-2 border border-border rounded px-2 py-1 bg-muted/40">
-                <span className="text-xs text-muted-foreground">Ownership:</span>
-                <button
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                    (selectedRecord as any).ownership !== "Lessor"
-                      ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
-                      : "bg-muted text-muted-foreground border border-border"
-                  }`}
-                  onClick={() => ownerMut.mutate({ leaseSubAssetId: (selectedRecord as any).leaseSubAssetId, ownership: "Lease" })}
-                >
-                  <FileText className="w-3 h-3" /> Lease
-                </button>
-                <button
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                    (selectedRecord as any).ownership === "Lessor"
-                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                      : "bg-muted text-muted-foreground border border-border"
-                  }`}
-                  onClick={() => ownerMut.mutate({ leaseSubAssetId: (selectedRecord as any).leaseSubAssetId, ownership: "Lessor" })}
-                >
-                  <Building2 className="w-3 h-3" /> Lessor
-                </button>
-              </div>
-            )}
-          </div>
+          {/* ── Step 1 & 2: Selectors ─────────────────────── */}
+          <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Step 1 — Select Lease &amp; Sub-Asset Set</p>
 
-          {/* ── Filters ─────────────────────────────────────── */}
-          <div className="flex flex-col gap-2 p-3 bg-muted/20 border border-border rounded-lg">
-            {/* Row 1: Lease Number + Sub-Asset Set — full width, side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Lease Number */}
               <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Lease Number</Label>
-                <Select value={filterLeaseId} onValueChange={v => { setFilterLeaseId(v); setFilterSetId("all"); setSelectedId(null); }}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-border">
-                    <SelectValue placeholder="All Leases" />
+                <Label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" /> Lease Number <span className="text-red-400">*</span>
+                </Label>
+                <Select value={selectedLeaseId} onValueChange={handleLeaseChange}>
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue placeholder="— Select a lease —" />
                   </SelectTrigger>
-                  <SelectContent className="max-w-[520px]">
-                    <SelectItem value="all">All Leases</SelectItem>
-                    {(leases as any[]).map((l: any) => (
-                      <SelectItem key={l.leaseId} value={l.leaseId}>
-                        <span className="font-mono text-[#e60000]">{l.leaseRef}</span>
-                        {l.assetName ? <span className="text-muted-foreground ml-1">&mdash; {l.assetName}</span> : ""}
+                  <SelectContent className="max-h-64">
+                    <SelectItem value="none">— Select a lease —</SelectItem>
+                    {(leaseList as any[]).map((l: any) => (
+                      <SelectItem key={l.leaseId} value={String(l.leaseId)}>
+                        <span className="font-mono text-[#e60000] mr-2">{l.leaseRef}</span>
+                        <span className="text-muted-foreground">{l.assetName}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
               {/* Sub-Asset Set */}
               <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Sub-Asset Set</Label>
-                <Select value={filterSetId} onValueChange={setFilterSetId} disabled={filterLeaseId === "all"}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-border">
-                    <SelectValue placeholder={filterLeaseId === "all" ? "Select a lease first" : "All Sets"} />
+                <Label className="text-xs text-muted-foreground mb-1.5 block flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5" /> Sub-Asset Set
+                  {!leaseSelected && <span className="text-muted-foreground italic font-normal">(select a lease first)</span>}
+                </Label>
+                <Select
+                  value={selectedSetRecordId}
+                  onValueChange={handleSetChange}
+                  disabled={!leaseSelected}
+                >
+                  <SelectTrigger className="bg-background border-border disabled:opacity-50">
+                    <SelectValue placeholder={leaseSelected ? "— Select a set —" : "— Select a lease first —"} />
                   </SelectTrigger>
-                  <SelectContent className="max-w-[520px]">
-                    <SelectItem value="all">{filterLeaseId === "all" ? "Select a lease first" : "All Sets"}</SelectItem>
-                    {filterLeaseId !== "all" && (leaseSubAssets as any[]).map((lsa: any) => (
-                      <SelectItem key={lsa.leaseSubAssetId} value={String(lsa.leaseSubAssetId)}>
-                        <span className="font-mono text-[#e60000]">{lsa.assetCode}</span>
-                        <span className="text-muted-foreground ml-1">&middot; {lsa.setName}</span>
+                  <SelectContent className="max-h-64">
+                    <SelectItem value="none">— All sets on this lease —</SelectItem>
+                    {(leaseSets as any[]).map((s: any) => (
+                      <SelectItem key={s.leaseSubAssetId} value={String(s.leaseSubAssetId)}>
+                        <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
+                        <span>{s.setName}</span>
+                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] border ${STATUS_BADGE[s.status] ?? "bg-muted text-muted-foreground"}`}>{s.status}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            {/* Row 2: Action + Changed By + Date From + Date To */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {/* Action */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Action</Label>
-                <Select value={filterAction} onValueChange={setFilterAction}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-border">
-                    <SelectValue placeholder="All Actions" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Actions</SelectItem>
-                    {["INSERT","UPDATE","DELETE","ATTACH","STATUS_CHANGE","OWNERSHIP_CHANGE","ITEM_ADD","ITEM_EDIT","ITEM_DELETE"].map(a => (
-                      <SelectItem key={a} value={a}>{a.replace(/_/g," ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Changed By */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Changed By</Label>
-                <Input className="h-8 text-xs bg-background border-border" placeholder="User name..." value={filterUser} onChange={e => setFilterUser(e.target.value)} />
-              </div>
-              {/* Date From */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Date From</Label>
-                <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
-              </div>
-              {/* Date To */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Date To</Label>
-                <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
-              </div>
-            </div>
-            {/* Buttons */}
-            <div className="flex gap-2 pt-1">
-              <Button size="sm" className="h-8 gap-1.5 text-xs bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => refetch()} disabled={isFetching}>
-                <Filter className="w-3.5 h-3.5" /> Apply Filters
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => {
-                setFilterLeaseId("all"); setFilterSetId("all"); setFilterAction("all");
-                setFilterUser(""); setFilterDateFrom(""); setFilterDateTo(""); setSelectedId(null);
-              }}>
-                <X className="w-3.5 h-3.5" /> Clear
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs ml-auto" onClick={() => refetch()} disabled={isFetching}>
-                <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-              </Button>
-            </div>
+
+            {/* Selected set info card */}
+            {selectedSetRecord && (() => {
+              const rec = selectedSetRecord as any;
+              return (
+                <div className="bg-muted/20 border border-border rounded-md p-3 flex flex-wrap items-center gap-4 text-xs">
+                  <div><span className="text-muted-foreground">Set Code:</span> <span className="font-mono text-[#e60000] font-semibold">{rec.assetCode}</span></div>
+                  <div><span className="text-muted-foreground">Set Name:</span> <span className="font-medium">{rec.setName}</span></div>
+                  <div><span className="text-muted-foreground">Status:</span> <span className={`ml-1 px-2 py-0.5 rounded border text-[10px] ${STATUS_BADGE[rec.status] ?? "bg-muted text-muted-foreground"}`}>{rec.status}</span></div>
+                  <div><span className="text-muted-foreground">Ownership:</span> <span className="font-medium">{rec.ownership ?? "Lease"}</span></div>
+                  {rec.statusDate && <div><span className="text-muted-foreground">Status Date:</span> <span>{rec.statusDate}</span></div>}
+                </div>
+              );
+            })()}
           </div>
 
-          {/* ── Lease Sub-Assets Grid (when lease selected) ── */}
-          {filterLeaseId !== "all" && (leaseSubAssets as any[]).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2">
-                Sub-Asset Sets on <span className="text-foreground">{selectedLease?.leaseRef ?? filterLeaseId}</span>
-                <span className="ml-2 font-normal">— click a row to select for actions</span>
+          {/* ── Action Toolbar ────────────────────────────── */}
+          {leaseSelected && (
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">
+                Step 2 — Record a Transaction
+                {!setSelected && <span className="ml-2 text-amber-400 normal-case">(select a Sub-Asset Set above to enable actions)</span>}
               </p>
-              <div className="overflow-x-auto border border-border rounded-lg">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-muted/30 text-muted-foreground border-b border-border">
-                      <th className="text-left py-2 pl-4 pr-2 font-medium w-4"></th>
-                      <th className="text-left py-2 px-2 font-medium">Set Code</th>
-                      <th className="text-left py-2 px-2 font-medium">Set Name</th>
-                      <th className="text-left py-2 px-2 font-medium">Status</th>
-                      <th className="text-left py-2 px-2 font-medium">Ownership</th>
-                      <th className="text-left py-2 px-2 font-medium">Status Date</th>
-                      <th className="text-left py-2 px-2 font-medium">Reason</th>
-                      <th className="text-left py-2 pl-2 pr-4 font-medium">Created By</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(leaseSubAssets as any[]).map((lsa: any) => {
-                      const isSel = selectedId === lsa.leaseSubAssetId;
-                      return (
-                        <tr
-                          key={lsa.leaseSubAssetId}
-                          className={`border-b border-border/50 last:border-0 cursor-pointer transition-colors ${isSel ? "bg-[#e60000]/10 border-l-2 border-l-[#e60000]" : "hover:bg-muted/30"}`}
-                          onClick={() => setSelectedId(isSel ? null : lsa.leaseSubAssetId)}
-                        >
-                          <td className="py-2 pl-4 pr-2">
-                            <div className={`w-3 h-3 rounded-full border-2 ${isSel ? "bg-[#e60000] border-[#e60000]" : "border-muted-foreground"}`} />
-                          </td>
-                          <td className="py-2 px-2 font-mono text-[#e60000]">{lsa.assetCode}</td>
-                          <td className="py-2 px-2 font-medium">{lsa.setName}</td>
-                          <td className="py-2 px-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium border ${STATUS_BADGE[lsa.status] ?? "bg-muted text-muted-foreground"}`}>
-                              {lsa.status}
-                            </span>
-                          </td>
-                          <td className="py-2 px-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${lsa.ownership === "Lessor" ? "bg-amber-500/20 text-amber-400" : "bg-sky-500/20 text-sky-400"}`}>
-                              {lsa.ownership ?? "Lease"}
-                            </span>
-                          </td>
-                          <td className="py-2 px-2 text-muted-foreground">{lsa.statusDate ? new Date(lsa.statusDate).toLocaleDateString() : "—"}</td>
-                          <td className="py-2 px-2 text-muted-foreground truncate max-w-[160px]">{lsa.reason ?? "—"}</td>
-                          <td className="py-2 pl-2 pr-4 text-muted-foreground">{lsa.createdBy ?? "—"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="flex flex-wrap gap-2">
+                {ACTIONS.map(a => {
+                  const Icon = a.icon;
+                  return (
+                    <Button
+                      key={a.id}
+                      size="sm"
+                      variant="outline"
+                      className={`h-8 gap-1.5 text-xs ${a.btnClass} ${!setSelected ? "opacity-40 cursor-not-allowed" : ""}`}
+                      onClick={() => openAction(a.id)}
+                      disabled={!setSelected}
+                    >
+                      <Icon className="w-3.5 h-3.5" /> {a.label}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* ── Transaction Log Table ─────────────────────── */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-2">
-              Transaction History
-              {txns.length > 0 && <span className="ml-2 text-foreground">{txns.length} record{txns.length !== 1 ? "s" : ""}</span>}
-            </p>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-muted/30 text-muted-foreground border-b border-border">
+          {/* ── Filters ───────────────────────────────────── */}
+          {leaseSelected && (
+            <div className="bg-card border border-border rounded-lg p-3 space-y-2">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Filter Transaction History</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Action</Label>
+                  <Select value={filterAction} onValueChange={setFilterAction}>
+                    <SelectTrigger className="h-8 text-xs bg-background border-border">
+                      <SelectValue placeholder="All Actions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Actions</SelectItem>
+                      {["INSERT","UPDATE","DELETE","ATTACH","STATUS_CHANGE","OWNERSHIP_CHANGE","ITEM_ADD","ITEM_EDIT","ITEM_DELETE"].map(a => (
+                        <SelectItem key={a} value={a}>{a.replace(/_/g," ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Changed By</Label>
+                  <Input className="h-8 text-xs bg-background border-border" placeholder="User name..." value={filterUser} onChange={e => setFilterUser(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Date From</Label>
+                  <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Date To</Label>
+                  <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" className="h-8 gap-1.5 text-xs bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => refetchTxns()} disabled={txnFetching}>
+                  <Filter className="w-3.5 h-3.5" /> Apply Filters
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={clearFilters}>
+                  <X className="w-3.5 h-3.5" /> Clear
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs ml-auto" onClick={() => { refetchTxns(); refetchSets(); }} disabled={txnFetching}>
+                  <RefreshCw className={`w-3.5 h-3.5 ${txnFetching ? "animate-spin" : ""}`} /> Refresh
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Transaction History Table ─────────────────── */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+              <span className="text-sm font-medium">
+                Transaction History
+                {txns.length > 0 && <span className="ml-2 text-xs text-muted-foreground">{txns.length} record{txns.length !== 1 ? "s" : ""}</span>}
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30 border-b border-border">
+                  <tr>
                     <th className="text-left py-2 pl-4 pr-2 font-medium w-4"></th>
                     <th className="text-left py-2 px-2 font-medium">Txn ID</th>
                     <th className="text-left py-2 px-2 font-medium">Action</th>
-                    <th className="text-left py-2 px-2 font-medium">Entity Type</th>
                     <th className="text-left py-2 px-2 font-medium">Entity</th>
                     <th className="text-left py-2 px-2 font-medium">Changed By</th>
                     <th className="text-left py-2 px-2 font-medium">Changed At</th>
@@ -461,20 +454,22 @@ export default function SubAssetTransactionLog() {
                   </tr>
                 </thead>
                 <tbody>
-                  {isLoading && (
-                    <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">Loading transactions…</td></tr>
-                  )}
-                  {!leaseHasData && (
-                    <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">
-                      <span className="flex flex-col items-center gap-1">
-                        <span className="text-sm">Select a Lease Number above to view its transaction history.</span>
-                      </span>
+                  {/* Empty states */}
+                  {!leaseSelected && (
+                    <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">
+                      <Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Select a Lease Number above to view its transaction history.</p>
                     </td></tr>
                   )}
-                  {leaseHasData && !isLoading && txns.length === 0 && (
-                    <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No transactions found for the selected filters.</td></tr>
+                  {leaseSelected && txnLoading && (
+                    <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Loading transactions…</td></tr>
                   )}
-                  {(txns as any[]).flatMap((t: any) => {
+                  {leaseSelected && !txnLoading && txns.length === 0 && (
+                    <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">No transactions found for the selected filters.</td></tr>
+                  )}
+
+                  {/* Data rows */}
+                  {leaseSelected && (txns as any[]).flatMap((t: any) => {
                     const isExpanded = expandedRow === t.txnId;
                     return [
                       <tr
@@ -493,19 +488,18 @@ export default function SubAssetTransactionLog() {
                             {t.action?.replace(/_/g," ")}
                           </span>
                         </td>
-                        <td className="py-2 px-2 text-muted-foreground">{t.entityType}</td>
                         <td className="py-2 px-2">
-                          <span className="font-mono text-[#e60000]">{t.entityCode ?? `ID:${t.entityId}`}</span>
-                          {t.entityName && <span className="ml-1 text-muted-foreground">· {t.entityName}</span>}
+                          <span className="font-mono text-[#e60000] text-xs">{t.entityCode ?? `ID:${t.entityId}`}</span>
+                          {t.entityName && <span className="ml-1 text-muted-foreground text-xs">· {t.entityName}</span>}
                         </td>
-                        <td className="py-2 px-2 text-muted-foreground">{t.changedBy ?? "—"}</td>
-                        <td className="py-2 px-2 text-muted-foreground">{t.changedAt ? new Date(t.changedAt).toLocaleString() : "—"}</td>
+                        <td className="py-2 px-2 text-muted-foreground text-xs">{t.changedBy ?? "—"}</td>
+                        <td className="py-2 px-2 text-muted-foreground text-xs">{t.changedAt ? new Date(t.changedAt).toLocaleString() : "—"}</td>
                         <td className="py-2 pl-2 pr-4 text-muted-foreground font-mono text-[10px]">{t.screenId ?? "—"}</td>
                       </tr>,
                       ...(isExpanded ? [
                         <tr key={`exp-${t.txnId}`} className="border-b border-border/50 bg-muted/10">
-                          <td colSpan={8} className="py-3 px-6">
-                            <JsonDiffViewer before={t.beforeJson} after={t.afterJson} />
+                          <td colSpan={7} className="py-3 px-6">
+                            <ItemDiffViewer before={t.beforeJson} after={t.afterJson} />
                           </td>
                         </tr>
                       ] : []),
@@ -515,6 +509,7 @@ export default function SubAssetTransactionLog() {
               </table>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -532,75 +527,49 @@ export default function SubAssetTransactionLog() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 py-2">
-            {actionDialog.actionId === "add" ? (
-              <>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Sub-Asset Set to Attach <span className="text-red-400">*</span></Label>
-                  <Select value={actionReplaceSet} onValueChange={setActionReplaceSet}>
-                    <SelectTrigger className="mt-1 bg-background border-border">
-                      <SelectValue placeholder="— Select a set —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Select a set —</SelectItem>
-                      {(allSets as any[]).map((s: any) => (
-                        <SelectItem key={s.assetId} value={String(s.assetId)}>
-                          {s.assetCode} · {s.setName} ({s.itemCount} items)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
-                  <Input className="mt-1 bg-background border-border" placeholder="Attachment notes..." value={actionNotes} onChange={e => setActionNotes(e.target.value)} />
-                </div>
-              </>
-            ) : (
-              <>
-                {actionDialog.record && (
-                  <div className="flex items-center gap-2 p-2 bg-muted/30 rounded border border-border text-xs">
-                    <Package className="w-4 h-4 text-[#e60000]" />
-                    <span className="font-mono text-[#e60000]">{(actionDialog.record as any).assetCode}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className="font-medium">{(actionDialog.record as any).setName}</span>
-                    <span className={`ml-auto px-2 py-0.5 rounded border text-xs ${STATUS_BADGE[(actionDialog.record as any).status] ?? ""}`}>
-                      {(actionDialog.record as any).status}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <Label className="text-xs text-muted-foreground">Effective Date <span className="text-red-400">*</span></Label>
-                  <Input type="date" className="mt-1 bg-background border-border" value={actionDate} onChange={e => setActionDate(e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Reason</Label>
-                  <Input className="mt-1 bg-background border-border" placeholder="Reason for this action..." value={actionReason} onChange={e => setActionReason(e.target.value)} />
-                </div>
-                {actionDialog.actionId === "replaced" && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Replacement Set</Label>
-                    <Select value={actionReplaceSet} onValueChange={setActionReplaceSet}>
-                      <SelectTrigger className="mt-1 bg-background border-border">
-                        <SelectValue placeholder="— Select replacement set —" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">— Select replacement set —</SelectItem>
-                        {(allSets as any[]).map((s: any) => (
-                          <SelectItem key={s.assetId} value={String(s.assetId)}>
-                            {s.assetCode} · {s.setName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div>
-                  <Label className="text-xs text-muted-foreground">Notes</Label>
-                  <Input className="mt-1 bg-background border-border" placeholder="Additional notes..." value={actionNotes} onChange={e => setActionNotes(e.target.value)} />
-                </div>
-              </>
+          {selectedSetRecord && (() => {
+            const rec = selectedSetRecord as any;
+            return (
+              <div className="bg-muted/20 border border-border rounded-md p-3 text-xs mb-2">
+                <span className="font-mono text-[#e60000] font-semibold">{rec.assetCode}</span>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <span>{rec.setName}</span>
+                <span className={`ml-3 px-2 py-0.5 rounded border text-[10px] ${STATUS_BADGE[rec.status] ?? "bg-muted text-muted-foreground"}`}>{rec.status}</span>
+              </div>
+            );
+          })()}
+
+          <div className="space-y-3 py-1">
+            <div>
+              <Label className="text-xs text-muted-foreground">Transaction Date <span className="text-red-400">*</span></Label>
+              <Input type="date" className="mt-1 bg-background border-border" value={actionDate} onChange={e => setActionDate(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Reason</Label>
+              <Input className="mt-1 bg-background border-border" placeholder="Reason for this action..." value={actionReason} onChange={e => setActionReason(e.target.value)} />
+            </div>
+            {actionDialog.actionId === "replaced" && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Replacement Set</Label>
+                <Select value={actionReplaceSet} onValueChange={setActionReplaceSet}>
+                  <SelectTrigger className="mt-1 bg-background border-border">
+                    <SelectValue placeholder="— Select replacement set —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Select replacement set —</SelectItem>
+                    {(allAvailSets as any[]).map((s: any) => (
+                      <SelectItem key={s.assetId} value={String(s.assetId)}>
+                        {s.assetCode} · {s.setName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
+            <div>
+              <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
+              <Input className="mt-1 bg-background border-border" placeholder="Additional notes..." value={actionNotes} onChange={e => setActionNotes(e.target.value)} />
+            </div>
           </div>
 
           <DialogFooter>
@@ -608,10 +577,10 @@ export default function SubAssetTransactionLog() {
             <Button
               size="sm"
               className="bg-[#e60000] hover:bg-[#cc0000] text-white"
-              onClick={submitAction}
-              disabled={statusMut.isPending || attachMut.isPending}
+              onClick={confirmAction}
+              disabled={statusMutation.isPending || !actionDate}
             >
-              {statusMut.isPending || attachMut.isPending ? "Saving…" : "Confirm"}
+              {statusMutation.isPending ? "Saving…" : `Confirm ${actionDialog.label}`}
             </Button>
           </DialogFooter>
         </DialogContent>
