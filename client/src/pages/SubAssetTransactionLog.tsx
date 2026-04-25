@@ -202,15 +202,19 @@ export default function SubAssetTransactionLog() {
   // Master list of all sub-asset groups (same as Asset Registry)
   const { data: allAvailSets = [] } = trpc.asset.getSubAssetGroups.useQuery();
 
-  // Derive selected set record: match chosen assetId against leaseSets (which have leaseSubAssetId)
+  // Derive selected set record: prefer the leaseSets record (has leaseSubAssetId + status) over master list
   const selectedSetRecord = useMemo(() => {
     if (selectedAssetId === "none") return null;
-    // First try to find a leaseSet record matching this assetId (has full detail)
     const fromLease = (leaseSets as any[]).find((s: any) => String(s.assetId) === selectedAssetId);
     if (fromLease) return fromLease;
-    // Fallback: return the group record from master list (no leaseSubAssetId)
     return (allAvailSets as any[]).find((s: any) => String(s.assetId) === selectedAssetId) ?? null;
   }, [leaseSets, allAvailSets, selectedAssetId]);
+
+  // Is the currently selected group already attached to the current lease?
+  const isAlreadyAttached = useMemo(() => {
+    if (selectedAssetId === "none" || !leaseSelected) return false;
+    return (leaseSets as any[]).some((s: any) => String(s.assetId) === selectedAssetId);
+  }, [leaseSets, selectedAssetId, leaseSelected]);
 
   // Parse tags_with_serials for the detail card
   const setItems = useMemo(() => {
@@ -436,13 +440,13 @@ export default function SubAssetTransactionLog() {
                 </Select>
               </div>
 
-              {/* Sub-Asset Group selector — shows only groups attached to this lease */}
+              {/* Sub-Asset Group selector — shows ALL groups; attached ones show status badge */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">
                   Sub-Asset Group
                   {loadingSets && leaseSelected && <span className="ml-2 text-[10px] text-muted-foreground animate-pulse">Loading…</span>}
                   {leaseSelected && !loadingSets && (
-                    <span className="ml-2 text-[10px] text-muted-foreground">{leaseSets.length} attached</span>
+                    <span className="ml-2 text-[10px] text-muted-foreground">{leaseSets.length} attached to this lease</span>
                   )}
                 </Label>
                 <div className="flex gap-2">
@@ -452,29 +456,44 @@ export default function SubAssetTransactionLog() {
                     disabled={!leaseSelected}
                   >
                     <SelectTrigger className="bg-background border-border flex-1">
-                      <SelectValue placeholder={leaseSelected ? (loadingSets ? "Loading…" : leaseSets.length === 0 ? "No groups attached yet" : "— Select a set —") : "— Select a lease first —"} />
+                      <SelectValue placeholder={leaseSelected ? (loadingSets ? "Loading…" : "— Select a set —") : "— Select a lease first —"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">— Select a set —</SelectItem>
-                      {(leaseSets as any[]).map((s: any) => (
-                        <SelectItem key={s.leaseSubAssetId ?? s.assetId} value={String(s.assetId)}>
-                          <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
-                          <span>{s.setName}</span>
-                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded border ${STATUS_BADGE[s.status] ?? "bg-muted text-muted-foreground"}`}>
-                            {s.status}
-                          </span>
-                        </SelectItem>
-                      ))}
+                      {(allAvailSets as any[]).map((s: any) => {
+                        const attached = (leaseSets as any[]).find((ls: any) => String(ls.assetId) === String(s.assetId));
+                        return (
+                          <SelectItem key={s.assetId} value={String(s.assetId)}>
+                            <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
+                            <span>{s.setName}</span>
+                            {attached ? (
+                              <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded border ${STATUS_BADGE[attached.status] ?? "bg-muted text-muted-foreground"}`}>
+                                {attached.status}
+                              </span>
+                            ) : leaseSelected ? (
+                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded border border-dashed border-muted-foreground/40 text-muted-foreground">
+                                Not attached
+                              </span>
+                            ) : null}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
-                  {/* Add button — opens master-list picker to attach a new group */}
+                  {/* Add button — attaches the selected group to this lease */}
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-9 px-3 border-green-600 text-green-500 hover:bg-green-600/10 shrink-0"
-                    disabled={!leaseSelected}
-                    onClick={() => { resetAttachDialog(); setAttachOpen(true); }}
-                    title="Attach a new sub-asset group to this lease"
+                    disabled={!leaseSelected || selectedAssetId === "none" || isAlreadyAttached}
+                    title={isAlreadyAttached ? "Already attached to this lease" : selectedAssetId === "none" ? "Select a group first" : "Attach selected group to this lease"}
+                    onClick={() => {
+                      resetAttachDialog();
+                      if (selectedAssetId !== "none") {
+                        onPickAttachSet(selectedAssetId);
+                      }
+                      setAttachOpen(true);
+                    }}
                   >
                     <Plus className="w-4 h-4 mr-1" /> Add
                   </Button>
