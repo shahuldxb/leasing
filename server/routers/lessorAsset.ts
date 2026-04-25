@@ -678,7 +678,7 @@ export const assetRouter = router({
   updateSubAssetStatus: protectedProcedure
     .input(z.object({
       leaseSubAssetId:   z.number().int(),
-      newStatus:         z.enum(["Active","Cancelled","Returned","BackIn","Replaced"]),
+      newStatus:         z.enum(["Active","Cancelled","Returned","BackIn","Replaced","WriteOff","Condemned"]),
       statusDate:        z.string(),
       reason:            z.string().optional(),
       replacedByAssetId: z.number().int().optional(),
@@ -803,4 +803,32 @@ export const assetRouter = router({
         createdAt:       r.created_at         as string,
       }));
     }),
+  changeSubAssetOwnership: protectedProcedure
+    .input(z.object({
+      leaseSubAssetId: z.number().int(),
+      ownership:       z.enum(["Lease", "Lessor"]),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const params: SPPParam[] = [
+        { name: "LeaseSubAssetId", type: "Int",      value: input.leaseSubAssetId },
+        { name: "Ownership",       type: "NVarChar", value: input.ownership },
+        { name: "ChangedBy",       type: "NVarChar", value: ctx.user?.name ?? "system" },
+      ];
+      await execSPP("asset.sp_ChangeSubAssetOwnership", params);
+      // Log ownership change
+      await execSPP("asset.sp_LogSubAssetTransaction", [
+        { name: "Action",       type: "VarChar",  value: "OWNERSHIP_CHANGE" },
+        { name: "EntityType",   type: "VarChar",  value: "LEASE_SUB_ASSET" },
+        { name: "EntityId",     type: "Int",      value: input.leaseSubAssetId },
+        { name: "EntityCode",   type: "NVarChar", value: null },
+        { name: "EntityName",   type: "NVarChar", value: null },
+        { name: "BeforeJson",   type: "NVarChar", value: null },
+        { name: "AfterJson",    type: "NVarChar", value: JSON.stringify({ ownership: input.ownership }) },
+        { name: "ChangedBy",    type: "NVarChar", value: ctx.user?.name ?? "system" },
+        { name: "ScreenId",     type: "VarChar",  value: "VFLSEASTTXN0001P001" },
+        { name: "IpAddress",    type: "VarChar",  value: null },
+      ]);
+      return { ok: true };
+    }),
+
 });

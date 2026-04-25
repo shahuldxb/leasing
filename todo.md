@@ -861,3 +861,14 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Status dropdown options: Active, Cancelled, Returned, BackIn, Replaced
 - [x] Validate serial numbers are filled before allowing Step 3
 - [x] Show item count and total QAR value in collapsed header
+
+## Sub-Asset Transaction Log Rebuild
+- [x] Add Lease Number dropdown filter to SubAssetTransactionLog.tsx (uses getLeaseList)
+- [x] Add Sub-Asset Set dropdown filter (uses getSubAssetGroups, filtered by selected lease)
+- [x] Add action toolbar: Add, Edit, Delete, Returned, Write Off, Replaced, Condemned
+- [x] Add Ownership toggle per record: Lease / Lessor (default: Lease)
+- [x] Add ownership field to lease_sub_assets table and sp_UpdateSubAssetStatus
+- [x] Add tRPC procedures for each action: writeOff, condemn (map to updateSubAssetStatus with new statuses)
+- [x] Each action logs a transaction to sub_asset_transactions
+- [x] Action buttons are context-sensitive (greyed out when no row selected)
+- [x] Ownership change also logs a transaction (OWNERSHIP_CHANGE action)
