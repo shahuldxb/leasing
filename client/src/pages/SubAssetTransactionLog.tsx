@@ -153,8 +153,9 @@ export default function SubAssetTransactionLog() {
 
   // Parse URL params for persistence
   const urlParams = new URLSearchParams(search);
-  const [selectedLeaseId,     setSelectedLeaseId]     = useState<string>(urlParams.get("leaseId")  ?? "none");
-  const [selectedSetRecordId, setSelectedSetRecordId] = useState<string>(urlParams.get("setRecId") ?? "none");
+  const [selectedLeaseId, setSelectedLeaseId] = useState<string>(urlParams.get("leaseId") ?? "none");
+  // selectedAssetId = assetId from the Sub-Asset Groups master list
+  const [selectedAssetId, setSelectedAssetId] = useState<string>(urlParams.get("assetId") ?? "none");
 
   // ── Filters ──────────────────────────────────────────────
   const [filterAction,   setFilterAction]   = useState<string>("all");
@@ -181,13 +182,18 @@ export default function SubAssetTransactionLog() {
     { enabled: leaseSelected }
   );
 
+  // Master list of all sub-asset groups (same as Asset Registry)
   const { data: allAvailSets = [] } = trpc.asset.getSubAssetGroups.useQuery();
 
-  // Derive selected set record from the fetched list
-  const selectedSetRecord = useMemo(
-    () => (leaseSets as any[]).find((s: any) => String(s.leaseSubAssetId) === selectedSetRecordId) ?? null,
-    [leaseSets, selectedSetRecordId]
-  );
+  // Derive selected set record: match chosen assetId against leaseSets (which have leaseSubAssetId)
+  const selectedSetRecord = useMemo(() => {
+    if (selectedAssetId === "none") return null;
+    // First try to find a leaseSet record matching this assetId (has full detail)
+    const fromLease = (leaseSets as any[]).find((s: any) => String(s.assetId) === selectedAssetId);
+    if (fromLease) return fromLease;
+    // Fallback: return the group record from master list (no leaseSubAssetId)
+    return (allAvailSets as any[]).find((s: any) => String(s.assetId) === selectedAssetId) ?? null;
+  }, [leaseSets, allAvailSets, selectedAssetId]);
 
   // Parse tags_with_serials for the detail card
   const setItems = useMemo(() => {
@@ -200,16 +206,16 @@ export default function SubAssetTransactionLog() {
     } catch { return []; }
   }, [selectedSetRecord]);
 
-  // Transaction history query
+  // Transaction history query — uses leaseSubAssetId if available (set is attached to lease)
   const txnInput = useMemo(() => ({
-    entityId:  selectedSetRecord ? Number((selectedSetRecord as any).leaseSubAssetId) : undefined,
+    entityId:  selectedSetRecord ? (Number((selectedSetRecord as any).leaseSubAssetId) || undefined) : undefined,
     action:    filterAction !== "all" ? filterAction : undefined,
     changedBy: filterUser.trim() || undefined,
     dateFrom:  filterDateFrom || undefined,
     dateTo:    filterDateTo   || undefined,
   }), [selectedSetRecord, filterAction, filterUser, filterDateFrom, filterDateTo]);
 
-  const setSelected = selectedSetRecordId !== "none" && !!selectedSetRecord;
+  const setSelected = selectedAssetId !== "none" && !!selectedSetRecord;
 
   const { data: txnData, isFetching, refetch } = trpc.asset.getSubAssetTxns.useQuery(
     txnInput,
@@ -232,16 +238,16 @@ export default function SubAssetTransactionLog() {
   // ── URL persistence ───────────────────────────────────────
   useEffect(() => {
     const p = new URLSearchParams();
-    if (selectedLeaseId  !== "none") p.set("leaseId",  selectedLeaseId);
-    if (selectedSetRecordId !== "none") p.set("setRecId", selectedSetRecordId);
+    if (selectedLeaseId !== "none") p.set("leaseId", selectedLeaseId);
+    if (selectedAssetId !== "none") p.set("assetId", selectedAssetId);
     const qs = p.toString();
     setLocation(`/sub-asset-registry/transactions${qs ? `?${qs}` : ""}`, { replace: true });
-  }, [selectedLeaseId, selectedSetRecordId]);
+  }, [selectedLeaseId, selectedAssetId]);
 
   // ── Handlers ──────────────────────────────────────────────
   function handleLeaseChange(val: string) {
     setSelectedLeaseId(val);
-    setSelectedSetRecordId("none");
+    setSelectedAssetId("none");
   }
 
   function openAction(actionId: string) {
@@ -315,29 +321,38 @@ export default function SubAssetTransactionLog() {
                 </Select>
               </div>
 
-              {/* Sub-Asset Set selector */}
+              {/* Sub-Asset Group selector — master list from Asset Registry */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">
-                  Sub-Asset Set
-                  {loadingSets && <span className="ml-2 text-[10px] text-muted-foreground animate-pulse">Loading…</span>}
+                  Sub-Asset Group
+                  {loadingSets && leaseSelected && <span className="ml-2 text-[10px] text-muted-foreground animate-pulse">Loading lease data…</span>}
                 </Label>
                 <Select
-                  value={selectedSetRecordId}
-                  onValueChange={setSelectedSetRecordId}
-                  disabled={!leaseSelected}
+                  value={selectedAssetId}
+                  onValueChange={setSelectedAssetId}
                 >
                   <SelectTrigger className="bg-background border-border">
-                    <SelectValue placeholder={leaseSelected ? "— Select a set —" : "— Select a lease first —"} />
+                    <SelectValue placeholder="— Select a set —" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— All sets on this lease —</SelectItem>
-                    {(leaseSets as any[]).map((s: any) => (
-                      <SelectItem key={s.leaseSubAssetId} value={String(s.leaseSubAssetId)}>
-                        <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
-                        <span>{s.setName}</span>
-                        <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded border ${STATUS_BADGE[s.status] ?? "bg-muted text-muted-foreground"}`}>{s.status}</span>
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">— Select a set —</SelectItem>
+                    {(allAvailSets as any[]).map((s: any) => {
+                      // Check if this group is attached to the selected lease
+                      const leaseSet = leaseSelected
+                        ? (leaseSets as any[]).find((ls: any) => ls.assetId === s.assetId)
+                        : null;
+                      return (
+                        <SelectItem key={s.assetId} value={String(s.assetId)}>
+                          <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
+                          <span>{s.setName}</span>
+                          {leaseSet && (
+                            <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded border ${STATUS_BADGE[leaseSet.status] ?? "bg-muted text-muted-foreground"}`}>
+                              {leaseSet.status}
+                            </span>
+                          )}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -350,7 +365,7 @@ export default function SubAssetTransactionLog() {
                 <span><span className="text-foreground font-medium">Asset:</span> {selectedLease.assetName}</span>
                 <span><span className="text-foreground font-medium">Lessor:</span> {selectedLease.lessorName}</span>
                 <span><span className="text-foreground font-medium">Status:</span> {selectedLease.status}</span>
-                <span><span className="text-foreground font-medium">Sets on lease:</span> {leaseSets.length}</span>
+                <span><span className="text-foreground font-medium">Sets attached:</span> {leaseSets.length}</span>
               </div>
             )}
           </div>
@@ -598,7 +613,7 @@ export default function SubAssetTransactionLog() {
                         const hasDiff = t.beforeJson || t.afterJson;
                         return [
                           <tr
-                            key={t.txnId}
+                            key={`row-${t.txnId}`}
                             className={`border-b border-border/50 hover:bg-muted/10 ${isExpanded ? "bg-muted/10" : ""}`}
                           >
                             <td className="py-2 px-2 text-center">
@@ -628,7 +643,7 @@ export default function SubAssetTransactionLog() {
                           </tr>,
                           ...(isExpanded ? [
                             <tr key={`exp-${t.txnId}`} className="border-b border-border/50 bg-muted/10">
-                              <td colSpan={6} className="py-3 px-6">
+                              <td key={`exp-td-${t.txnId}`} colSpan={6} className="py-3 px-6">
                                 <ItemDiffViewer before={t.beforeJson} after={t.afterJson} />
                               </td>
                             </tr>
