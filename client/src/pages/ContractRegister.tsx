@@ -65,11 +65,7 @@ export default function ContractRegister() {
             subtitle="Master register of all lease contracts"
             screenType="contract_register"
             onAIData={(r) => setAiRows && setAiRows(r)}
-            actions={
-              <Button onClick={() => setLocation("/lease/new")} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg">
-                <Plus className="w-4 h-4" />New Contract
-              </Button>
-            }
+
           />
 
         <Card>
@@ -100,7 +96,7 @@ export default function ContractRegister() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 border-b">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Contract Ref</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Lease Reference</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Lessor</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Asset</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Commencement</th>

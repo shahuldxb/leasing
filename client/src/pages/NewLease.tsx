@@ -20,7 +20,7 @@ const STEPS = [
 ];
 
 const ASSET_TYPES = ["Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Fleet Vehicle","Network Equipment","Generator Site","Other"];
-const CURRENCIES  = ["USD","GHS","EUR","GBP","ZAR","KES","NGN","ZMW"];
+const CURRENCIES  = ["QAR","USD","GHS","EUR","GBP","ZAR","KES","NGN","ZMW"];
 const FREQ_OPTIONS = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
 export default function NewLease() {
@@ -28,12 +28,12 @@ export default function NewLease() {
   const [, setLocation] = useLocation();
 
   // Step 1 — Lessor
-  const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "", taxId: "" });
+  const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "" });
   // Step 2 — Asset
-  const [asset, setAsset] = useState({ assetType: "", assetName: "", assetCode: "", location: "", country: "", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
+  const [asset, setAsset] = useState({ assetType: "Tower Site", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
   // Step 3 — Financial
   const [financial, setFinancial] = useState({
-    commencementDate: "", endDate: "", leaseTerm: "", currency: "USD",
+    commencementDate: "", endDate: "", leaseTerm: "", currency: "QAR",
     rentAmount: "", paymentFrequency: "Monthly", escalationRate: "", escalationFrequency: "Annual",
     discountRate: "", securityDeposit: "", noticePeriod: "90",
     isLTO: false, ltoPrice: "", ltoDeposit: "", ltoInstalments: "", ltoRate: "", ltoBalloon: "",
@@ -130,7 +130,7 @@ export default function NewLease() {
               email:         data.lessorEmail          ?? l.email,
               phone:         data.lessorPhone          ?? l.phone,
               address:       data.propertyAddress      ?? l.address,
-              country:       data.country              ?? l.country,
+              country:       data.country              ?? "QA",
               taxId:         data.taxId                ?? l.taxId,
             }));
             setAsset(a => ({
@@ -138,7 +138,10 @@ export default function NewLease() {
               assetType: data.assetClass ?? a.assetType,
               assetName: data.leaseName  ?? a.assetName,
               location:  data.city       ?? a.location,
-              country:   data.country    ?? a.country,
+              country:   data.country    ?? "QA",
+              assetCode: data.assetCode  ?? a.assetCode,
+              gpsLat:    data.gpsLat     ?? a.gpsLat,
+              gpsLng:    data.gpsLng     ?? a.gpsLng,
             }));
             setFinancial(f => ({
               ...f,
@@ -153,7 +156,9 @@ export default function NewLease() {
               securityDeposit:  data.depositAmount      ?? f.securityDeposit,
               discountRate:     data.discountRate        ?? f.discountRate,
               escalationRate:   data.escalationRate      ?? f.escalationRate,
+              noticePeriod:     data.noticePeriod        ?? f.noticePeriod,
             }));
+            if (data.taxId) setLessor(l => ({ ...l, taxId: data.taxId ?? l.taxId }));
           }}
         />
 
