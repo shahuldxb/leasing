@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -45,6 +45,19 @@ export default function NewLease() {
   const [ifrs16Result, setIfrs16Result] = useState<any>(null);
 
   const { data: lessors = [] } = trpc.lease.getLessors.useQuery({});
+  const { data: subAssetGroupsRaw = [] } = trpc.asset.getSubAssetGroups.useQuery();
+  // Parse sub-asset groups for display
+  const subAssetGroups = subAssetGroupsRaw.map(r => {
+    let itemCount = 0; let totalQAR = 0;
+    try {
+      const lines = JSON.parse(r.tags || "[]") as Array<{ code: string; qty: number }>;
+      itemCount = lines.reduce((s, l) => s + l.qty, 0);
+    } catch { /* ignore */ }
+    return { assetId: r.assetId, assetCode: r.assetCode, setName: r.setName, description: r.description, itemCount, totalQAR };
+  });
+  // Selected sub-asset set IDs for this lease
+  const [selectedSetIds, setSelectedSetIds] = useState<number[]>([]);
+  const [setPickerValue, setSetPickerValue] = useState<string>("none");
   const computeMutation = trpc.genai.computeIFRS16.useMutation({
     onSuccess: (data) => setIfrs16Result(data),
     onError: (e) => toast.error("IFRS 16 computation failed: " + e.message),
@@ -287,6 +300,59 @@ export default function NewLease() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Sub-Asset Sets */}
+                <div className="col-span-2 border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-[#e60000]" />
+                    <Label className="text-sm font-semibold">Sub-Asset Sets (Furniture / Appliances)</Label>
+                    <span className="text-xs text-muted-foreground font-normal ml-1">Attach pre-configured asset sets to this lease</span>
+                  </div>
+                  {/* Picker */}
+                  <div className="flex gap-2">
+                    <Select value={setPickerValue} onValueChange={v => {
+                      if (v === "none") return;
+                      const id = Number(v);
+                      if (!selectedSetIds.includes(id)) setSelectedSetIds(prev => [...prev, id]);
+                      setSetPickerValue("none");
+                    }}>
+                      <SelectTrigger className={`${inputCls} flex-1`}><SelectValue placeholder="Select a sub-asset set to attach..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— Select a set —</SelectItem>
+                        {subAssetGroups.filter(g => !selectedSetIds.includes(g.assetId)).map(g => (
+                          <SelectItem key={g.assetId} value={String(g.assetId)}>
+                            {g.assetCode} · {g.setName} ({g.itemCount} items)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Selected set cards */}
+                  {selectedSetIds.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                      {selectedSetIds.map(id => {
+                        const g = subAssetGroups.find(x => x.assetId === id);
+                        if (!g) return null;
+                        return (
+                          <div key={id} className="flex items-start justify-between bg-muted/40 border border-border rounded-lg p-3">
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-mono text-[#e60000]">{g.assetCode}</p>
+                              <p className="text-sm font-medium">{g.setName}</p>
+                              <p className="text-xs text-muted-foreground">{g.itemCount} item{g.itemCount !== 1 ? "s" : ""}</p>
+                              {g.description && <p className="text-xs text-muted-foreground italic truncate max-w-[180px]">{g.description}</p>}
+                            </div>
+                            <button className="text-muted-foreground hover:text-red-400 transition-colors mt-0.5" onClick={() => setSelectedSetIds(prev => prev.filter(x => x !== id))}>
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {selectedSetIds.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No sets attached. This is optional — leave empty if the property is unfurnished.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -451,6 +517,45 @@ export default function NewLease() {
                 {computeMutation.isPending && (
                   <div className="col-span-2 text-center text-muted-foreground text-sm py-4">Computing IFRS 16 values...</div>
                 )}
+
+                {/* Sub-Asset Sets Summary */}
+                <div className="col-span-2 bg-muted/50 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-[#e60000]" />
+                    <h3 className="font-semibold text-foreground">Sub-Asset Sets</h3>
+                    {selectedSetIds.length > 0 && (
+                      <span className="text-xs bg-[#e60000]/20 text-[#e60000] px-2 py-0.5 rounded-full">{selectedSetIds.length} set{selectedSetIds.length !== 1 ? "s" : ""} attached</span>
+                    )}
+                  </div>
+                  {selectedSetIds.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No sub-asset sets attached (unfurnished).</p>
+                  ) : (
+                    <table className="w-full text-sm mt-1">
+                      <thead>
+                        <tr className="border-b border-border text-xs text-muted-foreground">
+                          <th className="text-left py-1 pr-4">Set Code</th>
+                          <th className="text-left py-1 pr-4">Set Name</th>
+                          <th className="text-left py-1 pr-4">Items</th>
+                          <th className="text-left py-1">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedSetIds.map(id => {
+                          const g = subAssetGroups.find(x => x.assetId === id);
+                          if (!g) return null;
+                          return (
+                            <tr key={id} className="border-b border-border/50">
+                              <td className="py-1.5 pr-4 font-mono text-xs text-[#e60000]">{g.assetCode}</td>
+                              <td className="py-1.5 pr-4 font-medium">{g.setName}</td>
+                              <td className="py-1.5 pr-4 text-muted-foreground">{g.itemCount}</td>
+                              <td className="py-1.5 text-muted-foreground text-xs truncate max-w-[200px]">{g.description || "—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-600">
                 <strong>Maker/Checker:</strong> This lease will be submitted for approval based on the liability threshold configured in Administration.

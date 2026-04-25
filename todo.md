@@ -781,12 +781,12 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] AssetRegistry.tsx — custom items persist alongside built-in library items
 
 ## Sub-Asset Set Selector in New Lease (Apr 25)
-- [ ] NewLease.tsx Step 2 — add "Sub-Asset Sets" section with multi-select from saved sets (getSubAssetGroups)
-- [ ] Show each selected set as a card with set code, name, item count, total QAR value
-- [ ] Allow removing a selected set with an X button
-- [ ] Pass selected set IDs in the lease creation payload (subAssetSetIds field)
-- [ ] Step 5 Review — show attached sub-asset sets summary table
-- [ ] Update todo.md when complete
+- [x] NewLease.tsx Step 2 — add "Sub-Asset Sets" section with multi-select from saved sets (getSubAssetGroups)
+- [x] Show each selected set as a card with set code, name, item count, total QAR value
+- [x] Allow removing a selected set with an X button
+- [x] Pass selected set IDs in the lease creation payload (subAssetSetIds field)
+- [x] Step 5 Review — show attached sub-asset sets summary table
+- [x] Update todo.md when complete
 
 ## Sub-Asset Transaction Log (Apr 25)
 - [x] Create sp_LogSubAssetTransaction SP (txn_id, action, entity_type, entity_id, entity_code, entity_name, before_json, after_json, changed_by, changed_at, screen_id, ip_address)
