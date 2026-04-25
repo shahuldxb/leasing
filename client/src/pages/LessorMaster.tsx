@@ -18,6 +18,20 @@ import {
   FileText, MapPin, ArrowLeft, Pencil, Trash2, Eye
 } from "lucide-react";
 
+const LESSEE_TYPES = ["Staff", "Client", "Other"];
+const EMPTY_LESSEE_FORM = {
+  lesseeType: "Staff" as "Staff" | "Client" | "Other",
+  lesseeName: "",
+  staffNumber: "",
+  grade: "",
+  position: "",
+  placeOfWork: "",
+  lesseeDepartment: "",
+  employeeId: "",
+  lesseeContactEmail: "",
+  lesseeContactPhone: "",
+};
+
 const STATUS_COLORS: Record<string, string> = {
   Active: "bg-green-500/20 text-green-400 border-green-500/30",
   Inactive: "bg-gray-500/20 text-gray-400 border-gray-500/30",
@@ -48,6 +62,8 @@ export default function LessorMaster() {
   const [bankForm, setBankForm] = useState(EMPTY_BANK);
   const [noteForm, setNoteForm] = useState(EMPTY_NOTE);
   const [showSample, setShowSample] = useState(false);
+  const [lesseeForm, setLesseeForm] = useState(EMPTY_LESSEE_FORM);
+  const [editingLessee, setEditingLessee] = useState(false);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.altKey && e.key === "1") { e.preventDefault(); }
@@ -125,6 +141,22 @@ export default function LessorMaster() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const handleLesseeFormFill = (lessor: any) => {
+    setLesseeForm({
+      lesseeType: (lessor.lessee_type as "Staff" | "Client" | "Other") ?? "Staff",
+      lesseeName: String(lessor.lessee_name ?? ""),
+      staffNumber: String(lessor.staff_number ?? ""),
+      grade: String(lessor.grade ?? ""),
+      position: String(lessor.position ?? ""),
+      placeOfWork: String(lessor.place_of_work ?? ""),
+      lesseeDepartment: String(lessor.department ?? ""),
+      employeeId: String(lessor.employee_id ?? ""),
+      lesseeContactEmail: String(lessor.lessee_contact_email ?? ""),
+      lesseeContactPhone: String(lessor.lessee_contact_phone ?? ""),
+    });
+    setEditingLessee(true);
+  };
 
   const handleAIFormFill = (data: Record<string, string>) => {
     setForm(f => ({
@@ -597,6 +629,7 @@ export default function LessorMaster() {
               <Tabs defaultValue="overview">
                 <TabsList className="bg-[#1a1d2e] border border-white/10 mb-4">
                   <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                  <TabsTrigger value="lessee" className="text-xs">Lessee</TabsTrigger>
                   <TabsTrigger value="contacts" className="text-xs">Contacts</TabsTrigger>
                   <TabsTrigger value="bank" className="text-xs">Bank Accounts</TabsTrigger>
                   <TabsTrigger value="assets" className="text-xs">Assets</TabsTrigger>
@@ -621,6 +654,160 @@ export default function LessorMaster() {
                         <p className="text-sm text-white font-medium">{String(value)}</p>
                       </div>
                     ))}
+                  </div>
+                </TabsContent>
+
+                {/* ── LESSEE TAB ─────────────────────────────────────────── */}
+                <TabsContent value="lessee">
+                  <div className="max-w-3xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Lessee Details</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Staff member or client who is the lessee on this record</p>
+                      </div>
+                      {!editingLessee ? (
+                        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
+                          onClick={() => handleLesseeFormFill(detail?.lessor ?? {})}>
+                          <Pencil className="w-3 h-3 mr-1" /> {detail?.lessor?.lessee_name ? "Edit Lessee" : "Add Lessee"}
+                        </Button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="border-white/10 text-gray-400 text-xs h-7"
+                            onClick={() => setEditingLessee(false)}>Cancel</Button>
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
+                            disabled={upsertMutation.isPending}
+                            onClick={() => {
+                              const l = detail?.lessor;
+                              if (!l) return;
+                              upsertMutation.mutate({
+                                lessorId: Number(l.lessor_id),
+                                lessorName: String(l.lessor_name),
+                                lessorType: l.lessor_type as "Individual" | "Company" | "Government" | "REIT" | "Trust",
+                                registrationNo: l.registration_no || undefined,
+                                taxId: l.tax_id || undefined,
+                                country: String(l.country ?? "AE"),
+                                city: l.city || undefined,
+                                addressLine1: l.address_line1 || undefined,
+                                addressLine2: l.address_line2 || undefined,
+                                postalCode: l.postal_code || undefined,
+                                website: l.website || undefined,
+                                creditRating: l.credit_rating || undefined,
+                                paymentTerms: Number(l.payment_terms ?? 30),
+                                preferredCurrency: String(l.preferred_currency ?? "AED"),
+                                status: l.status as "Active" | "Inactive" | "Blacklisted",
+                                blacklistReason: l.blacklist_reason || undefined,
+                                lesseeType: lesseeForm.lesseeType,
+                                lesseeName: lesseeForm.lesseeName || undefined,
+                                staffNumber: lesseeForm.staffNumber || undefined,
+                                grade: lesseeForm.grade || undefined,
+                                position: lesseeForm.position || undefined,
+                                placeOfWork: lesseeForm.placeOfWork || undefined,
+                                lesseeDepartment: lesseeForm.lesseeDepartment || undefined,
+                                employeeId: lesseeForm.employeeId || undefined,
+                                lesseeContactEmail: lesseeForm.lesseeContactEmail || undefined,
+                                lesseeContactPhone: lesseeForm.lesseeContactPhone || undefined,
+                              });
+                              setEditingLessee(false);
+                            }}>
+                            {upsertMutation.isPending ? "Saving..." : "Save Lessee"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {!editingLessee ? (
+                      // ── READ-ONLY VIEW ──────────────────────────────────────
+                      detail?.lessor?.lessee_name ? (
+                        <div className="grid grid-cols-3 gap-4">
+                          {[
+                            ["Lessee Type", detail.lessor.lessee_type],
+                            ["Lessee Name", detail.lessor.lessee_name],
+                            ["Staff Number", detail.lessor.staff_number],
+                            ["Employee ID", detail.lessor.employee_id],
+                            ["Grade", detail.lessor.grade],
+                            ["Position", detail.lessor.position],
+                            ["Department", detail.lessor.department],
+                            ["Place of Work", detail.lessor.place_of_work],
+                            ["Contact Email", detail.lessor.lessee_contact_email],
+                            ["Contact Phone", detail.lessor.lessee_contact_phone],
+                          ].filter(([, v]) => v).map(([label, value]) => (
+                            <div key={String(label)} className="bg-[#1a1d2e] rounded-lg p-3 border border-white/10">
+                              <p className="text-xs text-gray-500 mb-1">{String(label)}</p>
+                              <p className="text-sm text-white font-medium">{String(value)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-3">
+                          <div className="w-12 h-12 rounded-full bg-[#1a1d2e] border border-white/10 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 opacity-40" />
+                          </div>
+                          <p className="text-sm">No lessee assigned to this lessor record</p>
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
+                            onClick={() => { setLesseeForm(EMPTY_LESSEE_FORM); setEditingLessee(true); }}>
+                            <Plus className="w-3 h-3 mr-1" /> Assign Lessee
+                          </Button>
+                        </div>
+                      )
+                    ) : (
+                      // ── EDIT FORM ───────────────────────────────────────────
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-gray-400">Lessee Type</Label>
+                          <Select value={lesseeForm.lesseeType} onValueChange={v => setLesseeForm(f => ({ ...f, lesseeType: v as "Staff" | "Client" | "Other" }))}>
+                            <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1"><SelectValue /></SelectTrigger>
+                            <SelectContent className="bg-[#1a1d2e] border-white/10 text-gray-200">
+                              {LESSEE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Lessee Name *</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="Full name"
+                            value={lesseeForm.lesseeName} onChange={e => setLesseeForm(f => ({ ...f, lesseeName: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Staff Number</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. VF-00123"
+                            value={lesseeForm.staffNumber} onChange={e => setLesseeForm(f => ({ ...f, staffNumber: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Employee ID</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="HR system ID"
+                            value={lesseeForm.employeeId} onChange={e => setLesseeForm(f => ({ ...f, employeeId: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Grade</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. G5, Senior"
+                            value={lesseeForm.grade} onChange={e => setLesseeForm(f => ({ ...f, grade: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Position / Job Title</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. Network Engineer"
+                            value={lesseeForm.position} onChange={e => setLesseeForm(f => ({ ...f, position: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Department</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. Technology"
+                            value={lesseeForm.lesseeDepartment} onChange={e => setLesseeForm(f => ({ ...f, lesseeDepartment: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Place of Work</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. Doha HQ, Site B"
+                            value={lesseeForm.placeOfWork} onChange={e => setLesseeForm(f => ({ ...f, placeOfWork: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Contact Email</Label>
+                          <Input type="email" className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="lessee@company.com"
+                            value={lesseeForm.lesseeContactEmail} onChange={e => setLesseeForm(f => ({ ...f, lesseeContactEmail: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400">Contact Phone</Label>
+                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="+974 xxxx xxxx"
+                            value={lesseeForm.lesseeContactPhone} onChange={e => setLesseeForm(f => ({ ...f, lesseeContactPhone: e.target.value }))} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 

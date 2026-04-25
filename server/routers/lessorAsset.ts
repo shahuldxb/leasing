@@ -47,43 +47,64 @@ export const lessorRouter = router({
 
   upsertLessor: protectedProcedure
     .input(z.object({
-      lessorId:          z.number().int().optional(),
-      lessorName:        z.string().min(2),
-      lessorType:        z.enum(["Individual","Company","Government","REIT","Trust"]).default("Company"),
-      registrationNo:    z.string().optional(),
-      taxId:             z.string().optional(),
-      country:           z.string().length(2).default("AE"),
-      city:              z.string().optional(),
-      addressLine1:      z.string().optional(),
-      addressLine2:      z.string().optional(),
-      postalCode:        z.string().optional(),
-      website:           z.string().optional(),
-      creditRating:      z.string().optional(),
-      paymentTerms:      z.number().int().default(30),
-      preferredCurrency: z.string().length(3).default("AED"),
-      status:            z.enum(["Active","Inactive","Blacklisted"]).default("Active"),
-      blacklistReason:   z.string().optional(),
+      lessorId:             z.number().int().optional(),
+      lessorName:           z.string().min(2),
+      lessorType:           z.enum(["Individual","Company","Government","REIT","Trust"]).default("Company"),
+      registrationNo:       z.string().optional(),
+      taxId:                z.string().optional(),
+      country:              z.string().length(2).default("AE"),
+      city:                 z.string().optional(),
+      addressLine1:         z.string().optional(),
+      addressLine2:         z.string().optional(),
+      postalCode:           z.string().optional(),
+      website:              z.string().optional(),
+      creditRating:         z.string().optional(),
+      paymentTerms:         z.number().int().default(30),
+      preferredCurrency:    z.string().length(3).default("AED"),
+      status:               z.enum(["Active","Inactive","Blacklisted"]).default("Active"),
+      blacklistReason:      z.string().optional(),
+      // Lessee fields
+      lesseeType:           z.enum(["Staff","Client","Other"]).optional(),
+      lesseeName:           z.string().optional(),
+      staffNumber:          z.string().optional(),
+      grade:                z.string().optional(),
+      position:             z.string().optional(),
+      placeOfWork:          z.string().optional(),
+      lesseeDepartment:     z.string().optional(),
+      employeeId:           z.string().optional(),
+      lesseeContactEmail:   z.string().email().optional().or(z.literal("")),
+      lesseeContactPhone:   z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const params: SPPParam[] = [
-        { name: "LessorId",          type: "Int",      value: input.lessorId ?? null },
-        { name: "LessorName",        type: "NVarChar",  value: input.lessorName },
-        { name: "LessorType",        type: "VarChar",   value: input.lessorType },
-        { name: "RegistrationNo",    type: "NVarChar",  value: input.registrationNo ?? null },
-        { name: "TaxId",             type: "NVarChar",  value: input.taxId ?? null },
-        { name: "Country",           type: "VarChar",   value: input.country },
-        { name: "City",              type: "NVarChar",  value: input.city ?? null },
-        { name: "AddressLine1",      type: "NVarChar",  value: input.addressLine1 ?? null },
-        { name: "AddressLine2",      type: "NVarChar",  value: input.addressLine2 ?? null },
-        { name: "PostalCode",        type: "VarChar",   value: input.postalCode ?? null },
-        { name: "Website",           type: "NVarChar",  value: input.website ?? null },
-        { name: "CreditRating",      type: "VarChar",   value: input.creditRating ?? null },
-        { name: "PaymentTerms",      type: "Int",       value: input.paymentTerms },
-        { name: "PreferredCurrency", type: "VarChar",   value: input.preferredCurrency },
-        { name: "Status",            type: "VarChar",   value: input.status },
-        { name: "BlacklistReason",   type: "NVarChar",  value: input.blacklistReason ?? null },
-        { name: "CreatedBy",         type: "NVarChar",  value: ctx.user?.name ?? "system" },
-        { name: "ScreenId",          type: "VarChar",   value: "VFLSELESSMST0001P001" },
+        { name: "LessorId",            type: "Int",      value: input.lessorId ?? null },
+        { name: "LessorName",          type: "NVarChar",  value: input.lessorName },
+        { name: "LessorType",          type: "VarChar",   value: input.lessorType },
+        { name: "RegistrationNo",      type: "NVarChar",  value: input.registrationNo ?? null },
+        { name: "TaxId",               type: "NVarChar",  value: input.taxId ?? null },
+        { name: "Country",             type: "VarChar",   value: input.country },
+        { name: "City",                type: "NVarChar",  value: input.city ?? null },
+        { name: "AddressLine1",        type: "NVarChar",  value: input.addressLine1 ?? null },
+        { name: "AddressLine2",        type: "NVarChar",  value: input.addressLine2 ?? null },
+        { name: "PostalCode",          type: "VarChar",   value: input.postalCode ?? null },
+        { name: "Website",             type: "NVarChar",  value: input.website ?? null },
+        { name: "CreditRating",        type: "VarChar",   value: input.creditRating ?? null },
+        { name: "PaymentTerms",        type: "Int",       value: input.paymentTerms },
+        { name: "PreferredCurrency",   type: "VarChar",   value: input.preferredCurrency },
+        { name: "Status",              type: "VarChar",   value: input.status },
+        { name: "BlacklistReason",     type: "NVarChar",  value: input.blacklistReason ?? null },
+        { name: "CreatedBy",           type: "NVarChar",  value: ctx.user?.name ?? "system" },
+        { name: "ScreenId",            type: "VarChar",   value: "VFLSELESSMST0001P001" },
+        { name: "LesseeType",          type: "NVarChar",  value: input.lesseeType ?? null },
+        { name: "LesseeName",          type: "NVarChar",  value: input.lesseeName ?? null },
+        { name: "StaffNumber",         type: "NVarChar",  value: input.staffNumber ?? null },
+        { name: "Grade",               type: "NVarChar",  value: input.grade ?? null },
+        { name: "Position",            type: "NVarChar",  value: input.position ?? null },
+        { name: "PlaceOfWork",         type: "NVarChar",  value: input.placeOfWork ?? null },
+        { name: "Department",          type: "NVarChar",  value: input.lesseeDepartment ?? null },
+        { name: "EmployeeId",          type: "NVarChar",  value: input.employeeId ?? null },
+        { name: "LesseeContactEmail",  type: "NVarChar",  value: input.lesseeContactEmail || null },
+        { name: "LesseeContactPhone",  type: "NVarChar",  value: input.lesseeContactPhone ?? null },
       ];
       const rows = await execSPP("sp_UpsertLessor", params);
       return rows[0];
@@ -641,17 +662,17 @@ export const assetRouter = router({
       assetCode:      z.string(),
       setName:        z.string(),
       tagsWithSerials: z.string().optional(), // JSON: [{code,name,category,qty,serialNumbers[],attachDate}]
+      lesseeName:     z.string().optional(),  // lessee name → stored as owner on attach
     }))
     .mutation(async ({ input, ctx }) => {
       const createdBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
       const params: SPPParam[] = [
         { name: "lease_id",          type: "NVarChar", value: input.leaseId },
-        { name: "lease_ref",         type: "NVarChar", value: input.leaseRef ?? input.leaseId },
         { name: "asset_id",          type: "Int",      value: input.assetId },
-        { name: "asset_code",        type: "NVarChar", value: input.assetCode },
         { name: "set_name",          type: "NVarChar", value: input.setName },
-        { name: "tags_with_serials", type: "NVarChar", value: input.tagsWithSerials ?? null },
         { name: "created_by",        type: "NVarChar", value: createdBy },
+        { name: "tags_with_serials", type: "NVarChar", value: input.tagsWithSerials ?? null },
+        { name: "lessee_name",       type: "NVarChar", value: input.lesseeName ?? null },
       ];
       const rows = await execSPP("asset.sp_AttachSubAssetToLease", params);
       const leaseSubAssetId = rows[0]?.lease_sub_asset_id as number;
@@ -684,18 +705,20 @@ export const assetRouter = router({
       replacedByAssetId: z.number().int().optional(),
       replacedByCode:    z.string().optional(),
       notes:             z.string().optional(),
+      lessorName:        z.string().optional(), // passed on Returned → stored as owner
+      lesseeName:        z.string().optional(), // passed on BackIn → stored as owner
     }))
     .mutation(async ({ input, ctx }) => {
       const updatedBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
       const params: SPPParam[] = [
         { name: "lease_sub_asset_id",   type: "Int",      value: input.leaseSubAssetId },
         { name: "new_status",           type: "NVarChar", value: input.newStatus },
-        { name: "status_date",          type: "NVarChar", value: input.statusDate },
         { name: "reason",               type: "NVarChar", value: input.reason ?? null },
-        { name: "replaced_by_asset_id", type: "Int",      value: input.replacedByAssetId ?? null },
-        { name: "replaced_by_code",     type: "NVarChar", value: input.replacedByCode ?? null },
         { name: "notes",                type: "NVarChar", value: input.notes ?? null },
+        { name: "replaced_by_asset_id", type: "Int",      value: input.replacedByAssetId ?? null },
         { name: "updated_by",           type: "NVarChar", value: updatedBy },
+        { name: "lessor_name",          type: "NVarChar", value: input.lessorName ?? null },
+        { name: "lessee_name",          type: "NVarChar", value: input.lesseeName ?? null },
       ];
       const rows = await execSPP("asset.sp_UpdateSubAssetStatus", params);
       return { rowsAffected: rows[0]?.rows_affected as number };
@@ -755,6 +778,7 @@ export const assetRouter = router({
         updatedAt:         r.updated_at           as string | null,
         tagsWithSerials:   r.tags_with_serials    as string | null,
         setTags:           r.set_tags             as string | null,
+        owner:             r.owner                as string | null,
       }));
     }),
 
@@ -766,6 +790,7 @@ export const assetRouter = router({
         leaseRef:   r.lease_ref   as string,
         assetName:  r.asset_name  as string,
         lessorName: r.lessor_name as string,
+        lesseeName: (r.lessee_name as string) || "",
         status:     r.status      as string,
       }));
     }),

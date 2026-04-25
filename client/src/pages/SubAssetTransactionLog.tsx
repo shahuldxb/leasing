@@ -330,11 +330,11 @@ export default function SubAssetTransactionLog() {
     const lease = (leaseList as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId);
     attachMutation.mutate({
       leaseId:         selectedLeaseId,
-      leaseRef:        lease?.leaseRef ?? selectedLeaseId,
       assetId:         reg.assetId,
       assetCode:       reg.assetCode,
       setName:         reg.setName,
       tagsWithSerials: JSON.stringify(attachItems),
+      lesseeName:      lease?.lesseeName || undefined,
     });
   }
 
@@ -391,6 +391,8 @@ export default function SubAssetTransactionLog() {
       ? (allAvailSets as any[]).find((s: any) => String(s.assetId) === actionReplaceSet)
       : null;
 
+    const lessorName = (leaseList as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId)?.lessorName;
+    const lesseeName = (leaseList as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId)?.lesseeName;
     await statusMutation.mutateAsync({
       leaseSubAssetId:   rec.leaseSubAssetId,
       newStatus:         actionDialog.newStatus as any,
@@ -399,6 +401,8 @@ export default function SubAssetTransactionLog() {
       replacedByAssetId: replaceSet?.assetId,
       replacedByCode:    replaceSet?.assetCode,
       notes:             actionNotes || undefined,
+      lessorName:        actionDialog.newStatus === "Returned" ? lessorName : undefined,
+      lesseeName:        actionDialog.newStatus === "BackIn"   ? lesseeName : undefined,
     });
   }
 

@@ -876,3 +876,25 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Lease Dropdown Fix
 - [x] Fix sp_GetLeaseList to return all leases with leaseRef and description/asset name
 - [x] Update SubAssetTransactionLog.tsx dropdown to show leaseRef + description
+
+## Lessee Fields in Lessor Master (Apr 25)
+- [x] ALTER lessor.lessors table: add lessee_type, lessee_name, staff_number, grade, position, place_of_work, department, employee_id, lessee_contact_email, lessee_contact_phone columns
+- [x] DROP + recreate dbo.sp_GetLessors to include new lessee fields in SELECT
+- [x] DROP + recreate dbo.sp_GetLessorDetail to return new lessee fields
+- [x] DROP + recreate dbo.sp_UpsertLessor to accept and save all new lessee params
+- [x] DROP + recreate asset.sp_AttachSubAssetToLease to accept lessee_name and store as owner
+- [x] DROP + recreate asset.sp_UpdateSubAssetStatus to accept lessor_name/lessee_name and update owner on Returned/BackIn
+- [x] DROP + recreate asset.sp_GetLeaseSubAssets to return owner column
+- [x] Update asset.sp_GetLeaseListForSubAsset to JOIN lessor.lessors and return lessee_name
+- [x] Update tRPC upsertLessor procedure to accept and forward all new lessee fields
+- [x] Update tRPC attachSubAssetToLease procedure to accept lesseeName and forward to SP
+- [x] Update tRPC updateSubAssetStatus procedure to accept lessorName/lesseeName and forward to SP
+- [x] Update tRPC getLeaseList procedure to return lesseeName field
+- [x] Add Lessees tab to LessorMaster.tsx detail view (lessee_type, lessee_name, staff_number, grade, position, place_of_work, department, employee_id, contact_email, contact_phone)
+- [x] Fix LeaseSubAssets.tsx selectedLease lookup to use camelCase leaseId
+- [x] Fix LeaseSubAssets.tsx lease SelectItem to use camelCase leaseId
+- [x] Add owner field to AttachedSet mapping in LeaseSubAssets.tsx
+- [x] Wire lesseeName on doAttach() in LeaseSubAssets.tsx
+- [x] Wire lessorName/lesseeName on doStatusChange() in LeaseSubAssets.tsx (Returned → lessor, BackIn → lessee)
+- [x] Fix confirmAttach() in SubAssetTransactionLog.tsx to pass lesseeName
+- [x] Fix confirmAction() in SubAssetTransactionLog.tsx to pass lessorName/lesseeName based on action type

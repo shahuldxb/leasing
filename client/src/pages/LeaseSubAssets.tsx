@@ -109,7 +109,7 @@ export default function LeaseSubAssets() {
   // ── Lease selector ──────────────────────────────────────────────────────────
   const { data: leases = [], isLoading: loadingLeases } = trpc.asset.getLeaseList.useQuery();
   const [selectedLeaseId, setSelectedLeaseId] = useState<string>("");
-  const selectedLease = leases.find((l: any) => l.lease_id === selectedLeaseId);
+  const selectedLease = (leases as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId);
 
   // ── Attached sets for selected lease ────────────────────────────────────────
   const { data: rawSets = [], isLoading: loadingSets, refetch: refetchSets } =
@@ -133,6 +133,7 @@ export default function LeaseSubAssets() {
       createdAt:       r.created_at ?? "",
       updatedBy:       r.updated_by ?? "",
       updatedAt:       r.updated_at ?? "",
+      owner:           r.owner ?? "",
     })), [rawSets]);
 
   // ── Available sets from Sub-Asset Registry ───────────────────────────────────
@@ -300,11 +301,11 @@ export default function LeaseSubAssets() {
     const tagsWithSerials = JSON.stringify(attachItems);
     await attachMutation.mutateAsync({
       leaseId:        selectedLeaseId,
-      leaseRef:       selectedLease?.leaseRef ?? selectedLeaseId,
       assetId:        reg.assetId,
       assetCode:      reg.assetCode,
       setName:        reg.setName,
       tagsWithSerials,
+      lesseeName:     (selectedLease as any)?.lesseeName || undefined,
     });
   }
 
@@ -343,13 +344,18 @@ export default function LeaseSubAssets() {
     const replacedReg = newStatus === "Replaced"
       ? (registrySets as any[]).find(s => String(s.assetId) === replacementSetId)
       : null;
+    // Owner logic: Returned → lessor takes ownership; BackIn → lessee takes back
+    const lessorName = (selectedLease as any)?.lessorName || undefined;
+    const lesseeName = (selectedLease as any)?.lesseeName || undefined;
     await statusMutation.mutateAsync({
-      leaseSubAssetId:  statusTarget.leaseSubAssetId,
-      newStatus:        newStatus,
+      leaseSubAssetId:   statusTarget.leaseSubAssetId,
+      newStatus:         newStatus,
       statusDate,
-      reason:           statusReason,
+      reason:            statusReason,
       replacedByAssetId: replacedReg?.assetId,
-      replacedByCode:   replacedReg?.assetCode,
+      replacedByCode:    replacedReg?.assetCode,
+      lessorName:        newStatus === "Returned" ? lessorName : undefined,
+      lesseeName:        newStatus === "BackIn"   ? lesseeName : undefined,
     });
   }
 
@@ -414,7 +420,7 @@ export default function LeaseSubAssets() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#13161f] border-white/10 text-white">
                   {(leases as any[]).map((l: any) => (
-                    <SelectItem key={l.lease_id} value={l.lease_id}>
+                    <SelectItem key={l.leaseId} value={l.leaseId}>
                       <span className="font-mono text-amber-400 mr-2">{l.leaseRef ?? l.leaseId}</span>
                       <span className="text-gray-300">{l.assetName ?? ""}</span>
                       {l.lessorName && <span className="text-gray-500 ml-2">· {l.lessorName}</span>}
