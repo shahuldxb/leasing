@@ -2,7 +2,7 @@
  * VodaLease Enterprise — Payables Queue
  * Screen ID: VFPAYQUEUEP0001P001
  */
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,9 +30,27 @@ const STATUS_COLORS: Record<string, string> = {
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
 
+
+const SAMPLE_QATAR: Record<string, unknown> = {
+  invoice_ref: "INV-2025-00142", lease_ref: "LSE-QA-0031",
+  lessor_name: "Barwa Real Estate Company", invoice_date: "2025-04-01",
+  due_date: "2025-04-30", total_amount: 48000, currency: "QAR",
+  status: "Pending", period_month: 4, period_year: 2025,
+};
+
 export default function PayablesQueue() {
   const [search, setSearch]   = useState("");
   const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
+  // Alt+1 → table view | Alt+F2 → sample form view
+  const handleAltKeys = useCallback((e: KeyboardEvent) => {
+    if (e.altKey && e.key === "1") { e.preventDefault(); setAiRecord(null); }
+    if (e.altKey && e.key === "F2") { e.preventDefault(); setAiRecord(SAMPLE_QATAR); }
+  }, []);
+  useEffect(() => {
+    window.addEventListener("keydown", handleAltKeys);
+    return () => window.removeEventListener("keydown", handleAltKeys);
+  }, [handleAltKeys]);
+
   const [status, setStatus]   = useState("all");
   const [page, setPage]       = useState(1);
   const PAGE_SIZE = 50;
@@ -64,6 +82,24 @@ export default function PayablesQueue() {
           screenType="payables_queue"
           onAIData={(rows) => setAiRecord(rows[0] ?? null)}
         />
+
+        {aiRecord && (
+          <div className="bg-card border border-primary/30 rounded-xl p-5 space-y-3 mx-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Sample Record (Qatar)</h3>
+              <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setAiRecord(null)}>✕ Close</button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              {Object.entries(aiRecord).map(([k, v]) => (
+                <div key={k} className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</p>
+                  <p className="font-medium text-xs">{String(v)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" /></Button>

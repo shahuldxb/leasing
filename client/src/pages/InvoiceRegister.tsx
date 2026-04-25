@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,28 @@ const statusColor: Record<string, string> = {
   Overdue: "bg-red-600/20 text-red-500 border-red-600/30",
 };
 
-const INIT = { leaseId: "", invoiceNo: "", invoiceDate: "", dueDate: "", amount: "", currency: "AED", description: "" };
+const INIT = { leaseId: "", invoiceNo: "", invoiceDate: "", dueDate: "", amount: "", currency: "QAR", description: "" };
+
+
+const SAMPLE_QATAR: Record<string, unknown> = {
+  invoice_ref: "INV-2025-00142", lease_ref: "LSE-QA-0031",
+  lessor_name: "Barwa Real Estate Company", invoice_date: "2025-04-01",
+  due_date: "2025-04-30", total_amount: 48000, currency: "QAR",
+  status: "Pending", period_month: 4, period_year: 2025,
+};
 
 export default function InvoiceRegister() {
+  const [aiRecord, setAiRecord] = useState<Record<string, unknown> | null>(null);
+  // Alt+1 → table view | Alt+F2 → sample form view
+  const handleAltKeys = useCallback((e: KeyboardEvent) => {
+    if (e.altKey && e.key === "1") { e.preventDefault(); setAiRecord(null); }
+    if (e.altKey && e.key === "F2") { e.preventDefault(); setAiRecord(SAMPLE_QATAR); }
+  }, []);
+  useEffect(() => {
+    window.addEventListener("keydown", handleAltKeys);
+    return () => window.removeEventListener("keydown", handleAltKeys);
+  }, [handleAltKeys]);
+
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
@@ -117,7 +136,7 @@ export default function InvoiceRegister() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label>Invoice Date</Label><Input type="date" className="mt-1" value={form.invoiceDate} onChange={e => setForm(f => ({ ...f, invoiceDate: e.target.value }))} /></div>
@@ -149,6 +168,22 @@ export default function InvoiceRegister() {
           onAIData={(rows) => setAiRows(rows)}
           actions={<Button size="sm" onClick={() => { setForm(INIT); setShowForm(true); }} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />New Invoice</Button>}
         />
+        {aiRecord && (
+          <div className="bg-card border border-primary/30 rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">Sample Record (Qatar)</h3>
+              <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setAiRecord(null)}>✕ Close</button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              {Object.entries(aiRecord).map(([k, v]) => (
+                <div key={k} className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</p>
+                  <p className="font-medium text-xs">{String(v)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
