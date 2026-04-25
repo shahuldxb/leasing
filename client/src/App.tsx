@@ -121,6 +121,7 @@ import MSCContractViewer     from "./pages/MSCContractViewer";
 import LessorMaster              from "./pages/LessorMaster";
 import AssetRegistry             from "./pages/AssetRegistry";
 import SubAssetTransactionLog    from "./pages/SubAssetTransactionLog";
+import LeaseSubAssets            from "./pages/LeaseSubAssets";
 
 // P2/P3 New Features
 import MaturityAnalysis   from "./pages/MaturityAnalysis";
@@ -229,6 +230,7 @@ function Router() {
       <Route path="/asset-registry"                   component={AssetRegistry} />
       <Route path="/sub-asset-registry"               component={AssetRegistry} />
       <Route path="/sub-asset-registry/transactions"  component={SubAssetTransactionLog} />
+      <Route path="/lease-sub-assets"                   component={LeaseSubAssets} />
 
       {/* Alerts & Admin */}
       <Route path="/alerts"                  component={AlertCentre} />

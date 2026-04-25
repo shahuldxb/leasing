@@ -800,3 +800,17 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add "Transaction Log" button in Sub-Asset Registry header linking to the log screen
 - [x] Wire route /sub-asset-registry/transactions in App.tsx
 - [x] Add Transaction Log link in sidebar under Sub-Asset Registry
+
+## Sub-Asset Lifecycle Management (Apr 25)
+- [x] Create asset.lease_sub_assets table: lease_sub_asset_id, lease_id, asset_id (set), asset_code, set_name, status (Active/Cancelled/Returned/BackIn/Replaced), status_date, reason, replaced_by_asset_id, notes, created_by, created_at
+- [x] Create sp_AttachSubAssetToLease SP (insert lease_sub_assets row, log transaction)
+- [x] Create sp_UpdateSubAssetStatus SP (update status + log transaction)
+- [x] Create sp_GetLeaseSubAssets SP (get all sets for a lease with status)
+- [x] Create sp_GetLeaseList SP (get leases for selector dropdown)
+- [x] Add tRPC procedures: asset.attachSubAssetToLease, asset.updateSubAssetStatus, asset.getLeaseSubAssets, asset.getLeaseList
+- [x] Build LeaseSubAssets.tsx — lease selector + sub-asset sets grid with status badges
+- [x] Status change dialog: select new status (Cancelled/Returned/BackIn/Replaced), date, reason, replacement set picker for Replaced
+- [x] Each set card shows: set code, set name, item count, status badge, status date, reason, action buttons
+- [x] Wire route /lease-sub-assets in App.tsx
+- [x] Add "Lease Sub-Assets" link in sidebar under Lease Management
+- [x] Log every status change to sub_asset_transactions table

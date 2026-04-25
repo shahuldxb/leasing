@@ -612,8 +612,7 @@ export const assetRouter = router({
       ];
       const sets = await execSPPMulti("sp_GetSubAssetTransactions", params);
       const total = (sets[0]?.[0] as any)?.total_count ?? 0;
-      const rows  = (sets[1] ?? []) as Record<string, unknown>[];
-      return {
+      const rows  = (sets[1] ?? []) as Record<string, unknown>[];      return {
         total,
         rows: rows.map(r => ({
           txnId:      r.txn_id      as number,
@@ -630,5 +629,95 @@ export const assetRouter = router({
           sessionRef: r.session_ref as string | null,
         })),
       };
+    }),
+
+  // ── Lease Sub-Asset Lifecycle ─────────────────────────────────────────────
+
+  attachSubAssetToLease: protectedProcedure
+    .input(z.object({
+      leaseId:   z.string(),
+      leaseRef:  z.string().optional(),
+      assetId:   z.number().int(),
+      assetCode: z.string(),
+      setName:   z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const createdBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
+      const params: SPPParam[] = [
+        { name: "lease_id",   type: "NVarChar", value: input.leaseId },
+        { name: "lease_ref",  type: "NVarChar", value: input.leaseRef ?? input.leaseId },
+        { name: "asset_id",   type: "Int",      value: input.assetId },
+        { name: "asset_code", type: "NVarChar", value: input.assetCode },
+        { name: "set_name",   type: "NVarChar", value: input.setName },
+        { name: "created_by", type: "NVarChar", value: createdBy },
+      ];
+      const rows = await execSPP("asset.sp_AttachSubAssetToLease", params);
+      return { leaseSubAssetId: rows[0]?.lease_sub_asset_id as number, message: rows[0]?.message as string };
+    }),
+
+  updateSubAssetStatus: protectedProcedure
+    .input(z.object({
+      leaseSubAssetId:   z.number().int(),
+      newStatus:         z.enum(["Active","Cancelled","Returned","BackIn","Replaced"]),
+      statusDate:        z.string(),
+      reason:            z.string().optional(),
+      replacedByAssetId: z.number().int().optional(),
+      replacedByCode:    z.string().optional(),
+      notes:             z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const updatedBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
+      const params: SPPParam[] = [
+        { name: "lease_sub_asset_id",   type: "Int",      value: input.leaseSubAssetId },
+        { name: "new_status",           type: "NVarChar", value: input.newStatus },
+        { name: "status_date",          type: "NVarChar", value: input.statusDate },
+        { name: "reason",               type: "NVarChar", value: input.reason ?? null },
+        { name: "replaced_by_asset_id", type: "Int",      value: input.replacedByAssetId ?? null },
+        { name: "replaced_by_code",     type: "NVarChar", value: input.replacedByCode ?? null },
+        { name: "notes",                type: "NVarChar", value: input.notes ?? null },
+        { name: "updated_by",           type: "NVarChar", value: updatedBy },
+      ];
+      const rows = await execSPP("asset.sp_UpdateSubAssetStatus", params);
+      return { rowsAffected: rows[0]?.rows_affected as number };
+    }),
+
+  getLeaseSubAssets: protectedProcedure
+    .input(z.object({ leaseId: z.string() }))
+    .query(async ({ input }) => {
+      const params: SPPParam[] = [
+        { name: "lease_id", type: "NVarChar", value: input.leaseId },
+      ];
+      const rows = await execSPP("asset.sp_GetLeaseSubAssets", params);
+      return rows.map(r => ({
+        leaseSubAssetId:   r.lease_sub_asset_id   as number,
+        leaseId:           r.lease_id             as string,
+        leaseRef:          r.lease_ref            as string | null,
+        assetId:           r.asset_id             as number,
+        assetCode:         r.asset_code           as string,
+        setName:           r.set_name             as string,
+        status:            r.status               as string,
+        statusDate:        r.status_date          as string | null,
+        reason:            r.reason               as string | null,
+        replacedByAssetId: r.replaced_by_asset_id as number | null,
+        replacedByCode:    r.replaced_by_code     as string | null,
+        notes:             r.notes                as string | null,
+        createdBy:         r.created_by           as string,
+        createdAt:         r.created_at           as string,
+        updatedBy:         r.updated_by           as string | null,
+        updatedAt:         r.updated_at           as string | null,
+        setTags:           r.set_tags             as string | null,
+      }));
+    }),
+
+  getLeaseList: protectedProcedure
+    .query(async () => {
+      const rows = await execSPP("asset.sp_GetLeaseListForSubAsset", []);
+      return rows.map(r => ({
+        leaseId:    r.lease_id    as string,
+        leaseRef:   r.lease_ref   as string,
+        assetName:  r.asset_name  as string,
+        lessorName: r.lessor_name as string,
+        status:     r.status      as string,
+      }));
     }),
 });
