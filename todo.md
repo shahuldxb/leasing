@@ -773,3 +773,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] AssetRegistry.tsx — replace useState with tRPC queries/mutations for full DB persistence
 - [x] AssetRegistry.tsx — fix Edit to load set back into builder from DB
 - [x] AssetRegistry.tsx — fix Delete to call DB delete mutation
+
+## Item Library CRUD (Apr 25)
+- [ ] AssetRegistry.tsx — add "Add Item" button to Item Library header
+- [ ] AssetRegistry.tsx — each item row gets Edit (pencil) and Delete (trash) icon buttons
+- [ ] AssetRegistry.tsx — inline form to add/edit item: Name, Category, Sub-Category, Brand, Model, Spec, Unit Price (QAR)
+- [ ] AssetRegistry.tsx — custom items persist alongside built-in library items

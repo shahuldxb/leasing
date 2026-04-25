@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
-  Plus, Minus, Trash2, CheckCircle2, Package, Search, Edit2, Tag, Loader2
+  Plus, Minus, Trash2, CheckCircle2, Package, Search, Edit2, Tag, Loader2, Pencil, X
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,6 +232,19 @@ export default function AssetRegistry() {
     return { assetId: r.assetId, assetCode: r.assetCode, name: r.setName, description: r.description, lines };
   }), [savedSetsRaw]);
 
+  // ── Custom items (persisted in localStorage) ───────────────────────────
+  const [customItems, setCustomItems] = useState<MasterItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem("vfl_custom_items") || "[]"); } catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem("vfl_custom_items", JSON.stringify(customItems));
+  }, [customItems]);
+  // ── Item Library form state ───────────────────────────────────────────────
+  type LibFormMode = "idle" | "add" | "edit";
+  const [libFormMode, setLibFormMode] = useState<LibFormMode>("idle");
+  const [libEditCode, setLibEditCode] = useState<string | null>(null);
+  const EMPTY_LIB_FORM = { name: "", category: "Furniture" as Category, subCategory: "", brand: "", spec: "", priceQAR: "" };
+  const [libForm, setLibForm] = useState(EMPTY_LIB_FORM);
   // ── Library filters ──────────────────────────────────────────────────────
   const [libCategory, setLibCategory] = useState<string>("all");
   const [libSubCat, setLibSubCat] = useState<string>("all");
@@ -254,8 +267,9 @@ export default function AssetRegistry() {
     return Array.from(new Set(MASTER_ITEMS.filter(i => i.category === libCategory).map(i => i.subCategory)));
   }, [libCategory]);
 
+  const allItems = useMemo(() => [...MASTER_ITEMS, ...customItems], [customItems]);
   const filteredItems = useMemo(() => {
-    return MASTER_ITEMS.filter(item => {
+    return allItems.filter(item => {
       if (libCategory !== "all" && item.category !== libCategory) return false;
       if (libSubCat !== "all" && item.subCategory !== libSubCat) return false;
       if (libSearch) {
@@ -264,7 +278,41 @@ export default function AssetRegistry() {
       }
       return true;
     });
-  }, [libCategory, libSubCat, libSearch]);
+  }, [allItems, libCategory, libSubCat, libSearch]);
+  // ── Item Library CRUD handlers ────────────────────────────────────────────
+  function openAddLibItem() {
+    setLibForm(EMPTY_LIB_FORM);
+    setLibEditCode(null);
+    setLibFormMode("add");
+  }
+  function openEditLibItem(item: MasterItem) {
+    setLibForm({ name: item.name, category: item.category, subCategory: item.subCategory, brand: item.brand ?? "", spec: item.spec ?? "", priceQAR: String(item.priceQAR) });
+    setLibEditCode(item.code);
+    setLibFormMode("edit");
+  }
+  function deleteLibItem(code: string) {
+    setCustomItems(prev => prev.filter(i => i.code !== code));
+    toast.success("Item removed from library");
+  }
+  function saveLibItem() {
+    if (!libForm.name.trim()) { toast.error("Item name is required"); return; }
+    if (!libForm.subCategory.trim()) { toast.error("Sub-category is required"); return; }
+    const price = parseFloat(libForm.priceQAR);
+    if (isNaN(price) || price <= 0) { toast.error("Enter a valid price"); return; }
+    if (libFormMode === "edit" && libEditCode) {
+      setCustomItems(prev => prev.map(i => i.code === libEditCode
+        ? { ...i, name: libForm.name.trim(), category: libForm.category, subCategory: libForm.subCategory.trim(), brand: libForm.brand.trim() || undefined, spec: libForm.spec.trim() || undefined, priceQAR: price }
+        : i
+      ));
+      toast.success("Item updated");
+    } else {
+      const code = `CUST-${Date.now()}`;
+      setCustomItems(prev => [...prev, { code, name: libForm.name.trim(), category: libForm.category, subCategory: libForm.subCategory.trim(), brand: libForm.brand.trim() || undefined, spec: libForm.spec.trim() || undefined, priceQAR: price }]);
+      toast.success("Item added to library");
+    }
+    setLibFormMode("idle");
+    setLibEditCode(null);
+  }
 
   const selectedSet = savedSets.find(s => s.assetId === selectedAssetId) ?? null;
   const totalItems = draftLines.reduce((s, l) => s + l.qty, 0);
@@ -467,11 +515,17 @@ export default function AssetRegistry() {
           {/* Left: Item Library */}
           <Card className="bg-[#13161f] border-white/10 flex flex-col flex-1 min-w-0">
             <CardHeader className="pb-2 pt-4 px-4 shrink-0">
-              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                <Tag className="h-4 w-4 text-blue-400" />
-                Item Library
-                <Badge variant="outline" className="ml-auto border-white/10 text-gray-400 text-xs">{filteredItems.length} items</Badge>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-blue-400" />
+                  Item Library
+                  <Badge variant="outline" className="border-white/10 text-gray-400 text-xs">{filteredItems.length} items</Badge>
+                </CardTitle>
+                <Button size="sm" variant="outline" className="h-7 border-white/20 text-gray-300 hover:bg-white/10 gap-1 text-xs"
+                  onClick={openAddLibItem} disabled={libFormMode !== "idle"}>
+                  <Plus className="h-3 w-3" /> Add Item
+                </Button>
+              </div>
               {/* Filters */}
               <div className="flex gap-2 mt-2 flex-wrap">
                 <Select value={libCategory} onValueChange={v => { setLibCategory(v); setLibSubCat("all"); }}>
@@ -502,24 +556,97 @@ export default function AssetRegistry() {
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto px-4 pb-4">
+              {/* Inline Add/Edit Item Form */}
+              {libFormMode !== "idle" && (
+                <div className="mb-3 p-3 rounded-lg bg-[#1a1d2e] border border-blue-500/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-blue-300">{libFormMode === "add" ? "Add New Item" : "Edit Item"}</span>
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-white"
+                      onClick={() => { setLibFormMode("idle"); setLibEditCode(null); }}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-[10px] text-muted-foreground">Item Name *</Label>
+                      <Input className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5"
+                        value={libForm.name} onChange={e => setLibForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Sofa 3-Seater" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Category *</Label>
+                      <Select value={libForm.category} onValueChange={v => setLibForm(f => ({ ...f, category: v as Category }))}>
+                        <SelectTrigger className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Sub-Category *</Label>
+                      <Input className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5"
+                        value={libForm.subCategory} onChange={e => setLibForm(f => ({ ...f, subCategory: e.target.value }))} placeholder="e.g. Sofas" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Brand</Label>
+                      <Input className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5"
+                        value={libForm.brand} onChange={e => setLibForm(f => ({ ...f, brand: e.target.value }))} placeholder="e.g. IKEA" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Spec / Model</Label>
+                      <Input className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5"
+                        value={libForm.spec} onChange={e => setLibForm(f => ({ ...f, spec: e.target.value }))} placeholder="e.g. Fabric, Grey" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Price (QAR) *</Label>
+                      <Input className="bg-[#0e1120] border-white/10 text-gray-200 h-7 text-xs mt-0.5" type="number" min="0"
+                        value={libForm.priceQAR} onChange={e => setLibForm(f => ({ ...f, priceQAR: e.target.value }))} placeholder="e.g. 2800" />
+                    </div>
+                    <div className="col-span-2 flex justify-end gap-2 mt-1">
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground"
+                        onClick={() => { setLibFormMode("idle"); setLibEditCode(null); }}>Cancel</Button>
+                      <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={saveLibItem}>{libFormMode === "add" ? "Add to Library" : "Save Changes"}</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-1.5">
-                {filteredItems.map(item => (
-                  <button key={item.code}
-                    onClick={() => addToDraft(item)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1a1d2e] border border-white/5 hover:border-red-500/40 hover:bg-red-500/5 transition-colors text-left group">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-200 truncate">{item.name}</span>
-                        {item.brand && <span className="text-[10px] text-blue-400 shrink-0">{item.brand}</span>}
+                {filteredItems.map(item => {
+                  const isCustom = customItems.some(c => c.code === item.code);
+                  return (
+                    <div key={item.code} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a1d2e] border border-white/5 hover:border-red-500/30 hover:bg-red-500/5 transition-colors group">
+                      <button className="flex-1 min-w-0 text-left" onClick={() => addToDraft(item)}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-200 truncate">{item.name}</span>
+                          {item.brand && <span className="text-[10px] text-blue-400 shrink-0">{item.brand}</span>}
+                          {isCustom && <span className="text-[10px] text-green-400 shrink-0">custom</span>}
+                        </div>
+                        {item.spec && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.spec}</p>}
+                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-xs font-semibold text-amber-400">QAR {item.priceQAR.toLocaleString()}</span>
+                        {isCustom && (
+                          <>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-blue-400"
+                              onClick={e => { e.stopPropagation(); openEditLibItem(item); }}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400"
+                              onClick={e => { e.stopPropagation(); deleteLibItem(item.code); }}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400"
+                          onClick={() => addToDraft(item)}>
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
-                      {item.spec && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.spec}</p>}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-semibold text-amber-400">QAR {item.priceQAR.toLocaleString()}</span>
-                      <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-400 transition-colors" />
-                    </div>
-                  </button>
-                ))}
+                  );
+                })}
                 {filteredItems.length === 0 && (
                   <p className="text-xs text-muted-foreground py-4 text-center col-span-2">No items match the current filter.</p>
                 )}
