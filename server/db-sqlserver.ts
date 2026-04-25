@@ -35,9 +35,45 @@ export async function getPool(): Promise<sql.ConnectionPool> {
 
 export type SPPParam = {
   name: string;
-  type: sql.ISqlTypeFactoryWithNoParams | sql.ISqlTypeFactoryWithLength | sql.ISqlTypeFactoryWithPrecisionScale | sql.ISqlTypeWithNoParams | any;
+  type: sql.ISqlTypeFactoryWithNoParams | sql.ISqlTypeFactoryWithLength | sql.ISqlTypeFactoryWithPrecisionScale | sql.ISqlTypeWithNoParams | string | any;
   value: any;
 };
+
+/**
+ * Resolve a string type name (e.g. "Int", "NVarChar") to the correct mssql type object.
+ * Accepts both string names and already-resolved sql.* type objects.
+ */
+function resolveType(type: any): any {
+  if (typeof type !== 'string') return type; // already a sql.* type object
+  const map: Record<string, any> = {
+    Int:        sql.Int,
+    BigInt:     sql.BigInt,
+    SmallInt:   sql.SmallInt,
+    TinyInt:    sql.TinyInt,
+    Bit:        sql.Bit,
+    Float:      sql.Float,
+    Real:       sql.Real,
+    Decimal:    sql.Decimal,
+    Numeric:    sql.Numeric,
+    Money:      sql.Money,
+    SmallMoney: sql.SmallMoney,
+    VarChar:    sql.VarChar,
+    NVarChar:   sql.NVarChar,
+    Char:       sql.Char,
+    NChar:      sql.NChar,
+    Text:       sql.Text,
+    NText:      sql.NText,
+    DateTime:   sql.DateTime,
+    DateTime2:  sql.DateTime2,
+    Date:       sql.Date,
+    Time:       sql.Time,
+    UniqueIdentifier: sql.UniqueIdentifier,
+    Xml:        sql.Xml,
+    Binary:     sql.Binary,
+    VarBinary:  sql.VarBinary,
+  };
+  return map[type] ?? sql.NVarChar;
+}
 
 /**
  * Execute a stored procedure and return the first recordset.
@@ -51,10 +87,11 @@ export async function execSPP<T = Record<string, any>>(
   const request = pool.request();
 
   for (const param of params) {
+    const resolvedType = resolveType(param.type);
     if (param.value === undefined || param.value === null) {
-      request.input(param.name, param.type, null);
+      request.input(param.name, resolvedType, null);
     } else {
-      request.input(param.name, param.type, param.value);
+      request.input(param.name, resolvedType, param.value);
     }
   }
 
@@ -73,7 +110,7 @@ export async function execSPPMulti(
   const request = pool.request();
 
   for (const param of params) {
-    request.input(param.name, param.type, param.value ?? null);
+    request.input(param.name, resolveType(param.type), param.value ?? null);
   }
 
   const result = await request.execute(procedureName);
