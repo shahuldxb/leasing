@@ -742,13 +742,13 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] ErrorLog.tsx — add screen_id, user_id columns; make timestamp prominent
 
 ## Sub-Asset Registry (Apr 25)
-- [ ] Rename AssetRegistry.tsx → SubAssetRegistry.tsx (Sub-Asset Registry)
-- [ ] Build master item library with 80+ items: furniture, appliances (AC brands/tonnage, washer brands/capacity), electronics
-- [ ] Each item has: Item Code, Name, Category, Brand, Model, Spec (tonnage/capacity/size), Serial Number field
-- [ ] Visual set builder UI: left panel = item library with search/filter, right panel = set composition
-- [ ] Set has: Set Code (auto), Set Name, Description, items with qty + serial numbers
-- [ ] Save/Edit/Delete sets; sets can later be attached to a lease
-- [ ] Update App.tsx route and sidebar nav label to "Sub-Asset Registry"
+- [x] Rename AssetRegistry.tsx → SubAssetRegistry.tsx (Sub-Asset Registry)
+- [x] Build master item library with 80+ items: furniture, appliances (AC brands/tonnage, washer brands/capacity), electronics
+- [x] Each item has: Item Code, Name, Category, Brand, Model, Spec (tonnage/capacity/size), Serial Number field
+- [x] Visual set builder UI: left panel = item library with search/filter, right panel = set composition
+- [x] Set has: Set Code (auto), Set Name, Description, items with qty + serial numbers
+- [x] Save/Edit/Delete sets; sets can later be attached to a lease
+- [x] Update App.tsx route and sidebar nav label to "Sub-Asset Registry"
 
 ## Menu & Date Field Updates (Apr 25)
 - [x] DashboardLayout.tsx — rename "Asset Registry" nav label to "Sub-Asset Registry"
@@ -775,7 +775,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] AssetRegistry.tsx — fix Delete to call DB delete mutation
 
 ## Item Library CRUD (Apr 25)
-- [ ] AssetRegistry.tsx — add "Add Item" button to Item Library header
-- [ ] AssetRegistry.tsx — each item row gets Edit (pencil) and Delete (trash) icon buttons
-- [ ] AssetRegistry.tsx — inline form to add/edit item: Name, Category, Sub-Category, Brand, Model, Spec, Unit Price (QAR)
-- [ ] AssetRegistry.tsx — custom items persist alongside built-in library items
+- [x] AssetRegistry.tsx — add "Add Item" button to Item Library header
+- [x] AssetRegistry.tsx — each item row gets Edit (pencil) and Delete (trash) icon buttons
+- [x] AssetRegistry.tsx — inline form to add/edit item: Name, Category, Sub-Category, Brand, Model, Spec, Unit Price (QAR)
+- [x] AssetRegistry.tsx — custom items persist alongside built-in library items

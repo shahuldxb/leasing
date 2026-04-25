@@ -505,7 +505,7 @@ export default function AssetRegistry() {
                 </div>
                 {/* Selected set preview */}
                 {selectedSet && (
-                  <div className="bg-[#1a1d2e] rounded-lg p-3 border border-white/5">
+                  <div className="bg-[#1a1d2e] rounded-lg p-3 border border-white/5 overflow-auto">
                     <div className="flex items-center gap-3 mb-2">
                       <Badge className="bg-amber-500/20 text-amber-400 font-mono text-xs">{selectedSet.assetCode}</Badge>
                       <span className="text-sm font-semibold text-white">{selectedSet.name}</span>
@@ -514,7 +514,7 @@ export default function AssetRegistry() {
                         {selectedSet.lines.reduce((a, l) => a + l.qty, 0)} units · QAR {selectedSet.lines.reduce((a, l) => a + l.qty * l.item.priceQAR, 0).toLocaleString()}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 w-full">
                       {selectedSet.lines.map(l => (
                         <div key={l.item.code} className="flex flex-col gap-0.5 bg-[#13161f] rounded-lg px-3 py-2 border border-white/5">
                           <div className="flex items-center justify-between gap-1">
