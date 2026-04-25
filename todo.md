@@ -740,3 +740,12 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Audit Log & Error Log Improvements (Apr 25)
 - [x] AuditLog.tsx — add elapsed time column (time since event, e.g. "2m ago", "3h ago") prominently displayed
 - [x] ErrorLog.tsx — add screen_id, user_id columns; make timestamp prominent
+
+## Sub-Asset Registry (Apr 25)
+- [ ] Rename AssetRegistry.tsx → SubAssetRegistry.tsx (Sub-Asset Registry)
+- [ ] Build master item library with 80+ items: furniture, appliances (AC brands/tonnage, washer brands/capacity), electronics
+- [ ] Each item has: Item Code, Name, Category, Brand, Model, Spec (tonnage/capacity/size), Serial Number field
+- [ ] Visual set builder UI: left panel = item library with search/filter, right panel = set composition
+- [ ] Set has: Set Code (auto), Set Name, Description, items with qty + serial numbers
+- [ ] Save/Edit/Delete sets; sets can later be attached to a lease
+- [ ] Update App.tsx route and sidebar nav label to "Sub-Asset Registry"

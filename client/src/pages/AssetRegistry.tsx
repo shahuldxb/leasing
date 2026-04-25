@@ -1,271 +1,590 @@
-import { useState, useEffect } from "react";
+/**
+ * VodaLease Enterprise — Sub-Asset Registry
+ * Screen ID: VFLSUBASSET0001P001
+ *
+ * Two-panel UI:
+ *   Left  → Master Item Library (80+ items, searchable/filterable by category)
+ *   Right → Set Builder (create/edit named asset sets with qty + serial numbers)
+ */
+import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ScreenHeader } from "@/components/ScreenHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Plus, ArrowLeft, Search } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { Separator } from "@/components/ui/separator";
+import {
+  Plus, Minus, Search, Trash2, Package, Layers, ChevronRight,
+  Edit2, X, CheckCircle2
+} from "lucide-react";
 import { toast } from "sonner";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
-const ASSET_TYPES = ["Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Vehicle","Network Equipment","Land","Other"] as const;
-const STATUSES = ["Available","Leased","Under Maintenance","Decommissioned"] as const;
-const MAINT = ["Lessor","Vodafone","Shared"] as const;
-const CONDITIONS = ["Excellent","Good","Fair","Poor"] as const;
+// ─────────────────────────────────────────────────────────────────────────────
+// MASTER ITEM LIBRARY
+// ─────────────────────────────────────────────────────────────────────────────
+interface MasterItem {
+  code: string;
+  name: string;
+  category: "Furniture" | "Appliance" | "Electronics" | "Fixture" | "Bedding";
+  brand?: string;
+  model?: string;
+  spec?: string;
+  unit: string;
+}
 
-const emptyForm = {
-  assetName: "", assetType: "Office" as typeof ASSET_TYPES[number],
-  assetSubtype: "", description: "", country: "QA", city: "", area: "",
-  addressLine1: "", addressLine2: "", postalCode: "",
-  floorAreaSqm: "", floors: "", yearBuilt: "",
-  conditionRating: "Good" as typeof CONDITIONS[number],
-  currentLessorId: "", status: "Available" as typeof STATUSES[number],
-  maintenanceResponsibility: "Lessor" as typeof MAINT[number],
-  estimatedMarketValue: "", lastValuationDate: "", makeGoodProvision: "0", tags: "",
+const MASTER_ITEMS: MasterItem[] = [
+  // ── Furniture ──────────────────────────────────────────────────────────────
+  { code: "FRN-001", name: "Sofa (3-Seater)",           category: "Furniture", spec: "3-Seater",           unit: "Pcs" },
+  { code: "FRN-002", name: "Sofa (2-Seater)",           category: "Furniture", spec: "2-Seater",           unit: "Pcs" },
+  { code: "FRN-003", name: "Sofa (L-Shape)",            category: "Furniture", spec: "L-Shape",            unit: "Pcs" },
+  { code: "FRN-004", name: "Armchair",                  category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-005", name: "Coffee Table",              category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-006", name: "Side Table",                category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-007", name: "Dining Table (4-Seater)",   category: "Furniture", spec: "4-Seater",           unit: "Set" },
+  { code: "FRN-008", name: "Dining Table (6-Seater)",   category: "Furniture", spec: "6-Seater",           unit: "Set" },
+  { code: "FRN-009", name: "Dining Table (8-Seater)",   category: "Furniture", spec: "8-Seater",           unit: "Set" },
+  { code: "FRN-010", name: "Dining Chair",              category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-011", name: "Bed (King Size)",           category: "Furniture", spec: "King 180×200cm",     unit: "Pcs" },
+  { code: "FRN-012", name: "Bed (Queen Size)",          category: "Furniture", spec: "Queen 160×200cm",    unit: "Pcs" },
+  { code: "FRN-013", name: "Bed (Single)",              category: "Furniture", spec: "Single 90×200cm",    unit: "Pcs" },
+  { code: "FRN-014", name: "Bunk Bed",                  category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-015", name: "Bedside Table",             category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-016", name: "Wardrobe (2-Door)",         category: "Furniture", spec: "2-Door",             unit: "Pcs" },
+  { code: "FRN-017", name: "Wardrobe (3-Door)",         category: "Furniture", spec: "3-Door",             unit: "Pcs" },
+  { code: "FRN-018", name: "Wardrobe (4-Door Sliding)", category: "Furniture", spec: "4-Door Sliding",     unit: "Pcs" },
+  { code: "FRN-019", name: "Cupboard / Cabinet",        category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-020", name: "Chest of Drawers",          category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-021", name: "Bookshelf",                 category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-022", name: "TV Unit / Entertainment Cabinet", category: "Furniture",                        unit: "Pcs" },
+  { code: "FRN-023", name: "Study Desk",                category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-024", name: "Study Chair",               category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-025", name: "Dressing Table with Mirror",category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-026", name: "Shoe Rack",                 category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-027", name: "Hall Tree / Coat Stand",    category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-028", name: "Ottoman / Pouf",            category: "Furniture",                              unit: "Pcs" },
+  { code: "FRN-029", name: "Outdoor Patio Set",         category: "Furniture", spec: "4-Seater",           unit: "Set" },
+  { code: "FRN-030", name: "Bar Stool",                 category: "Furniture",                              unit: "Pcs" },
+  // ── Bedding ─────────────────────────────────────────────────────────────────
+  { code: "BED-001", name: "Mattress (King)",           category: "Bedding",   spec: "King 180×200cm",     unit: "Pcs" },
+  { code: "BED-002", name: "Mattress (Queen)",          category: "Bedding",   spec: "Queen 160×200cm",    unit: "Pcs" },
+  { code: "BED-003", name: "Mattress (Single)",         category: "Bedding",   spec: "Single 90×200cm",    unit: "Pcs" },
+  { code: "BED-004", name: "Pillow",                    category: "Bedding",                                unit: "Pcs" },
+  { code: "BED-005", name: "Duvet / Comforter",         category: "Bedding",                                unit: "Pcs" },
+  { code: "BED-006", name: "Bed Sheet Set",             category: "Bedding",                                unit: "Set" },
+  // ── Air Conditioners ────────────────────────────────────────────────────────
+  { code: "AC-001",  name: "Split AC — LG",             category: "Appliance", brand: "LG",       model: "S12ET",      spec: "1.0 Ton",    unit: "Unit" },
+  { code: "AC-002",  name: "Split AC — LG",             category: "Appliance", brand: "LG",       model: "S18ET",      spec: "1.5 Ton",    unit: "Unit" },
+  { code: "AC-003",  name: "Split AC — LG",             category: "Appliance", brand: "LG",       model: "S24ET",      spec: "2.0 Ton",    unit: "Unit" },
+  { code: "AC-004",  name: "Split AC — Samsung",        category: "Appliance", brand: "Samsung",  model: "AR12TYHQB",  spec: "1.0 Ton",    unit: "Unit" },
+  { code: "AC-005",  name: "Split AC — Samsung",        category: "Appliance", brand: "Samsung",  model: "AR18TYHQB",  spec: "1.5 Ton",    unit: "Unit" },
+  { code: "AC-006",  name: "Split AC — Samsung",        category: "Appliance", brand: "Samsung",  model: "AR24TYHQB",  spec: "2.0 Ton",    unit: "Unit" },
+  { code: "AC-007",  name: "Split AC — Daikin",         category: "Appliance", brand: "Daikin",   model: "FTKF35TV",   spec: "1.0 Ton",    unit: "Unit" },
+  { code: "AC-008",  name: "Split AC — Daikin",         category: "Appliance", brand: "Daikin",   model: "FTKF50TV",   spec: "1.5 Ton",    unit: "Unit" },
+  { code: "AC-009",  name: "Split AC — Daikin",         category: "Appliance", brand: "Daikin",   model: "FTKF60TV",   spec: "2.0 Ton",    unit: "Unit" },
+  { code: "AC-010",  name: "Split AC — Carrier",        category: "Appliance", brand: "Carrier",  model: "42QHC012",   spec: "1.0 Ton",    unit: "Unit" },
+  { code: "AC-011",  name: "Split AC — Carrier",        category: "Appliance", brand: "Carrier",  model: "42QHC018",   spec: "1.5 Ton",    unit: "Unit" },
+  { code: "AC-012",  name: "Split AC — Carrier",        category: "Appliance", brand: "Carrier",  model: "42QHC024",   spec: "2.0 Ton",    unit: "Unit" },
+  { code: "AC-013",  name: "Split AC — Midea",          category: "Appliance", brand: "Midea",    model: "MSM-12HRN1", spec: "1.0 Ton",    unit: "Unit" },
+  { code: "AC-014",  name: "Split AC — Midea",          category: "Appliance", brand: "Midea",    model: "MSM-18HRN1", spec: "1.5 Ton",    unit: "Unit" },
+  { code: "AC-015",  name: "Split AC — Midea",          category: "Appliance", brand: "Midea",    model: "MSM-24HRN1", spec: "2.0 Ton",    unit: "Unit" },
+  { code: "AC-016",  name: "Cassette AC — Daikin",      category: "Appliance", brand: "Daikin",   model: "FCQ60FV",    spec: "2.0 Ton",    unit: "Unit" },
+  { code: "AC-017",  name: "Cassette AC — Carrier",     category: "Appliance", brand: "Carrier",  model: "42GQC024",   spec: "2.0 Ton",    unit: "Unit" },
+  // ── Washing Machines ────────────────────────────────────────────────────────
+  { code: "WM-001",  name: "Washing Machine — LG Front Load",      category: "Appliance", brand: "LG",       model: "F4V5RYP0W",   spec: "9 kg",     unit: "Unit" },
+  { code: "WM-002",  name: "Washing Machine — LG Front Load",      category: "Appliance", brand: "LG",       model: "F4V7RYP0W",   spec: "11 kg",    unit: "Unit" },
+  { code: "WM-003",  name: "Washing Machine — Samsung Front Load", category: "Appliance", brand: "Samsung",  model: "WW90T534DAE", spec: "9 kg",     unit: "Unit" },
+  { code: "WM-004",  name: "Washing Machine — Samsung Front Load", category: "Appliance", brand: "Samsung",  model: "WW11BB944DGE",spec: "11 kg",    unit: "Unit" },
+  { code: "WM-005",  name: "Washing Machine — Bosch Front Load",   category: "Appliance", brand: "Bosch",    model: "WAX32EH0GC",  spec: "10 kg",    unit: "Unit" },
+  { code: "WM-006",  name: "Washing Machine — Whirlpool Top Load", category: "Appliance", brand: "Whirlpool",model: "WTW5000DW",   spec: "8 kg",     unit: "Unit" },
+  { code: "WM-007",  name: "Washing Machine — Midea Front Load",   category: "Appliance", brand: "Midea",    model: "MF200W90WB",  spec: "9 kg",     unit: "Unit" },
+  { code: "WM-008",  name: "Dryer — LG",                           category: "Appliance", brand: "LG",       model: "DV90T5240AX", spec: "9 kg",     unit: "Unit" },
+  { code: "WM-009",  name: "Dryer — Samsung",                      category: "Appliance", brand: "Samsung",  model: "DV90T5240AX", spec: "9 kg",     unit: "Unit" },
+  { code: "WM-010",  name: "Washer-Dryer Combo — Bosch",           category: "Appliance", brand: "Bosch",    model: "WNA14400GC",  spec: "10/6 kg",  unit: "Unit" },
+  // ── Refrigerators ───────────────────────────────────────────────────────────
+  { code: "RF-001",  name: "Refrigerator — LG 2-Door",             category: "Appliance", brand: "LG",       model: "GN-B422SQCL", spec: "420 L",    unit: "Unit" },
+  { code: "RF-002",  name: "Refrigerator — LG French Door",        category: "Appliance", brand: "LG",       model: "GR-X267CQES", spec: "617 L",    unit: "Unit" },
+  { code: "RF-003",  name: "Refrigerator — Samsung 2-Door",        category: "Appliance", brand: "Samsung",  model: "RT42CG6644S9",spec: "420 L",    unit: "Unit" },
+  { code: "RF-004",  name: "Refrigerator — Samsung Side-by-Side",  category: "Appliance", brand: "Samsung",  model: "RS68A8840S9",  spec: "634 L",   unit: "Unit" },
+  { code: "RF-005",  name: "Refrigerator — Bosch 2-Door",          category: "Appliance", brand: "Bosch",    model: "KGN56XIER",   spec: "508 L",    unit: "Unit" },
+  { code: "RF-006",  name: "Mini Fridge",                          category: "Appliance",                     spec: "90 L",         unit: "Unit" },
+  // ── Kitchen Appliances ──────────────────────────────────────────────────────
+  { code: "KIT-001", name: "Microwave — LG",                       category: "Appliance", brand: "LG",       model: "MS2042D",     spec: "20 L",     unit: "Unit" },
+  { code: "KIT-002", name: "Microwave — Samsung",                  category: "Appliance", brand: "Samsung",  model: "ME83X",       spec: "23 L",     unit: "Unit" },
+  { code: "KIT-003", name: "Dishwasher — Bosch",                   category: "Appliance", brand: "Bosch",    model: "SMS4HCB48E",  spec: "13 Place", unit: "Unit" },
+  { code: "KIT-004", name: "Dishwasher — Samsung",                 category: "Appliance", brand: "Samsung",  model: "DW60M5050BB", spec: "13 Place", unit: "Unit" },
+  { code: "KIT-005", name: "Electric Cooker / Hob",                category: "Appliance",                     spec: "4-Burner",     unit: "Unit" },
+  { code: "KIT-006", name: "Gas Cooker",                           category: "Appliance",                     spec: "4-Burner",     unit: "Unit" },
+  { code: "KIT-007", name: "Range Hood / Extractor Fan",           category: "Appliance",                                          unit: "Unit" },
+  { code: "KIT-008", name: "Electric Kettle",                      category: "Appliance",                     spec: "1.7 L",        unit: "Unit" },
+  { code: "KIT-009", name: "Coffee Machine",                       category: "Appliance",                                          unit: "Unit" },
+  { code: "KIT-010", name: "Blender",                              category: "Appliance",                                          unit: "Unit" },
+  // ── Electronics ─────────────────────────────────────────────────────────────
+  { code: "ELC-001", name: "Smart TV — Samsung",                   category: "Electronics", brand: "Samsung", model: "UA43CU8000",  spec: "43\" 4K",  unit: "Unit" },
+  { code: "ELC-002", name: "Smart TV — Samsung",                   category: "Electronics", brand: "Samsung", model: "UA55CU8000",  spec: "55\" 4K",  unit: "Unit" },
+  { code: "ELC-003", name: "Smart TV — Samsung",                   category: "Electronics", brand: "Samsung", model: "UA65CU8000",  spec: "65\" 4K",  unit: "Unit" },
+  { code: "ELC-004", name: "Smart TV — LG OLED",                   category: "Electronics", brand: "LG",      model: "OLED55C3",    spec: "55\" OLED",unit: "Unit" },
+  { code: "ELC-005", name: "Smart TV — LG OLED",                   category: "Electronics", brand: "LG",      model: "OLED65C3",    spec: "65\" OLED",unit: "Unit" },
+  { code: "ELC-006", name: "Smart TV — Sony",                      category: "Electronics", brand: "Sony",    model: "KD-55X80L",   spec: "55\" 4K",  unit: "Unit" },
+  { code: "ELC-007", name: "Smart TV — TCL",                       category: "Electronics", brand: "TCL",     model: "55P735",      spec: "55\" 4K",  unit: "Unit" },
+  { code: "ELC-008", name: "TV Wall Mount",                        category: "Electronics",                                         unit: "Pcs" },
+  { code: "ELC-009", name: "Soundbar — Samsung",                   category: "Electronics", brand: "Samsung", model: "HW-B550",     spec: "2.1ch 410W",unit: "Unit" },
+  { code: "ELC-010", name: "Soundbar — Sony",                      category: "Electronics", brand: "Sony",    model: "HT-S400",     spec: "2.1ch 330W",unit: "Unit" },
+  { code: "ELC-011", name: "Internet Router — TP-Link",            category: "Electronics", brand: "TP-Link", model: "Archer AX73", spec: "Wi-Fi 6",  unit: "Unit" },
+  { code: "ELC-012", name: "Internet Router — Huawei",             category: "Electronics", brand: "Huawei",  model: "AX3 Pro",     spec: "Wi-Fi 6",  unit: "Unit" },
+  // ── Fixtures ─────────────────────────────────────────────────────────────────
+  { code: "FIX-001", name: "Ceiling Fan",                          category: "Fixture",                        spec: "52 inch",      unit: "Unit" },
+  { code: "FIX-002", name: "Water Heater — Electric 50L",          category: "Fixture",                        spec: "50 L",         unit: "Unit" },
+  { code: "FIX-003", name: "Water Heater — Electric 80L",          category: "Fixture",                        spec: "80 L",         unit: "Unit" },
+  { code: "FIX-004", name: "Water Heater — Gas Instant",           category: "Fixture",                        spec: "Instant",      unit: "Unit" },
+  { code: "FIX-005", name: "Curtains (per window)",                category: "Fixture",                                              unit: "Set" },
+  { code: "FIX-006", name: "Blinds / Roller Shades",               category: "Fixture",                                              unit: "Set" },
+  { code: "FIX-007", name: "Bathroom Mirror",                      category: "Fixture",                                              unit: "Pcs" },
+  { code: "FIX-008", name: "Shower Curtain",                       category: "Fixture",                                              unit: "Pcs" },
+  { code: "FIX-009", name: "Towel Rail",                           category: "Fixture",                                              unit: "Pcs" },
+  { code: "FIX-010", name: "Door Mat",                             category: "Fixture",                                              unit: "Pcs" },
+];
+
+const CATEGORIES = ["All", "Furniture", "Bedding", "Appliance", "Electronics", "Fixture"] as const;
+
+const CAT_COLORS: Record<string, string> = {
+  Furniture:   "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  Bedding:     "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  Appliance:   "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Electronics: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+  Fixture:     "bg-green-500/20 text-green-400 border-green-500/30",
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SET TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+interface SetLine {
+  item: MasterItem;
+  qty: number;
+  serialNumbers: string[];
+}
+
+interface AssetSet {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  lines: SetLine[];
+  createdAt: string;
+}
+
+function generateSetCode(sets: AssetSet[]) {
+  const n = sets.length + 1;
+  return `ASET-${String(n).padStart(3, "0")}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 export default function AssetRegistry() {
-  const [showForm, setShowForm] = useState(false);
-  const [editItem, setEditItem] = useState<any>(null);
-  const [form, setForm] = useState<any>({ ...emptyForm });
-  const [aiRows, setAiRows] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
+  const [libSearch, setLibSearch] = useState("");
+  const [libCat, setLibCat] = useState<string>("All");
+  const [sets, setSets] = useState<AssetSet[]>([]);
+  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
+  const [builderMode, setBuilderMode] = useState<"idle" | "new" | "edit">("idle");
+  const [draftName, setDraftName] = useState("");
+  const [draftDesc, setDraftDesc] = useState("");
+  const [draftLines, setDraftLines] = useState<SetLine[]>([]);
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
 
-  const { data: assetsData, isLoading, refetch } = trpc.asset.getAssets.useQuery({
-    pageNumber: 1, pageSize: 100, searchTerm: search || undefined,
-  });
-  const assets = [...((assetsData as any)?.assets ?? []), ...aiRows];
-  const { data: lessorsData } = trpc.lessor.getLessors.useQuery({});
-  const lessors: any[] = (lessorsData as any)?.lessors ?? [];
-  // Auto-select first lessor when data loads
-  useEffect(() => {
-    if (lessors.length > 0 && !form.currentLessorId && showForm) {
-      setForm((p: any) => ({ ...p, currentLessorId: String(lessors[0].lessor_id) }));
+  const filteredItems = useMemo(() => {
+    return MASTER_ITEMS.filter(item => {
+      const matchCat = libCat === "All" || item.category === libCat;
+      const q = libSearch.toLowerCase();
+      const matchSearch = !q || item.name.toLowerCase().includes(q)
+        || (item.brand ?? "").toLowerCase().includes(q)
+        || (item.model ?? "").toLowerCase().includes(q)
+        || (item.spec ?? "").toLowerCase().includes(q)
+        || item.code.toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+  }, [libSearch, libCat]);
+
+  function addToDraft(item: MasterItem) {
+    if (builderMode === "idle") {
+      toast.info("Click \"New Set\" first to start building a set");
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessors.length, showForm]);
-
-  const upsertMutation = trpc.asset.upsertAsset.useMutation({
-    onSuccess: () => { refetch(); setShowForm(false); setEditItem(null); toast.success(editItem ? "Asset updated" : "Asset created"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-  const deleteMutation = trpc.asset.deleteAsset.useMutation({
-    onSuccess: () => { refetch(); toast.success("Asset deleted"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const openAdd = () => { setEditItem(null); setForm({ ...emptyForm }); setShowForm(true); };
-  const openEdit = (a: any) => {
-    setEditItem(a);
-    setForm({
-      assetName: a.asset_name ?? "", assetType: a.asset_type ?? "Office",
-      assetSubtype: a.asset_subtype ?? "", description: a.description ?? "",
-      country: a.country ?? "QA", city: a.city ?? "", area: a.area ?? "",
-      addressLine1: a.address_line1 ?? "", addressLine2: a.address_line2 ?? "",
-      postalCode: a.postal_code ?? "", floorAreaSqm: a.floor_area_sqm ?? "",
-      floors: a.floors ?? "", yearBuilt: a.year_built ?? "",
-      conditionRating: a.condition_rating ?? "Good",
-      currentLessorId: a.current_lessor_id ?? "", status: a.status ?? "Available",
-      maintenanceResponsibility: a.maintenance_responsibility ?? "Lessor",
-      estimatedMarketValue: a.estimated_market_value ?? "",
-      lastValuationDate: a.last_valuation_date?.split("T")[0] ?? "",
-      makeGoodProvision: a.make_good_provision ?? "0", tags: a.tags ?? "",
+    setDraftLines(prev => {
+      const existing = prev.find(l => l.item.code === item.code);
+      if (existing) {
+        return prev.map(l => l.item.code === item.code
+          ? { ...l, qty: l.qty + 1, serialNumbers: [...l.serialNumbers, ""] }
+          : l
+        );
+      }
+      return [...prev, { item, qty: 1, serialNumbers: [""] }];
     });
-    setShowForm(true);
-  };
-
-  const handleSubmit = () => {
-    if (!form.assetName) { toast.error("Asset Name is required"); return; }
-    upsertMutation.mutate({
-      assetId: editItem?.asset_id,
-      assetName: form.assetName,
-      assetType: form.assetType as typeof ASSET_TYPES[number],
-      assetSubtype: form.assetSubtype || undefined,
-      description: form.description || undefined,
-      country: form.country || "QA",
-      city: form.city || undefined, area: form.area || undefined,
-      addressLine1: form.addressLine1 || undefined,
-      addressLine2: form.addressLine2 || undefined,
-      postalCode: form.postalCode || undefined,
-      floorAreaSqm: form.floorAreaSqm ? Number(form.floorAreaSqm) : undefined,
-      floors: form.floors ? Number(form.floors) : undefined,
-      yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : undefined,
-      conditionRating: form.conditionRating as typeof CONDITIONS[number] || undefined,
-      currentLessorId: form.currentLessorId ? Number(form.currentLessorId) : undefined,
-      status: form.status as typeof STATUSES[number],
-      maintenanceResponsibility: form.maintenanceResponsibility as typeof MAINT[number],
-      estimatedMarketValue: form.estimatedMarketValue ? Number(form.estimatedMarketValue) : undefined,
-      lastValuationDate: form.lastValuationDate || undefined,
-      makeGoodProvision: Number(form.makeGoodProvision || 0),
-      tags: form.tags || undefined,
-    });
-  };
-
-  const f = (k: string) => (e: any) => setForm((p: any) => ({ ...p, [k]: e.target?.value ?? e }));
-
-  if (showForm) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col h-full bg-[#0d0f1c] overflow-y-auto">
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-white/10">
-            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-white gap-2">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </Button>
-            <div>
-              <h1 className="text-lg font-bold text-white">{editItem ? "Edit Asset" : "New Asset"}</h1>
-              <p className="text-xs text-gray-400">Fill in asset details. Use Gen AI to auto-fill with realistic data.</p>
-            </div>
-            <div className="ml-auto">
-              <ScreenHeader screenId="VFLSEASTREG0001P001" title="" formType="asset" onAIFormFill={(data) => setForm((p: any) => ({
-                ...p,
-                assetName: data.assetName ?? p.assetName,
-                assetType: data.assetType ?? p.assetType,
-                status: data.status ?? p.status,
-                country: data.country ?? p.country,
-                city: data.city ?? p.city,
-                addressLine1: data.address ?? p.addressLine1,
-                floorAreaSqm: data.floorArea ? String(data.floorArea) : p.floorAreaSqm,
-                estimatedMarketValue: data.estimatedMarketValue ? String(data.estimatedMarketValue) : p.estimatedMarketValue,
-                lastValuationDate: data.lastValuationDate ?? p.lastValuationDate,
-                makeGoodProvision: data.makeGoodProvision ? String(data.makeGoodProvision) : p.makeGoodProvision,
-                conditionRating: data.conditionRating ?? p.conditionRating,
-                maintenanceResponsibility: data.maintenanceResponsibility ?? p.maintenanceResponsibility,
-                description: data.notes ?? p.description,
-              }))} />
-            </div>
-          </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
-            <div className="md:col-span-2">
-              <Label className="text-gray-300 text-sm mb-1 block">Asset Name *</Label>
-              <Input value={form.assetName} onChange={f("assetName")} placeholder="e.g. Doha Tower Site 01" className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Asset Type</Label>
-              <Select value={form.assetType} onValueChange={f("assetType")}>
-                <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent>{ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Status</Label>
-              <Select value={form.status} onValueChange={f("status")}>
-                <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Country (2-letter)</Label>
-              <Input value={form.country} onChange={f("country")} maxLength={2} className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">City</Label>
-              <Input value={form.city} onChange={f("city")} className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Floor Area (sqm)</Label>
-              <Input type="number" value={form.floorAreaSqm} onChange={f("floorAreaSqm")} className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Condition Rating</Label>
-              <Select value={form.conditionRating} onValueChange={f("conditionRating")}>
-                <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent>{CONDITIONS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Maintenance Responsibility</Label>
-              <Select value={form.maintenanceResponsibility} onValueChange={f("maintenanceResponsibility")}>
-                <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent>{MAINT.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Estimated Market Value (QAR)</Label>
-              <Input type="number" value={form.estimatedMarketValue} onChange={f("estimatedMarketValue")} className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Make Good Provision (QAR)</Label>
-              <Input type="number" value={form.makeGoodProvision} onChange={f("makeGoodProvision")} className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Last Valuation Date</Label>
-              <Input type="date" value={form.lastValuationDate} onChange={f("lastValuationDate")} className="bg-[#1a1d2e] border-white/10 text-white" />
-            </div>
-            <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Lessor</Label>
-              <Select value={String(form.currentLessorId)} onValueChange={f("currentLessorId")}>
-                <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-white"><SelectValue placeholder="Select lessor" /></SelectTrigger>
-                <SelectContent>{(lessors as any[]).map((l: any) => <SelectItem key={l.lessor_id} value={String(l.lessor_id)}>{l.lessor_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2 flex gap-3 pt-2">
-              <Button onClick={handleSubmit} disabled={upsertMutation.isPending} className="bg-[#e60000] hover:bg-[#cc0000] text-white">
-                {upsertMutation.isPending ? "Saving..." : editItem ? "Update Asset" : "Create Asset"}
-              </Button>
-              <Button variant="outline" onClick={() => setShowForm(false)} className="border-white/10 text-gray-300">Cancel</Button>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
   }
+
+  function removeFromDraft(code: string) {
+    setDraftLines(prev => prev.filter(l => l.item.code !== code));
+  }
+
+  function changeQty(code: string, delta: number) {
+    setDraftLines(prev => prev.map(l => {
+      if (l.item.code !== code) return l;
+      const newQty = Math.max(1, l.qty + delta);
+      const sns = [...l.serialNumbers];
+      while (sns.length < newQty) sns.push("");
+      while (sns.length > newQty) sns.pop();
+      return { ...l, qty: newQty, serialNumbers: sns };
+    }));
+  }
+
+  function updateSerial(code: string, idx: number, val: string) {
+    setDraftLines(prev => prev.map(l => {
+      if (l.item.code !== code) return l;
+      const sns = [...l.serialNumbers];
+      sns[idx] = val;
+      return { ...l, serialNumbers: sns };
+    }));
+  }
+
+  function saveSet() {
+    if (!draftName.trim()) { toast.error("Set name is required"); return; }
+    if (draftLines.length === 0) { toast.error("Add at least one item"); return; }
+    if (builderMode === "new") {
+      const newSet: AssetSet = {
+        id: crypto.randomUUID(),
+        code: generateSetCode(sets),
+        name: draftName.trim(),
+        description: draftDesc.trim(),
+        lines: draftLines,
+        createdAt: new Date().toISOString(),
+      };
+      setSets(prev => [...prev, newSet]);
+      setSelectedSetId(newSet.id);
+      toast.success(`Set "${newSet.code} — ${newSet.name}" saved`);
+    } else if (builderMode === "edit" && editingSetId) {
+      setSets(prev => prev.map(s => s.id === editingSetId
+        ? { ...s, name: draftName.trim(), description: draftDesc.trim(), lines: draftLines }
+        : s
+      ));
+      toast.success("Set updated");
+    }
+    setBuilderMode("idle");
+    setDraftLines([]);
+    setDraftName("");
+    setDraftDesc("");
+    setEditingSetId(null);
+  }
+
+  function startNew() {
+    setBuilderMode("new");
+    setDraftName("");
+    setDraftDesc("");
+    setDraftLines([]);
+    setEditingSetId(null);
+    setSelectedSetId(null);
+  }
+
+  function startEdit(set: AssetSet) {
+    setBuilderMode("edit");
+    setDraftName(set.name);
+    setDraftDesc(set.description);
+    setDraftLines(set.lines.map(l => ({ ...l, serialNumbers: [...l.serialNumbers] })));
+    setEditingSetId(set.id);
+    setSelectedSetId(set.id);
+  }
+
+  function cancelDraft() {
+    setBuilderMode("idle");
+    setDraftLines([]);
+    setDraftName("");
+    setDraftDesc("");
+    setEditingSetId(null);
+  }
+
+  function deleteSet(id: string) {
+    setSets(prev => prev.filter(s => s.id !== id));
+    if (selectedSetId === id) setSelectedSetId(null);
+    toast.success("Set deleted");
+  }
+
+  const selectedSet = sets.find(s => s.id === selectedSetId) ?? null;
+  const activeLines = builderMode !== "idle" ? draftLines : (selectedSet?.lines ?? []);
+  const totalItems = activeLines.reduce((s, l) => s + l.qty, 0);
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-full bg-[#0d0f1c] p-6 space-y-4 overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">Asset Registry</h1>
-            <p className="text-sm text-gray-400">Manage all leased assets and properties</p>
+      <div className="space-y-4">
+        <ScreenHeader
+          screenId="VFLSUBASSET0001P001"
+          screenType="sub_asset_registry"
+          onAIData={() => {}}
+          title="Sub-Asset Registry"
+          subtitle="Build named asset sets from the item library — attach sets to leases"
+        />
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" style={{ height: "calc(100vh - 200px)", minHeight: "600px" }}>
+
+          {/* ── LEFT: Item Library ─────────────────────────────────────────── */}
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader className="pb-3 shrink-0">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary" />
+                  Item Library
+                  <Badge variant="outline" className="text-xs ml-1">{filteredItems.length} items</Badge>
+                </CardTitle>
+                <Button size="sm" onClick={startNew} className="h-8 gap-1.5">
+                  <Layers className="h-3.5 w-3.5" /> New Set
+                </Button>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input placeholder="Search items, brand, model, spec…" className="pl-8 h-9 text-sm"
+                    value={libSearch} onChange={e => setLibSearch(e.target.value)} />
+                </div>
+                <Select value={libCat} onValueChange={setLibCat}>
+                  <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto p-0">
+              <div className="divide-y">
+                {filteredItems.map(item => (
+                  <div key={item.code}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 cursor-pointer group transition-colors"
+                    onClick={() => addToDraft(item)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{item.name}</span>
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${CAT_COLORS[item.category]}`}>
+                          {item.category}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
+                        <span className="font-mono">{item.code}</span>
+                        {item.brand && <span>· {item.brand}</span>}
+                        {item.model && <span className="font-mono">· {item.model}</span>}
+                        {item.spec && <span className="text-amber-400/80 font-medium">· {item.spec}</span>}
+                        <span>· {item.unit}</span>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost"
+                      className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
+                      onClick={e => { e.stopPropagation(); addToDraft(item); }}>
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                {filteredItems.length === 0 && (
+                  <div className="py-12 text-center text-muted-foreground text-sm">No items match your search.</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── RIGHT: Set Builder / Viewer ────────────────────────────────── */}
+          <div className="flex flex-col gap-3 overflow-hidden">
+
+            {/* Saved sets chips */}
+            {sets.length > 0 && builderMode === "idle" && (
+              <Card className="shrink-0">
+                <CardHeader className="pb-2 pt-3">
+                  <CardTitle className="text-xs text-muted-foreground uppercase tracking-wide">Saved Sets</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 pb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {sets.map(s => (
+                      <button key={s.id}
+                        onClick={() => setSelectedSetId(s.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                          selectedSetId === s.id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                        }`}>
+                        <Layers className="h-3 w-3" />
+                        <span className="font-mono text-xs">{s.code}</span>
+                        <span>{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          ({s.lines.reduce((a, l) => a + l.qty, 0)} units)
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Builder / Viewer card */}
+            <Card className="flex flex-col flex-1 overflow-hidden">
+              <CardHeader className="pb-3 shrink-0">
+                {builderMode !== "idle" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        {builderMode === "new" ? "New Asset Set" : "Edit Set"}
+                      </CardTitle>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelDraft}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input placeholder="Set Name *" className="h-9 text-sm"
+                        value={draftName} onChange={e => setDraftName(e.target.value)} />
+                      <Input placeholder="Description (optional)" className="h-9 text-sm"
+                        value={draftDesc} onChange={e => setDraftDesc(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded px-3 py-2">
+                      <ChevronRight className="h-3 w-3 text-primary shrink-0" />
+                      Click any item in the library to add it to this set. Adjust quantities and enter serial numbers below.
+                    </div>
+                  </div>
+                ) : selectedSet ? (
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs text-primary">{selectedSet.code}</span>
+                        <CardTitle className="text-base">{selectedSet.name}</CardTitle>
+                      </div>
+                      {selectedSet.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{selectedSet.description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedSet.lines.length} item types · {selectedSet.lines.reduce((a, l) => a + l.qty, 0)} total units
+                        · Created {new Date(selectedSet.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="outline" size="sm" className="h-8 gap-1" onClick={() => startEdit(selectedSet)}>
+                        <Edit2 className="h-3 w-3" /> Edit
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-8 text-red-400 hover:text-red-400"
+                        onClick={() => deleteSet(selectedSet.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                    <Layers className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm font-medium">No set selected</p>
+                    <p className="text-xs mt-1 text-center max-w-xs">
+                      Click <strong>New Set</strong> to start building, or select a saved set above.
+                      Each set can be attached to a lease.
+                    </p>
+                    <Button size="sm" className="mt-4 gap-1.5" onClick={startNew}>
+                      <Plus className="h-3.5 w-3.5" /> New Set
+                    </Button>
+                  </div>
+                )}
+              </CardHeader>
+
+              {(builderMode !== "idle" || selectedSet) && (
+                <>
+                  <Separator />
+                  <CardContent className="flex-1 overflow-y-auto p-0">
+                    {activeLines.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
+                        <Plus className="h-6 w-6 mb-2 opacity-30" />
+                        Click items from the library to add them here
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {activeLines.map(line => (
+                          <div key={line.item.code} className="px-4 py-3">
+                            {/* Item header row */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-sm">{line.item.name}</span>
+                                  {line.item.brand && (
+                                    <span className="text-xs text-muted-foreground">{line.item.brand}</span>
+                                  )}
+                                  {line.item.spec && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-400 border-amber-400/30">
+                                      {line.item.spec}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="font-mono text-[11px] text-muted-foreground">{line.item.code}</span>
+                              </div>
+                              {builderMode !== "idle" ? (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Button variant="outline" size="icon" className="h-6 w-6"
+                                    onClick={() => changeQty(line.item.code, -1)}>
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="w-7 text-center text-sm font-bold">{line.qty}</span>
+                                  <Button variant="outline" size="icon" className="h-6 w-6"
+                                    onClick={() => changeQty(line.item.code, 1)}>
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="text-xs text-muted-foreground ml-1">{line.item.unit}</span>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-400 ml-1"
+                                    onClick={() => removeFromDraft(line.item.code)}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="shrink-0 text-xs">
+                                  {line.qty} {line.item.unit}
+                                </Badge>
+                              )}
+                            </div>
+                            {/* Serial numbers */}
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {Array.from({ length: line.qty }).map((_, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-muted-foreground w-10 shrink-0 font-mono">
+                                    #{idx + 1}
+                                  </span>
+                                  {builderMode !== "idle" ? (
+                                    <Input
+                                      className="h-7 text-xs font-mono"
+                                      placeholder="Serial No. (optional)"
+                                      value={line.serialNumbers[idx] ?? ""}
+                                      onChange={e => updateSerial(line.item.code, idx, e.target.value)}
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-mono text-muted-foreground">
+                                      {line.serialNumbers[idx] || <span className="opacity-40">—</span>}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+
+                  {builderMode !== "idle" && (
+                    <>
+                      <Separator />
+                      <div className="px-4 py-3 flex items-center justify-between shrink-0 bg-muted/20">
+                        <span className="text-xs text-muted-foreground">
+                          {draftLines.length} item types · <strong>{totalItems}</strong> total units
+                        </span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="h-8" onClick={cancelDraft}>Cancel</Button>
+                          <Button size="sm" className="h-8 gap-1.5" onClick={saveSet}>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {builderMode === "new" ? "Save Set" : "Update Set"}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </Card>
           </div>
-          <div className="flex items-center gap-2">
-            <ScreenHeader screenId="VFLSEASTREG0001P001" title="" screenType="asset_registry" onAIData={(rows) => setAiRows(rows)} />
-            <Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg">
-              <Plus className="w-4 h-4" />Add Asset
-            </Button>
-          </div>
-        </div>
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assets..." className="pl-9 bg-[#1a1d2e] border-white/10 text-white" />
-        </div>
-        <div className="rounded-xl border border-white/10 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 bg-[#1a1d2e]">
-                <TableHead className="text-gray-400">Asset Name</TableHead>
-                <TableHead className="text-gray-400">Type</TableHead>
-                <TableHead className="text-gray-400">Location</TableHead>
-                <TableHead className="text-gray-400">Status</TableHead>
-                <TableHead className="text-gray-400">Market Value</TableHead>
-                <TableHead className="text-gray-400">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-400">Loading...</TableCell></TableRow>}
-              {!isLoading && assets.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-400">No assets found. Click Add Asset to create one.</TableCell></TableRow>}
-              {assets.map((a: any, i: number) => (
-                <TableRow key={a.asset_id ?? i} className="border-white/10 hover:bg-white/5">
-                  <TableCell className="text-white font-medium">{a.asset_name}</TableCell>
-                  <TableCell className="text-gray-300">{a.asset_type}</TableCell>
-                  <TableCell className="text-gray-300">{[a.city, a.country].filter(Boolean).join(", ")}</TableCell>
-                  <TableCell>
-                    <Badge className={a.status === "Available" ? "bg-green-500/20 text-green-400" : a.status === "Leased" ? "bg-blue-500/20 text-blue-400" : "bg-gray-500/20 text-gray-400"}>
-                      {a.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-300">{a.estimated_market_value ? `QAR ${Number(a.estimated_market_value).toLocaleString()}` : "—"}</TableCell>
-                  <TableCell className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openEdit(a)} className="border-white/10 text-gray-300 h-7 text-xs">Edit</Button>
-                    <Button size="sm" variant="outline" onClick={() => { if (confirm("Delete this asset?")) deleteMutation.mutate({ assetId: a.asset_id }); }} className="border-red-500/30 text-red-400 h-7 text-xs hover:bg-red-500/10">Delete</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
         </div>
       </div>
     </DashboardLayout>
