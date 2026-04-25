@@ -906,6 +906,64 @@ export const assetRouter = router({
         createdAt:       r.created_at         as string,
       }));
     }),
+  addSubAssetItem: protectedProcedure
+    .input(z.object({
+      leaseSubAssetId: z.number().int(),
+      code:            z.string(),
+      name:            z.string(),
+      category:        z.string(),
+      subCategory:     z.string().optional(),
+      brand:           z.string().optional(),
+      model:           z.string().optional(),
+      spec:            z.string().optional(),
+      qty:             z.number().int().min(1),
+      serialNumbers:   z.array(z.string()),
+      attachDate:      z.string(),
+      warrantyExpiry:  z.string().optional(),
+      priceQAR:        z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const updatedBy = ctx.user?.name ?? ctx.user?.email ?? "system";
+      const itemJson = JSON.stringify({
+        code:           input.code,
+        name:           input.name,
+        category:       input.category,
+        subCategory:    input.subCategory ?? "",
+        brand:          input.brand ?? "",
+        model:          input.model ?? "",
+        spec:           input.spec ?? "",
+        qty:            input.qty,
+        serialNumbers:  input.serialNumbers,
+        attachDate:     input.attachDate,
+        warrantyExpiry: input.warrantyExpiry ?? "",
+        priceQAR:       input.priceQAR ?? 0,
+      });
+      const params: SPPParam[] = [
+        { name: "lease_sub_asset_id", type: "Int",      value: input.leaseSubAssetId },
+        { name: "item_json",          type: "NVarChar", value: itemJson },
+        { name: "updated_by",         type: "NVarChar", value: updatedBy },
+      ];
+      const rows = await execSPP("asset.sp_AddSubAssetItem", params);
+      // Log ADD_ITEM transaction
+      await execSPP("asset.sp_LogSubAssetTransaction", [
+        { name: "Action",     type: "VarChar",  value: "ADD_ITEM" },
+        { name: "EntityType", type: "VarChar",  value: "LEASE_SUB_ASSET" },
+        { name: "EntityId",   type: "Int",      value: input.leaseSubAssetId },
+        { name: "EntityCode", type: "NVarChar", value: input.code },
+        { name: "EntityName", type: "NVarChar", value: input.name },
+        { name: "BeforeJson", type: "NVarChar", value: null },
+        { name: "AfterJson",  type: "NVarChar", value: itemJson },
+        { name: "ChangedBy",  type: "NVarChar", value: updatedBy },
+        { name: "ScreenId",   type: "VarChar",  value: "VFLSEASTTXN0001P001" },
+        { name: "IpAddress",  type: "VarChar",  value: null },
+      ]).catch(() => {/* non-blocking */});
+      return {
+        leaseSubAssetId: rows[0]?.lease_sub_asset_id as number,
+        tagsWithSerials: rows[0]?.tags_with_serials  as string,
+        message:         rows[0]?.message            as string,
+      };
+    }),
+
   changeSubAssetOwnership: protectedProcedure
     .input(z.object({
       leaseSubAssetId: z.number().int(),

@@ -183,6 +183,24 @@ export default function SubAssetTransactionLog() {
   const [editingItems, setEditingItems] = useState(false);
   const [editItems, setEditItems] = useState<any[]>([]);
 
+  // ── Add Item dialog ───────────────────────────────────────
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const today = new Date().toISOString().split("T")[0];
+  const [addItemForm, setAddItemForm] = useState({
+    code:           "",
+    name:           "",
+    category:       "",
+    subCategory:    "",
+    brand:          "",
+    model:          "",
+    spec:           "",
+    qty:            1,
+    serialNumbers:  [""] as string[],
+    attachDate:     today,
+    warrantyExpiry: "",
+    priceQAR:       "" as string | number,
+  });
+
   // ── Attach dialog state ───────────────────────────────────
   const [attachOpen, setAttachOpen] = useState(false);
   const [correlationRows, setCorrelationRows] = useState<Array<{leaseRef: string; assetCode: string; setName: string; attachedAt: string}>>([]);
@@ -297,6 +315,49 @@ export default function SubAssetTransactionLog() {
     },
     onError: (e) => toast.error(`Attach failed: ${e.message}`),
   });
+
+  const addItemMutation = trpc.asset.addSubAssetItem.useMutation({
+    onSuccess: () => {
+      toast.success("Item added to set successfully");
+      utils.asset.getLeaseSubAssets.invalidate();
+      utils.asset.getSubAssetTxns.invalidate();
+      setAddItemOpen(false);
+      setAddItemForm({
+        code: "", name: "", category: "", subCategory: "",
+        brand: "", model: "", spec: "", qty: 1,
+        serialNumbers: [""], attachDate: today,
+        warrantyExpiry: "", priceQAR: "",
+      });
+    },
+    onError: (e) => toast.error(`Failed to add item: ${e.message}`),
+  });
+
+  function confirmAddItem() {
+    const rec = selectedSetRecord as any;
+    if (!rec?.leaseSubAssetId) {
+      toast.error("Set must be attached to a lease before adding items.");
+      return;
+    }
+    if (!addItemForm.name.trim() || !addItemForm.category.trim()) {
+      toast.error("Item name and category are required.");
+      return;
+    }
+    addItemMutation.mutate({
+      leaseSubAssetId: rec.leaseSubAssetId,
+      code:            addItemForm.code.trim() || `ITEM-${Date.now()}`,
+      name:            addItemForm.name.trim(),
+      category:        addItemForm.category.trim(),
+      subCategory:     addItemForm.subCategory.trim() || undefined,
+      brand:           addItemForm.brand.trim() || undefined,
+      model:           addItemForm.model.trim() || undefined,
+      spec:            addItemForm.spec.trim() || undefined,
+      qty:             addItemForm.qty,
+      serialNumbers:   addItemForm.serialNumbers.slice(0, addItemForm.qty),
+      attachDate:      addItemForm.attachDate,
+      warrantyExpiry:  addItemForm.warrantyExpiry || undefined,
+      priceQAR:        addItemForm.priceQAR !== "" ? Number(addItemForm.priceQAR) : undefined,
+    });
+  }
 
   function resetAttachDialog() {
     setAttachSetId("none");
@@ -791,6 +852,15 @@ export default function SubAssetTransactionLog() {
                     {" · "}{rec.setName ?? rec.currentSetName}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+                    {/* Add Item card — always first */}
+                    <button
+                      onClick={() => setAddItemOpen(true)}
+                      className="flex flex-col items-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/10 cursor-pointer text-emerald-400"
+                    >
+                      <Plus className="w-5 h-5 text-emerald-400" />
+                      <span>Add</span>
+                      <span className="text-[10px] text-muted-foreground font-normal text-center leading-tight">Add new item to set</span>
+                    </button>
                     {ACTIONS.map(action => {
                       const Icon = action.icon;
                       const disabled = isTerminal && action.id !== "BackIn";
@@ -1044,6 +1114,203 @@ export default function SubAssetTransactionLog() {
               disabled={attachMutation.isPending || attachSetId === "none"}
             >
               {attachMutation.isPending ? "Attaching…" : attachStep === "select" ? "Next: Fill Details" : "Confirm Attach"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Item Dialog ───────────────────────────────────────────────────── */}
+      <Dialog open={addItemOpen} onOpenChange={open => !open && setAddItemOpen(false)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" />
+              Add New Item to Set
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedSetRecord && (() => {
+            const rec = selectedSetRecord as any;
+            return (
+              <div className="bg-muted/20 border border-border rounded-md p-3 text-xs mb-2">
+                <span className="font-mono text-[#e60000] font-semibold">{rec.assetCode}</span>
+                <span className="mx-2 text-muted-foreground">·</span>
+                <span>{rec.setName ?? rec.currentSetName}</span>
+                {!rec.leaseSubAssetId && (
+                  <span className="ml-3 text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-0.5">
+                    ⚠ Set must be attached to a lease first
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
+          <div className="space-y-4 py-1">
+            {/* Row 1: Code + Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Item Code</Label>
+                <Input
+                  className="mt-1 bg-background border-border font-mono text-xs"
+                  placeholder="e.g. FURN-001 (auto-generated if blank)"
+                  value={addItemForm.code}
+                  onChange={e => setAddItemForm(f => ({ ...f, code: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Item Name <span className="text-red-400">*</span></Label>
+                <Input
+                  className="mt-1 bg-background border-border"
+                  placeholder="e.g. Office Chair"
+                  value={addItemForm.name}
+                  onChange={e => setAddItemForm(f => ({ ...f, name: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Category + Sub-Category */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Category <span className="text-red-400">*</span></Label>
+                <Input
+                  className="mt-1 bg-background border-border"
+                  placeholder="e.g. Furniture"
+                  value={addItemForm.category}
+                  onChange={e => setAddItemForm(f => ({ ...f, category: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Sub-Category</Label>
+                <Input
+                  className="mt-1 bg-background border-border"
+                  placeholder="e.g. Seating"
+                  value={addItemForm.subCategory}
+                  onChange={e => setAddItemForm(f => ({ ...f, subCategory: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Brand + Model */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Brand</Label>
+                <Input
+                  className="mt-1 bg-background border-border"
+                  placeholder="e.g. Herman Miller"
+                  value={addItemForm.brand}
+                  onChange={e => setAddItemForm(f => ({ ...f, brand: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Model</Label>
+                <Input
+                  className="mt-1 bg-background border-border"
+                  placeholder="e.g. Aeron"
+                  value={addItemForm.model}
+                  onChange={e => setAddItemForm(f => ({ ...f, model: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Row 4: Spec */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Specification / Description</Label>
+              <Input
+                className="mt-1 bg-background border-border"
+                placeholder="e.g. Ergonomic mesh back, adjustable arms"
+                value={addItemForm.spec}
+                onChange={e => setAddItemForm(f => ({ ...f, spec: e.target.value }))}
+              />
+            </div>
+
+            {/* Row 5: Qty + Price */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Quantity <span className="text-red-400">*</span></Label>
+                <Input
+                  type="number" min={1}
+                  className="mt-1 bg-background border-border"
+                  value={addItemForm.qty}
+                  onChange={e => {
+                    const q = Math.max(1, parseInt(e.target.value) || 1);
+                    setAddItemForm(f => ({
+                      ...f,
+                      qty: q,
+                      serialNumbers: Array.from({ length: q }, (_, i) => f.serialNumbers[i] ?? ""),
+                    }));
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Unit Price (QAR)</Label>
+                <Input
+                  type="number" min={0} step="0.01"
+                  className="mt-1 bg-background border-border"
+                  placeholder="0.00"
+                  value={addItemForm.priceQAR}
+                  onChange={e => setAddItemForm(f => ({ ...f, priceQAR: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Row 6: Attach Date + Warranty Expiry */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Attach Date <span className="text-red-400">*</span></Label>
+                <Input
+                  type="date"
+                  className="mt-1 bg-background border-border"
+                  value={addItemForm.attachDate}
+                  onChange={e => setAddItemForm(f => ({ ...f, attachDate: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Warranty Expiry</Label>
+                <Input
+                  type="date"
+                  className="mt-1 bg-background border-border"
+                  value={addItemForm.warrantyExpiry}
+                  onChange={e => setAddItemForm(f => ({ ...f, warrantyExpiry: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Serial Numbers */}
+            {addItemForm.qty > 0 && (
+              <div>
+                <Label className="text-xs text-muted-foreground">
+                  Serial Numbers ({addItemForm.qty} unit{addItemForm.qty > 1 ? "s" : ""})
+                </Label>
+                <div className="mt-1 space-y-1.5">
+                  {Array.from({ length: addItemForm.qty }, (_, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-6 text-right">{i + 1}.</span>
+                      <Input
+                        className="bg-background border-border font-mono text-xs"
+                        placeholder={`Serial #${i + 1}`}
+                        value={addItemForm.serialNumbers[i] ?? ""}
+                        onChange={e => {
+                          const sn = [...addItemForm.serialNumbers];
+                          sn[i] = e.target.value;
+                          setAddItemForm(f => ({ ...f, serialNumbers: sn }));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAddItemOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={confirmAddItem}
+              disabled={addItemMutation.isPending || !addItemForm.name.trim() || !addItemForm.category.trim()}
+            >
+              {addItemMutation.isPending ? "Adding…" : "Add Item to Set"}
             </Button>
           </DialogFooter>
         </DialogContent>

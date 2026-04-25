@@ -941,3 +941,14 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Show red warning if lessee has no linked lease
 - [x] Keep rest of attach/status cycle unchanged
 - [x] TypeScript: 0 errors
+
+## Sub-Asset Transaction Log — Add Card (Apr 25)
+- [x] Audit sub-asset items table columns and existing SPs (items stored as JSON in tags_with_serials)
+- [x] Create asset.sp_AddSubAssetItem SP (always INSERT — appends new ItemWithSerial JSON to array)
+- [x] Add tRPC procedure asset.addSubAssetItem (protectedProcedure, logs ADD_ITEM transaction)
+- [x] Add "Add" card as first action card in SubAssetTransactionLog action row (emerald, Plus icon)
+- [x] Build Add dialog with all fields: code, name*, category*, sub-category, brand, model, spec, qty*, serial numbers (dynamic), attach date*, warranty expiry, unit price QAR
+- [x] confirmAddItem validates name + category required, auto-generates code if blank
+- [x] On success: invalidate getLeaseSubAssets + getSubAssetTxns, close dialog, reset form, show toast
+- [x] Warning shown if set is not yet attached to a lease
+- [x] TypeScript: 0 errors
