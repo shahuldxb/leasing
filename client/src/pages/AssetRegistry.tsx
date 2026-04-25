@@ -448,7 +448,7 @@ export default function AssetRegistry() {
     if (!draftName.trim()) { toast.error("Set name is required"); return; }
     if (draftLines.length === 0) { toast.error("Add at least one item"); return; }
     const tagsJson = JSON.stringify(draftLines.map(l => ({
-      code: l.item.code, qty: l.qty, serialNumbers: l.serialNumbers, leaseDate: l.leaseDate, warrantyExpiry: l.warrantyExpiry,
+      code: l.item.code, name: l.item.name, category: l.item.category, qty: l.qty, serialNumbers: l.serialNumbers, leaseDate: l.leaseDate, warrantyExpiry: l.warrantyExpiry,
     })));
     // Capture before-state for UPDATE
     const beforeSet = editingAssetId ? savedSets.find(s => s.assetId === editingAssetId) : null;

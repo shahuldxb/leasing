@@ -11,6 +11,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearch, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { lookupItem, MASTER_ITEMS_MAP } from "@/lib/masterItems";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -71,6 +72,10 @@ function ItemDiffViewer({ before, after }: { before: string | null; after: strin
 
   const renderItemTable = (items: unknown, label: string, colour: string) => {
     if (!Array.isArray(items) || items.length === 0) return null;
+    const enriched: any[] = (items as any[]).map((item: any) => {
+      const master = MASTER_ITEMS_MAP.get(item.code as string);
+      return { ...item, name: item.name ?? master?.name ?? "—", category: item.category ?? master?.category ?? "—" };
+    });
     return (
       <div className="mb-3">
         <p className={`text-xs font-semibold mb-1 ${colour}`}>{label}</p>
@@ -86,7 +91,7 @@ function ItemDiffViewer({ before, after }: { before: string | null; after: strin
             </tr>
           </thead>
           <tbody>
-            {(items as Record<string, unknown>[]).map((item, i) => (
+            {enriched.map((item, i) => (
               <tr key={i} className="border-b border-border/40">
                 <td className="py-1 px-2 font-mono text-[#e60000]">{String(item.code ?? "—")}</td>
                 <td className="py-1 px-2">{String(item.name ?? item.category ?? "—")}</td>
@@ -180,6 +185,7 @@ export default function SubAssetTransactionLog() {
 
   // ── Attach dialog state ───────────────────────────────────
   const [attachOpen, setAttachOpen] = useState(false);
+  const [correlationRows, setCorrelationRows] = useState<Array<{leaseRef: string; assetCode: string; setName: string; attachedAt: string}>>([]);
   const [attachStep, setAttachStep] = useState<"select" | "serials">("select");
   const [attachSetId, setAttachSetId] = useState<string>("none");
   const [attachItems, setAttachItems] = useState<any[]>([]);
@@ -213,7 +219,14 @@ export default function SubAssetTransactionLog() {
       const raw = (selectedSetRecord as any).setTags ?? (selectedSetRecord as any).tagsWithSerials;
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? parsed.map((item: any) => {
+        const master = MASTER_ITEMS_MAP.get(item.code);
+        return {
+          ...item,
+          name: item.name ?? master?.name ?? "—",
+          category: item.category ?? master?.category ?? "—",
+        };
+      }) : [];
     } catch { return []; }
   }, [selectedSetRecord]);
 
@@ -265,6 +278,15 @@ export default function SubAssetTransactionLog() {
       toast.success("Sub-asset set attached and transaction logged.");
       utils.asset.getLeaseSubAssets.invalidate();
       utils.asset.getSubAssetTxns.invalidate();
+      // Add to correlation table
+      const leaseLabel = (leaseList as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId)?.leaseRef ?? selectedLeaseId;
+      const setLabel = (allAvailSets as any[]).find((s: any) => String(s.assetId) === attachSetId);
+      setCorrelationRows(prev => [...prev, {
+        leaseRef: leaseLabel,
+        assetCode: setLabel?.assetCode ?? attachSetId,
+        setName: setLabel?.setName ?? "—",
+        attachedAt: new Date().toLocaleString(),
+      }]);
       setAttachOpen(false);
       resetAttachDialog();
     },
@@ -463,6 +485,41 @@ export default function SubAssetTransactionLog() {
             )}
           </div>
 
+          {/* ── Correlation Table ─────────────────────────────── */}
+          {correlationRows.length > 0 && (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/10">
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-[#e60000]" />
+                  <span className="text-sm font-semibold">Lease ↔ Sub-Asset Correlations</span>
+                  <span className="text-xs text-muted-foreground">({correlationRows.length} attachment{correlationRows.length !== 1 ? "s" : ""} this session)</span>
+                </div>
+                <Button size="sm" variant="ghost" className="h-6 text-xs text-muted-foreground" onClick={() => setCorrelationRows([])}>Clear</Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/5 text-xs">
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Lease Ref</th>
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Asset Code</th>
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Set Name</th>
+                      <th className="text-left py-2 px-4 font-medium text-muted-foreground">Attached At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {correlationRows.map((row, i) => (
+                      <tr key={i} className="border-b border-border/50 hover:bg-muted/10">
+                        <td className="py-2 px-4 font-mono text-[#e60000]">{row.leaseRef}</td>
+                        <td className="py-2 px-4 font-mono text-xs">{row.assetCode}</td>
+                        <td className="py-2 px-4">{row.setName}</td>
+                        <td className="py-2 px-4 text-muted-foreground text-xs">{row.attachedAt}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
           {/* ── Detail Card ───────────────────────────────────── */}
           {setSelected && selectedSetRecord && (() => {
             const rec = selectedSetRecord as any;
@@ -599,7 +656,19 @@ export default function SubAssetTransactionLog() {
                               <td className="py-2 px-4 font-mono text-[#e60000]">{item.code ?? "—"}</td>
                               <td className="py-2 px-4">{item.name ?? "—"}</td>
                               <td className="py-2 px-4 text-muted-foreground">{item.category ?? "—"}</td>
-                              <td className="py-2 px-4 text-center">{item.qty ?? "—"}</td>
+                              <td className="py-2 px-4 text-center">
+                                {editingItems ? (
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    className="h-6 text-xs bg-background border-border w-16 text-center"
+                                    value={item.qty ?? 1}
+                                    onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
+                                      idx === i ? { ...it, qty: Number(e.target.value) } : it
+                                    ))}
+                                  />
+                                ) : (item.qty ?? "—")}
+                              </td>
                               <td className="py-2 px-4">
                                 {editingItems ? (
                                   <Input
