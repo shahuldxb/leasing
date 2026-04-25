@@ -79,13 +79,14 @@ export const complianceRouter = router({
     }))
     .query(async ({ input }) => {
       const rows = await execSPP('sp_GetAuditLog', [
-        { name: 'Module', type: sql.VarChar(50), value: input.module || null },
-        { name: 'UserId', type: sql.Int, value: null },
-        { name: 'ActionType', type: sql.VarChar(50), value: input.actionType || null },
-        { name: 'FromDate', type: sql.DateTime2, value: input.fromDate || null },
-        { name: 'ToDate', type: sql.DateTime2, value: input.toDate || null },
-        { name: 'PageNumber', type: sql.Int, value: input.page },
-        { name: 'PageSize', type: sql.Int, value: input.pageSize },
+        { name: 'ScreenId',   type: sql.VarChar(50),  value: null },
+        { name: 'Module',     type: sql.VarChar(50),  value: input.module || null },
+        { name: 'UserId',     type: sql.Int,           value: null },
+        { name: 'ActionType', type: sql.VarChar(50),  value: input.actionType || null },
+        { name: 'DateFrom',   type: sql.DateTime2,    value: input.fromDate || null },
+        { name: 'DateTo',     type: sql.DateTime2,    value: input.toDate || null },
+        { name: 'PageNumber', type: sql.Int,           value: input.page },
+        { name: 'PageSize',   type: sql.Int,           value: input.pageSize },
       ]);
       const totalCount = rows.length > 0 ? (rows[0] as any).total_count : 0;
       return { rows, totalCount };
@@ -94,6 +95,26 @@ export const complianceRouter = router({
   getScreenRegistry: protectedProcedure.query(async () => {
     return execSPP('sp_GetScreenRegistry');
   }),
+
+  getErrorLog: protectedProcedure
+    .input(z.object({
+      screenId:  z.string().optional(),
+      severity:  z.string().optional(),
+      status:    z.string().optional(),
+      page:      z.number().default(1),
+      pageSize:  z.number().default(100),
+    }))
+    .query(async ({ input }) => {
+      const rows = await execSPP('sp_GetErrorLog', [
+        { name: 'ScreenId',   type: sql.VarChar(50),  value: input.screenId  || null },
+        { name: 'Severity',   type: sql.VarChar(20),  value: input.severity  || null },
+        { name: 'Status',     type: sql.VarChar(20),  value: input.status    || null },
+        { name: 'PageNumber', type: sql.Int,           value: input.page },
+        { name: 'PageSize',   type: sql.Int,           value: input.pageSize },
+      ]);
+      const totalCount = rows.length > 0 ? (rows[0] as any).total_count ?? rows.length : 0;
+      return { rows, totalCount };
+    }),
 });
 
 export const misRouter = router({

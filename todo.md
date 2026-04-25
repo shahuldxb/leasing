@@ -736,3 +736,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## Country Field Fix (Apr 25)
 - [x] NewLease.tsx — Country field in Step 1 always defaults to Qatar (QA), Gen AI always fills country as Qatar
+
+## Audit Log & Error Log Improvements (Apr 25)
+- [x] AuditLog.tsx — add elapsed time column (time since event, e.g. "2m ago", "3h ago") prominently displayed
+- [x] ErrorLog.tsx — add screen_id, user_id columns; make timestamp prominent

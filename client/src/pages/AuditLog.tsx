@@ -10,9 +10,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, RefreshCw, Download, Shield } from "lucide-react";
+import { Search, RefreshCw, Download, Shield, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+
+function formatElapsed(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined) return "—";
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+}
+
+function elapsedColor(ms: number | null | undefined): string {
+  if (!ms) return "text-muted-foreground";
+  if (ms < 500) return "text-green-400";
+  if (ms < 2000) return "text-amber-400";
+  return "text-red-400";
+}
 
 export default function AuditLog() {
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
@@ -88,10 +102,14 @@ export default function AuditLog() {
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Audit No</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Timestamp</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">User</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Module</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Action</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Record</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Screen ID</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Elapsed</span>
+                    </th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Outcome</th>
                   </tr>
                 </thead>
@@ -113,14 +131,26 @@ export default function AuditLog() {
                     </tr>
                   ) : (
                     rows.map((row: any) => (
-                      <tr key={row.audit_id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-4 py-3 font-mono text-xs text-primary">{row.audit_no ?? `AUD-${row.audit_id}`}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs">{row.created_at ? new Date(row.created_at).toLocaleString() : "—"}</td>
-                        <td className="px-4 py-3">{row.username ?? "—"}</td>
+                      <tr key={row.audit_id ?? row.log_id} className="border-b last:border-0 hover:bg-muted/20">
+                        <td className="px-4 py-3 font-mono text-xs text-primary">{row.audit_no ?? `AUD-${row.log_id ?? row.audit_id}`}</td>
+                        <td className="px-4 py-3 text-xs">
+                          <div className="font-medium">{row.timestamp_local ? new Date(row.timestamp_local).toLocaleString() : row.timestamp_utc ? new Date(row.timestamp_utc).toLocaleString() : row.created_at ? new Date(row.created_at).toLocaleString() : "—"}</div>
+                          {row.timestamp_utc && <div className="text-muted-foreground text-[10px]">UTC {new Date(row.timestamp_utc).toISOString().replace('T',' ').slice(0,19)}</div>}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          <div>{row.username ?? "—"}</div>
+                          {row.user_id && <div className="text-muted-foreground text-[10px]">ID: {row.user_id}</div>}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{row.user_role ?? "—"}</td>
                         <td className="px-4 py-3"><span className="badge-draft">{row.module}</span></td>
                         <td className="px-4 py-3 font-mono text-xs">{row.action_type}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs truncate max-w-32">{row.record_table} #{row.record_id}</td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{row.screen_id ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`font-mono text-xs font-semibold ${elapsedColor(row.elapsed_ms)}`}>
+                            {formatElapsed(row.elapsed_ms)}
+                          </span>
+                        </td>
                         <td className="px-4 py-3">
                           <span className={row.outcome === "Success" ? "badge-active" : "badge-expired"}>{row.outcome}</span>
                         </td>
