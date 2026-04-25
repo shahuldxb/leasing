@@ -912,3 +912,20 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add lessee name required validation before save
 - [x] Add lessee type badge in tab header (Staff=blue, Client=green, Other=gray) in read-only mode
 - [x] TypeScript: 0 errors
+
+## New Lease Wizard — Lessee Details Step 2 (Apr 25)
+- [x] Create lease.lease_lessee_details table (contract_id FK, lessee_type, lessee_name, staff_number, employee_id, grade, position, department, place_of_work, contact_email, contact_phone, created_at, updated_at)
+- [x] Create dbo.sp_UpsertLeaseLesseeDetails SP (upsert by contract_id)
+- [x] Create dbo.sp_GetLeaseLesseeDetails SP (select by contract_id)
+- [x] Add tRPC procedure lease.upsertLesseeDetails (protectedProcedure)
+- [x] Add tRPC procedure lease.getLesseeDetails (protectedProcedure)
+- [x] Insert Step 2 "Lessee Details" in NewLease.tsx wizard after Lessor Details
+- [x] Renumber all subsequent steps (Asset Details → 3, Financial Terms → 4, Documents → 5, Review & Post → 6)
+- [x] Add screen ID VFLSNEWLS0002P001 to Lessee Details step header
+- [x] Gen AI fill wired via existing ScreenHeader onAIFormFill (maps lesseeType, lesseeName, staffNumber, employeeId, grade, lesseePosition, lesseeDepartment, placeOfWork, lesseeContactEmail, lesseeContactPhone)
+- [x] Add all 10 lessee fields with grouped sections (Identity, Employment, Contact)
+- [x] Wire Next button with lessee name validation (required)
+- [x] Lessee details saved to DB via upsertLesseeDetails after lease creation in onSuccess
+- [x] Add Lessee summary card to Review & Post step (Step 6)
+- [x] Extend aiFill new_lease schema with 10 lessee fields
+- [x] TypeScript: 0 errors

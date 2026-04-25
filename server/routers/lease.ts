@@ -281,6 +281,77 @@ export const leaseRouter = router({
       return result;
     }),
 
+  // ── LESSEE DETAILS (Screen: VFLSNEWLS0002P001) ─────────
+  upsertLesseeDetails: protectedProcedure
+    .input(z.object({
+      contractId:   z.number().int(),
+      lesseeType:   z.enum(['Staff', 'Client', 'Other']),
+      lesseeName:   z.string().min(1),
+      staffNumber:  z.string().optional(),
+      employeeId:   z.string().optional(),
+      grade:        z.string().optional(),
+      position:     z.string().optional(),
+      department:   z.string().optional(),
+      placeOfWork:  z.string().optional(),
+      contactEmail: z.string().optional(),
+      contactPhone: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const start = new Date();
+      try {
+        const rows = await execSPP('sp_UpsertLeaseLesseeDetails', [
+          { name: 'contract_id',   type: sql.Int,           value: input.contractId },
+          { name: 'lessee_type',   type: sql.NVarChar(20),  value: input.lesseeType },
+          { name: 'lessee_name',   type: sql.NVarChar(200), value: input.lesseeName },
+          { name: 'staff_number',  type: sql.NVarChar(50),  value: input.staffNumber  ?? null },
+          { name: 'employee_id',   type: sql.NVarChar(50),  value: input.employeeId   ?? null },
+          { name: 'grade',         type: sql.NVarChar(50),  value: input.grade        ?? null },
+          { name: 'position',      type: sql.NVarChar(100), value: input.position     ?? null },
+          { name: 'department',    type: sql.NVarChar(100), value: input.department   ?? null },
+          { name: 'place_of_work', type: sql.NVarChar(200), value: input.placeOfWork  ?? null },
+          { name: 'contact_email', type: sql.NVarChar(200), value: input.contactEmail ?? null },
+          { name: 'contact_phone', type: sql.NVarChar(50),  value: input.contactPhone ?? null },
+        ]);
+        await writeAuditLog({
+          userId: ctx.user!.id, username: ctx.user!.name || '', userRole: ctx.user!.role,
+          module: 'Lease', subModule: 'LesseeDetails', actionType: 'UPSERT',
+          recordTable: 'lease.lease_lessee_details', recordId: String(input.contractId),
+          afterState: rows[0] ?? {}, outcome: 'Success',
+          screenId: 'VFLSNEWLS0002P001', processStartTime: start,
+        });
+        return rows[0] ?? null;
+      } catch (err: any) {
+        await writeErrorLog({ severity: 'Error', module: 'Lease', message: err.message, stackTrace: err.stack, screenId: 'VFLSNEWLS0002P001' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
+      }
+    }),
+
+  getLesseeDetails: protectedProcedure
+    .input(z.object({ contractId: z.number().int() }))
+    .query(async ({ input }) => {
+      const rows = await execSPP('sp_GetLeaseLesseeDetails', [
+        { name: 'contract_id', type: sql.Int, value: input.contractId },
+      ]);
+      if (!rows.length) return null;
+      const r = rows[0] as any;
+      return {
+        lesseeDetailId: r.lessee_detail_id as number,
+        contractId:     r.contract_id      as number,
+        lesseeType:     r.lessee_type      as string,
+        lesseeName:     r.lessee_name      as string,
+        staffNumber:    r.staff_number     as string | null,
+        employeeId:     r.employee_id      as string | null,
+        grade:          r.grade            as string | null,
+        position:       r.position         as string | null,
+        department:     r.department       as string | null,
+        placeOfWork:    r.place_of_work    as string | null,
+        contactEmail:   r.contact_email    as string | null,
+        contactPhone:   r.contact_phone    as string | null,
+        createdAt:      r.created_at       as string,
+        updatedAt:      r.updated_at       as string,
+      };
+    }),
+
   // ── INSURANCE ───────────────────────────────────────────
   getInsurancePolicies: protectedProcedure
     .input(z.object({ contractId: z.number().optional(), status: z.string().optional() }))

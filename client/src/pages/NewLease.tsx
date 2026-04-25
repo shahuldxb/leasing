@@ -7,16 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 const STEPS = [
   { id: 1, label: "Lessor Details",    icon: Building2 },
-  { id: 2, label: "Asset Details",     icon: FileText },
-  { id: 3, label: "Financial Terms",   icon: DollarSign },
-  { id: 4, label: "Documents",         icon: Upload },
-  { id: 5, label: "Review & Post",     icon: Eye },
+  { id: 2, label: "Lessee Details",    icon: User },
+  { id: 3, label: "Asset Details",     icon: FileText },
+  { id: 4, label: "Financial Terms",   icon: DollarSign },
+  { id: 5, label: "Documents",         icon: Upload },
+  { id: 6, label: "Review & Post",     icon: Eye },
 ];
 
 const ASSET_TYPES = ["Villa","Apartment","Vehicle","Heavy Vehicle","Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Fleet Vehicle","Network Equipment","Generator Site","Other"];
@@ -39,9 +40,23 @@ export default function NewLease() {
     isLTO: false, ltoPrice: "", ltoDeposit: "", ltoInstalments: "", ltoRate: "", ltoBalloon: "",
     maintenanceBy: "Lessor" as "Lessor"|"Vodafone",
   });
-  // Step 4 — Documents
+  // Step 2 — Lessee Details
+  const [lessee, setLessee] = useState({
+    lesseeType: "Staff" as "Staff" | "Client" | "Other",
+    lesseeName: "",
+    staffNumber: "",
+    employeeId: "",
+    grade: "",
+    position: "",
+    department: "",
+    placeOfWork: "",
+    contactEmail: "",
+    contactPhone: "",
+  });
+  const [savedContractId, setSavedContractId] = useState<number | null>(null);
+  // Step 5 — Documents
   const [docs, setDocs] = useState<{ name: string; type: string; file?: File }[]>([]);
-  // Step 5 — computed preview
+  // Step 6 — computed preview
   const [ifrs16Result, setIfrs16Result] = useState<any>(null);
 
   const { data: lessors = [] } = trpc.lease.getLessors.useQuery({});
@@ -87,8 +102,30 @@ export default function NewLease() {
     : financial.paymentFrequency === "Semi-Annual" ? Number(financial.rentAmount) / 6
     : Number(financial.rentAmount) / 12
     : 0;
+  const upsertLesseeMutation = trpc.lease.upsertLesseeDetails.useMutation({
+    onError: (e) => toast.error("Failed to save lessee details: " + e.message),
+  });
   const createLeaseMutation = trpc.lease.createLease.useMutation({
-    onSuccess: () => { toast.success("Lease created and submitted for approval!"); setLocation("/leases"); },
+    onSuccess: (result) => {
+      // After lease created, save lessee details if provided
+      if (result?.contract_id && lessee.lesseeName) {
+        upsertLesseeMutation.mutate({
+          contractId:   result.contract_id,
+          lesseeType:   lessee.lesseeType,
+          lesseeName:   lessee.lesseeName,
+          staffNumber:  lessee.staffNumber || undefined,
+          employeeId:   lessee.employeeId  || undefined,
+          grade:        lessee.grade       || undefined,
+          position:     lessee.position    || undefined,
+          department:   lessee.department  || undefined,
+          placeOfWork:  lessee.placeOfWork || undefined,
+          contactEmail: lessee.contactEmail || undefined,
+          contactPhone: lessee.contactPhone || undefined,
+        });
+      }
+      toast.success("Lease created and submitted for approval!");
+      setLocation("/leases");
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -96,7 +133,11 @@ export default function NewLease() {
   const labelCls = "text-sm font-medium text-foreground";
 
   const handleNext = () => {
-    if (step === 3) {
+    if (step === 2 && !lessee.lesseeName) {
+      toast.error("Lessee name is required");
+      return;
+    }
+    if (step === 4) {
       // Trigger IFRS 16 computation preview
       computeMutation.mutate({
         monthlyPayment,
@@ -105,7 +146,7 @@ export default function NewLease() {
         commencementDate: financial.commencementDate,
       });
     }
-    setStep(s => Math.min(s + 1, 5));
+    setStep(s => Math.min(s + 1, 6));
   };
 
   const handleSubmit = () => {
@@ -185,6 +226,20 @@ export default function NewLease() {
               noticePeriod:     data.noticePeriod        ?? f.noticePeriod,
             }));
             if (data.taxId) setLessor(l => ({ ...l, taxId: data.taxId ?? l.taxId }));
+            // Map lessee fields
+            setLessee(le => ({
+              ...le,
+              lesseeType:   (data.lesseeType as "Staff" | "Client" | "Other") ?? le.lesseeType,
+              lesseeName:   data.lesseeName         ?? le.lesseeName,
+              staffNumber:  data.staffNumber         ?? le.staffNumber,
+              employeeId:   data.employeeId          ?? le.employeeId,
+              grade:        data.grade               ?? le.grade,
+              position:     data.lesseePosition      ?? le.position,
+              department:   data.lesseeDepartment    ?? le.department,
+              placeOfWork:  data.placeOfWork         ?? le.placeOfWork,
+              contactEmail: data.lesseeContactEmail  ?? le.contactEmail,
+              contactPhone: data.lesseeContactPhone  ?? le.contactPhone,
+            }));
           }}
         />
 
@@ -270,10 +325,122 @@ export default function NewLease() {
             </div>
           )}
 
-          {/* ── Step 2: Asset Details ── */}
+          {/* ── Step 2: Lessee Details ── */}
           {step === 2 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">Step 2 — Lessee Details</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Screen ID: VFLSNEWLS0002P001</p>
+                </div>
+                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                  lessee.lesseeType === "Staff" ? "bg-blue-500/10 text-blue-400" :
+                  lessee.lesseeType === "Client" ? "bg-green-500/10 text-green-400" :
+                  "bg-muted text-muted-foreground"
+                }`}>{lessee.lesseeType}</span>
+              </div>
+
+              {/* Identity Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  <IdCard className="w-4 h-4" /><span>Identity</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className={labelCls}>Lessee Type *</Label>
+                    <Select value={lessee.lesseeType} onValueChange={v => setLessee(l => ({ ...l, lesseeType: v as "Staff"|"Client"|"Other" }))}>
+                      <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Staff">Staff (Employee)</SelectItem>
+                        <SelectItem value="Client">Client</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Full Name *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input className={`${inputCls} pl-9`} placeholder="e.g. Mohammed Al-Thani" value={lessee.lesseeName} onChange={e => setLessee(l => ({ ...l, lesseeName: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Employment Details Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  <Briefcase className="w-4 h-4" /><span>Employment Details</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className={labelCls}>Staff Number</Label>
+                    <div className="relative">
+                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input className={`${inputCls} pl-9`} placeholder="e.g. VQ-EMP-00142" value={lessee.staffNumber} onChange={e => setLessee(l => ({ ...l, staffNumber: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Employee ID</Label>
+                    <div className="relative">
+                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input className={`${inputCls} pl-9`} placeholder="e.g. EMP-2024-00142" value={lessee.employeeId} onChange={e => setLessee(l => ({ ...l, employeeId: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Grade / Band</Label>
+                    <Input className={inputCls} placeholder="e.g. Grade 7, Band 4, Senior Manager" value={lessee.grade} onChange={e => setLessee(l => ({ ...l, grade: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Position / Job Title</Label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input className={`${inputCls} pl-9`} placeholder="e.g. Network Engineer" value={lessee.position} onChange={e => setLessee(l => ({ ...l, position: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Department</Label>
+                    <Input className={inputCls} placeholder="e.g. Network Operations" value={lessee.department} onChange={e => setLessee(l => ({ ...l, department: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Place of Work</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input className={`${inputCls} pl-9`} placeholder="e.g. Vodafone Qatar HQ, West Bay" value={lessee.placeOfWork} onChange={e => setLessee(l => ({ ...l, placeOfWork: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  <Phone className="w-4 h-4" /><span>Contact Information</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className={labelCls}>Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input type="email" className={`${inputCls} pl-9`} placeholder="e.g. m.althani@vodafone.com.qa" value={lessee.contactEmail} onChange={e => setLessee(l => ({ ...l, contactEmail: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Phone</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input className={`${inputCls} pl-9`} placeholder="+974 XXXX XXXX" value={lessee.contactPhone} onChange={e => setLessee(l => ({ ...l, contactPhone: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* (Step 3 Asset Details content follows) */}
+          {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Step 2 — Asset Details</h2>
+              <h2 className="text-lg font-semibold">Step 3 — Asset Details</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className={labelCls}>Asset Type *</Label>
@@ -440,10 +607,10 @@ export default function NewLease() {
             </div>
           )}
 
-          {/* ── Step 3: Financial Terms ── */}
-          {step === 3 && (
+          {/* ── Step 4: Financial Terms ── */}
+          {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Step 3 — Financial & Lease Terms</h2>
+              <h2 className="text-lg font-semibold">Step 4 — Financial & Lease Terms</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className={labelCls}>Commencement Date *</Label>
@@ -533,10 +700,10 @@ export default function NewLease() {
             </div>
           )}
 
-          {/* ── Step 4: Documents ── */}
-          {step === 4 && (
+          {/* ── Step 5: Documents ── */}
+          {step === 5 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Step 4 — Document Upload</h2>
+              <h2 className="text-lg font-semibold">Step 5 — Document Upload</h2>
               <p className="text-sm text-muted-foreground">Upload the signed lease agreement and supporting documents. GPT-4o OCR will extract key terms automatically.</p>
               <div className="border-2 border-dashed border-border rounded-xl p-8 text-center space-y-3">
                 <Upload className="w-10 h-10 mx-auto text-muted-foreground" />
@@ -566,14 +733,39 @@ export default function NewLease() {
             </div>
           )}
 
-          {/* ── Step 5: Review & Post ── */}
-          {step === 5 && (
+          {/* ── Step 6: Review & Post ── */}
+          {step === 6 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Step 5 — Review & Post</h2>
+              <h2 className="text-lg font-semibold">Step 6 — Review & Post</h2>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="col-span-2 bg-muted/50 rounded-lg p-4 space-y-2">
                   <h3 className="font-semibold text-foreground">Lessor</h3>
                   <p className="text-muted-foreground">{lessor.name || "—"} · {lessor.country || "—"}</p>
+                </div>
+                <div className="col-span-2 bg-blue-500/5 border border-blue-500/20 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-400" />
+                    <h3 className="font-semibold text-foreground">Lessee</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      lessee.lesseeType === "Staff" ? "bg-blue-500/20 text-blue-400" :
+                      lessee.lesseeType === "Client" ? "bg-green-500/20 text-green-400" :
+                      "bg-muted text-muted-foreground"
+                    }`}>{lessee.lesseeType}</span>
+                  </div>
+                  {lessee.lesseeName ? (
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div><span className="text-muted-foreground text-xs">Name</span><br /><span className="font-medium">{lessee.lesseeName}</span></div>
+                      {lessee.staffNumber && <div><span className="text-muted-foreground text-xs">Staff No.</span><br /><span>{lessee.staffNumber}</span></div>}
+                      {lessee.grade && <div><span className="text-muted-foreground text-xs">Grade</span><br /><span>{lessee.grade}</span></div>}
+                      {lessee.position && <div><span className="text-muted-foreground text-xs">Position</span><br /><span>{lessee.position}</span></div>}
+                      {lessee.department && <div><span className="text-muted-foreground text-xs">Department</span><br /><span>{lessee.department}</span></div>}
+                      {lessee.placeOfWork && <div><span className="text-muted-foreground text-xs">Place of Work</span><br /><span>{lessee.placeOfWork}</span></div>}
+                      {lessee.contactEmail && <div><span className="text-muted-foreground text-xs">Email</span><br /><span>{lessee.contactEmail}</span></div>}
+                      {lessee.contactPhone && <div><span className="text-muted-foreground text-xs">Phone</span><br /><span>{lessee.contactPhone}</span></div>}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No lessee details provided.</p>
+                  )}
                 </div>
                 <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                   <h3 className="font-semibold text-foreground">Asset</h3>
@@ -652,9 +844,9 @@ export default function NewLease() {
           <Button variant="outline" onClick={() => step === 1 ? setLocation("/leases") : setStep(s => s - 1)} disabled={createLeaseMutation.isPending}>
             <ChevronLeft className="w-4 h-4 mr-1" /> {step === 1 ? "Cancel" : "Back"}
           </Button>
-          {step < 5 ? (
+          {step < 6 ? (
             <Button onClick={handleNext} className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={computeMutation.isPending}>
-              Next <ChevronRight className="w-4 h-4 ml-1" />
+              {step === 2 ? "Save & Continue" : "Next"} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={createLeaseMutation.isPending}>
