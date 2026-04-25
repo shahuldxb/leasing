@@ -766,3 +766,10 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Sub-Asset Registry Bug Fixes (Apr 25)
 - [x] AssetRegistry.tsx — fix set code counter (derive from savedSets.length, not module-level let)
 - [x] AssetRegistry.tsx — add ScreenHeader back (screen ID was removed in rewrite)
+
+## Sub-Asset Registry DB Persistence (Apr 25)
+- [x] Check existing SPs for sub_asset_sets and sub_asset_lines tables
+- [x] Add tRPC procedures: getSubAssetGroups, upsertSubAssetGroup, deleteSubAssetGroup
+- [x] AssetRegistry.tsx — replace useState with tRPC queries/mutations for full DB persistence
+- [x] AssetRegistry.tsx — fix Edit to load set back into builder from DB
+- [x] AssetRegistry.tsx — fix Delete to call DB delete mutation

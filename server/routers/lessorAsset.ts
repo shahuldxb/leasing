@@ -383,6 +383,82 @@ export const assetRouter = router({
       return rows[0];
     }),
 
+  // ── Sub-Asset Groups (furniture/appliance sets) ─────────────────────────
+  getSubAssetGroups: protectedProcedure
+    .query(async () => {
+      const params: SPPParam[] = [
+        { name: "SearchTerm",     type: "NVarChar", value: null },
+        { name: "AssetType",      type: "VarChar",  value: "SUB_ASSET_GROUP" },
+        { name: "Status",         type: "VarChar",  value: null },
+        { name: "Country",        type: "VarChar",  value: null },
+        { name: "LessorId",       type: "Int",      value: null },
+        { name: "MaintenanceResp",type: "VarChar",  value: null },
+        { name: "PageNumber",     type: "Int",      value: 1 },
+        { name: "PageSize",       type: "Int",      value: 500 },
+      ];
+      const rows = await execSPP("sp_GetAssets", params);
+      return rows.map((r: Record<string, unknown>) => ({
+        assetId:     r.asset_id as number,
+        assetCode:   r.asset_code as string,
+        setName:     r.asset_name as string,
+        description: (r.description as string | null) ?? "",
+        tags:        (r.tags as string | null) ?? "[]",
+        createdAt:   r.created_at as string,
+        updatedAt:   r.updated_at as string,
+      }));
+    }),
+
+  upsertSubAssetGroup: protectedProcedure
+    .input(z.object({
+      assetId:     z.number().int().optional(),
+      setName:     z.string().min(1),
+      description: z.string().optional(),
+      tags:        z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const params: SPPParam[] = [
+        { name: "AssetId",                   type: "Int",      value: input.assetId ?? null },
+        { name: "AssetName",                 type: "NVarChar", value: input.setName },
+        { name: "AssetType",                 type: "VarChar",  value: "SUB_ASSET_GROUP" },
+        { name: "AssetSubtype",              type: "NVarChar", value: null },
+        { name: "Description",               type: "NVarChar", value: input.description ?? null },
+        { name: "Country",                   type: "VarChar",  value: "QA" },
+        { name: "City",                      type: "NVarChar", value: "Doha" },
+        { name: "Area",                      type: "NVarChar", value: null },
+        { name: "AddressLine1",              type: "NVarChar", value: null },
+        { name: "AddressLine2",              type: "NVarChar", value: null },
+        { name: "PostalCode",                type: "VarChar",  value: null },
+        { name: "Latitude",                  type: "Decimal",  value: null },
+        { name: "Longitude",                 type: "Decimal",  value: null },
+        { name: "FloorAreaSqm",              type: "Decimal",  value: null },
+        { name: "Floors",                    type: "Int",      value: null },
+        { name: "YearBuilt",                 type: "Int",      value: null },
+        { name: "ConditionRating",           type: "VarChar",  value: null },
+        { name: "CurrentLessorId",           type: "Int",      value: null },
+        { name: "Status",                    type: "VarChar",  value: "Available" },
+        { name: "MaintenanceResponsibility", type: "VarChar",  value: "Lessor" },
+        { name: "EstimatedMarketValue",      type: "Decimal",  value: null },
+        { name: "LastValuationDate",         type: "Date",     value: null },
+        { name: "MakeGoodProvision",         type: "Decimal",  value: 0 },
+        { name: "Tags",                      type: "NVarChar", value: input.tags ?? null },
+        { name: "CreatedBy",                 type: "NVarChar", value: ctx.user?.name ?? "system" },
+        { name: "ScreenId",                  type: "VarChar",  value: "VFLSASSET001" },
+      ];
+      const rows = await execSPP("sp_UpsertAsset", params);
+      return rows[0] as { asset_id: number; asset_code: string };
+    }),
+
+  deleteSubAssetGroup: protectedProcedure
+    .input(z.object({ assetId: z.number().int() }))
+    .mutation(async ({ input, ctx }) => {
+      const params: SPPParam[] = [
+        { name: "AssetId",   type: "Int",      value: input.assetId },
+        { name: "DeletedBy", type: "NVarChar", value: ctx.user?.name ?? "system" },
+      ];
+      const rows = await execSPP("sp_DeleteAsset", params);
+      return rows[0];
+    }),
+
   addDocument: protectedProcedure
     .input(z.object({
       assetId:    z.number().int(),
