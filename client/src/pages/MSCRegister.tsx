@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -15,16 +15,25 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 export default function MSCRegister() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-  const [form, setForm] = useState<any>({ msc_ref: "", contract_type: "Master Service", title_en: "", effective_date: "", expiry_date: "", total_value: "", currency: "AED", status: "Draft" });
+  const [form, setForm] = useState<any>({ msc_ref: "", contract_type: "Master Service", title_en: "", effective_date: "", expiry_date: "", total_value: "", currency: "QAR", status: "Draft" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: contracts = [], isLoading, refetch } = trpc.masterContracts.list.useQuery({});
   const createMut = trpc.masterContracts.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Contract created"); }, onError: (e: any) => toast.error(e.message) });
   const updateMut = trpc.masterContracts.update.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setEditItem(null); toast.success("Contract updated"); }, onError: (e: any) => toast.error(e.message) });
   const activateMut = trpc.masterContracts.activate.useMutation({ onSuccess: () => { refetch(); toast.success("Contract activated"); }, onError: (e: any) => toast.error(e.message) });
 
-  const openAdd = () => { setEditItem(null); setForm({ msc_ref: "", contract_type: "Master Service", title_en: "", effective_date: "", expiry_date: "", total_value: "", currency: "AED", status: "Draft" }); setShowForm(true); };
-  const openEdit = (c: any) => { setEditItem(c); setForm({ msc_ref: c.contract_number ?? "", contract_type: c.contract_type ?? "Master Service", title_en: c.party_name ?? "", effective_date: c.start_date ? c.start_date.split("T")[0] : "", expiry_date: c.end_date ? c.end_date.split("T")[0] : "", total_value: c.value ?? "", currency: c.currency ?? "AED", status: c.status ?? "Draft" }); setShowForm(true); };
+  const openAdd = () => { setEditItem(null); setForm({ msc_ref: "", contract_type: "Master Service", title_en: "", effective_date: "", expiry_date: "", total_value: "", currency: "QAR", status: "Draft" }); setShowForm(true); };
+  const openEdit = (c: any) => { setEditItem(c); setForm({ msc_ref: c.contract_number ?? "", contract_type: c.contract_type ?? "Master Service", title_en: c.party_name ?? "", effective_date: c.start_date ? c.start_date.split("T")[0] : "", expiry_date: c.end_date ? c.end_date.split("T")[0] : "", total_value: c.value ?? "", currency: c.currency ?? "QAR", status: c.status ?? "Draft" }); setShowForm(true); };
 
   if (showForm) {
     return (
@@ -73,7 +82,7 @@ export default function MSCRegister() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
@@ -133,6 +142,20 @@ export default function MSCRegister() {
           </Table>
         </div>
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

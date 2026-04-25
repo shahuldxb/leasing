@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 
 const INSPECTIONS = [
   { id: "INS-2026-001", property: "Vodafone HQ — Floor 12", type: "Annual Condition Survey", inspector: "Ahmed Al Rashid", date: "2026-04-20", status: "COMPLETED", photos: 24, findings: 3, synced: true },
-  { id: "INS-2026-002", property: "Vodafone Abu Dhabi", type: "Lease Commencement Inspection", inspector: "Sarah Johnson", date: "2026-04-18", status: "COMPLETED", photos: 18, findings: 1, synced: true },
+  { id: "INS-2026-002", property: "Vodafone Doha", type: "Lease Commencement Inspection", inspector: "Sarah Johnson", date: "2026-04-18", status: "COMPLETED", photos: 18, findings: 1, synced: true },
   { id: "INS-2026-003", property: "Vodafone Sharjah", type: "Dilapidations Assessment", inspector: "Mohammed Al Zaabi", date: "2026-04-22", status: "IN_PROGRESS", photos: 8, findings: 2, synced: false },
   { id: "INS-2026-004", property: "Vodafone HQ — Floor 13", type: "Quarterly Walk-Through", inspector: "Fatima Al Hashimi", date: "2026-04-23", status: "PENDING", photos: 0, findings: 0, synced: false },
 ];

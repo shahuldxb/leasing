@@ -27,6 +27,15 @@ export default function LeaseOptionsBreaks() {
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [optForm, setOptForm] = useState({ ...INIT_OPT });
   const [brkForm, setBrkForm] = useState({ ...INIT_BRK });
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   function openEditOpt(o: any) {
     setEditOptRow(o);
@@ -90,7 +99,7 @@ export default function LeaseOptionsBreaks() {
                 <div><Label className="text-xs text-muted-foreground">Exercise Deadline</Label><Input type="date" className="mt-1" value={optForm.exercise_deadline} onChange={e => setOptForm(f => ({ ...f, exercise_deadline: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Notice Period (days)</Label><Input type="number" className="mt-1" value={optForm.notice_period_days} onChange={e => setOptForm(f => ({ ...f, notice_period_days: Number(e.target.value) }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">New Term (months)</Label><Input type="number" className="mt-1" value={optForm.new_term_months} onChange={e => setOptForm(f => ({ ...f, new_term_months: Number(e.target.value) }))} /></div>
-                <div><Label className="text-xs text-muted-foreground">New Rent (AED)</Label><Input type="number" step="0.01" className="mt-1" value={optForm.new_rent} onChange={e => setOptForm(f => ({ ...f, new_rent: Number(e.target.value) }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">New Rent (QAR)</Label><Input type="number" step="0.01" className="mt-1" value={optForm.new_rent} onChange={e => setOptForm(f => ({ ...f, new_rent: Number(e.target.value) }))} /></div>
               </div>
             ) : (
               <div className="max-w-xl mx-auto grid grid-cols-2 gap-5">
@@ -102,7 +111,7 @@ export default function LeaseOptionsBreaks() {
                 </div>
                 <div><Label className="text-xs text-muted-foreground">Break Date</Label><Input type="date" className="mt-1" value={brkForm.break_date} onChange={e => setBrkForm(f => ({ ...f, break_date: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Notice Deadline</Label><Input type="date" className="mt-1" value={brkForm.notice_deadline} onChange={e => setBrkForm(f => ({ ...f, notice_deadline: e.target.value }))} /></div>
-                <div><Label className="text-xs text-muted-foreground">Penalty Amount (AED)</Label><Input type="number" step="0.01" className="mt-1" value={brkForm.penalty_amount} onChange={e => setBrkForm(f => ({ ...f, penalty_amount: Number(e.target.value) }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Penalty Amount (QAR)</Label><Input type="number" step="0.01" className="mt-1" value={brkForm.penalty_amount} onChange={e => setBrkForm(f => ({ ...f, penalty_amount: Number(e.target.value) }))} /></div>
                 <div className="col-span-2"><Label className="text-xs text-muted-foreground">Conditions</Label><Input className="mt-1" value={brkForm.conditions} onChange={e => setBrkForm(f => ({ ...f, conditions: e.target.value }))} /></div>
               </div>
             )}
@@ -129,7 +138,7 @@ export default function LeaseOptionsBreaks() {
                       <TableCell className={urgency(o.exercise_deadline)}>{o.exercise_deadline?.slice(0,10)}</TableCell>
                       <TableCell>{o.notice_period_days}</TableCell>
                       <TableCell>{o.new_term_months ? `${o.new_term_months}m` : "—"}</TableCell>
-                      <TableCell className="font-mono text-sm">{o.new_rent ? `AED ${Number(o.new_rent).toLocaleString()}` : "—"}</TableCell>
+                      <TableCell className="font-mono text-sm">{o.new_rent ? `QAR ${Number(o.new_rent).toLocaleString()}` : "—"}</TableCell>
                       <TableCell>{o.reasonably_certain ? <Badge className="bg-emerald-600 text-white text-xs">Yes</Badge> : <Badge variant="secondary" className="text-xs">No</Badge>}</TableCell>
                       <TableCell className="flex items-center gap-1">
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEditOpt(o)}><Pencil className="w-3.5 h-3.5" /></Button>
@@ -151,6 +160,20 @@ export default function LeaseOptionsBreaks() {
               </Table></CardContent></Card>
             </TabsContent>
           </Tabs>
+        </div>
+      )}
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
         </div>
       )}
     </DashboardLayout>

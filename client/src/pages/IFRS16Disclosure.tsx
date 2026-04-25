@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
 const fmt = (n: number | null | undefined) => n != null ? Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 }) : "—";
-const fmtK = (n: number | null | undefined) => n != null ? `AED ${(Number(n) / 1000).toFixed(0)}K` : "—";
+const fmtK = (n: number | null | undefined) => n != null ? `QAR ${(Number(n) / 1000).toFixed(0)}K` : "—";
 
 export default function IFRS16Disclosure() {
   const [periodEnd, setPeriodEnd] = useState("2025-03-31");
@@ -89,7 +89,7 @@ export default function IFRS16Disclosure() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Movement</TableHead>
-                      <TableHead className="text-right">AED '000</TableHead>
+                      <TableHead className="text-right">QAR '000</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -116,7 +116,7 @@ export default function IFRS16Disclosure() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Movement</TableHead>
-                      <TableHead className="text-right">AED '000</TableHead>
+                      <TableHead className="text-right">QAR '000</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -140,7 +140,7 @@ export default function IFRS16Disclosure() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Period</TableHead>
-                      <TableHead className="text-right">AED '000</TableHead>
+                      <TableHead className="text-right">QAR '000</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -167,7 +167,7 @@ export default function IFRS16Disclosure() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead className="text-right">AED '000</TableHead>
+                      <TableHead className="text-right">QAR '000</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -26,13 +26,13 @@ export default function SubLeases() {
 
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
-  const [form, setForm] = useState<any>({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" });
+  const [form, setForm] = useState<any>({ parentContractId: "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "QAR" });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  function openAdd() { setEditRow(null); setForm({ parentContractId: contracts[0] ? String(contracts[0].contract_id) : "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "AED" }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ parentContractId: contracts[0] ? String(contracts[0].contract_id) : "", subtenantName: "", startDate: "", endDate: "", monthlyRent: "", currency: "QAR" }); setShowForm(true); }
   function openEdit(s: any) {
     setEditRow(s);
-    setForm({ parentContractId: String(s.parent_contract_id ?? s.head_lease_contract_id ?? ""), subtenantName: s.subtenant_name ?? s.sublessee_name ?? "", startDate: s.start_date ? new Date(s.start_date).toISOString().slice(0,10) : "", endDate: s.end_date ? new Date(s.end_date).toISOString().slice(0,10) : "", monthlyRent: String(s.monthly_rent ?? s.monthly_income ?? ""), currency: s.currency ?? "AED" });
+    setForm({ parentContractId: String(s.parent_contract_id ?? s.head_lease_contract_id ?? ""), subtenantName: s.subtenant_name ?? s.sublessee_name ?? "", startDate: s.start_date ? new Date(s.start_date).toISOString().slice(0,10) : "", endDate: s.end_date ? new Date(s.end_date).toISOString().slice(0,10) : "", monthlyRent: String(s.monthly_rent ?? s.monthly_income ?? ""), currency: s.currency ?? "QAR" });
     setShowForm(true);
   }
   function handleDelete(s: any) {
@@ -95,7 +95,7 @@ export default function SubLeases() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>

@@ -14,7 +14,7 @@ import { TrendingUp, TrendingDown, Play, History, FlaskConical, Pencil, Trash2 }
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
-const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
+const fmt = (n: any) => n != null ? `QAR ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 const pct = (a: number, b: number) => b ? ((b - a) / Math.abs(a) * 100).toFixed(1) : "0";
 
 export default function ScenarioModelling() {

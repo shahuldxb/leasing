@@ -54,8 +54,8 @@ export default function AdminPanel() {
                   <SelectContent>{MODULES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label className="text-xs text-muted-foreground">Min Amount (AED)</Label><Input type="number" className="mt-1" value={form.minAmount} onChange={e => setForm(f => ({ ...f, minAmount: e.target.value }))} /></div>
-              <div><Label className="text-xs text-muted-foreground">Max Amount (AED)</Label><Input type="number" className="mt-1" value={form.maxAmount} onChange={e => setForm(f => ({ ...f, maxAmount: e.target.value }))} /></div>
+              <div><Label className="text-xs text-muted-foreground">Min Amount (QAR)</Label><Input type="number" className="mt-1" value={form.minAmount} onChange={e => setForm(f => ({ ...f, minAmount: e.target.value }))} /></div>
+              <div><Label className="text-xs text-muted-foreground">Max Amount (QAR)</Label><Input type="number" className="mt-1" value={form.maxAmount} onChange={e => setForm(f => ({ ...f, maxAmount: e.target.value }))} /></div>
               <div><Label className="text-xs text-muted-foreground">Approver Role</Label>
                 <Select value={form.approverRole} onValueChange={v => setForm(f => ({ ...f, approverRole: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select role" /></SelectTrigger>
@@ -75,7 +75,7 @@ export default function AdminPanel() {
             <TabsContent value="thresholds" className="mt-4">
               <Card><CardContent className="p-0">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Module</TableHead><TableHead className="text-right">Min (AED)</TableHead><TableHead className="text-right">Max (AED)</TableHead><TableHead>Approver Role</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Module</TableHead><TableHead className="text-right">Min (QAR)</TableHead><TableHead className="text-right">Max (QAR)</TableHead><TableHead>Approver Role</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {displayRows.map((t: any, i: number) => (
                       <TableRow key={i}>

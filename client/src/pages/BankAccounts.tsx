@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,15 @@ export default function BankAccounts() {
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState(INIT);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: accountsData, refetch } = trpc.bankRecon.listAccounts.useQuery({});
   const createMut = trpc.bankRecon.createAccount.useMutation({
@@ -54,7 +63,7 @@ export default function BankAccounts() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["USD","AED","EUR","GBP","ZAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["USD","QAR","EUR","GBP","ZAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label>Branch Code</Label><Input className="mt-1" value={form.branchCode} onChange={e => setForm(f => ({ ...f, branchCode: e.target.value }))} /></div>
@@ -124,6 +133,20 @@ export default function BankAccounts() {
           )}
         </div>
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

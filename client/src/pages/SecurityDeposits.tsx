@@ -26,13 +26,13 @@ export default function SecurityDeposits() {
 
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
-  const [form, setForm] = useState<any>({ contractId: "", amount: "", currency: "AED", depositType: "Cash", receivedDate: "", notes: "" });
+  const [form, setForm] = useState<any>({ contractId: "", amount: "", currency: "QAR", depositType: "Cash", receivedDate: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
 
-  function openAdd() { setEditRow(null); setForm({ contractId: "", amount: "", currency: "AED", depositType: "Cash", receivedDate: "", notes: "" }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ contractId: "", amount: "", currency: "QAR", depositType: "Cash", receivedDate: "", notes: "" }); setShowForm(true); }
   function openEdit(d: any) {
     setEditRow(d);
-    setForm({ contractId: String(d.contract_id ?? ""), amount: String(d.amount ?? d.deposit_amount ?? ""), currency: d.currency ?? "AED", depositType: d.deposit_type ?? "Cash", receivedDate: d.received_date ? new Date(d.received_date).toISOString().slice(0,10) : "", notes: d.notes ?? "" });
+    setForm({ contractId: String(d.contract_id ?? ""), amount: String(d.amount ?? d.deposit_amount ?? ""), currency: d.currency ?? "QAR", depositType: d.deposit_type ?? "Cash", receivedDate: d.received_date ? new Date(d.received_date).toISOString().slice(0,10) : "", notes: d.notes ?? "" });
     setShowForm(true);
   }
   function handleDelete(d: any) {
@@ -91,7 +91,7 @@ export default function SecurityDeposits() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>

@@ -13,9 +13,9 @@ import { ArrowLeft, Plus, Globe, DollarSign , Pencil, Trash2} from "lucide-react
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
-const CURRENCIES = ["AED","USD","EUR","GBP","SAR","KWD","QAR","BHD","OMR"];
-const INIT_ENT = { entity_code: "", entity_name: "", country: "AE", currency: "AED", functional_currency: "AED", is_consolidation_entity: false, parent_entity_id: undefined as number | undefined };
-const INIT_FX = { contract_id: 0, from_currency: "USD", to_currency: "AED", exchange_rate: 0, translation_date: "", rou_asset_fc: 0, lease_liability_fc: 0 };
+const CURRENCIES = ["QAR","USD","EUR","GBP","SAR","KWD","QAR","BHD","OMR"];
+const INIT_ENT = { entity_code: "", entity_name: "", country: "QA", currency: "QAR", functional_currency: "QAR", is_consolidation_entity: false, parent_entity_id: undefined as number | undefined };
+const INIT_FX = { contract_id: 0, from_currency: "USD", to_currency: "QAR", exchange_rate: 0, translation_date: "", rou_asset_fc: 0, lease_liability_fc: 0 };
 
 export default function MultiEntityFX() {
   const [entityOpen, setEntityOpen] = useState(false);

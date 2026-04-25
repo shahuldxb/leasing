@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +27,15 @@ export default function SpaceManagement() {
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [spaceForm, setSpaceForm] = useState({ ...INIT_SP });
   const [projForm, setProjForm] = useState({ ...INIT_PR });
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   function openEditSpace(row: any) {
     setEditSpaceRow(row);
@@ -91,7 +100,7 @@ export default function SpaceManagement() {
                     <SelectContent>{PROJECT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-xs text-muted-foreground">Budget (AED)</Label><Input type="number" step="0.01" className="mt-1" value={projForm.budget_amount} onChange={e => setProjForm(f => ({ ...f, budget_amount: Number(e.target.value) }))} /></div>
+                <div><Label className="text-xs text-muted-foreground">Budget (QAR)</Label><Input type="number" step="0.01" className="mt-1" value={projForm.budget_amount} onChange={e => setProjForm(f => ({ ...f, budget_amount: Number(e.target.value) }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Project Manager</Label><Input className="mt-1" value={projForm.project_manager} onChange={e => setProjForm(f => ({ ...f, project_manager: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Start Date</Label><Input type="date" className="mt-1" value={projForm.start_date} onChange={e => setProjForm(f => ({ ...f, start_date: e.target.value }))} /></div>
                 <div><Label className="text-xs text-muted-foreground">Expected Completion</Label><Input type="date" className="mt-1" value={projForm.expected_completion} onChange={e => setProjForm(f => ({ ...f, expected_completion: e.target.value }))} /></div>
@@ -149,6 +158,20 @@ export default function SpaceManagement() {
               </Table></CardContent></Card>
             </TabsContent>
           </Tabs>
+        </div>
+      )}
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
         </div>
       )}
     </DashboardLayout>

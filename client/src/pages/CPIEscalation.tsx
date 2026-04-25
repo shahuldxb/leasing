@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,15 @@ export default function CPIEscalation() {
   const [applyDialog, setApplyDialog] = useState<any>(null);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [newRent, setNewRent] = useState("");
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setApplyDialog(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Fetch escalations from backend
   const { data: escalationsData, refetch, isLoading } = trpc.accounting.escalation.escalations.useQuery({});
@@ -64,13 +73,13 @@ export default function CPIEscalation() {
           <div className="flex-1 overflow-y-auto px-8 py-6">
             <div className="max-w-xl mx-auto space-y-5">
               <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg text-sm">
-                <div><span className="text-muted-foreground">Current Rent:</span><span className="ml-2 font-mono font-semibold">AED {Number(applyDialog.current_rent ?? 0).toLocaleString()}</span></div>
+                <div><span className="text-muted-foreground">Current Rent:</span><span className="ml-2 font-mono font-semibold">QAR {Number(applyDialog.current_rent ?? 0).toLocaleString()}</span></div>
                 <div><span className="text-muted-foreground">CPI Rate:</span><span className="ml-2 font-mono font-semibold">{applyDialog.cpi_rate ?? "—"}%</span></div>
-                <div><span className="text-muted-foreground">Proposed Rent:</span><span className="ml-2 font-mono font-semibold text-emerald-600">AED {Number(applyDialog.proposed_rent ?? 0).toLocaleString()}</span></div>
+                <div><span className="text-muted-foreground">Proposed Rent:</span><span className="ml-2 font-mono font-semibold text-emerald-600">QAR {Number(applyDialog.proposed_rent ?? 0).toLocaleString()}</span></div>
                 <div><span className="text-muted-foreground">Effective Date:</span><span className="ml-2">{applyDialog.effective_date?.slice(0,10)}</span></div>
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Confirmed New Rent (AED) *</Label>
+                <Label className="text-xs text-muted-foreground">Confirmed New Rent (QAR) *</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -129,9 +138,9 @@ export default function CPIEscalation() {
                     <TableRow key={r.escalation_id ?? i}>
                       <TableCell className="font-mono text-xs">{r.contract_ref}</TableCell>
                       <TableCell className="text-sm">{r.asset_description ?? r.property_name ?? "—"}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">AED {Number(r.current_rent ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">QAR {Number(r.current_rent ?? 0).toLocaleString()}</TableCell>
                       <TableCell className="text-right font-mono text-sm">{r.cpi_rate ?? "—"}%</TableCell>
-                      <TableCell className="text-right font-mono text-sm font-semibold text-emerald-600">AED {Number(r.proposed_rent ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-sm font-semibold text-emerald-600">QAR {Number(r.proposed_rent ?? 0).toLocaleString()}</TableCell>
                       <TableCell className="text-sm">{r.effective_date?.slice(0,10) ?? r.review_date?.slice(0,10)}</TableCell>
                       <TableCell>{statusBadge(r.status)}</TableCell>
                       <TableCell>
@@ -154,6 +163,20 @@ export default function CPIEscalation() {
               </Table>
             </CardContent>
           </Card>
+        </div>
+      )}
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
         </div>
       )}
     </DashboardLayout>

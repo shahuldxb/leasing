@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,22 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 export default function AssetDepositRegister() {
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
-  const [form, setForm] = useState<any>({ leaseId: "", assetDescription: "", deposit_amount: "", deposit_currency: "AED", deposit_type: "Cash" });
+  const [form, setForm] = useState<any>({ leaseId: "", assetDescription: "", deposit_amount: "", deposit_currency: "QAR", deposit_type: "Cash" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
-  function openAdd() { setEditRow(null); setForm({ leaseId: "", assetDescription: "", deposit_amount: "", deposit_currency: "AED", deposit_type: "Cash" }); setShowForm(true); }
+  function openAdd() { setEditRow(null); setForm({ leaseId: "", assetDescription: "", deposit_amount: "", deposit_currency: "QAR", deposit_type: "Cash" }); setShowForm(true); }
   function openEdit(row: any) {
     setEditRow(row);
-    setForm({ leaseId: String(row.contract_id ?? ""), assetDescription: row.asset_description ?? "", deposit_amount: String(row.deposit_amount ?? ""), deposit_currency: row.currency ?? "AED", deposit_type: row.deposit_type ?? "Cash" });
+    setForm({ leaseId: String(row.contract_id ?? ""), assetDescription: row.asset_description ?? "", deposit_amount: String(row.deposit_amount ?? ""), deposit_currency: row.currency ?? "QAR", deposit_type: row.deposit_type ?? "Cash" });
     setShowForm(true);
   }
   function handleDelete(row: any) {
@@ -72,7 +81,7 @@ export default function AssetDepositRegister() {
                 <div><Label>Currency</Label>
                   <Select value={form.deposit_currency} onValueChange={v => setForm((f: any) => ({ ...f, deposit_currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
@@ -132,6 +141,20 @@ export default function AssetDepositRegister() {
           </Table>
         </div>
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +30,9 @@ const ACCOUNT_TYPES = ["Current", "Savings", "Fixed"];
 
 type ViewMode = "list" | "detail" | "form_lessor" | "form_contact" | "form_bank" | "form_note";
 
-const EMPTY_FORM = { lessorName: "", lessorType: "Company", registrationNo: "", taxId: "", country: "AE", city: "", addressLine1: "", addressLine2: "", postalCode: "", website: "", creditRating: "", paymentTerms: 30, preferredCurrency: "AED", status: "Active", blacklistReason: "" };
+const EMPTY_FORM = { lessorName: "", lessorType: "Company", registrationNo: "", taxId: "", country: "QA", city: "", addressLine1: "", addressLine2: "", postalCode: "", website: "", creditRating: "", paymentTerms: 30, preferredCurrency: "QAR", status: "Active", blacklistReason: "" };
 const EMPTY_CONTACT = { contactType: "Primary", fullName: "", jobTitle: "", department: "", email: "", phonePrimary: "", phoneSecondary: "", whatsapp: "", isPrimary: false, notes: "" };
-const EMPTY_BANK = { bankName: "", accountName: "", accountNumber: "", iban: "", swiftCode: "", currency: "AED", accountType: "Current", branchName: "", country: "AE", verifiedBy: "" };
+const EMPTY_BANK = { bankName: "", accountName: "", accountNumber: "", iban: "", swiftCode: "", currency: "QAR", accountType: "Current", branchName: "", country: "QA", verifiedBy: "" };
 const EMPTY_NOTE = { noteType: "General", subject: "", noteText: "", isPrivate: false };
 
 export default function LessorMaster() {
@@ -47,6 +47,15 @@ export default function LessorMaster() {
   const [contactForm, setContactForm] = useState(EMPTY_CONTACT);
   const [bankForm, setBankForm] = useState(EMPTY_BANK);
   const [noteForm, setNoteForm] = useState(EMPTY_NOTE);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const listQuery = trpc.lessor.getLessors.useQuery({
     searchTerm: search || undefined,
@@ -544,11 +553,11 @@ export default function LessorMaster() {
                   setForm({
                     lessorName: String(l.lessor_name ?? ""), lessorType: String(l.lessor_type ?? "Company"),
                     registrationNo: String(l.registration_no ?? ""), taxId: String(l.tax_id ?? ""),
-                    country: String(l.country ?? "AE"), city: String(l.city ?? ""),
+                    country: String(l.country ?? "QA"), city: String(l.city ?? ""),
                     addressLine1: String(l.address_line1 ?? ""), addressLine2: String(l.address_line2 ?? ""),
                     postalCode: String(l.postal_code ?? ""), website: String(l.website ?? ""),
                     creditRating: String(l.credit_rating ?? ""), paymentTerms: Number(l.payment_terms ?? 30),
-                    preferredCurrency: String(l.preferred_currency ?? "AED"), status: String(l.status ?? "Active"),
+                    preferredCurrency: String(l.preferred_currency ?? "QAR"), status: String(l.status ?? "Active"),
                     blacklistReason: String(l.blacklist_reason ?? ""),
                   });
                   setViewMode("form_lessor");
@@ -813,11 +822,11 @@ export default function LessorMaster() {
                           setForm({
                             lessorName: String(l.lessor_name ?? ""), lessorType: String(l.lessor_type ?? "Company"),
                             registrationNo: String(l.registration_no ?? ""), taxId: String(l.tax_id ?? ""),
-                            country: String(l.country ?? "AE"), city: String(l.city ?? ""),
+                            country: String(l.country ?? "QA"), city: String(l.city ?? ""),
                             addressLine1: String(l.address_line1 ?? ""), addressLine2: String(l.address_line2 ?? ""),
                             postalCode: String(l.postal_code ?? ""), website: String(l.website ?? ""),
                             creditRating: String(l.credit_rating ?? ""), paymentTerms: Number(l.payment_terms ?? 30),
-                            preferredCurrency: String(l.preferred_currency ?? "AED"), status: String(l.status ?? "Active"),
+                            preferredCurrency: String(l.preferred_currency ?? "QAR"), status: String(l.status ?? "Active"),
                             blacklistReason: String(l.blacklist_reason ?? ""),
                           });
                           setViewMode("form_lessor");
@@ -847,6 +856,20 @@ export default function LessorMaster() {
           </div>
         )}
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

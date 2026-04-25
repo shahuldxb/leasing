@@ -23,10 +23,10 @@ const SUGGESTED_QUERIES = [
 
 const SAMPLE_INSIGHTS = [
   { type: "RISK", title: "High Concentration Risk", description: "47% of total lease liability is concentrated in 3 lessors (Al Futtaim, Emaar, TECOM). Consider diversifying counterparty exposure.", severity: "HIGH", action: "Review Lessors" },
-  { type: "OPPORTUNITY", title: "Renewal Negotiation Window", description: "8 leases totalling AED 12.4M annual rent have renewal options expiring within 90 days. Current market rates are 8-12% below contract rates.", severity: "MEDIUM", action: "View Renewals" },
+  { type: "OPPORTUNITY", title: "Renewal Negotiation Window", description: "8 leases totalling QAR 12.4M annual rent have renewal options expiring within 90 days. Current market rates are 8-12% below contract rates.", severity: "MEDIUM", action: "View Renewals" },
   { type: "COMPLIANCE", title: "IBR Update Required", description: "15 leases have IBR rates older than 12 months. IFRS 16 requires reassessment at each reporting date for variable-rate leases.", severity: "HIGH", action: "Update IBR" },
-  { type: "SAVINGS", title: "Short-Term Exemption Candidates", description: "6 leases with remaining terms < 12 months qualify for short-term lease exemption, potentially removing AED 3.2M from the balance sheet.", severity: "LOW", action: "Review Leases" },
-  { type: "RISK", title: "FX Exposure Unhedged", description: "3 USD-denominated leases totalling USD 1.8M are currently unhedged. Current AED/USD rate movement of ±5% would impact liability by ±AED 330K.", severity: "MEDIUM", action: "Hedge Review" },
+  { type: "SAVINGS", title: "Short-Term Exemption Candidates", description: "6 leases with remaining terms < 12 months qualify for short-term lease exemption, potentially removing QAR 3.2M from the balance sheet.", severity: "LOW", action: "Review Leases" },
+  { type: "RISK", title: "FX Exposure Unhedged", description: "3 USD-denominated leases totalling USD 1.8M are currently unhedged. Current QAR/USD rate movement of ±5% would impact liability by ±QAR 330K.", severity: "MEDIUM", action: "Hedge Review" },
 ];
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -45,10 +45,10 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 type Message = { role: "user" | "assistant"; content: string; timestamp: string };
 
 const CANNED_RESPONSES: Record<string, string> = {
-  default: `Based on your lease portfolio data, here is the analysis:\n\n**Portfolio Summary:**\n- Total active leases: 94 across 4 entities\n- Total ROU Assets: AED 236.6M\n- Total Lease Liabilities: AED 224.0M\n- Weighted average IBR: 4.82%\n\nWould you like me to drill down into any specific area — entity, asset category, or time period?`,
-  expir: `**Leases Expiring in Next 6 Months:**\n\n| Contract Ref | Lessor | Monthly Rent | Expiry Date | Liability |\n|---|---|---|---|---|\n| VF-2024-018 | Al Futtaim | AED 125,000 | 2026-07-31 | AED 2.1M |\n| VF-2023-041 | TECOM | AED 87,500 | 2026-08-15 | AED 1.4M |\n| VF-2024-003 | Emaar | AED 210,000 | 2026-09-30 | AED 3.8M |\n| VF-2022-019 | Nakheel | AED 65,000 | 2026-10-01 | AED 0.9M |\n\n**Total Liability Exposure: AED 8.2M**\n\nRecommendation: Initiate renewal negotiations for VF-2024-003 (Emaar) immediately given the 5-month lead time required.`,
-  liab: `**Total Lease Liability by Entity & Currency:**\n\n| Entity | AED | USD | GBP | Total (AED) |\n|---|---|---|---|---|\n| VF-UAE | 142.3M | 8.8M | — | 174.6M |\n| VF-DXB | 55.1M | — | — | 55.1M |\n| VF-AUH | 32.8M | — | — | 32.8M |\n| VF-SHJ | 17.2M | — | — | 17.2M |\n\n**Group Total: AED 279.7M** (before intercompany elimination of AED 13.3M)\n**Consolidated: AED 266.4M**`,
-  ibr: `**IBR Sensitivity Analysis (+100bps):**\n\nA 100 basis point increase in the Incremental Borrowing Rate would have the following impact:\n\n- **ROU Asset decrease:** AED 8.4M (3.6%)\n- **Lease Liability decrease:** AED 9.1M (4.1%)\n- **Net P&L impact:** AED 0.7M gain (remeasurement)\n- **Interest expense increase (annual):** AED 2.2M\n\nThe net balance sheet impact is a reduction in both assets and liabilities, with a modest P&L gain from the remeasurement. However, future interest expense increases by approximately AED 2.2M per annum.`,
+  default: `Based on your lease portfolio data, here is the analysis:\n\n**Portfolio Summary:**\n- Total active leases: 94 across 4 entities\n- Total ROU Assets: QAR 236.6M\n- Total Lease Liabilities: QAR 224.0M\n- Weighted average IBR: 4.82%\n\nWould you like me to drill down into any specific area — entity, asset category, or time period?`,
+  expir: `**Leases Expiring in Next 6 Months:**\n\n| Contract Ref | Lessor | Monthly Rent | Expiry Date | Liability |\n|---|---|---|---|---|\n| VF-2024-018 | Al Futtaim | QAR 125,000 | 2026-07-31 | QAR 2.1M |\n| VF-2023-041 | TECOM | QAR 87,500 | 2026-08-15 | QAR 1.4M |\n| VF-2024-003 | Emaar | QAR 210,000 | 2026-09-30 | QAR 3.8M |\n| VF-2022-019 | Nakheel | QAR 65,000 | 2026-10-01 | QAR 0.9M |\n\n**Total Liability Exposure: QAR 8.2M**\n\nRecommendation: Initiate renewal negotiations for VF-2024-003 (Emaar) immediately given the 5-month lead time required.`,
+  liab: `**Total Lease Liability by Entity & Currency:**\n\n| Entity | QAR | USD | GBP | Total (QAR) |\n|---|---|---|---|---|\n| VF-Qatar | 142.3M | 8.8M | — | 174.6M |\n| VF-DXB | 55.1M | — | — | 55.1M |\n| VF-AUH | 32.8M | — | — | 32.8M |\n| VF-SHJ | 17.2M | — | — | 17.2M |\n\n**Group Total: QAR 279.7M** (before intercompany elimination of QAR 13.3M)\n**Consolidated: QAR 266.4M**`,
+  ibr: `**IBR Sensitivity Analysis (+100bps):**\n\nA 100 basis point increase in the Incremental Borrowing Rate would have the following impact:\n\n- **ROU Asset decrease:** QAR 8.4M (3.6%)\n- **Lease Liability decrease:** QAR 9.1M (4.1%)\n- **Net P&L impact:** QAR 0.7M gain (remeasurement)\n- **Interest expense increase (annual):** QAR 2.2M\n\nThe net balance sheet impact is a reduction in both assets and liabilities, with a modest P&L gain from the remeasurement. However, future interest expense increases by approximately QAR 2.2M per annum.`,
 };
 
 export default function AILeaseAnalytics() {
@@ -219,7 +219,7 @@ export default function AILeaseAnalytics() {
                           <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden">
                             <div className="h-full bg-blue-500/70 rounded" style={{ width: `${pct}%` }} />
                           </div>
-                          <span className="text-xs font-mono w-16 text-right">AED {(values[i] / 1000000).toFixed(0)}M</span>
+                          <span className="text-xs font-mono w-16 text-right">QAR {(values[i] / 1000000).toFixed(0)}M</span>
                         </div>
                       );
                     })}

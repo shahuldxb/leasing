@@ -523,41 +523,41 @@ SlidePanel is a slide-over overlay. Replace with showForm inline pattern:
 - showForm=true → full right-side form screen (sidebar stays visible)
 - showForm=false → full right-side list/table screen (sidebar stays visible)
 
-- [ ] APIWebhookConfig.tsx — convert SlidePanel to inline form screen
-- [ ] BankAccounts.tsx — convert SlidePanel to inline form screen
-- [ ] BankRules.tsx — convert SlidePanel to inline form screen
-- [ ] BrokerManagement.tsx — convert SlidePanel to inline form screen
-- [ ] ContractMilestones.tsx — convert SlidePanel to inline form screen
-- [ ] DeskBooking.tsx — convert SlidePanel to inline form screen
-- [ ] ESignatureIntegration.tsx — convert SlidePanel to inline form screen
-- [ ] FacilitiesWorkOrders.tsx — convert SlidePanel to inline form screen
-- [ ] InvoiceRegister.tsx — convert SlidePanel to inline form screen
-- [ ] LOITracking.tsx — convert SlidePanel to inline form screen
-- [ ] LeaseComparison.tsx — convert SlidePanel to inline form screen
-- [ ] LeaseModifications.tsx — convert SlidePanel to inline form screen
-- [ ] LeaseRenewals.tsx — convert SlidePanel to inline form screen
-- [ ] NotificationSettings.tsx — convert SlidePanel to inline form screen
-- [ ] OpsInsurance.tsx — convert SlidePanel to inline form screen
-- [ ] OpsMaintenance.tsx — convert SlidePanel to inline form screen
-- [ ] PaymentRuns.tsx — convert SlidePanel to inline form screen
-- [ ] SSOConfig.tsx — convert SlidePanel to inline form screen
-- [ ] TenantImprovementAllowance.tsx — convert SlidePanel to inline form screen
-- [ ] VendorManagement.tsx — convert SlidePanel to inline form screen
+- [x] APIWebhookConfig.tsx — convert SlidePanel to inline form screen
+- [x] BankAccounts.tsx — convert SlidePanel to inline form screen
+- [x] BankRules.tsx — convert SlidePanel to inline form screen
+- [x] BrokerManagement.tsx — convert SlidePanel to inline form screen
+- [x] ContractMilestones.tsx — convert SlidePanel to inline form screen
+- [x] DeskBooking.tsx — convert SlidePanel to inline form screen
+- [x] ESignatureIntegration.tsx — convert SlidePanel to inline form screen
+- [x] FacilitiesWorkOrders.tsx — convert SlidePanel to inline form screen
+- [x] InvoiceRegister.tsx — convert SlidePanel to inline form screen
+- [x] LOITracking.tsx — convert SlidePanel to inline form screen
+- [x] LeaseComparison.tsx — convert SlidePanel to inline form screen
+- [x] LeaseModifications.tsx — convert SlidePanel to inline form screen
+- [x] LeaseRenewals.tsx — convert SlidePanel to inline form screen
+- [x] NotificationSettings.tsx — convert SlidePanel to inline form screen
+- [x] OpsInsurance.tsx — convert SlidePanel to inline form screen
+- [x] OpsMaintenance.tsx — convert SlidePanel to inline form screen
+- [x] PaymentRuns.tsx — convert SlidePanel to inline form screen
+- [x] SSOConfig.tsx — convert SlidePanel to inline form screen
+- [x] TenantImprovementAllowance.tsx — convert SlidePanel to inline form screen
+- [x] VendorManagement.tsx — convert SlidePanel to inline form screen
 
 ### CATEGORY 2 — Add Missing CRUD (6 pages)
-- [ ] AssetRegistry.tsx — add full CRUD (create, edit, delete) + inline form
-- [ ] BudgetVariance.tsx — add full CRUD (create, edit, delete) + inline form
-- [ ] LeaseOrigination.tsx — add full CRUD (create, edit, delete) + inline form
-- [ ] LessorMaster.tsx — add full CRUD (create, edit, delete) + inline form
-- [ ] ScenarioModelling.tsx — add full CRUD (create, edit, delete) + inline form
-- [ ] CPIEscalation.tsx — wire apply escalation mutation properly
+- [x] AssetRegistry.tsx — add full CRUD (create, edit, delete) + inline form
+- [x] BudgetVariance.tsx — add full CRUD (create, edit, delete) + inline form
+- [x] LeaseOrigination.tsx — add full CRUD (create, edit, delete) + inline form
+- [x] LessorMaster.tsx — add full CRUD (create, edit, delete) + inline form
+- [x] ScenarioModelling.tsx — add full CRUD (create, edit, delete) + inline form
+- [x] CPIEscalation.tsx — wire apply escalation mutation properly
 
 ### CATEGORY 3 — Wire Gen AI Fill Button (5 pages missing it)
-- [ ] AssetRegistry.tsx — add GenAIFillButton (formType: asset_registry)
-- [ ] BudgetVariance.tsx — add GenAIFillButton (formType: budget_entry)
-- [ ] LeaseOrigination.tsx — add GenAIFillButton (formType: new_lease)
-- [ ] LessorMaster.tsx — add GenAIFillButton (formType: lessor)
-- [ ] ScenarioModelling.tsx — add GenAIFillButton (formType: new_lease)
+- [x] AssetRegistry.tsx — add GenAIFillButton (formType: asset_registry)
+- [x] BudgetVariance.tsx — add GenAIFillButton (formType: budget_entry)
+- [x] LeaseOrigination.tsx — add GenAIFillButton (formType: new_lease)
+- [x] LessorMaster.tsx — add GenAIFillButton (formType: lessor)
+- [x] ScenarioModelling.tsx — add GenAIFillButton (formType: new_lease)
 
 ---
 

@@ -13,7 +13,7 @@ import { Download, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
-const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
+const fmt = (n: any) => n != null ? `QAR ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
 export default function MaturityAnalysis() {
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));

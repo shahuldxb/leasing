@@ -70,7 +70,7 @@ export default function InvoiceRegister() {
       invoiceDate: inv.invoice_date ? new Date(inv.invoice_date).toISOString().slice(0,10) : "",
       dueDate: inv.due_date ? new Date(inv.due_date).toISOString().slice(0,10) : "",
       amount: String(inv.gross_amount ?? inv.amount ?? ""),
-      currency: inv.currency ?? "AED",
+      currency: inv.currency ?? "QAR",
       description: inv.description ?? "",
     });
     setShowForm(true);
@@ -136,7 +136,7 @@ export default function InvoiceRegister() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["QAR","AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","QAR","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label>Invoice Date</Label><Input type="date" className="mt-1" value={form.invoiceDate} onChange={e => setForm(f => ({ ...f, invoiceDate: e.target.value }))} /></div>

@@ -16,6 +16,15 @@ export default function LessorCreditScore() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<any>({ lessor_id: "", score: "", rating: "A", assessmentDate: "", notes: "" });
   const [aiRows, setAiRows] = useState<any[]>([]);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: scores = [], refetch } = trpc.lessorCredit.list.useQuery();
   const { data: lessorsData } = trpc.lessor.getLessors.useQuery({});
@@ -122,6 +131,20 @@ export default function LessorCreditScore() {
           </Table>
         </div>
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

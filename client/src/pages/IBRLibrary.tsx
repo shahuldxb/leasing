@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,18 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 export default function IBRLibrary() {
   const [showForm, setShowForm] = useState(false);
   const [filterCurrency, setFilterCurrency] = useState("all");
-  const [form, setForm] = useState<any>({ currency: "AED", tenor: "", rate: "", effectiveDate: "", source: "", ibr_id: null });
-  const INIT_FORM = { currency: "AED", tenor: "", rate: "", effectiveDate: "", source: "", ibr_id: null };
+  const [form, setForm] = useState<any>({ currency: "QAR", tenor: "", rate: "", effectiveDate: "", source: "", ibr_id: null });
+  const INIT_FORM = { currency: "QAR", tenor: "", rate: "", effectiveDate: "", source: "", ibr_id: null };
   const [aiRows, setAiRows] = useState<any[]>([]);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: rates = [], refetch } = trpc.accounting.ibr.list.useQuery({ currency: filterCurrency === "all" ? undefined : filterCurrency });
   const upsert = trpc.accounting.ibr.upsert.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("IBR rate saved"); }, onError: (e: any) => toast.error(e.message) });
@@ -52,7 +61,7 @@ export default function IBRLibrary() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["AED","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["QAR","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label>Tenor (months)</Label><Input className="mt-1" type="number" value={form.tenor} onChange={e => setForm((f: any) => ({ ...f, tenor: e.target.value }))} /></div>
@@ -92,7 +101,7 @@ export default function IBRLibrary() {
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Currencies</SelectItem>
-              {["AED","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {["QAR","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -120,6 +129,20 @@ export default function IBRLibrary() {
           </Table>
         </div>
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

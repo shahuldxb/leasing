@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2 } from "lucide-react";
+import { Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
@@ -82,9 +82,6 @@ export default function LeaseRegister() {
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5">
                 <Download className="h-3.5 w-3.5" /> Export
-              </Button>
-              <Button size="sm" onClick={() => setLocation("/leases/new")} className="gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> New Lease
               </Button>
             </div>
           }
@@ -171,7 +168,7 @@ export default function LeaseRegister() {
                   ) : (
                     leases.map((lease: any, idx: number) => (
                       <tr key={lease.lease_id ?? idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{lease.lease_ref}</td>
+                        <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{lease.contract_ref}</td>
                         <td className="px-4 py-3 truncate max-w-36">{lease.lessor_name}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.asset_type}</td>
                         <td className="px-4 py-3 truncate max-w-40">{lease.asset_name}</td>
@@ -202,7 +199,7 @@ export default function LeaseRegister() {
                               <DropdownMenuItem onClick={() => toast.info("Renewal workflow initiated")}>
                                 Initiate Renewal
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-400" onClick={() => toast.success(`Lease ${lease.lease_ref} deleted`)}>
+                              <DropdownMenuItem className="text-red-400" onClick={() => toast.success(`Lease ${lease.contract_ref} deleted`)}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Lease
                               </DropdownMenuItem>
                             </DropdownMenuContent>

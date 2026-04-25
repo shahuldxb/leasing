@@ -14,16 +14,16 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { trpc } from "@/lib/trpc";
 
 const ENTITIES = [
-  { code: "VF-UAE", name: "Vodafone UAE LLC", type: "Parent", leases: 47, rou_asset: 125400000, lease_liability: 118900000, interco: false },
-  { code: "VF-DXB", name: "Vodafone Dubai Operations", type: "Subsidiary", leases: 23, rou_asset: 58200000, lease_liability: 55100000, interco: true },
-  { code: "VF-AUH", name: "Vodafone Abu Dhabi", type: "Subsidiary", leases: 15, rou_asset: 34700000, lease_liability: 32800000, interco: false },
+  { code: "VF-Qatar", name: "Vodafone Qatar LLC", type: "Parent", leases: 47, rou_asset: 125400000, lease_liability: 118900000, interco: false },
+  { code: "VF-DXB", name: "Vodafone Doha Operations", type: "Subsidiary", leases: 23, rou_asset: 58200000, lease_liability: 55100000, interco: true },
+  { code: "VF-AUH", name: "Vodafone Doha", type: "Subsidiary", leases: 15, rou_asset: 34700000, lease_liability: 32800000, interco: false },
   { code: "VF-SHJ", name: "Vodafone Sharjah", type: "Subsidiary", leases: 9, rou_asset: 18300000, lease_liability: 17200000, interco: false },
 ];
 
 const INTERCO_LEASES = [
-  { id: 1, lessor_entity: "VF-UAE", lessee_entity: "VF-DXB", contract_ref: "IC-2024-001", asset: "Network Equipment — Dubai Hub", monthly_rent: 125000, rou_asset: 6800000, lease_liability: 6450000, eliminated: true },
-  { id: 2, lessor_entity: "VF-UAE", lessee_entity: "VF-DXB", contract_ref: "IC-2024-002", asset: "Data Centre Infrastructure", monthly_rent: 87500, rou_asset: 4750000, lease_liability: 4510000, eliminated: true },
-  { id: 3, lessor_entity: "VF-UAE", lessee_entity: "VF-AUH", contract_ref: "IC-2024-003", asset: "Tower Equipment", monthly_rent: 45000, rou_asset: 2450000, lease_liability: 2320000, eliminated: false },
+  { id: 1, lessor_entity: "VF-Qatar", lessee_entity: "VF-DXB", contract_ref: "IC-2024-001", asset: "Network Equipment — Doha Hub", monthly_rent: 125000, rou_asset: 6800000, lease_liability: 6450000, eliminated: true },
+  { id: 2, lessor_entity: "VF-Qatar", lessee_entity: "VF-DXB", contract_ref: "IC-2024-002", asset: "Data Centre Infrastructure", monthly_rent: 87500, rou_asset: 4750000, lease_liability: 4510000, eliminated: true },
+  { id: 3, lessor_entity: "VF-Qatar", lessee_entity: "VF-AUH", contract_ref: "IC-2024-003", asset: "Tower Equipment", monthly_rent: 45000, rou_asset: 2450000, lease_liability: 2320000, eliminated: false },
 ];
 
 const CONSOLIDATED = {
@@ -67,9 +67,9 @@ export default function ConsolidationReporting() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Total Leases (Group)", value: CONSOLIDATED.total_leases, icon: FileText, color: "text-blue-400" },
-            { label: "Consolidated ROU Asset", value: `AED ${(CONSOLIDATED.consolidated_rou / 1000000).toFixed(1)}M`, icon: Building2, color: "text-green-400" },
-            { label: "Consolidated Liability", value: `AED ${(CONSOLIDATED.consolidated_liability / 1000000).toFixed(1)}M`, icon: BarChart3, color: "text-red-400" },
-            { label: "Interco Eliminated", value: `AED ${(CONSOLIDATED.interco_eliminated_rou / 1000000).toFixed(1)}M`, icon: XCircle, color: "text-yellow-400" },
+            { label: "Consolidated ROU Asset", value: `QAR ${(CONSOLIDATED.consolidated_rou / 1000000).toFixed(1)}M`, icon: Building2, color: "text-green-400" },
+            { label: "Consolidated Liability", value: `QAR ${(CONSOLIDATED.consolidated_liability / 1000000).toFixed(1)}M`, icon: BarChart3, color: "text-red-400" },
+            { label: "Interco Eliminated", value: `QAR ${(CONSOLIDATED.interco_eliminated_rou / 1000000).toFixed(1)}M`, icon: XCircle, color: "text-yellow-400" },
           ].map((kpi) => (
             <Card key={kpi.label} className="bg-card border-border">
               <CardContent className="p-4">
@@ -102,8 +102,8 @@ export default function ConsolidationReporting() {
                       <TableHead className="text-xs">Entity Name</TableHead>
                       <TableHead className="text-xs">Type</TableHead>
                       <TableHead className="text-xs text-right">Leases</TableHead>
-                      <TableHead className="text-xs text-right">ROU Asset (AED)</TableHead>
-                      <TableHead className="text-xs text-right">Lease Liability (AED)</TableHead>
+                      <TableHead className="text-xs text-right">ROU Asset (QAR)</TableHead>
+                      <TableHead className="text-xs text-right">Lease Liability (QAR)</TableHead>
                       <TableHead className="text-xs">Interco Lessor</TableHead>
                     </TableRow>
                   </TableHeader>

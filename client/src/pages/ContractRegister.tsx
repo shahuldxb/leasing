@@ -126,7 +126,7 @@ export default function ContractRegister() {
                   ) : (
                     contracts.map((c: any) => (
                       <tr key={c.lease_id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{c.lease_ref}</td>
+                        <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{c.contract_ref}</td>
                         <td className="px-4 py-3 truncate max-w-36">{c.lessor_name}</td>
                         <td className="px-4 py-3 truncate max-w-36">{c.asset_name}</td>
                         <td className="px-4 py-3 text-muted-foreground">{c.commencement_date ? new Date(c.commencement_date).toLocaleDateString() : "—"}</td>
@@ -152,7 +152,7 @@ export default function ContractRegister() {
                               <DropdownMenuItem onClick={() => setLocation(`/lease/${c.lease_id}/edit`)}>
                                 <Pencil className="mr-2 h-4 w-4" /> Edit Contract
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast("Delete contract " + c.lease_ref + "?", { action: { label: "Confirm Delete", onClick: () => toast.success("Contract deleted") } })}>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast("Delete contract " + c.contract_ref + "?", { action: { label: "Confirm Delete", onClick: () => toast.success("Contract deleted") } })}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>

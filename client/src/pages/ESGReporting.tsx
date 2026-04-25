@@ -12,9 +12,9 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { trpc } from "@/lib/trpc";
 
 const CARBON_DATA = [
-  { entity: "VF-UAE", category: "Office Leases", sqm: 12400, energy_kwh: 2480000, co2_tonnes: 1116, green_certified: true, rating: "LEED Gold" },
-  { entity: "VF-UAE", category: "Network Sites", sqm: 8200, energy_kwh: 9840000, co2_tonnes: 4428, green_certified: false, rating: "—" },
-  { entity: "VF-UAE", category: "Data Centres", sqm: 3100, energy_kwh: 12400000, co2_tonnes: 5580, green_certified: true, rating: "ISO 50001" },
+  { entity: "VF-Qatar", category: "Office Leases", sqm: 12400, energy_kwh: 2480000, co2_tonnes: 1116, green_certified: true, rating: "LEED Gold" },
+  { entity: "VF-Qatar", category: "Network Sites", sqm: 8200, energy_kwh: 9840000, co2_tonnes: 4428, green_certified: false, rating: "—" },
+  { entity: "VF-Qatar", category: "Data Centres", sqm: 3100, energy_kwh: 12400000, co2_tonnes: 5580, green_certified: true, rating: "ISO 50001" },
   { entity: "VF-DXB", category: "Office Leases", sqm: 6800, energy_kwh: 1360000, co2_tonnes: 612, green_certified: true, rating: "BREEAM Very Good" },
   { entity: "VF-AUH", category: "Office Leases", sqm: 4200, energy_kwh: 840000, co2_tonnes: 378, green_certified: false, rating: "—" },
 ];

@@ -14,7 +14,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 const ERP_SYSTEMS = ["SAP S/4HANA", "Oracle Fusion", "Microsoft Dynamics 365", "Sage Intacct", "NetSuite", "QuickBooks", "Xero", "Generic CSV"];
 
-const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
+const fmt = (n: any) => n != null ? `QAR ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
 export default function ERPExport() {
   const [erpSystem, setErpSystem] = useState("SAP S/4HANA");

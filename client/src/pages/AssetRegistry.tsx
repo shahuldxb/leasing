@@ -18,7 +18,7 @@ const CONDITIONS = ["Excellent","Good","Fair","Poor"] as const;
 
 const emptyForm = {
   assetName: "", assetType: "Office" as typeof ASSET_TYPES[number],
-  assetSubtype: "", description: "", country: "AE", city: "", area: "",
+  assetSubtype: "", description: "", country: "QA", city: "", area: "",
   addressLine1: "", addressLine2: "", postalCode: "",
   floorAreaSqm: "", floors: "", yearBuilt: "",
   conditionRating: "Good" as typeof CONDITIONS[number],
@@ -63,7 +63,7 @@ export default function AssetRegistry() {
     setForm({
       assetName: a.asset_name ?? "", assetType: a.asset_type ?? "Office",
       assetSubtype: a.asset_subtype ?? "", description: a.description ?? "",
-      country: a.country ?? "AE", city: a.city ?? "", area: a.area ?? "",
+      country: a.country ?? "QA", city: a.city ?? "", area: a.area ?? "",
       addressLine1: a.address_line1 ?? "", addressLine2: a.address_line2 ?? "",
       postalCode: a.postal_code ?? "", floorAreaSqm: a.floor_area_sqm ?? "",
       floors: a.floors ?? "", yearBuilt: a.year_built ?? "",
@@ -85,7 +85,7 @@ export default function AssetRegistry() {
       assetType: form.assetType as typeof ASSET_TYPES[number],
       assetSubtype: form.assetSubtype || undefined,
       description: form.description || undefined,
-      country: form.country || "AE",
+      country: form.country || "QA",
       city: form.city || undefined, area: form.area || undefined,
       addressLine1: form.addressLine1 || undefined,
       addressLine2: form.addressLine2 || undefined,
@@ -140,7 +140,7 @@ export default function AssetRegistry() {
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
             <div className="md:col-span-2">
               <Label className="text-gray-300 text-sm mb-1 block">Asset Name *</Label>
-              <Input value={form.assetName} onChange={f("assetName")} placeholder="e.g. Dubai Tower Site 01" className="bg-[#1a1d2e] border-white/10 text-white" />
+              <Input value={form.assetName} onChange={f("assetName")} placeholder="e.g. Doha Tower Site 01" className="bg-[#1a1d2e] border-white/10 text-white" />
             </div>
             <div>
               <Label className="text-gray-300 text-sm mb-1 block">Asset Type</Label>
@@ -183,11 +183,11 @@ export default function AssetRegistry() {
               </Select>
             </div>
             <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Estimated Market Value (AED)</Label>
+              <Label className="text-gray-300 text-sm mb-1 block">Estimated Market Value (QAR)</Label>
               <Input type="number" value={form.estimatedMarketValue} onChange={f("estimatedMarketValue")} className="bg-[#1a1d2e] border-white/10 text-white" />
             </div>
             <div>
-              <Label className="text-gray-300 text-sm mb-1 block">Make Good Provision (AED)</Label>
+              <Label className="text-gray-300 text-sm mb-1 block">Make Good Provision (QAR)</Label>
               <Input type="number" value={form.makeGoodProvision} onChange={f("makeGoodProvision")} className="bg-[#1a1d2e] border-white/10 text-white" />
             </div>
             <div>
@@ -257,7 +257,7 @@ export default function AssetRegistry() {
                       {a.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-300">{a.estimated_market_value ? `AED ${Number(a.estimated_market_value).toLocaleString()}` : "—"}</TableCell>
+                  <TableCell className="text-gray-300">{a.estimated_market_value ? `QAR ${Number(a.estimated_market_value).toLocaleString()}` : "—"}</TableCell>
                   <TableCell className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => openEdit(a)} className="border-white/10 text-gray-300 h-7 text-xs">Edit</Button>
                     <Button size="sm" variant="outline" onClick={() => { if (confirm("Delete this asset?")) deleteMutation.mutate({ assetId: a.asset_id }); }} className="border-red-500/30 text-red-400 h-7 text-xs hover:bg-red-500/10">Delete</Button>

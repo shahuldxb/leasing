@@ -12,7 +12,7 @@ import { ArrowRight, Download, RefreshCw, TrendingDown, TrendingUp } from "lucid
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
-const fmt = (n: any) => n != null ? `AED ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
+const fmt = (n: any) => n != null ? `QAR ${Number(n).toLocaleString("en-AE", { maximumFractionDigits: 0 })}` : "—";
 
 export default function RollForwardReport() {
   const [fromDate, setFromDate] = useState("2025-01-01");

@@ -11,13 +11,22 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
 
-const INIT_FORM = { contractId: "", period: "", variableType: "Turnover", amount: "", currency: "AED", notes: "" };
+const INIT_FORM = { contractId: "", period: "", variableType: "Turnover", amount: "", currency: "QAR", notes: "" };
 
 export default function VariableRent() {
   const [showForm, setShowForm] = useState(false);
   const [editRow, setEditRow] = useState<any>(null);
   const [form, setForm] = useState<any>({ ...INIT_FORM });
   const [aiRows, setAiRows] = useState<any[]>([]);
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const { data: items = [], refetch } = trpc.accounting.variableRent.list.useQuery({});
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
@@ -41,7 +50,7 @@ export default function VariableRent() {
       period: row.period ?? "",
       variableType: row.variable_type ?? "Turnover",
       amount: String(row.amount ?? ""),
-      currency: row.currency ?? "AED",
+      currency: row.currency ?? "QAR",
       notes: row.notes ?? "",
     });
     setShowForm(true);
@@ -102,7 +111,7 @@ export default function VariableRent() {
                 <Label>Currency</Label>
                 <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["AED","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{["QAR","USD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label>Notes</Label><Input className="mt-1" value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} /></div>
@@ -170,6 +179,20 @@ export default function VariableRent() {
           </Table>
         </div>
       </div>
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

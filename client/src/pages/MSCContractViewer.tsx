@@ -15,7 +15,7 @@ const MOCK_CONTRACT = {
   contract_type: "FLEET",
   title_en: "Master Fleet Lease Agreement",
   title_ar: "اتفاقية الإيجار الرئيسية للأسطول",
-  party_a_en: "Vodafone UAE LLC",
+  party_a_en: "Vodafone Qatar LLC",
   party_a_ar: "شركة فودافون الإمارات ذ.م.م",
   party_b_en: "Emirates Fleet Solutions LLC",
   party_b_ar: "شركة حلول الأسطول الإماراتية ذ.م.م",
@@ -24,15 +24,15 @@ const MOCK_CONTRACT = {
   expiry_date: "31 December 2026",
   expiry_date_ar: "٣١ ديسمبر ٢٠٢٦",
   contract_value: 2400000,
-  currency: "AED",
+  currency: "QAR",
   status: "ACTIVE",
-  scope_en: "This Agreement governs the lease of the entire vehicle fleet as detailed in Schedule A, including all sedans, SUVs, vans, and light commercial vehicles assigned to Vodafone UAE LLC employees and operations. The Lessor shall maintain all vehicles in roadworthy condition and provide replacement vehicles within 24 hours of any breakdown.",
+  scope_en: "This Agreement governs the lease of the entire vehicle fleet as detailed in Schedule A, including all sedans, SUVs, vans, and light commercial vehicles assigned to Vodafone Qatar LLC employees and operations. The Lessor shall maintain all vehicles in roadworthy condition and provide replacement vehicles within 24 hours of any breakdown.",
   scope_ar: "تحكم هذه الاتفاقية تأجير أسطول المركبات بالكامل كما هو مفصل في الجدول (أ)، بما في ذلك جميع السيارات السيدان وسيارات الدفع الرباعي والشاحنات الصغيرة والمركبات التجارية الخفيفة المخصصة لموظفي وعمليات شركة فودافون الإمارات. يلتزم المؤجر بالحفاظ على جميع المركبات في حالة صالحة للسير على الطريق وتوفير مركبات بديلة خلال 24 ساعة من أي عطل.",
   payment_terms_en: "Monthly lease payments are due on the 1st of each calendar month, payable in advance. Late payments shall attract a penalty of 2% per month on the outstanding amount. All payments shall be made by bank transfer to the account designated by the Lessor.",
   payment_terms_ar: "تستحق مدفوعات الإيجار الشهرية في اليوم الأول من كل شهر ميلادي، وتُدفع مقدماً. تستحق المدفوعات المتأخرة غرامة بنسبة 2٪ شهرياً على المبلغ المستحق. تُسدَّد جميع المدفوعات عن طريق التحويل المصرفي إلى الحساب الذي يحدده المؤجر.",
   governing_law_en: "This Agreement shall be governed by and construed in accordance with the laws of the United Arab Emirates.",
   governing_law_ar: "تخضع هذه الاتفاقية وتُفسَّر وفقاً لقوانين دولة الإمارات العربية المتحدة.",
-  jurisdiction_en: "Any dispute arising out of or in connection with this Agreement shall be subject to the exclusive jurisdiction of the Dubai Courts.",
+  jurisdiction_en: "Any dispute arising out of or in connection with this Agreement shall be subject to the exclusive jurisdiction of the Doha Courts.",
   jurisdiction_ar: "يخضع أي نزاع ينشأ عن هذه الاتفاقية أو يتعلق بها للاختصاص القضائي الحصري لمحاكم دبي.",
   termination_en: "Either party may terminate this Agreement by providing thirty (30) days written notice to the other party. Termination for cause may be effected immediately upon written notice if the other party materially breaches this Agreement and fails to remedy such breach within fifteen (15) days of receiving notice thereof.",
   termination_ar: "يجوز لأي من الطرفين إنهاء هذه الاتفاقية بتقديم إشعار كتابي مدته ثلاثون (30) يوماً للطرف الآخر. يجوز الإنهاء لسبب مشروع فوراً عند تسلم إشعار كتابي إذا أخل الطرف الآخر إخلالاً جوهرياً بهذه الاتفاقية وأخفق في معالجة هذا الإخلال خلال خمسة عشر (15) يوماً من تسلم الإشعار.",
@@ -45,10 +45,10 @@ const MOCK_CONTRACT = {
 };
 
 const MOCK_ASSETS = [
-  { link_id: 1, asset_type: "VEHICLE", asset_ref: "VEH-001", asset_description: "Toyota Camry 2024", make_model: "Toyota Camry", plate_vin: "Dubai A 12345", location: "Dubai HQ" },
-  { link_id: 2, asset_type: "VEHICLE", asset_ref: "VEH-002", asset_description: "Nissan Patrol 2024", make_model: "Nissan Patrol", plate_vin: "Dubai B 67890", location: "Abu Dhabi Office" },
+  { link_id: 1, asset_type: "VEHICLE", asset_ref: "VEH-001", asset_description: "Toyota Camry 2024", make_model: "Toyota Camry", plate_vin: "Doha A 12345", location: "Doha HQ" },
+  { link_id: 2, asset_type: "VEHICLE", asset_ref: "VEH-002", asset_description: "Nissan Patrol 2024", make_model: "Nissan Patrol", plate_vin: "Doha B 67890", location: "Doha Office" },
   { link_id: 3, asset_type: "VEHICLE", asset_ref: "VEH-003", asset_description: "Ford Transit Van 2023", make_model: "Ford Transit", plate_vin: "Sharjah C 11223", location: "Sharjah Warehouse" },
-  { link_id: 4, asset_type: "VEHICLE", asset_ref: "VEH-004", asset_description: "Toyota Land Cruiser 2024", make_model: "Toyota Land Cruiser", plate_vin: "Dubai D 44556", location: "Dubai HQ" },
+  { link_id: 4, asset_type: "VEHICLE", asset_ref: "VEH-004", asset_description: "Toyota Land Cruiser 2024", make_model: "Toyota Land Cruiser", plate_vin: "Doha D 44556", location: "Doha HQ" },
 ];
 
 export default function MSCContractViewer() {
@@ -110,7 +110,7 @@ export default function MSCContractViewer() {
               { label: "Currency", value: c.currency },
               { label: "Effective Date", value: c.effective_date },
               { label: "Expiry Date", value: c.expiry_date },
-              { label: "Contract Value", value: `AED ${c.contract_value.toLocaleString()}` },
+              { label: "Contract Value", value: `QAR ${c.contract_value.toLocaleString()}` },
               { label: "Linked Assets", value: MOCK_ASSETS.length },
               { label: "Party A (EN)", value: c.party_a_en },
               { label: "Party A (AR)", value: <span dir="rtl">{c.party_a_ar}</span> },

@@ -14,9 +14,9 @@ import { trpc } from "@/lib/trpc";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const BUDGET_DATA = [
-  { entity: "VF-UAE", category: "Office Leases", budget_annual: 18500000, actual_ytd: 6120000, forecast_annual: 18360000, variance: -140000 },
-  { entity: "VF-UAE", category: "Network Sites", budget_annual: 42000000, actual_ytd: 14350000, forecast_annual: 43050000, variance: 1050000 },
-  { entity: "VF-UAE", category: "Retail Stores", budget_annual: 8200000, actual_ytd: 2680000, forecast_annual: 8040000, variance: -160000 },
+  { entity: "VF-Qatar", category: "Office Leases", budget_annual: 18500000, actual_ytd: 6120000, forecast_annual: 18360000, variance: -140000 },
+  { entity: "VF-Qatar", category: "Network Sites", budget_annual: 42000000, actual_ytd: 14350000, forecast_annual: 43050000, variance: 1050000 },
+  { entity: "VF-Qatar", category: "Retail Stores", budget_annual: 8200000, actual_ytd: 2680000, forecast_annual: 8040000, variance: -160000 },
   { entity: "VF-DXB", category: "Office Leases", budget_annual: 9400000, actual_ytd: 3100000, forecast_annual: 9300000, variance: -100000 },
   { entity: "VF-DXB", category: "Data Centres", budget_annual: 15600000, actual_ytd: 5250000, forecast_annual: 15750000, variance: 150000 },
   { entity: "VF-AUH", category: "Office Leases", budget_annual: 5800000, actual_ytd: 1920000, forecast_annual: 5760000, variance: -40000 },
@@ -39,7 +39,7 @@ const CASHFLOW_MONTHLY = [
 
 const SCENARIO_RESULTS = [
   { scenario: "Base Case", assumption: "No new leases, no terminations", rou_asset_2027: 198400000, liability_2027: 187200000, annual_payment: 26400000 },
-  { scenario: "Expansion (+15 leases)", assumption: "15 new network sites at AED 85K/month avg", rou_asset_2027: 231600000, liability_2027: 218900000, annual_payment: 31700000 },
+  { scenario: "Expansion (+15 leases)", assumption: "15 new network sites at QAR 85K/month avg", rou_asset_2027: 231600000, liability_2027: 218900000, annual_payment: 31700000 },
   { scenario: "Contraction (10 terminations)", assumption: "10 office leases terminated at renewal", rou_asset_2027: 165200000, liability_2027: 156100000, annual_payment: 21900000 },
   { scenario: "Rate Shock (+200bps IBR)", assumption: "IBR increases by 200bps across all leases", rou_asset_2027: 193100000, liability_2027: 182400000, annual_payment: 26400000 },
 ];
@@ -74,10 +74,10 @@ export default function BudgetingForecasting() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: `${year} Budget (AED)`, value: `${(totalBudget / 1000000).toFixed(1)}M`, icon: Target, color: "text-blue-400" },
-            { label: "Actual YTD (AED)", value: `${(totalActual / 1000000).toFixed(1)}M`, icon: DollarSign, color: "text-green-400" },
+            { label: `${year} Budget (QAR)`, value: `${(totalBudget / 1000000).toFixed(1)}M`, icon: Target, color: "text-blue-400" },
+            { label: "Actual YTD (QAR)", value: `${(totalActual / 1000000).toFixed(1)}M`, icon: DollarSign, color: "text-green-400" },
             { label: "Full-Year Forecast", value: `${(totalForecast / 1000000).toFixed(1)}M`, icon: BarChart3, color: "text-yellow-400" },
-            { label: "Variance (AED)", value: `${totalVariance >= 0 ? "+" : ""}${(totalVariance / 1000000).toFixed(1)}M`, icon: totalVariance >= 0 ? TrendingUp : TrendingDown, color: totalVariance >= 0 ? "text-red-400" : "text-green-400" },
+            { label: "Variance (QAR)", value: `${totalVariance >= 0 ? "+" : ""}${(totalVariance / 1000000).toFixed(1)}M`, icon: totalVariance >= 0 ? TrendingUp : TrendingDown, color: totalVariance >= 0 ? "text-red-400" : "text-green-400" },
           ].map((kpi) => (
             <Card key={kpi.label} className="bg-card border-border">
               <CardContent className="p-4">
@@ -110,7 +110,7 @@ export default function BudgetingForecasting() {
                     <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Entities</SelectItem>
-                      <SelectItem value="VF-UAE">VF-UAE</SelectItem>
+                      <SelectItem value="VF-Qatar">VF-Qatar</SelectItem>
                       <SelectItem value="VF-DXB">VF-DXB</SelectItem>
                       <SelectItem value="VF-AUH">VF-AUH</SelectItem>
                     </SelectContent>
@@ -172,8 +172,8 @@ export default function BudgetingForecasting() {
                   <TableHeader>
                     <TableRow className="bg-muted/50">
                       <TableHead className="text-xs">Month</TableHead>
-                      <TableHead className="text-xs text-right">Principal (AED)</TableHead>
-                      <TableHead className="text-xs text-right">Interest (AED)</TableHead>
+                      <TableHead className="text-xs text-right">Principal (QAR)</TableHead>
+                      <TableHead className="text-xs text-right">Interest (QAR)</TableHead>
                       <TableHead className="text-xs text-right">Total Payment</TableHead>
                       <TableHead className="text-xs text-right">Cumulative YTD</TableHead>
                       <TableHead className="text-xs">Bar</TableHead>
@@ -241,7 +241,7 @@ export default function BudgetingForecasting() {
 
           <TabsContent value="heatmap" className="mt-4">
             <Card className="bg-card border-border">
-              <CardHeader><CardTitle className="text-sm">Monthly Payment Heatmap — {year} (AED M)</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Monthly Payment Heatmap — {year} (QAR M)</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid grid-cols-12 gap-1">
                   {MONTHS.map((m, i) => {

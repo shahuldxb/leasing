@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,13 +16,22 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 
 const ASSET_TYPES = ["OFFICE","RETAIL","WAREHOUSE","DATA_CENTRE","PARKING","OTHER"];
 const PRIORITIES = ["LOW","MEDIUM","HIGH","CRITICAL"];
-const CURRENCIES = ["AED","USD","EUR","GBP","SAR"];
-const INIT = { lessor_name: "", asset_description: "", asset_type: "OFFICE", proposed_start: "", proposed_end: "", estimated_annual_rent: 0, currency: "AED", business_justification: "", priority: "MEDIUM" as const };
+const CURRENCIES = ["QAR","USD","EUR","GBP","SAR"];
+const INIT = { lessor_name: "", asset_description: "", asset_type: "OFFICE", proposed_start: "", proposed_end: "", estimated_annual_rent: 0, currency: "QAR", business_justification: "", priority: "MEDIUM" as const };
 
 export default function LeaseOrigination() {
   const [open, setOpen] = useState(false);
   const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [form, setForm] = useState({ ...INIT });
+  const [showSample, setShowSample] = useState(false);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "1") { e.preventDefault(); setOpen(false); }
+      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const { data: requests = [], refetch } = trpc.leaseOrigination.list.useQuery();
   const createMut = trpc.leaseOrigination.create.useMutation({ onSuccess: () => { refetch(); setOpen(false); toast.success("Origination request submitted"); }, onError: (e) => toast.error(e.message) });
   const displayRows = aiRows.length > 0 ? aiRows : (requests as any[]);
@@ -101,7 +110,7 @@ export default function LeaseOrigination() {
                   <TableCell><Badge variant="secondary">{r.status ?? "PENDING"}</Badge></TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm((f: any) => ({ ...f, lessorName: r.lessor_name, assetDescription: r.asset_description, assetType: r.asset_type, priority: r.priority, proposedStart: r.proposed_start?.slice(0,10) ?? "", estimatedAnnualRent: r.estimated_annual_rent })); setOpen(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm({ lessor_name: r.lessor_name ?? "", asset_description: r.asset_description ?? "", asset_type: r.asset_type ?? "OFFICE", proposed_start: r.proposed_start?.slice(0,10) ?? "", proposed_end: r.proposed_end?.slice(0,10) ?? "", estimated_annual_rent: r.estimated_annual_rent ?? 0, currency: r.currency ?? "QAR", business_justification: r.business_justification ?? "", priority: r.priority ?? "MEDIUM" }); setOpen(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this request?", { action: { label: "Remove", onClick: () => toast.success("Request removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </TableCell>
@@ -110,6 +119,20 @@ export default function LeaseOrigination() {
               {displayRows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">No origination requests. Click New Request to submit one.</TableCell></TableRow>}
             </TableBody>
           </Table></CardContent></Card>
+        </div>
+      )}
+    
+      {showSample && (
+        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
+          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Company: Vodafone Qatar Q.P.S.C.</p>
+            <p>Location: West Bay, Doha, Qatar</p>
+            <p>Currency: QAR | Country: QA</p>
+            <p>Contact: +974 4412 0000</p>
+            <p>Bank: Qatar National Bank (QNB)</p>
+          </div>
+          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
         </div>
       )}
     </DashboardLayout>
