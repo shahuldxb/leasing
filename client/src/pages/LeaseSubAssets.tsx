@@ -17,6 +17,8 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -38,7 +40,7 @@ import {
   ChevronDown, ChevronUp, Plus, RefreshCw, ArrowLeft,
   Package, Hash, Calendar, User, FileText, Layers,
   CheckCircle2, XCircle, RotateCcw, ArrowRightLeft, Boxes,
-  AlertCircle, Loader2,
+  AlertCircle, Loader2, FileDown, ShieldAlert,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
@@ -57,6 +59,7 @@ interface ItemWithSerial {
   qty: number;
   serialNumbers: string[];   // length === qty
   attachDate: string;        // ISO date
+  warrantyExpiry?: string;   // optional ISO date
   priceQAR?: number;
 }
 
@@ -208,6 +211,76 @@ export default function LeaseSubAssets() {
     ));
   }
 
+  function updateWarrantyExpiry(itemCode: string, val: string) {
+    setAttachItems(prev => prev.map(it =>
+      it.code === itemCode ? { ...it, warrantyExpiry: val } : it
+    ));
+  }
+
+  function exportInventoryPDF() {
+    if (!selectedLease || attachedSets.length === 0) return;
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const leaseRef = selectedLease.leaseRef ?? selectedLeaseId;
+    const property = selectedLease.assetName ?? "";
+    const today = new Date().toLocaleDateString("en-GB");
+
+    // Header
+    doc.setFontSize(16);
+    doc.setTextColor(30, 30, 30);
+    doc.text("VodaLease — Lease Sub-Asset Inventory", 14, 18);
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Lease Ref: ${leaseRef}   Property: ${property}   Exported: ${today}`, 14, 26);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, 29, 283, 29);
+
+    let yOffset = 34;
+    for (const set of attachedSets) {
+      const items = parseItems(set.tagsWithSerials);
+      if (items.length === 0) continue;
+
+      // Set header
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
+      doc.text(`Set: ${set.assetCode} — ${set.setName}  [${set.status}]`, 14, yOffset);
+      yOffset += 4;
+
+      const rows: string[][] = [];
+      let rowNum = 1;
+      for (const item of items) {
+        for (let i = 0; i < item.qty; i++) {
+          rows.push([
+            String(rowNum++),
+            item.name,
+            item.category + (item.subCategory ? ` / ${item.subCategory}` : ""),
+            (item.brand ?? "") + (item.model ? ` ${item.model}` : ""),
+            item.spec ?? "",
+            item.serialNumbers[i] ?? "",
+            item.attachDate ?? "",
+            (item as any).warrantyExpiry ?? "",
+          ]);
+        }
+      }
+
+      autoTable(doc, {
+        startY: yOffset,
+        head: [["#", "Item", "Category", "Brand/Model", "Spec", "Serial Number", "Attach Date", "Warranty Expiry"]],
+        body: rows,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [230, 0, 0], textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 14, right: 14 },
+        theme: "striped",
+        didDrawPage: (data) => { yOffset = data.cursor?.y ?? yOffset; },
+      });
+      yOffset = (doc as any).lastAutoTable.finalY + 8;
+      if (yOffset > 185) { doc.addPage(); yOffset = 14; }
+    }
+
+    doc.save(`inventory-${leaseRef}-${today.replace(/\//g, "-")}.pdf`);
+    toast.success("PDF exported successfully.");
+  }
+
   function validateAttach(): string | null {
     for (const it of attachItems) {
       if (!it.attachDate) return `Missing attachment date for "${it.name}"`;
@@ -305,10 +378,19 @@ export default function LeaseSubAssets() {
           </div>
           <div className="flex items-center gap-2">
             {selectedLeaseId && (
-              <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
-                onClick={() => { resetAttachDialog(); setAttachOpen(true); }}>
-                <Plus className="h-4 w-4" /> Attach Set
-              </Button>
+              <>
+                <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
+                  onClick={() => { resetAttachDialog(); setAttachOpen(true); }}>
+                  <Plus className="h-4 w-4" /> Attach Set
+                </Button>
+                {attachedSets.length > 0 && (
+                  <Button size="sm" variant="outline"
+                    className="gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                    onClick={exportInventoryPDF}>
+                    <FileDown className="h-3.5 w-3.5" /> Export PDF
+                  </Button>
+                )}
+              </>
             )}
             <Button size="sm" variant="outline" className="gap-1.5 border-white/10 text-gray-300"
               onClick={() => refetchSets()}>
@@ -498,7 +580,8 @@ export default function LeaseSubAssets() {
                                   <TableHead className="text-[11px] text-muted-foreground py-2">Spec</TableHead>
                                   <TableHead className="text-[11px] text-muted-foreground py-2">Qty</TableHead>
                                   <TableHead className="text-[11px] text-muted-foreground py-2">Serial Numbers</TableHead>
-                                  <TableHead className="text-[11px] text-muted-foreground py-2 pr-4">Attach Date</TableHead>
+                                  <TableHead className="text-[11px] text-muted-foreground py-2">Attach Date</TableHead>
+                                  <TableHead className="text-[11px] text-muted-foreground py-2 pr-4">Warranty Expiry</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -528,7 +611,26 @@ export default function LeaseSubAssets() {
                                         ))}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="py-2 pr-4 text-[11px] text-gray-300 font-mono">{item.attachDate || "—"}</TableCell>
+                                    <TableCell className="py-2 text-[11px] text-gray-300 font-mono">{item.attachDate || "—"}</TableCell>
+                                    <TableCell className="py-2 pr-4">
+                                      {(item as any).warrantyExpiry ? (
+                                        (() => {
+                                          const exp = new Date((item as any).warrantyExpiry);
+                                          const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
+                                          return (
+                                            <span className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
+                                              daysLeft < 0 ? "bg-red-500/20 text-red-400" :
+                                              daysLeft <= 30 ? "bg-amber-500/20 text-amber-400" :
+                                              "text-gray-300"
+                                            }`}>
+                                              {(item as any).warrantyExpiry}
+                                              {daysLeft < 0 && " ⚠ Expired"}
+                                              {daysLeft >= 0 && daysLeft <= 30 && ` (${daysLeft}d)`}
+                                            </span>
+                                          );
+                                        })()
+                                      ) : <span className="text-muted-foreground text-[11px]">—</span>}
+                                    </TableCell>
                                   </TableRow>
                                 ))}
                               </TableBody>
@@ -617,17 +719,30 @@ export default function LeaseSubAssets() {
                     </div>
                   </div>
 
-                  {/* Attachment date (shared for all units of this item) */}
-                  <div className="px-4 pt-3 pb-2">
-                    <Label className="text-[11px] text-muted-foreground mb-1 block">
-                      Attachment Date <span className="text-red-400">*</span>
-                    </Label>
-                    <Input
-                      type="date"
-                      value={item.attachDate}
-                      onChange={e => updateAttachDate(item.code, e.target.value)}
-                      className="h-8 text-xs bg-[#13161f] border-white/10 text-white w-48"
-                    />
+                  {/* Attachment date + Warranty expiry */}
+                  <div className="px-4 pt-3 pb-2 flex gap-4 flex-wrap">
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground mb-1 block">
+                        Attachment Date <span className="text-red-400">*</span>
+                      </Label>
+                      <Input
+                        type="date"
+                        value={item.attachDate}
+                        onChange={e => updateAttachDate(item.code, e.target.value)}
+                        className="h-8 text-xs bg-[#13161f] border-white/10 text-white w-44"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground mb-1 block">
+                        Warranty Expiry <span className="text-muted-foreground">(optional)</span>
+                      </Label>
+                      <Input
+                        type="date"
+                        value={item.warrantyExpiry ?? ""}
+                        onChange={e => updateWarrantyExpiry(item.code, e.target.value)}
+                        className="h-8 text-xs bg-[#13161f] border-white/10 text-white w-44"
+                      />
+                    </div>
                   </div>
 
                   {/* Serial numbers */}

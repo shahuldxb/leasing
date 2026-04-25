@@ -17,7 +17,7 @@ import {
 import {
   TrendingUp, TrendingDown, FileText, DollarSign, Calendar,
   AlertTriangle, RefreshCw, Sparkles, Clock, CheckCircle2,
-  Building2, Activity
+  Building2, Activity, ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -339,6 +339,9 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* ── Warranty Expiry Alerts ──────────────────────────── */}
+        <WarrantyAlertWidget />
+
         {/* ── Portfolio Summary Table ─────────────────────────── */}
         <Card>
           <CardHeader className="pb-2">
@@ -381,6 +384,78 @@ export default function Dashboard() {
     </DashboardLayout>
   );
 }
+
+function WarrantyAlertWidget() {
+  const { data: alerts = [], isLoading } = trpc.asset.getExpiringWarranties.useQuery({ daysAhead: 30 });
+  if (isLoading) return null;
+  if ((alerts as any[]).length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-green-500" />
+            Warranty Expiry Alerts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground py-2">
+            No warranties expiring within the next 30 days.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4 text-amber-500" />
+          Warranty Expiry Alerts
+          <span className="ml-auto text-xs font-normal text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+            {(alerts as any[]).length} item{(alerts as any[]).length !== 1 ? "s" : ""} expiring soon
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="text-left py-2 pl-4 font-medium">Lease</th>
+                <th className="text-left py-2 px-3 font-medium">Set</th>
+                <th className="text-left py-2 px-3 font-medium">Item</th>
+                <th className="text-left py-2 px-3 font-medium">Serial No.</th>
+                <th className="text-left py-2 px-3 font-medium">Expiry Date</th>
+                <th className="text-right py-2 pr-4 font-medium">Days Left</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(alerts as any[]).map((a: any, idx: number) => (
+                <tr key={idx} className="border-b last:border-0 hover:bg-muted/30">
+                  <td className="py-2 pl-4 font-mono text-sky-400">{a.leaseRef}</td>
+                  <td className="py-2 px-3 text-muted-foreground">{a.setName}</td>
+                  <td className="py-2 px-3">{a.itemName}</td>
+                  <td className="py-2 px-3 font-mono text-muted-foreground">{a.serialNumber || "—"}</td>
+                  <td className="py-2 px-3">{a.warrantyExpiry}</td>
+                  <td className="py-2 pr-4 text-right">
+                    <span className={`px-2 py-0.5 rounded font-semibold ${
+                      a.daysLeft < 0 ? "bg-red-500/20 text-red-400" :
+                      a.daysLeft <= 7 ? "bg-red-500/20 text-red-400" :
+                      "bg-amber-500/20 text-amber-400"
+                    }`}>
+                      {a.daysLeft < 0 ? `Expired ${Math.abs(a.daysLeft)}d ago` : `${a.daysLeft}d`}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function InsightItem({ icon: Icon, color, text }: { icon: React.ElementType; color: string; text: string }) {
   return (

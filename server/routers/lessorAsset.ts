@@ -740,4 +740,67 @@ export const assetRouter = router({
         status:     r.status      as string,
       }));
     }),
+
+  getExpiringWarranties: protectedProcedure
+    .input(z.object({ daysAhead: z.number().int().default(30) }))
+    .query(async ({ input }) => {
+      const rows = await execSPP("asset.sp_GetExpiringWarranties", [
+        { name: "days_ahead", type: "Int", value: input.daysAhead },
+      ]);
+      // Parse tags_with_serials JSON and filter items with warrantyExpiry within daysAhead
+      const today = new Date();
+      const cutoff = new Date(today.getTime() + input.daysAhead * 86400000);
+      const alerts: Array<{
+        leaseSubAssetId: number; leaseId: string; leaseRef: string;
+        assetCode: string; setName: string; itemName: string;
+        serialNumber: string; warrantyExpiry: string; daysLeft: number;
+      }> = [];
+      for (const r of rows) {
+        const tags = r.tags_with_serials as string | null;
+        if (!tags) continue;
+        let items: any[];
+        try { items = JSON.parse(tags); } catch { continue; }
+        for (const item of items) {
+          if (!item.warrantyExpiry) continue;
+          const expDate = new Date(item.warrantyExpiry);
+          if (expDate <= cutoff) {
+            const daysLeft = Math.ceil((expDate.getTime() - today.getTime()) / 86400000);
+            for (const sn of (item.serialNumbers ?? [""])) {
+              alerts.push({
+                leaseSubAssetId: r.lease_sub_asset_id as number,
+                leaseId:         r.lease_id           as string,
+                leaseRef:        r.lease_ref          as string,
+                assetCode:       r.asset_code         as string,
+                setName:         r.set_name           as string,
+                itemName:        item.name            as string,
+                serialNumber:    sn                   as string,
+                warrantyExpiry:  item.warrantyExpiry  as string,
+                daysLeft,
+              });
+            }
+          }
+        }
+      }
+      return alerts.sort((a, b) => a.daysLeft - b.daysLeft);
+    }),
+
+  getLeaseInventoryForExport: protectedProcedure
+    .input(z.object({ leaseId: z.string() }))
+    .query(async ({ input }) => {
+      const rows = await execSPP("asset.sp_GetLeaseInventoryForExport", [
+        { name: "lease_id", type: "NVarChar", value: input.leaseId },
+      ]);
+      return rows.map(r => ({
+        leaseSubAssetId: r.lease_sub_asset_id as number,
+        leaseId:         r.lease_id           as string,
+        leaseRef:        r.lease_ref          as string,
+        assetCode:       r.asset_code         as string,
+        setName:         r.set_name           as string,
+        status:          r.status             as string,
+        statusDate:      r.status_date        as string | null,
+        tagsWithSerials: r.tags_with_serials  as string | null,
+        createdBy:       r.created_by         as string,
+        createdAt:       r.created_at         as string,
+      }));
+    }),
 });

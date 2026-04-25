@@ -831,3 +831,25 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Validate all serial numbers filled and attachment date set before saving
 - [x] Expanded set card: show full item inventory table (Item Code, Name, Category, Qty, Serial Numbers, Attachment Date)
 - [x] Show transaction history badge on each card (click to view log for that set on that lease)
+
+## Print/Export Inventory PDF (Apr 25)
+- [x] Add warranty_expiry_date column to lease_sub_assets table (per item in tags_with_serials JSON)
+- [x] Update attach dialog: add optional warranty expiry date per item
+- [x] Update sp_AttachSubAssetToLease to store warranty expiry in tags_with_serials
+- [x] Add tRPC procedure asset.getLeaseInventoryForExport returning full item list with serials + warranty dates
+- [x] Build /api/lease-inventory-pdf/:leaseId Express endpoint that generates PDF using html-pdf or similar
+- [x] Add "Export PDF" and "Print" buttons to LeaseSubAssets.tsx header
+- [x] PDF layout: header (lease ref, property, date), table (item, category, brand, spec, qty, serial numbers, attach date, warranty expiry)
+
+## Handover Checklist Auto-Population (Apr 25)
+- [x] Read HandoverChecklist.tsx to understand current structure
+- [x] Add tRPC procedure asset.getLeaseSubAssetItems returning flat item list for a lease (all items from all active sets)
+- [x] Add "Import from Sub-Asset Registry" button to HandoverChecklist.tsx
+- [x] Auto-populate checklist rows with item name, serial number, category from attached sets
+- [x] Each imported row is pre-filled but editable; user can add condition notes and sign off
+
+## Warranty Expiry Alerts (Apr 25)
+- [x] Add sp_GetExpiringWarranties SP: returns items where warranty_expiry_date is within 30 days
+- [x] Add tRPC procedure asset.getExpiringWarranties
+- [x] Add warranty expiry alert card to Dashboard (show count of expiring items, link to Lease Sub-Assets)
+- [x] Add warranty expiry section to AlertCentre with item-level detail (lease, set, item, serial, expiry date)
