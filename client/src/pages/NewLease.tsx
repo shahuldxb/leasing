@@ -19,7 +19,7 @@ const STEPS = [
   { id: 5, label: "Review & Post",     icon: Eye },
 ];
 
-const ASSET_TYPES = ["Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Fleet Vehicle","Network Equipment","Generator Site","Other"];
+const ASSET_TYPES = ["Villa","Apartment","Vehicle","Heavy Vehicle","Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Fleet Vehicle","Network Equipment","Generator Site","Other"];
 const CURRENCIES  = ["QAR","USD","GHS","EUR","GBP","ZAR","KES","NGN","ZMW"];
 const FREQ_OPTIONS = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
@@ -30,7 +30,7 @@ export default function NewLease() {
   // Step 1 — Lessor
   const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "" });
   // Step 2 — Asset
-  const [asset, setAsset] = useState({ assetType: "Tower Site", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
+  const [asset, setAsset] = useState({ assetType: "Villa", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
   // Step 3 — Financial
   const [financial, setFinancial] = useState({
     commencementDate: "", endDate: "", leaseTerm: "", currency: "QAR",

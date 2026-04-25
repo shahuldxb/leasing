@@ -5,12 +5,12 @@ import { invokeLLM } from "../_core/llm";
 // ─── Form type definitions ────────────────────────────────────────────────────
 const FORM_PROMPTS: Record<string, { description: string; schema: Record<string, string> }> = {
   new_lease: {
-    description: "A commercial real estate lease for an office or retail space in Qatar",
+    description: "A residential or commercial lease in Qatar (villa, apartment, office, or vehicle)",
     schema: {
       leaseRef: "Unique lease reference like LEASE-2024-001",
       leaseName: "Descriptive name e.g. 'West Bay Tower - Floor 12'",
       leaseType: "One of: OPERATING, FINANCE",
-      assetClass: "One of: OFFICE, RETAIL, WAREHOUSE, RESIDENTIAL, VEHICLE, EQUIPMENT",
+      assetClass: "One of: Villa, Apartment, Vehicle, Heavy Vehicle, Tower Site, Office, Retail Outlet, Warehouse, Data Centre, Other — default to Villa",
       lessorName: "Qatar-based property company name e.g. Barwa Real Estate, Ezdan Holding, United Development Company",
       lessorContact: "Contact person full name (Arabic or Western name)",
       lessorEmail: "Professional email address",
