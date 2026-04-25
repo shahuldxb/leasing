@@ -700,7 +700,35 @@ export const assetRouter = router({
       const rows = await execSPP("asset.sp_UpdateSubAssetStatus", params);
       return { rowsAffected: rows[0]?.rows_affected as number };
     }),
-
+  updateLeaseSubAssetTags: protectedProcedure
+    .input(z.object({
+      leaseSubAssetId: z.number().int(),
+      tagsWithSerials: z.string(), // JSON array of items
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const updatedBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
+      const params: SPPParam[] = [
+        { name: "lease_sub_asset_id", type: "Int",      value: input.leaseSubAssetId },
+        { name: "tags_with_serials",  type: "NVarChar", value: input.tagsWithSerials },
+        { name: "updated_by",         type: "NVarChar", value: updatedBy },
+      ];
+      const rows = await execSPP("asset.sp_UpdateLeaseSubAssetTags", params);
+      // Log ITEM_EDIT transaction
+      const txnParams: SPPParam[] = [
+        { name: "Action",      type: "NVarChar", value: "ITEM_EDIT" },
+        { name: "EntityType", type: "NVarChar", value: "LEASE_SET" },
+        { name: "EntityId",   type: "Int",      value: input.leaseSubAssetId },
+        { name: "EntityCode", type: "NVarChar", value: null },
+        { name: "EntityName", type: "NVarChar", value: "Items updated" },
+        { name: "BeforeJson", type: "NVarChar", value: null },
+        { name: "AfterJson",  type: "NVarChar", value: input.tagsWithSerials },
+        { name: "ChangedBy",  type: "NVarChar", value: updatedBy },
+        { name: "ScreenId",   type: "NVarChar", value: "VFLSEASTTXN0001P001" },
+        { name: "SessionRef", type: "NVarChar", value: null },
+      ];
+      await execSPP("sp_LogSubAssetTransaction", txnParams).catch(() => {/* non-blocking */});
+      return { rowsAffected: rows[0]?.rows_affected as number };
+    }),
   getLeaseSubAssets: protectedProcedure
     .input(z.object({ leaseId: z.string() }))
     .query(async ({ input }) => {

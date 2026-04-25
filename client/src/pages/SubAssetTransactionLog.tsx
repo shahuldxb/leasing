@@ -24,9 +24,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import {
   RefreshCw, ChevronDown, ChevronRight,
-  RotateCcw, ShieldOff, Repeat2, Skull, Trash2,
+  RotateCcw, ShieldOff, Repeat2, Skull,
   Package, Calendar, User, Hash, Tag, FileText, AlertTriangle,
   CheckCircle2, XCircle, Clock, ArrowUpDown, Plus,
+  Pencil, Save, X as XIcon, Link2,
 } from "lucide-react";
 
 // ── Status badge colours ─────────────────────────────────────
@@ -173,6 +174,16 @@ export default function SubAssetTransactionLog() {
   const [actionNotes,      setActionNotes]      = useState<string>("");
   const [actionReplaceSet, setActionReplaceSet] = useState<string>("none");
 
+  // ── Inline item editing ───────────────────────────────────
+  const [editingItems, setEditingItems] = useState(false);
+  const [editItems, setEditItems] = useState<any[]>([]);
+
+  // ── Attach dialog state ───────────────────────────────────
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [attachStep, setAttachStep] = useState<"select" | "serials">("select");
+  const [attachSetId, setAttachSetId] = useState<string>("none");
+  const [attachItems, setAttachItems] = useState<any[]>([]);
+
   // ── Queries ───────────────────────────────────────────────
   const { data: leaseList = [] } = trpc.asset.getLeaseList.useQuery();
 
@@ -234,6 +245,88 @@ export default function SubAssetTransactionLog() {
     },
     onError: (e) => toast.error(`Failed: ${e.message}`),
   });
+
+  const updateTagsMutation = trpc.asset.updateLeaseSubAssetTags.useMutation({
+    onSuccess: () => {
+      toast.success("Items updated successfully");
+      utils.asset.getLeaseSubAssets.invalidate();
+      utils.asset.getSubAssetTxns.invalidate();
+      setEditingItems(false);
+    },
+    onError: (e) => toast.error(`Failed to update items: ${e.message}`),
+  });
+
+  const attachMutation = trpc.asset.attachSubAssetToLease.useMutation({
+    onSuccess: (res) => {
+      if ((res as any).message === "Already attached") {
+        toast.warning("This set is already active on this lease.");
+        return;
+      }
+      toast.success("Sub-asset set attached and transaction logged.");
+      utils.asset.getLeaseSubAssets.invalidate();
+      utils.asset.getSubAssetTxns.invalidate();
+      setAttachOpen(false);
+      resetAttachDialog();
+    },
+    onError: (e) => toast.error(`Attach failed: ${e.message}`),
+  });
+
+  function resetAttachDialog() {
+    setAttachSetId("none");
+    setAttachItems([]);
+    setAttachStep("select");
+  }
+
+  function onPickAttachSet(setId: string) {
+    setAttachSetId(setId);
+    const reg = (allAvailSets as any[]).find((s: any) => String(s.assetId) === setId);
+    if (!reg) return;
+    const today = new Date().toISOString().slice(0, 10);
+    let lines: any[] = [];
+    try { lines = reg.tags ? JSON.parse(reg.tags) : []; } catch { lines = []; }
+    setAttachItems(lines.map((l: any) => ({
+      code:          l.code,
+      name:          l.name,
+      category:      l.category,
+      qty:           l.qty ?? 1,
+      serialNumbers: Array.from({ length: l.qty ?? 1 }, () => ""),
+      attachDate:    today,
+      warrantyExpiry: "",
+    })));
+    setAttachStep("serials");
+  }
+
+  function confirmAttach() {
+    if (!selectedLeaseId || attachSetId === "none") return;
+    const reg = (allAvailSets as any[]).find((s: any) => String(s.assetId) === attachSetId);
+    if (!reg) return;
+    const lease = (leaseList as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId);
+    attachMutation.mutate({
+      leaseId:         selectedLeaseId,
+      leaseRef:        lease?.leaseRef ?? selectedLeaseId,
+      assetId:         reg.assetId,
+      assetCode:       reg.assetCode,
+      setName:         reg.setName,
+      tagsWithSerials: JSON.stringify(attachItems),
+    });
+  }
+
+  function startEditItems() {
+    setEditItems(setItems.map((it: any) => ({
+      ...it,
+      serialNumbers: Array.isArray(it.serialNumbers) ? [...it.serialNumbers] : [],
+    })));
+    setEditingItems(true);
+  }
+
+  function saveEditItems() {
+    const rec = selectedSetRecord as any;
+    if (!rec?.leaseSubAssetId) return;
+    updateTagsMutation.mutate({
+      leaseSubAssetId: rec.leaseSubAssetId,
+      tagsWithSerials: JSON.stringify(editItems),
+    });
+  }
 
   // ── URL persistence ───────────────────────────────────────
   useEffect(() => {
@@ -457,19 +550,43 @@ export default function SubAssetTransactionLog() {
                   )}
                 </div>
 
-                {/* Items table */}
+                {/* Items table — editable */}
                 {setItems.length > 0 ? (
                   <div className="border-t border-border">
-                    <div className="px-4 py-2 bg-muted/10 flex items-center gap-2">
-                      <Tag className="w-3.5 h-3.5 text-[#e60000]" />
-                      <span className="text-xs font-semibold text-foreground">Items in this Set ({setItems.length})</span>
+                    <div className="px-4 py-2 bg-muted/10 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-[#e60000]" />
+                        <span className="text-xs font-semibold text-foreground">Items in this Set ({setItems.length})</span>
+                      </div>
+                      {rec.leaseSubAssetId && (
+                        editingItems ? (
+                          <div className="flex items-center gap-1">
+                            <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
+                              onClick={() => setEditingItems(false)}>
+                              <XIcon className="w-3 h-3" /> Cancel
+                            </Button>
+                            <Button size="sm" className="h-6 text-[10px] gap-1 px-2 bg-[#e60000] hover:bg-[#cc0000] text-white"
+                              onClick={saveEditItems}
+                              disabled={updateTagsMutation.isPending}>
+                              <Save className="w-3 h-3" />
+                              {updateTagsMutation.isPending ? "Saving…" : "Save"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
+                            onClick={startEditItems}>
+                            <Pencil className="w-3 h-3" /> Edit Items
+                          </Button>
+                        )
+                      )}
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="border-b border-border bg-muted/5">
                             <th className="text-left py-2 px-4 font-medium text-muted-foreground">Code</th>
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Name / Category</th>
+                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Name</th>
+                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Category</th>
                             <th className="text-center py-2 px-4 font-medium text-muted-foreground">Qty</th>
                             <th className="text-left py-2 px-4 font-medium text-muted-foreground">Serial Numbers</th>
                             <th className="text-left py-2 px-4 font-medium text-muted-foreground">Attach Date</th>
@@ -477,21 +594,60 @@ export default function SubAssetTransactionLog() {
                           </tr>
                         </thead>
                         <tbody>
-                          {setItems.map((item: any, i: number) => (
+                          {(editingItems ? editItems : setItems).map((item: any, i: number) => (
                             <tr key={i} className="border-b border-border/50 hover:bg-muted/10">
                               <td className="py-2 px-4 font-mono text-[#e60000]">{item.code ?? "—"}</td>
-                              <td className="py-2 px-4">{item.name ?? item.category ?? "—"}</td>
+                              <td className="py-2 px-4">{item.name ?? "—"}</td>
+                              <td className="py-2 px-4 text-muted-foreground">{item.category ?? "—"}</td>
                               <td className="py-2 px-4 text-center">{item.qty ?? "—"}</td>
                               <td className="py-2 px-4">
-                                {Array.isArray(item.serialNumbers) && item.serialNumbers.length > 0
-                                  ? item.serialNumbers.join(", ")
-                                  : <span className="text-muted-foreground italic">None</span>}
+                                {editingItems ? (
+                                  <Input
+                                    className="h-6 text-xs bg-background border-border min-w-[160px]"
+                                    value={Array.isArray(item.serialNumbers) ? item.serialNumbers.join(", ") : ""}
+                                    onChange={e => {
+                                      const vals = e.target.value.split(",").map((s: string) => s.trim());
+                                      setEditItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, serialNumbers: vals } : it
+                                      ));
+                                    }}
+                                    placeholder="Serial 1, Serial 2…"
+                                  />
+                                ) : (
+                                  Array.isArray(item.serialNumbers) && item.serialNumbers.filter(Boolean).length > 0
+                                    ? item.serialNumbers.filter(Boolean).join(", ")
+                                    : <span className="text-muted-foreground italic">None</span>
+                                )}
                               </td>
-                              <td className="py-2 px-4">{item.attachDate ?? item.leaseDate ?? "—"}</td>
                               <td className="py-2 px-4">
-                                {item.warrantyExpiry
-                                  ? <span className={new Date(item.warrantyExpiry) < new Date() ? "text-red-400 font-semibold" : "text-green-400"}>{item.warrantyExpiry}</span>
-                                  : <span className="text-muted-foreground italic">—</span>}
+                                {editingItems ? (
+                                  <Input
+                                    type="date"
+                                    className="h-6 text-xs bg-background border-border w-32"
+                                    value={item.attachDate ?? ""}
+                                    onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
+                                      idx === i ? { ...it, attachDate: e.target.value } : it
+                                    ))}
+                                  />
+                                ) : (
+                                  item.attachDate ?? item.leaseDate ?? "—"
+                                )}
+                              </td>
+                              <td className="py-2 px-4">
+                                {editingItems ? (
+                                  <Input
+                                    type="date"
+                                    className="h-6 text-xs bg-background border-border w-32"
+                                    value={item.warrantyExpiry ?? ""}
+                                    onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
+                                      idx === i ? { ...it, warrantyExpiry: e.target.value } : it
+                                    ))}
+                                  />
+                                ) : (
+                                  item.warrantyExpiry
+                                    ? <span className={new Date(item.warrantyExpiry) < new Date() ? "text-red-400 font-semibold" : "text-green-400"}>{item.warrantyExpiry}</span>
+                                    : <span className="text-muted-foreground italic">—</span>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -526,11 +682,20 @@ export default function SubAssetTransactionLog() {
                 </div>
                 <div className="p-4">
                   <p className="text-xs text-muted-foreground mb-3">
-                    Record a transaction for{" "}
+                    Record a transaction for{" "}
                     <span className="font-mono text-[#e60000]">{rec.assetCode}</span>
                     {" · "}{rec.setName ?? rec.currentSetName}
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+                    {/* Add / Attach button — always first */}
+                    <button
+                      onClick={() => { resetAttachDialog(); setAttachOpen(true); }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 cursor-pointer text-emerald-400"
+                    >
+                      <Link2 className="w-5 h-5 text-emerald-400" />
+                      <span>Add</span>
+                      <span className="text-[10px] text-muted-foreground font-normal text-center leading-tight">Attach to lease</span>
+                    </button>
                     {ACTIONS.map(action => {
                       const Icon = action.icon;
                       const disabled = isTerminal && action.id !== "BackIn";
@@ -681,7 +846,115 @@ export default function SubAssetTransactionLog() {
         </div>
       </div>
 
-      {/* ── Action Dialog ──────────────────────────────────────── */}
+      {/* ── Attach Dialog ─────────────────────────────────────────────────────── */}
+      <Dialog open={attachOpen} onOpenChange={open => { if (!open) { setAttachOpen(false); resetAttachDialog(); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-emerald-400" /> Attach Sub-Asset Set to Lease
+            </DialogTitle>
+          </DialogHeader>
+
+          {attachStep === "select" ? (
+            <div className="space-y-3 py-1">
+              <p className="text-xs text-muted-foreground">
+                Attaching to lease{" "}
+                <span className="font-mono text-[#e60000]">
+                  {(leaseList as any[]).find((l: any) => String(l.leaseId) === selectedLeaseId)?.leaseRef ?? selectedLeaseId}
+                </span>
+              </p>
+              <div>
+                <Label className="text-xs text-muted-foreground">Sub-Asset Group <span className="text-red-400">*</span></Label>
+                <Select value={attachSetId} onValueChange={onPickAttachSet}>
+                  <SelectTrigger className="mt-1 bg-background border-border">
+                    <SelectValue placeholder="— Select a set —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Select a set —</SelectItem>
+                    {(allAvailSets as any[]).map((s: any) => (
+                      <SelectItem key={s.assetId} value={String(s.assetId)}>
+                        <span className="font-mono text-[#e60000] mr-2">{s.assetCode}</span>
+                        <span>{s.setName}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 py-1 max-h-[60vh] overflow-y-auto">
+              <p className="text-xs text-muted-foreground">
+                Fill in serial numbers, attach dates, and warranty expiry for each item.
+              </p>
+              {attachItems.map((item: any, i: number) => (
+                <div key={i} className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[#e60000] text-xs">{item.code}</span>
+                    <span className="text-sm font-medium">{item.name}</span>
+                    <span className="text-xs text-muted-foreground">{item.category}</span>
+                    <Badge variant="secondary" className="text-[10px]">Qty: {item.qty}</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Serial Numbers (comma-separated)</Label>
+                      <Input
+                        className="mt-0.5 h-7 text-xs bg-background border-border"
+                        value={Array.isArray(item.serialNumbers) ? item.serialNumbers.join(", ") : ""}
+                        onChange={e => {
+                          const vals = e.target.value.split(",").map((s: string) => s.trim());
+                          setAttachItems(prev => prev.map((it: any, idx: number) =>
+                            idx === i ? { ...it, serialNumbers: vals } : it
+                          ));
+                        }}
+                        placeholder="SN001, SN002…"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Attach Date</Label>
+                      <Input
+                        type="date"
+                        className="mt-0.5 h-7 text-xs bg-background border-border"
+                        value={item.attachDate ?? ""}
+                        onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                          idx === i ? { ...it, attachDate: e.target.value } : it
+                        ))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Warranty Expiry (optional)</Label>
+                      <Input
+                        type="date"
+                        className="mt-0.5 h-7 text-xs bg-background border-border"
+                        value={item.warrantyExpiry ?? ""}
+                        onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                          idx === i ? { ...it, warrantyExpiry: e.target.value } : it
+                        ))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => { setAttachOpen(false); resetAttachDialog(); }}>Cancel</Button>
+            {attachStep === "serials" && (
+              <Button variant="outline" size="sm" onClick={() => setAttachStep("select")}>Back</Button>
+            )}
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={confirmAttach}
+              disabled={attachMutation.isPending || attachSetId === "none"}
+            >
+              {attachMutation.isPending ? "Attaching…" : attachStep === "select" ? "Next: Fill Details" : "Confirm Attach"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Action Dialog ─────────────────────────────────────────────────────── */}
       <Dialog open={actionDialog.open} onOpenChange={open => !open && closeActionDialog()}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
