@@ -802,30 +802,7 @@ export default function AssetRegistry() {
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] text-amber-400">QAR {line.item.priceQAR.toLocaleString()} × {line.qty} = QAR {(line.item.priceQAR * line.qty).toLocaleString()}</span>
                           </div>
-                          {/* Serial numbers */}
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {Array.from({ length: line.qty }).map((_, idx) => (
-                              <div key={idx} className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-muted-foreground w-8 shrink-0 font-mono">#{idx + 1}</span>
-                                <Input className="h-6 text-[10px] font-mono bg-[#13161f] border-white/5"
-                                  placeholder="Serial No." value={line.serialNumbers[idx] ?? ""}
-                                  onChange={e => updateSerial(line.item.code, idx, e.target.value)} />
-                              </div>
-                            ))}
-                          </div>
-                          {/* Lease Date & Warranty Expiry */}
-                          <div className="grid grid-cols-2 gap-1.5 mt-1.5">
-                            <div>
-                              <Label className="text-[10px] text-muted-foreground">Lease Date</Label>
-                              <Input type="date" className="h-6 text-[10px] bg-[#13161f] border-white/5 mt-0.5"
-                                value={line.leaseDate} onChange={e => updateDate(line.item.code, "leaseDate", e.target.value)} />
-                            </div>
-                            <div>
-                              <Label className="text-[10px] text-muted-foreground">Warranty Exp.</Label>
-                              <Input type="date" className="h-6 text-[10px] bg-[#13161f] border-white/5 mt-0.5"
-                                value={line.warrantyExpiry} onChange={e => updateDate(line.item.code, "warrantyExpiry", e.target.value)} />
-                            </div>
-                          </div>
+
                         </div>
                       ))}
                     </div>

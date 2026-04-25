@@ -814,3 +814,20 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Wire route /lease-sub-assets in App.tsx
 - [x] Add "Lease Sub-Assets" link in sidebar under Lease Management
 - [x] Log every status change to sub_asset_transactions table
+
+## Serial Number & Date at Lease Attachment (Apr 25)
+- [x] AssetRegistry.tsx — remove serial number input fields from set builder (not required at set creation)
+- [x] LeaseSubAssets.tsx — attach dialog: after selecting a set, show each item in the set with mandatory Serial Number and Date fields
+- [x] Validate all serial numbers and dates are filled before allowing Attach
+- [x] Store serial numbers and dates per item in the lease_sub_assets.tags_with_serials JSON column (add column to table)
+- [x] Update sp_AttachSubAssetToLease to accept and store tags_with_serials
+- [x] Display serial numbers and dates in the expanded card view on the Lease Sub-Assets screen
+
+## Transaction-Based Sub-Asset Attachment & Inventory Display (Apr 25)
+- [x] Update tRPC attachSubAssetToLease to accept tagsWithSerials (JSON: [{code, name, qty, serialNumbers[], attachDate}])
+- [x] Log ATTACH transaction to sub_asset_transactions on every attach (before=null, after=full item list with serials)
+- [x] Log STATUS_CHANGE transaction to sub_asset_transactions on every status update
+- [x] LeaseSubAssets.tsx attach dialog: after selecting a set, expand each item row with serial number inputs (one per qty) and a single attachment date — all mandatory
+- [x] Validate all serial numbers filled and attachment date set before saving
+- [x] Expanded set card: show full item inventory table (Item Code, Name, Category, Qty, Serial Numbers, Attachment Date)
+- [x] Show transaction history badge on each card (click to view log for that set on that lease)

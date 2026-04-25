@@ -635,24 +635,44 @@ export const assetRouter = router({
 
   attachSubAssetToLease: protectedProcedure
     .input(z.object({
-      leaseId:   z.string(),
-      leaseRef:  z.string().optional(),
-      assetId:   z.number().int(),
-      assetCode: z.string(),
-      setName:   z.string(),
+      leaseId:        z.string(),
+      leaseRef:       z.string().optional(),
+      assetId:        z.number().int(),
+      assetCode:      z.string(),
+      setName:        z.string(),
+      tagsWithSerials: z.string().optional(), // JSON: [{code,name,category,qty,serialNumbers[],attachDate}]
     }))
     .mutation(async ({ input, ctx }) => {
       const createdBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
       const params: SPPParam[] = [
-        { name: "lease_id",   type: "NVarChar", value: input.leaseId },
-        { name: "lease_ref",  type: "NVarChar", value: input.leaseRef ?? input.leaseId },
-        { name: "asset_id",   type: "Int",      value: input.assetId },
-        { name: "asset_code", type: "NVarChar", value: input.assetCode },
-        { name: "set_name",   type: "NVarChar", value: input.setName },
-        { name: "created_by", type: "NVarChar", value: createdBy },
+        { name: "lease_id",          type: "NVarChar", value: input.leaseId },
+        { name: "lease_ref",         type: "NVarChar", value: input.leaseRef ?? input.leaseId },
+        { name: "asset_id",          type: "Int",      value: input.assetId },
+        { name: "asset_code",        type: "NVarChar", value: input.assetCode },
+        { name: "set_name",          type: "NVarChar", value: input.setName },
+        { name: "tags_with_serials", type: "NVarChar", value: input.tagsWithSerials ?? null },
+        { name: "created_by",        type: "NVarChar", value: createdBy },
       ];
       const rows = await execSPP("asset.sp_AttachSubAssetToLease", params);
-      return { leaseSubAssetId: rows[0]?.lease_sub_asset_id as number, message: rows[0]?.message as string };
+      const leaseSubAssetId = rows[0]?.lease_sub_asset_id as number;
+      const message = rows[0]?.message as string;
+      // Log ATTACH transaction
+      if (message === "OK" && leaseSubAssetId) {
+        const txnParams: SPPParam[] = [
+          { name: "Action",      type: "NVarChar", value: "ATTACH" },
+          { name: "EntityType", type: "NVarChar", value: "LEASE_SET" },
+          { name: "EntityId",   type: "Int",      value: input.assetId },
+          { name: "EntityCode", type: "NVarChar", value: input.assetCode },
+          { name: "EntityName", type: "NVarChar", value: `${input.setName} → Lease ${input.leaseRef ?? input.leaseId}` },
+          { name: "BeforeJson", type: "NVarChar", value: null },
+          { name: "AfterJson",  type: "NVarChar", value: input.tagsWithSerials ?? null },
+          { name: "ChangedBy",  type: "NVarChar", value: createdBy },
+          { name: "ScreenId",   type: "NVarChar", value: "VFLLSASSET001" },
+          { name: "SessionRef", type: "NVarChar", value: `lease:${input.leaseId}` },
+        ];
+        await execSPP("sp_LogSubAssetTransaction", txnParams).catch(() => {/* non-blocking */});
+      }
+      return { leaseSubAssetId, message };
     }),
 
   updateSubAssetStatus: protectedProcedure
