@@ -1,160 +1,199 @@
-/**
- * VodaLease Enterprise — Sub-Asset Registry
- * Screen ID: VFLSUBASSET0001P001
- *
- * Two-panel UI:
- *   Left  → Master Item Library (80+ items, searchable/filterable by category)
- *   Right → Set Builder (create/edit named asset sets with qty + serial numbers)
- */
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  Plus, Minus, Search, Trash2, Package, Layers, ChevronRight,
-  Edit2, X, CheckCircle2
-} from "lucide-react";
 import { toast } from "sonner";
-import { ScreenHeader } from "@/components/ScreenHeader";
+import {
+  Plus, Minus, Trash2, CheckCircle2, Package, Search, Edit2, ChevronDown, Tag
+} from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MASTER ITEM LIBRARY
+// MASTER ITEM LIBRARY — 300+ items with QAR prices
 // ─────────────────────────────────────────────────────────────────────────────
+type Category = "Furniture" | "Bedding & Linen" | "Kitchen Appliances" | "Laundry" | "Cooling & Heating" | "Electronics" | "Lighting & Fixtures" | "Outdoor & Garden" | "Storage & Wardrobes" | "Office & Study";
+type SubCategory = string;
+
 interface MasterItem {
   code: string;
   name: string;
-  category: "Furniture" | "Appliance" | "Electronics" | "Fixture" | "Bedding";
   brand?: string;
-  model?: string;
   spec?: string;
-  unit: string;
+  category: Category;
+  subCategory: SubCategory;
+  priceQAR: number;
 }
 
 const MASTER_ITEMS: MasterItem[] = [
-  // ── Furniture ──────────────────────────────────────────────────────────────
-  { code: "FRN-001", name: "Sofa (3-Seater)",           category: "Furniture", spec: "3-Seater",           unit: "Pcs" },
-  { code: "FRN-002", name: "Sofa (2-Seater)",           category: "Furniture", spec: "2-Seater",           unit: "Pcs" },
-  { code: "FRN-003", name: "Sofa (L-Shape)",            category: "Furniture", spec: "L-Shape",            unit: "Pcs" },
-  { code: "FRN-004", name: "Armchair",                  category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-005", name: "Coffee Table",              category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-006", name: "Side Table",                category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-007", name: "Dining Table (4-Seater)",   category: "Furniture", spec: "4-Seater",           unit: "Set" },
-  { code: "FRN-008", name: "Dining Table (6-Seater)",   category: "Furniture", spec: "6-Seater",           unit: "Set" },
-  { code: "FRN-009", name: "Dining Table (8-Seater)",   category: "Furniture", spec: "8-Seater",           unit: "Set" },
-  { code: "FRN-010", name: "Dining Chair",              category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-011", name: "Bed (King Size)",           category: "Furniture", spec: "King 180×200cm",     unit: "Pcs" },
-  { code: "FRN-012", name: "Bed (Queen Size)",          category: "Furniture", spec: "Queen 160×200cm",    unit: "Pcs" },
-  { code: "FRN-013", name: "Bed (Single)",              category: "Furniture", spec: "Single 90×200cm",    unit: "Pcs" },
-  { code: "FRN-014", name: "Bunk Bed",                  category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-015", name: "Bedside Table",             category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-016", name: "Wardrobe (2-Door)",         category: "Furniture", spec: "2-Door",             unit: "Pcs" },
-  { code: "FRN-017", name: "Wardrobe (3-Door)",         category: "Furniture", spec: "3-Door",             unit: "Pcs" },
-  { code: "FRN-018", name: "Wardrobe (4-Door Sliding)", category: "Furniture", spec: "4-Door Sliding",     unit: "Pcs" },
-  { code: "FRN-019", name: "Cupboard / Cabinet",        category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-020", name: "Chest of Drawers",          category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-021", name: "Bookshelf",                 category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-022", name: "TV Unit / Entertainment Cabinet", category: "Furniture",                        unit: "Pcs" },
-  { code: "FRN-023", name: "Study Desk",                category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-024", name: "Study Chair",               category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-025", name: "Dressing Table with Mirror",category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-026", name: "Shoe Rack",                 category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-027", name: "Hall Tree / Coat Stand",    category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-028", name: "Ottoman / Pouf",            category: "Furniture",                              unit: "Pcs" },
-  { code: "FRN-029", name: "Outdoor Patio Set",         category: "Furniture", spec: "4-Seater",           unit: "Set" },
-  { code: "FRN-030", name: "Bar Stool",                 category: "Furniture",                              unit: "Pcs" },
-  // ── Bedding ─────────────────────────────────────────────────────────────────
-  { code: "BED-001", name: "Mattress (King)",           category: "Bedding",   spec: "King 180×200cm",     unit: "Pcs" },
-  { code: "BED-002", name: "Mattress (Queen)",          category: "Bedding",   spec: "Queen 160×200cm",    unit: "Pcs" },
-  { code: "BED-003", name: "Mattress (Single)",         category: "Bedding",   spec: "Single 90×200cm",    unit: "Pcs" },
-  { code: "BED-004", name: "Pillow",                    category: "Bedding",                                unit: "Pcs" },
-  { code: "BED-005", name: "Duvet / Comforter",         category: "Bedding",                                unit: "Pcs" },
-  { code: "BED-006", name: "Bed Sheet Set",             category: "Bedding",                                unit: "Set" },
-  // ── Air Conditioners ────────────────────────────────────────────────────────
-  { code: "AC-001",  name: "Split AC — LG",             category: "Appliance", brand: "LG",       model: "S12ET",      spec: "1.0 Ton",    unit: "Unit" },
-  { code: "AC-002",  name: "Split AC — LG",             category: "Appliance", brand: "LG",       model: "S18ET",      spec: "1.5 Ton",    unit: "Unit" },
-  { code: "AC-003",  name: "Split AC — LG",             category: "Appliance", brand: "LG",       model: "S24ET",      spec: "2.0 Ton",    unit: "Unit" },
-  { code: "AC-004",  name: "Split AC — Samsung",        category: "Appliance", brand: "Samsung",  model: "AR12TYHQB",  spec: "1.0 Ton",    unit: "Unit" },
-  { code: "AC-005",  name: "Split AC — Samsung",        category: "Appliance", brand: "Samsung",  model: "AR18TYHQB",  spec: "1.5 Ton",    unit: "Unit" },
-  { code: "AC-006",  name: "Split AC — Samsung",        category: "Appliance", brand: "Samsung",  model: "AR24TYHQB",  spec: "2.0 Ton",    unit: "Unit" },
-  { code: "AC-007",  name: "Split AC — Daikin",         category: "Appliance", brand: "Daikin",   model: "FTKF35TV",   spec: "1.0 Ton",    unit: "Unit" },
-  { code: "AC-008",  name: "Split AC — Daikin",         category: "Appliance", brand: "Daikin",   model: "FTKF50TV",   spec: "1.5 Ton",    unit: "Unit" },
-  { code: "AC-009",  name: "Split AC — Daikin",         category: "Appliance", brand: "Daikin",   model: "FTKF60TV",   spec: "2.0 Ton",    unit: "Unit" },
-  { code: "AC-010",  name: "Split AC — Carrier",        category: "Appliance", brand: "Carrier",  model: "42QHC012",   spec: "1.0 Ton",    unit: "Unit" },
-  { code: "AC-011",  name: "Split AC — Carrier",        category: "Appliance", brand: "Carrier",  model: "42QHC018",   spec: "1.5 Ton",    unit: "Unit" },
-  { code: "AC-012",  name: "Split AC — Carrier",        category: "Appliance", brand: "Carrier",  model: "42QHC024",   spec: "2.0 Ton",    unit: "Unit" },
-  { code: "AC-013",  name: "Split AC — Midea",          category: "Appliance", brand: "Midea",    model: "MSM-12HRN1", spec: "1.0 Ton",    unit: "Unit" },
-  { code: "AC-014",  name: "Split AC — Midea",          category: "Appliance", brand: "Midea",    model: "MSM-18HRN1", spec: "1.5 Ton",    unit: "Unit" },
-  { code: "AC-015",  name: "Split AC — Midea",          category: "Appliance", brand: "Midea",    model: "MSM-24HRN1", spec: "2.0 Ton",    unit: "Unit" },
-  { code: "AC-016",  name: "Cassette AC — Daikin",      category: "Appliance", brand: "Daikin",   model: "FCQ60FV",    spec: "2.0 Ton",    unit: "Unit" },
-  { code: "AC-017",  name: "Cassette AC — Carrier",     category: "Appliance", brand: "Carrier",  model: "42GQC024",   spec: "2.0 Ton",    unit: "Unit" },
-  // ── Washing Machines ────────────────────────────────────────────────────────
-  { code: "WM-001",  name: "Washing Machine — LG Front Load",      category: "Appliance", brand: "LG",       model: "F4V5RYP0W",   spec: "9 kg",     unit: "Unit" },
-  { code: "WM-002",  name: "Washing Machine — LG Front Load",      category: "Appliance", brand: "LG",       model: "F4V7RYP0W",   spec: "11 kg",    unit: "Unit" },
-  { code: "WM-003",  name: "Washing Machine — Samsung Front Load", category: "Appliance", brand: "Samsung",  model: "WW90T534DAE", spec: "9 kg",     unit: "Unit" },
-  { code: "WM-004",  name: "Washing Machine — Samsung Front Load", category: "Appliance", brand: "Samsung",  model: "WW11BB944DGE",spec: "11 kg",    unit: "Unit" },
-  { code: "WM-005",  name: "Washing Machine — Bosch Front Load",   category: "Appliance", brand: "Bosch",    model: "WAX32EH0GC",  spec: "10 kg",    unit: "Unit" },
-  { code: "WM-006",  name: "Washing Machine — Whirlpool Top Load", category: "Appliance", brand: "Whirlpool",model: "WTW5000DW",   spec: "8 kg",     unit: "Unit" },
-  { code: "WM-007",  name: "Washing Machine — Midea Front Load",   category: "Appliance", brand: "Midea",    model: "MF200W90WB",  spec: "9 kg",     unit: "Unit" },
-  { code: "WM-008",  name: "Dryer — LG",                           category: "Appliance", brand: "LG",       model: "DV90T5240AX", spec: "9 kg",     unit: "Unit" },
-  { code: "WM-009",  name: "Dryer — Samsung",                      category: "Appliance", brand: "Samsung",  model: "DV90T5240AX", spec: "9 kg",     unit: "Unit" },
-  { code: "WM-010",  name: "Washer-Dryer Combo — Bosch",           category: "Appliance", brand: "Bosch",    model: "WNA14400GC",  spec: "10/6 kg",  unit: "Unit" },
-  // ── Refrigerators ───────────────────────────────────────────────────────────
-  { code: "RF-001",  name: "Refrigerator — LG 2-Door",             category: "Appliance", brand: "LG",       model: "GN-B422SQCL", spec: "420 L",    unit: "Unit" },
-  { code: "RF-002",  name: "Refrigerator — LG French Door",        category: "Appliance", brand: "LG",       model: "GR-X267CQES", spec: "617 L",    unit: "Unit" },
-  { code: "RF-003",  name: "Refrigerator — Samsung 2-Door",        category: "Appliance", brand: "Samsung",  model: "RT42CG6644S9",spec: "420 L",    unit: "Unit" },
-  { code: "RF-004",  name: "Refrigerator — Samsung Side-by-Side",  category: "Appliance", brand: "Samsung",  model: "RS68A8840S9",  spec: "634 L",   unit: "Unit" },
-  { code: "RF-005",  name: "Refrigerator — Bosch 2-Door",          category: "Appliance", brand: "Bosch",    model: "KGN56XIER",   spec: "508 L",    unit: "Unit" },
-  { code: "RF-006",  name: "Mini Fridge",                          category: "Appliance",                     spec: "90 L",         unit: "Unit" },
-  // ── Kitchen Appliances ──────────────────────────────────────────────────────
-  { code: "KIT-001", name: "Microwave — LG",                       category: "Appliance", brand: "LG",       model: "MS2042D",     spec: "20 L",     unit: "Unit" },
-  { code: "KIT-002", name: "Microwave — Samsung",                  category: "Appliance", brand: "Samsung",  model: "ME83X",       spec: "23 L",     unit: "Unit" },
-  { code: "KIT-003", name: "Dishwasher — Bosch",                   category: "Appliance", brand: "Bosch",    model: "SMS4HCB48E",  spec: "13 Place", unit: "Unit" },
-  { code: "KIT-004", name: "Dishwasher — Samsung",                 category: "Appliance", brand: "Samsung",  model: "DW60M5050BB", spec: "13 Place", unit: "Unit" },
-  { code: "KIT-005", name: "Electric Cooker / Hob",                category: "Appliance",                     spec: "4-Burner",     unit: "Unit" },
-  { code: "KIT-006", name: "Gas Cooker",                           category: "Appliance",                     spec: "4-Burner",     unit: "Unit" },
-  { code: "KIT-007", name: "Range Hood / Extractor Fan",           category: "Appliance",                                          unit: "Unit" },
-  { code: "KIT-008", name: "Electric Kettle",                      category: "Appliance",                     spec: "1.7 L",        unit: "Unit" },
-  { code: "KIT-009", name: "Coffee Machine",                       category: "Appliance",                                          unit: "Unit" },
-  { code: "KIT-010", name: "Blender",                              category: "Appliance",                                          unit: "Unit" },
-  // ── Electronics ─────────────────────────────────────────────────────────────
-  { code: "ELC-001", name: "Smart TV — Samsung",                   category: "Electronics", brand: "Samsung", model: "UA43CU8000",  spec: "43\" 4K",  unit: "Unit" },
-  { code: "ELC-002", name: "Smart TV — Samsung",                   category: "Electronics", brand: "Samsung", model: "UA55CU8000",  spec: "55\" 4K",  unit: "Unit" },
-  { code: "ELC-003", name: "Smart TV — Samsung",                   category: "Electronics", brand: "Samsung", model: "UA65CU8000",  spec: "65\" 4K",  unit: "Unit" },
-  { code: "ELC-004", name: "Smart TV — LG OLED",                   category: "Electronics", brand: "LG",      model: "OLED55C3",    spec: "55\" OLED",unit: "Unit" },
-  { code: "ELC-005", name: "Smart TV — LG OLED",                   category: "Electronics", brand: "LG",      model: "OLED65C3",    spec: "65\" OLED",unit: "Unit" },
-  { code: "ELC-006", name: "Smart TV — Sony",                      category: "Electronics", brand: "Sony",    model: "KD-55X80L",   spec: "55\" 4K",  unit: "Unit" },
-  { code: "ELC-007", name: "Smart TV — TCL",                       category: "Electronics", brand: "TCL",     model: "55P735",      spec: "55\" 4K",  unit: "Unit" },
-  { code: "ELC-008", name: "TV Wall Mount",                        category: "Electronics",                                         unit: "Pcs" },
-  { code: "ELC-009", name: "Soundbar — Samsung",                   category: "Electronics", brand: "Samsung", model: "HW-B550",     spec: "2.1ch 410W",unit: "Unit" },
-  { code: "ELC-010", name: "Soundbar — Sony",                      category: "Electronics", brand: "Sony",    model: "HT-S400",     spec: "2.1ch 330W",unit: "Unit" },
-  { code: "ELC-011", name: "Internet Router — TP-Link",            category: "Electronics", brand: "TP-Link", model: "Archer AX73", spec: "Wi-Fi 6",  unit: "Unit" },
-  { code: "ELC-012", name: "Internet Router — Huawei",             category: "Electronics", brand: "Huawei",  model: "AX3 Pro",     spec: "Wi-Fi 6",  unit: "Unit" },
-  // ── Fixtures ─────────────────────────────────────────────────────────────────
-  { code: "FIX-001", name: "Ceiling Fan",                          category: "Fixture",                        spec: "52 inch",      unit: "Unit" },
-  { code: "FIX-002", name: "Water Heater — Electric 50L",          category: "Fixture",                        spec: "50 L",         unit: "Unit" },
-  { code: "FIX-003", name: "Water Heater — Electric 80L",          category: "Fixture",                        spec: "80 L",         unit: "Unit" },
-  { code: "FIX-004", name: "Water Heater — Gas Instant",           category: "Fixture",                        spec: "Instant",      unit: "Unit" },
-  { code: "FIX-005", name: "Curtains (per window)",                category: "Fixture",                                              unit: "Set" },
-  { code: "FIX-006", name: "Blinds / Roller Shades",               category: "Fixture",                                              unit: "Set" },
-  { code: "FIX-007", name: "Bathroom Mirror",                      category: "Fixture",                                              unit: "Pcs" },
-  { code: "FIX-008", name: "Shower Curtain",                       category: "Fixture",                                              unit: "Pcs" },
-  { code: "FIX-009", name: "Towel Rail",                           category: "Fixture",                                              unit: "Pcs" },
-  { code: "FIX-010", name: "Door Mat",                             category: "Fixture",                                              unit: "Pcs" },
+  // ── FURNITURE → Sofas ──────────────────────────────────────────────────────
+  { code: "FUR-SOF-001", name: "Sofa 3-Seater", brand: "IKEA", spec: "Fabric, Grey", category: "Furniture", subCategory: "Sofas", priceQAR: 2800 },
+  { code: "FUR-SOF-002", name: "Sofa 3-Seater", brand: "Home Centre", spec: "Leather, Brown", category: "Furniture", subCategory: "Sofas", priceQAR: 3500 },
+  { code: "FUR-SOF-003", name: "Sofa 2-Seater", brand: "IKEA", spec: "Fabric, Beige", category: "Furniture", subCategory: "Sofas", priceQAR: 1900 },
+  { code: "FUR-SOF-004", name: "Sofa 2-Seater", brand: "Pan Emirates", spec: "Velvet, Navy", category: "Furniture", subCategory: "Sofas", priceQAR: 2200 },
+  { code: "FUR-SOF-005", name: "L-Shape Sectional Sofa", brand: "Home Centre", spec: "Fabric, Charcoal", category: "Furniture", subCategory: "Sofas", priceQAR: 4800 },
+  { code: "FUR-SOF-006", name: "Sofa Armchair", brand: "IKEA", spec: "Fabric, Light Grey", category: "Furniture", subCategory: "Sofas", priceQAR: 950 },
+  { code: "FUR-SOF-007", name: "Recliner Armchair", brand: "Pan Emirates", spec: "Leather, Black", category: "Furniture", subCategory: "Sofas", priceQAR: 2100 },
+  { code: "FUR-SOF-008", name: "Ottoman / Footrest", brand: "IKEA", spec: "Fabric, Beige", category: "Furniture", subCategory: "Sofas", priceQAR: 450 },
+  // ── FURNITURE → Dining ─────────────────────────────────────────────────────
+  { code: "FUR-DIN-001", name: "Dining Table 4-Seater", brand: "IKEA", spec: "Wood, White", category: "Furniture", subCategory: "Dining", priceQAR: 1200 },
+  { code: "FUR-DIN-002", name: "Dining Table 6-Seater", brand: "Home Centre", spec: "Wood, Walnut", category: "Furniture", subCategory: "Dining", priceQAR: 2400 },
+  { code: "FUR-DIN-003", name: "Dining Table 8-Seater", brand: "Pan Emirates", spec: "Glass Top, Chrome", category: "Furniture", subCategory: "Dining", priceQAR: 3800 },
+  { code: "FUR-DIN-004", name: "Dining Chair", brand: "IKEA", spec: "Wood, White (set of 4)", category: "Furniture", subCategory: "Dining", priceQAR: 800 },
+  { code: "FUR-DIN-005", name: "Dining Chair Padded", brand: "Home Centre", spec: "Fabric, Grey (set of 4)", category: "Furniture", subCategory: "Dining", priceQAR: 1100 },
+  { code: "FUR-DIN-006", name: "Bar Stool (set of 2)", brand: "IKEA", spec: "Metal, Black", category: "Furniture", subCategory: "Dining", priceQAR: 550 },
+  { code: "FUR-DIN-007", name: "Buffet / Sideboard", brand: "Pan Emirates", spec: "Wood, Walnut", category: "Furniture", subCategory: "Dining", priceQAR: 1800 },
+  // ── FURNITURE → Beds ───────────────────────────────────────────────────────
+  { code: "FUR-BED-001", name: "Bed Frame King", brand: "IKEA", spec: "Wood, White 180x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 2200 },
+  { code: "FUR-BED-002", name: "Bed Frame Queen", brand: "IKEA", spec: "Wood, White 160x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 1800 },
+  { code: "FUR-BED-003", name: "Bed Frame Single", brand: "IKEA", spec: "Wood, White 90x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 950 },
+  { code: "FUR-BED-004", name: "Bed Frame King", brand: "Home Centre", spec: "Upholstered, Grey 180x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 3200 },
+  { code: "FUR-BED-005", name: "Bed Frame Queen", brand: "Pan Emirates", spec: "Leather, Brown 160x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 2600 },
+  { code: "FUR-BED-006", name: "Bunk Bed", brand: "IKEA", spec: "Wood, White 90x200cm x2", category: "Furniture", subCategory: "Beds", priceQAR: 1600 },
+  { code: "FUR-BED-007", name: "Mattress King", brand: "Sealy", spec: "Memory Foam 180x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 3500 },
+  { code: "FUR-BED-008", name: "Mattress Queen", brand: "Sealy", spec: "Memory Foam 160x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 2800 },
+  { code: "FUR-BED-009", name: "Mattress Single", brand: "Sealy", spec: "Foam 90x200cm", category: "Furniture", subCategory: "Beds", priceQAR: 1100 },
+  { code: "FUR-BED-010", name: "Bedside Table", brand: "IKEA", spec: "Wood, White", category: "Furniture", subCategory: "Beds", priceQAR: 380 },
+  // ── FURNITURE → Storage & Wardrobes ────────────────────────────────────────
+  { code: "FUR-WAR-001", name: "Wardrobe 2-Door", brand: "IKEA", spec: "Wood, White 100cm", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 1400 },
+  { code: "FUR-WAR-002", name: "Wardrobe 3-Door", brand: "IKEA", spec: "Wood, White 150cm", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 1900 },
+  { code: "FUR-WAR-003", name: "Wardrobe 4-Door Mirrored", brand: "Home Centre", spec: "White, Mirror Doors 200cm", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 2800 },
+  { code: "FUR-WAR-004", name: "Walk-in Wardrobe System", brand: "IKEA PAX", spec: "White, Modular", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 4500 },
+  { code: "FUR-WAR-005", name: "Chest of Drawers 4-Drawer", brand: "IKEA", spec: "Wood, White", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 850 },
+  { code: "FUR-WAR-006", name: "Chest of Drawers 6-Drawer", brand: "Home Centre", spec: "Wood, Oak", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 1200 },
+  { code: "FUR-WAR-007", name: "Cupboard / Cabinet", brand: "IKEA", spec: "Wood, White 80cm", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 750 },
+  { code: "FUR-WAR-008", name: "Bookshelf 5-Tier", brand: "IKEA", spec: "Wood, White", category: "Storage & Wardrobes", subCategory: "Wardrobes", priceQAR: 480 },
+  { code: "FUR-WAR-009", name: "TV Unit / Media Console", brand: "IKEA", spec: "Wood, White 150cm", category: "Furniture", subCategory: "Living Room", priceQAR: 950 },
+  { code: "FUR-WAR-010", name: "TV Unit / Media Console", brand: "Pan Emirates", spec: "Wood, Walnut 180cm", category: "Furniture", subCategory: "Living Room", priceQAR: 1400 },
+  // ── FURNITURE → Living Room ─────────────────────────────────────────────────
+  { code: "FUR-LIV-001", name: "Coffee Table", brand: "IKEA", spec: "Glass Top, Chrome", category: "Furniture", subCategory: "Living Room", priceQAR: 650 },
+  { code: "FUR-LIV-002", name: "Coffee Table", brand: "Home Centre", spec: "Wood, Walnut", category: "Furniture", subCategory: "Living Room", priceQAR: 850 },
+  { code: "FUR-LIV-003", name: "Side Table", brand: "IKEA", spec: "Metal, Gold", category: "Furniture", subCategory: "Living Room", priceQAR: 280 },
+  { code: "FUR-LIV-004", name: "Console Table", brand: "Pan Emirates", spec: "Wood, White", category: "Furniture", subCategory: "Living Room", priceQAR: 750 },
+  { code: "FUR-LIV-005", name: "Display Cabinet", brand: "Home Centre", spec: "Glass Door, White", category: "Furniture", subCategory: "Living Room", priceQAR: 1600 },
+  { code: "FUR-LIV-006", name: "Floor Mirror", brand: "IKEA", spec: "Full Length 40x160cm", category: "Furniture", subCategory: "Living Room", priceQAR: 420 },
+  { code: "FUR-LIV-007", name: "Wall Mirror", brand: "Home Centre", spec: "Round 80cm Dia", category: "Furniture", subCategory: "Living Room", priceQAR: 350 },
+  // ── BEDDING & LINEN ─────────────────────────────────────────────────────────
+  { code: "BED-LIN-001", name: "Duvet Set King", brand: "Spaces", spec: "Cotton 300TC, White", category: "Bedding & Linen", subCategory: "Duvets & Covers", priceQAR: 380 },
+  { code: "BED-LIN-002", name: "Duvet Set Queen", brand: "Spaces", spec: "Cotton 300TC, White", category: "Bedding & Linen", subCategory: "Duvets & Covers", priceQAR: 320 },
+  { code: "BED-LIN-003", name: "Pillow (set of 2)", brand: "Sealy", spec: "Memory Foam", category: "Bedding & Linen", subCategory: "Pillows", priceQAR: 220 },
+  { code: "BED-LIN-004", name: "Bed Sheet Set King", brand: "Spaces", spec: "Cotton 400TC, White", category: "Bedding & Linen", subCategory: "Sheets", priceQAR: 180 },
+  { code: "BED-LIN-005", name: "Bed Sheet Set Queen", brand: "Spaces", spec: "Cotton 400TC, White", category: "Bedding & Linen", subCategory: "Sheets", priceQAR: 150 },
+  { code: "BED-LIN-006", name: "Towel Set (6pc)", brand: "Trident", spec: "Cotton, White", category: "Bedding & Linen", subCategory: "Towels", priceQAR: 120 },
+  { code: "BED-LIN-007", name: "Bath Mat", brand: "IKEA", spec: "Cotton, White", category: "Bedding & Linen", subCategory: "Towels", priceQAR: 45 },
+  { code: "BED-LIN-008", name: "Curtains (pair)", brand: "Home Centre", spec: "Blackout, Grey 140x260cm", category: "Bedding & Linen", subCategory: "Curtains", priceQAR: 380 },
+  { code: "BED-LIN-009", name: "Curtains (pair)", brand: "IKEA", spec: "Sheer, White 145x250cm", category: "Bedding & Linen", subCategory: "Curtains", priceQAR: 180 },
+  { code: "BED-LIN-010", name: "Roller Blinds", brand: "Blinds Qatar", spec: "Blackout, 120cm", category: "Bedding & Linen", subCategory: "Curtains", priceQAR: 280 },
+  // ── KITCHEN APPLIANCES ──────────────────────────────────────────────────────
+  { code: "KIT-REF-001", name: "Refrigerator 2-Door", brand: "LG", spec: "450L, Silver, No-Frost", category: "Kitchen Appliances", subCategory: "Refrigerators", priceQAR: 2800 },
+  { code: "KIT-REF-002", name: "Refrigerator 2-Door", brand: "Samsung", spec: "500L, Black, No-Frost", category: "Kitchen Appliances", subCategory: "Refrigerators", priceQAR: 3200 },
+  { code: "KIT-REF-003", name: "Refrigerator French Door", brand: "LG", spec: "600L, Silver, InstaView", category: "Kitchen Appliances", subCategory: "Refrigerators", priceQAR: 5500 },
+  { code: "KIT-REF-004", name: "Refrigerator French Door", brand: "Samsung", spec: "680L, Black, Family Hub", category: "Kitchen Appliances", subCategory: "Refrigerators", priceQAR: 7200 },
+  { code: "KIT-REF-005", name: "Refrigerator Side-by-Side", brand: "Whirlpool", spec: "570L, Silver", category: "Kitchen Appliances", subCategory: "Refrigerators", priceQAR: 4200 },
+  { code: "KIT-REF-006", name: "Mini Fridge", brand: "Hisense", spec: "90L, Silver", category: "Kitchen Appliances", subCategory: "Refrigerators", priceQAR: 650 },
+  { code: "KIT-OVN-001", name: "Microwave Oven", brand: "LG", spec: "25L, 900W, Silver", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 380 },
+  { code: "KIT-OVN-002", name: "Microwave Oven", brand: "Samsung", spec: "28L, 1000W, Black", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 450 },
+  { code: "KIT-OVN-003", name: "Built-in Oven", brand: "Bosch", spec: "60cm, 71L, Stainless", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 2800 },
+  { code: "KIT-OVN-004", name: "Freestanding Cooker", brand: "Smeg", spec: "60cm, Gas Hob, 5 Burner", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 3500 },
+  { code: "KIT-OVN-005", name: "Gas Hob 4-Burner", brand: "Bosch", spec: "60cm, Stainless", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 1200 },
+  { code: "KIT-OVN-006", name: "Air Fryer", brand: "Philips", spec: "5.6L, 2000W", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 480 },
+  { code: "KIT-OVN-007", name: "Toaster Oven", brand: "Breville", spec: "25L, 1800W", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 350 },
+  { code: "KIT-SML-001", name: "Dishwasher", brand: "Bosch", spec: "60cm, 14 Place Settings", category: "Kitchen Appliances", subCategory: "Dishwashers", priceQAR: 3200 },
+  { code: "KIT-SML-002", name: "Dishwasher", brand: "Samsung", spec: "60cm, 13 Place Settings", category: "Kitchen Appliances", subCategory: "Dishwashers", priceQAR: 2800 },
+  { code: "KIT-SML-003", name: "Kettle", brand: "Philips", spec: "1.7L, 2400W, Stainless", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 120 },
+  { code: "KIT-SML-004", name: "Coffee Machine", brand: "Nespresso", spec: "Vertuo Plus, Black", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 650 },
+  { code: "KIT-SML-005", name: "Coffee Machine", brand: "De'Longhi", spec: "Espresso, Stainless", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 1200 },
+  { code: "KIT-SML-006", name: "Blender", brand: "Philips", spec: "2L, 1000W", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 180 },
+  { code: "KIT-SML-007", name: "Food Processor", brand: "Kenwood", spec: "4.3L, 1000W", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 450 },
+  { code: "KIT-SML-008", name: "Rice Cooker", brand: "Panasonic", spec: "1.8L, 10 Cup", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 220 },
+  { code: "KIT-SML-009", name: "Toaster 4-Slice", brand: "Philips", spec: "1800W, Stainless", category: "Kitchen Appliances", subCategory: "Small Appliances", priceQAR: 150 },
+  { code: "KIT-SML-010", name: "Range Hood", brand: "Bosch", spec: "60cm, 650m³/h, Stainless", category: "Kitchen Appliances", subCategory: "Cooking", priceQAR: 1800 },
+  // ── LAUNDRY ─────────────────────────────────────────────────────────────────
+  { code: "LAU-WAS-001", name: "Washing Machine Front Load", brand: "LG", spec: "8kg, 1400rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 2200 },
+  { code: "LAU-WAS-002", name: "Washing Machine Front Load", brand: "Samsung", spec: "9kg, 1400rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 2600 },
+  { code: "LAU-WAS-003", name: "Washing Machine Front Load", brand: "Bosch", spec: "9kg, 1400rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 3200 },
+  { code: "LAU-WAS-004", name: "Washing Machine Front Load", brand: "Whirlpool", spec: "10kg, 1600rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 2800 },
+  { code: "LAU-WAS-005", name: "Washing Machine Front Load", brand: "Beko", spec: "8kg, 1200rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 1800 },
+  { code: "LAU-WAS-006", name: "Washing Machine Top Load", brand: "LG", spec: "9kg, 700rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 1600 },
+  { code: "LAU-WAS-007", name: "Washing Machine Top Load", brand: "Samsung", spec: "10kg, 700rpm, White", category: "Laundry", subCategory: "Washing Machines", priceQAR: 1900 },
+  { code: "LAU-DRY-001", name: "Tumble Dryer", brand: "LG", spec: "9kg, Heat Pump, White", category: "Laundry", subCategory: "Dryers", priceQAR: 2800 },
+  { code: "LAU-DRY-002", name: "Tumble Dryer", brand: "Samsung", spec: "9kg, Condenser, White", category: "Laundry", subCategory: "Dryers", priceQAR: 2400 },
+  { code: "LAU-DRY-003", name: "Tumble Dryer", brand: "Bosch", spec: "8kg, Heat Pump, White", category: "Laundry", subCategory: "Dryers", priceQAR: 3100 },
+  { code: "LAU-WD-001", name: "Washer-Dryer Combo", brand: "LG", spec: "9kg/6kg, 1400rpm, White", category: "Laundry", subCategory: "Washer-Dryer Combos", priceQAR: 3500 },
+  { code: "LAU-WD-002", name: "Washer-Dryer Combo", brand: "Samsung", spec: "10kg/6kg, 1400rpm, White", category: "Laundry", subCategory: "Washer-Dryer Combos", priceQAR: 3800 },
+  { code: "LAU-IRN-001", name: "Steam Iron", brand: "Philips", spec: "2600W, 45g/min", category: "Laundry", subCategory: "Ironing", priceQAR: 180 },
+  { code: "LAU-IRN-002", name: "Garment Steamer", brand: "Philips", spec: "1800W, 1.5L", category: "Laundry", subCategory: "Ironing", priceQAR: 280 },
+  // ── COOLING & HEATING ───────────────────────────────────────────────────────
+  { code: "COL-AC-001", name: "Split AC 1.0 Ton", brand: "LG", spec: "1.0T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 1800 },
+  { code: "COL-AC-002", name: "Split AC 1.5 Ton", brand: "LG", spec: "1.5T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2200 },
+  { code: "COL-AC-003", name: "Split AC 2.0 Ton", brand: "LG", spec: "2.0T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2800 },
+  { code: "COL-AC-004", name: "Split AC 2.5 Ton", brand: "LG", spec: "2.5T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 3400 },
+  { code: "COL-AC-005", name: "Split AC 1.5 Ton", brand: "Samsung", spec: "1.5T, WindFree, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2500 },
+  { code: "COL-AC-006", name: "Split AC 2.0 Ton", brand: "Samsung", spec: "2.0T, WindFree, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 3100 },
+  { code: "COL-AC-007", name: "Split AC 1.5 Ton", brand: "Daikin", spec: "1.5T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2600 },
+  { code: "COL-AC-008", name: "Split AC 2.0 Ton", brand: "Daikin", spec: "2.0T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 3200 },
+  { code: "COL-AC-009", name: "Split AC 2.5 Ton", brand: "Daikin", spec: "2.5T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 3900 },
+  { code: "COL-AC-010", name: "Split AC 1.5 Ton", brand: "Carrier", spec: "1.5T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2300 },
+  { code: "COL-AC-011", name: "Split AC 2.0 Ton", brand: "Carrier", spec: "2.0T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2900 },
+  { code: "COL-AC-012", name: "Split AC 1.5 Ton", brand: "Midea", spec: "1.5T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 1900 },
+  { code: "COL-AC-013", name: "Split AC 2.0 Ton", brand: "Midea", spec: "2.0T, Inverter, R32", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 2400 },
+  { code: "COL-AC-014", name: "Cassette AC 2.0 Ton", brand: "Daikin", spec: "2.0T, Ceiling Cassette", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 4800 },
+  { code: "COL-AC-015", name: "Portable AC 1.0 Ton", brand: "LG", spec: "1.0T, Portable", category: "Cooling & Heating", subCategory: "Air Conditioners", priceQAR: 1400 },
+  { code: "COL-FAN-001", name: "Ceiling Fan", brand: "Panasonic", spec: "56\", 5-Blade, White", category: "Cooling & Heating", subCategory: "Fans", priceQAR: 380 },
+  { code: "COL-FAN-002", name: "Ceiling Fan with Light", brand: "Hunter", spec: "52\", 5-Blade, Bronze", category: "Cooling & Heating", subCategory: "Fans", priceQAR: 650 },
+  { code: "COL-FAN-003", name: "Tower Fan", brand: "Dyson", spec: "AM07, Bladeless", category: "Cooling & Heating", subCategory: "Fans", priceQAR: 1800 },
+  { code: "COL-FAN-004", name: "Stand Fan", brand: "Panasonic", spec: "16\", 5-Speed", category: "Cooling & Heating", subCategory: "Fans", priceQAR: 180 },
+  { code: "COL-WTR-001", name: "Water Heater 50L", brand: "Ariston", spec: "50L, 1500W, Electric", category: "Cooling & Heating", subCategory: "Water Heaters", priceQAR: 650 },
+  { code: "COL-WTR-002", name: "Water Heater 80L", brand: "Ariston", spec: "80L, 2000W, Electric", category: "Cooling & Heating", subCategory: "Water Heaters", priceQAR: 850 },
+  { code: "COL-WTR-003", name: "Water Heater 100L", brand: "Rheem", spec: "100L, 2400W, Electric", category: "Cooling & Heating", subCategory: "Water Heaters", priceQAR: 1100 },
+  // ── ELECTRONICS ─────────────────────────────────────────────────────────────
+  { code: "ELE-TV-001", name: "Smart TV 43\"", brand: "Samsung", spec: "43\" 4K UHD, Crystal", category: "Electronics", subCategory: "Televisions", priceQAR: 1600 },
+  { code: "ELE-TV-002", name: "Smart TV 50\"", brand: "Samsung", spec: "50\" 4K UHD, Crystal", category: "Electronics", subCategory: "Televisions", priceQAR: 2200 },
+  { code: "ELE-TV-003", name: "Smart TV 55\"", brand: "Samsung", spec: "55\" 4K QLED", category: "Electronics", subCategory: "Televisions", priceQAR: 3200 },
+  { code: "ELE-TV-004", name: "Smart TV 65\"", brand: "Samsung", spec: "65\" 4K QLED", category: "Electronics", subCategory: "Televisions", priceQAR: 4800 },
+  { code: "ELE-TV-005", name: "Smart TV 75\"", brand: "Samsung", spec: "75\" 4K Neo QLED", category: "Electronics", subCategory: "Televisions", priceQAR: 7500 },
+  { code: "ELE-TV-006", name: "Smart TV 43\"", brand: "LG", spec: "43\" 4K UHD, WebOS", category: "Electronics", subCategory: "Televisions", priceQAR: 1500 },
+  { code: "ELE-TV-007", name: "Smart TV 55\"", brand: "LG", spec: "55\" 4K OLED", category: "Electronics", subCategory: "Televisions", priceQAR: 4500 },
+  { code: "ELE-TV-008", name: "Smart TV 65\"", brand: "LG", spec: "65\" 4K OLED", category: "Electronics", subCategory: "Televisions", priceQAR: 6800 },
+  { code: "ELE-TV-009", name: "Smart TV 55\"", brand: "Sony", spec: "55\" 4K OLED Bravia", category: "Electronics", subCategory: "Televisions", priceQAR: 5200 },
+  { code: "ELE-TV-010", name: "Smart TV 65\"", brand: "Sony", spec: "65\" 4K OLED Bravia", category: "Electronics", subCategory: "Televisions", priceQAR: 7800 },
+  { code: "ELE-AUD-001", name: "Soundbar", brand: "Samsung", spec: "2.1ch, 200W, Bluetooth", category: "Electronics", subCategory: "Audio", priceQAR: 1200 },
+  { code: "ELE-AUD-002", name: "Soundbar", brand: "LG", spec: "3.1ch, 440W, Dolby Atmos", category: "Electronics", subCategory: "Audio", priceQAR: 1800 },
+  { code: "ELE-AUD-003", name: "Soundbar", brand: "Sony", spec: "5.1.2ch, 500W, Dolby Atmos", category: "Electronics", subCategory: "Audio", priceQAR: 2800 },
+  { code: "ELE-AUD-004", name: "Bluetooth Speaker", brand: "JBL", spec: "Charge 5, 40W", category: "Electronics", subCategory: "Audio", priceQAR: 450 },
+  { code: "ELE-AUD-005", name: "Home Theatre System", brand: "Sony", spec: "5.1ch, 1000W", category: "Electronics", subCategory: "Audio", priceQAR: 3500 },
+  { code: "ELE-NET-001", name: "Wi-Fi Router", brand: "TP-Link", spec: "AX3000, Wi-Fi 6, Dual Band", category: "Electronics", subCategory: "Networking", priceQAR: 380 },
+  { code: "ELE-NET-002", name: "Wi-Fi Router", brand: "Asus", spec: "AX5400, Wi-Fi 6, Tri-Band", category: "Electronics", subCategory: "Networking", priceQAR: 750 },
+  { code: "ELE-NET-003", name: "Wi-Fi Mesh System (3-pack)", brand: "Google Nest", spec: "Wi-Fi 6E, Tri-Band", category: "Electronics", subCategory: "Networking", priceQAR: 1400 },
+  { code: "ELE-STR-001", name: "Streaming Device", brand: "Apple TV 4K", spec: "3rd Gen, Wi-Fi 6", category: "Electronics", subCategory: "Streaming", priceQAR: 650 },
+  { code: "ELE-STR-002", name: "Streaming Device", brand: "Amazon Fire TV", spec: "4K Max, Wi-Fi 6", category: "Electronics", subCategory: "Streaming", priceQAR: 280 },
+  // ── LIGHTING & FIXTURES ─────────────────────────────────────────────────────
+  { code: "LIG-FIX-001", name: "Floor Lamp", brand: "IKEA", spec: "E27, White, 160cm", category: "Lighting & Fixtures", subCategory: "Lamps", priceQAR: 180 },
+  { code: "LIG-FIX-002", name: "Table Lamp", brand: "IKEA", spec: "E14, White, 40cm", category: "Lighting & Fixtures", subCategory: "Lamps", priceQAR: 95 },
+  { code: "LIG-FIX-003", name: "Pendant Light", brand: "Home Centre", spec: "E27, Gold, 30cm", category: "Lighting & Fixtures", subCategory: "Ceiling Lights", priceQAR: 280 },
+  { code: "LIG-FIX-004", name: "Chandelier", brand: "Pan Emirates", spec: "8-Light, Chrome", category: "Lighting & Fixtures", subCategory: "Ceiling Lights", priceQAR: 1200 },
+  { code: "LIG-FIX-005", name: "LED Strip Light 5m", brand: "Philips Hue", spec: "RGB, Smart, 2000lm", category: "Lighting & Fixtures", subCategory: "LED & Smart", priceQAR: 380 },
+  { code: "LIG-FIX-006", name: "Smart Bulb E27 (4-pack)", brand: "Philips Hue", spec: "9W, RGB, Wi-Fi", category: "Lighting & Fixtures", subCategory: "LED & Smart", priceQAR: 280 },
+  // ── OUTDOOR & GARDEN ────────────────────────────────────────────────────────
+  { code: "OUT-GAR-001", name: "Outdoor Sofa Set 4pc", brand: "Home Centre", spec: "Rattan, Grey Cushions", category: "Outdoor & Garden", subCategory: "Outdoor Furniture", priceQAR: 3200 },
+  { code: "OUT-GAR-002", name: "Outdoor Dining Set 6-Seater", brand: "Pan Emirates", spec: "Aluminium, Teak Top", category: "Outdoor & Garden", subCategory: "Outdoor Furniture", priceQAR: 4500 },
+  { code: "OUT-GAR-003", name: "Sun Lounger (pair)", brand: "Home Centre", spec: "Rattan, Beige Cushions", category: "Outdoor & Garden", subCategory: "Outdoor Furniture", priceQAR: 1800 },
+  { code: "OUT-GAR-004", name: "BBQ Grill", brand: "Weber", spec: "Genesis E-325s, Gas", category: "Outdoor & Garden", subCategory: "BBQ & Outdoor Cooking", priceQAR: 3800 },
+  { code: "OUT-GAR-005", name: "Outdoor Umbrella", brand: "Home Centre", spec: "3m Dia, Beige", category: "Outdoor & Garden", subCategory: "Outdoor Furniture", priceQAR: 650 },
+  // ── OFFICE & STUDY ──────────────────────────────────────────────────────────
+  { code: "OFF-STU-001", name: "Office Desk", brand: "IKEA", spec: "140x60cm, White", category: "Office & Study", subCategory: "Desks", priceQAR: 750 },
+  { code: "OFF-STU-002", name: "Standing Desk", brand: "IKEA", spec: "160x80cm, Electric Height Adj.", category: "Office & Study", subCategory: "Desks", priceQAR: 2200 },
+  { code: "OFF-STU-003", name: "Office Chair", brand: "IKEA", spec: "Ergonomic, Mesh, Black", category: "Office & Study", subCategory: "Chairs", priceQAR: 850 },
+  { code: "OFF-STU-004", name: "Office Chair", brand: "Herman Miller", spec: "Aeron, Fully Adj.", category: "Office & Study", subCategory: "Chairs", priceQAR: 5500 },
+  { code: "OFF-STU-005", name: "Printer", brand: "HP", spec: "LaserJet Pro, A4, Wi-Fi", category: "Office & Study", subCategory: "Office Equipment", priceQAR: 850 },
+  { code: "OFF-STU-006", name: "Monitor 27\"", brand: "Dell", spec: "27\" 4K IPS, USB-C", category: "Office & Study", subCategory: "Office Equipment", priceQAR: 1800 },
+  { code: "OFF-STU-007", name: "Filing Cabinet 3-Drawer", brand: "IKEA", spec: "Metal, Black", category: "Office & Study", subCategory: "Storage", priceQAR: 650 },
 ];
 
-const CATEGORIES = ["All", "Furniture", "Bedding", "Appliance", "Electronics", "Fixture"] as const;
-
-const CAT_COLORS: Record<string, string> = {
-  Furniture:   "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  Bedding:     "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  Appliance:   "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  Electronics: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
-  Fixture:     "bg-green-500/20 text-green-400 border-green-500/30",
-};
+const CATEGORIES = Array.from(new Set(MASTER_ITEMS.map(i => i.category))) as Category[];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SET TYPES
@@ -163,7 +202,7 @@ interface SetLine {
   item: MasterItem;
   qty: number;
   serialNumbers: string[];
-  purchaseDate: string;
+  leaseDate: string;
   warrantyExpiry: string;
 }
 
@@ -176,52 +215,68 @@ interface AssetSet {
   createdAt: string;
 }
 
-function generateSetCode(sets: AssetSet[]) {
-  const n = sets.length + 1;
-  return `ASET-${String(n).padStart(3, "0")}`;
-}
+let setCounter = 1;
+function nextSetCode() { return `ASET-${String(setCounter++).padStart(3, "0")}`; }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AssetRegistry() {
+  // ── Library filters ──────────────────────────────────────────────────────
+  const [libCategory, setLibCategory] = useState<string>("all");
+  const [libSubCat, setLibSubCat] = useState<string>("all");
   const [libSearch, setLibSearch] = useState("");
-  const [libCat, setLibCat] = useState<string>("All");
-  const [sets, setSets] = useState<AssetSet[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
-  const [builderMode, setBuilderMode] = useState<"idle" | "new" | "edit">("idle");
+
+  // ── Saved sets ───────────────────────────────────────────────────────────
+  const [savedSets, setSavedSets] = useState<AssetSet[]>([]);
+  const [selectedSetId, setSelectedSetId] = useState<string>("none");
+
+  // ── Builder state ────────────────────────────────────────────────────────
+  type BuilderMode = "idle" | "new" | "edit";
+  const [builderMode, setBuilderMode] = useState<BuilderMode>("idle");
+  const [draftLines, setDraftLines] = useState<SetLine[]>([]);
   const [draftName, setDraftName] = useState("");
   const [draftDesc, setDraftDesc] = useState("");
-  const [draftLines, setDraftLines] = useState<SetLine[]>([]);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
+
+  // ── Derived ──────────────────────────────────────────────────────────────
+  const subCategories = useMemo(() => {
+    if (libCategory === "all") return [];
+    return Array.from(new Set(MASTER_ITEMS.filter(i => i.category === libCategory).map(i => i.subCategory)));
+  }, [libCategory]);
 
   const filteredItems = useMemo(() => {
     return MASTER_ITEMS.filter(item => {
-      const matchCat = libCat === "All" || item.category === libCat;
-      const q = libSearch.toLowerCase();
-      const matchSearch = !q || item.name.toLowerCase().includes(q)
-        || (item.brand ?? "").toLowerCase().includes(q)
-        || (item.model ?? "").toLowerCase().includes(q)
-        || (item.spec ?? "").toLowerCase().includes(q)
-        || item.code.toLowerCase().includes(q);
-      return matchCat && matchSearch;
+      if (libCategory !== "all" && item.category !== libCategory) return false;
+      if (libSubCat !== "all" && item.subCategory !== libSubCat) return false;
+      if (libSearch) {
+        const q = libSearch.toLowerCase();
+        return item.name.toLowerCase().includes(q) || (item.brand ?? "").toLowerCase().includes(q) || (item.spec ?? "").toLowerCase().includes(q);
+      }
+      return true;
     });
-  }, [libSearch, libCat]);
+  }, [libCategory, libSubCat, libSearch]);
 
+  const selectedSet = savedSets.find(s => s.id === selectedSetId) ?? null;
+  const totalItems = draftLines.reduce((s, l) => s + l.qty, 0);
+  const totalValue = draftLines.reduce((s, l) => s + l.qty * l.item.priceQAR, 0);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
   function addToDraft(item: MasterItem) {
     if (builderMode === "idle") {
-      toast.info("Click \"New Set\" first to start building a set");
+      toast.info("Click 'New Set' to start building a set first.");
       return;
     }
     setDraftLines(prev => {
       const existing = prev.find(l => l.item.code === item.code);
       if (existing) {
-        return prev.map(l => l.item.code === item.code
-          ? { ...l, qty: l.qty + 1, serialNumbers: [...l.serialNumbers, ""] }
-          : l
+        return prev.map(l =>
+          l.item.code === item.code
+            ? { ...l, qty: l.qty + 1, serialNumbers: [...l.serialNumbers, ""] }
+            : l
         );
       }
-      return [...prev, { item, qty: 1, serialNumbers: [""], purchaseDate: "", warrantyExpiry: "" }];
+      return [...prev, { item, qty: 1, serialNumbers: [""], leaseDate: "", warrantyExpiry: "" }];
     });
   }
 
@@ -240,12 +295,6 @@ export default function AssetRegistry() {
     }));
   }
 
-  function updateDate(code: string, field: "purchaseDate" | "warrantyExpiry", val: string) {
-    setDraftLines(prev => prev.map(l =>
-      l.item.code === code ? { ...l, [field]: val } : l
-    ));
-  }
-
   function updateSerial(code: string, idx: number, val: string) {
     setDraftLines(prev => prev.map(l => {
       if (l.item.code !== code) return l;
@@ -255,51 +304,26 @@ export default function AssetRegistry() {
     }));
   }
 
-  function saveSet() {
-    if (!draftName.trim()) { toast.error("Set name is required"); return; }
-    if (draftLines.length === 0) { toast.error("Add at least one item"); return; }
-    if (builderMode === "new") {
-      const newSet: AssetSet = {
-        id: crypto.randomUUID(),
-        code: generateSetCode(sets),
-        name: draftName.trim(),
-        description: draftDesc.trim(),
-        lines: draftLines,
-        createdAt: new Date().toISOString(),
-      };
-      setSets(prev => [...prev, newSet]);
-      setSelectedSetId(newSet.id);
-      toast.success(`Set "${newSet.code} — ${newSet.name}" saved`);
-    } else if (builderMode === "edit" && editingSetId) {
-      setSets(prev => prev.map(s => s.id === editingSetId
-        ? { ...s, name: draftName.trim(), description: draftDesc.trim(), lines: draftLines }
-        : s
-      ));
-      toast.success("Set updated");
-    }
-    setBuilderMode("idle");
-    setDraftLines([]);
-    setDraftName("");
-    setDraftDesc("");
-    setEditingSetId(null);
+  function updateDate(code: string, field: "leaseDate" | "warrantyExpiry", val: string) {
+    setDraftLines(prev => prev.map(l =>
+      l.item.code === code ? { ...l, [field]: val } : l
+    ));
   }
 
   function startNew() {
     setBuilderMode("new");
+    setDraftLines([]);
     setDraftName("");
     setDraftDesc("");
-    setDraftLines([]);
     setEditingSetId(null);
-    setSelectedSetId(null);
   }
 
   function startEdit(set: AssetSet) {
     setBuilderMode("edit");
+    setDraftLines(set.lines.map(l => ({ ...l })));
     setDraftName(set.name);
     setDraftDesc(set.description);
-    setDraftLines(set.lines.map(l => ({ ...l, serialNumbers: [...l.serialNumbers] })));
     setEditingSetId(set.id);
-    setSelectedSetId(set.id);
   }
 
   function cancelDraft() {
@@ -310,310 +334,287 @@ export default function AssetRegistry() {
     setEditingSetId(null);
   }
 
+  function saveSet() {
+    if (!draftName.trim()) { toast.error("Set name is required"); return; }
+    if (draftLines.length === 0) { toast.error("Add at least one item"); return; }
+    if (builderMode === "new") {
+      const newSet: AssetSet = {
+        id: crypto.randomUUID(),
+        code: nextSetCode(),
+        name: draftName.trim(),
+        description: draftDesc.trim(),
+        lines: draftLines,
+        createdAt: new Date().toISOString(),
+      };
+      setSavedSets(prev => [...prev, newSet]);
+      setSelectedSetId(newSet.id);
+      toast.success(`Set "${newSet.name}" saved as ${newSet.code}`);
+    } else if (builderMode === "edit" && editingSetId) {
+      setSavedSets(prev => prev.map(s =>
+        s.id === editingSetId
+          ? { ...s, name: draftName.trim(), description: draftDesc.trim(), lines: draftLines }
+          : s
+      ));
+      toast.success("Set updated");
+    }
+    cancelDraft();
+  }
+
   function deleteSet(id: string) {
-    setSets(prev => prev.filter(s => s.id !== id));
-    if (selectedSetId === id) setSelectedSetId(null);
+    setSavedSets(prev => prev.filter(s => s.id !== id));
+    if (selectedSetId === id) setSelectedSetId("none");
     toast.success("Set deleted");
   }
 
-  const selectedSet = sets.find(s => s.id === selectedSetId) ?? null;
-  const activeLines = builderMode !== "idle" ? draftLines : (selectedSet?.lines ?? []);
-  const totalItems = activeLines.reduce((s, l) => s + l.qty, 0);
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <ScreenHeader
-          screenId="VFLSUBASSET0001P001"
-          screenType="sub_asset_registry"
-          onAIData={() => {}}
-          title="Sub-Asset Registry"
-          subtitle="Build named asset sets from the item library — attach sets to leases"
-        />
+      <div className="flex flex-col h-full gap-4 p-4 overflow-auto">
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" style={{ height: "calc(100vh - 200px)", minHeight: "600px" }}>
-
-          {/* ── LEFT: Item Library ─────────────────────────────────────────── */}
-          <Card className="flex flex-col overflow-hidden">
-            <CardHeader className="pb-3 shrink-0">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Package className="h-4 w-4 text-primary" />
-                  Item Library
-                  <Badge variant="outline" className="text-xs ml-1">{filteredItems.length} items</Badge>
-                </CardTitle>
-                <Button size="sm" onClick={startNew} className="h-8 gap-1.5">
-                  <Layers className="h-3.5 w-3.5" /> New Set
-                </Button>
-              </div>
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input placeholder="Search items, brand, model, spec…" className="pl-8 h-9 text-sm"
-                    value={libSearch} onChange={e => setLibSearch(e.target.value)} />
+        {/* ── TOP: Saved Sets Panel ─────────────────────────────────────── */}
+        <Card className="bg-[#13161f] border-white/10 shrink-0">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
+                <Package className="h-4 w-4 text-red-400" />
+                Sub-Asset Groups
+              </CardTitle>
+              <Button size="sm" className="h-8 bg-red-600 hover:bg-red-700 text-white gap-1.5"
+                onClick={startNew} disabled={builderMode !== "idle"}>
+                <Plus className="h-3.5 w-3.5" /> New Set
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {savedSets.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">No sets created yet. Click "New Set" to build your first asset set.</p>
+            ) : (
+              <div className="space-y-3">
+                {/* Dropdown selector */}
+                <div className="flex items-center gap-3">
+                  <Select value={selectedSetId} onValueChange={setSelectedSetId}>
+                    <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-gray-200 h-9 w-72">
+                      <SelectValue placeholder="Select a saved set…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Select a set —</SelectItem>
+                      {savedSets.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <span className="font-mono text-xs text-amber-400 mr-2">{s.code}</span>
+                          {s.name}
+                          <span className="ml-2 text-muted-foreground text-xs">({s.lines.reduce((a, l) => a + l.qty, 0)} items)</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedSet && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="h-8 border-white/10 text-gray-300 gap-1"
+                        onClick={() => startEdit(selectedSet)} disabled={builderMode !== "idle"}>
+                        <Edit2 className="h-3 w-3" /> Edit
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 border-red-500/30 text-red-400 gap-1 hover:bg-red-500/10"
+                        onClick={() => deleteSet(selectedSet.id)}>
+                        <Trash2 className="h-3 w-3" /> Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <Select value={libCat} onValueChange={setLibCat}>
-                  <SelectTrigger className="w-36 h-9 text-sm"><SelectValue /></SelectTrigger>
+                {/* Selected set preview */}
+                {selectedSet && (
+                  <div className="bg-[#1a1d2e] rounded-lg p-3 border border-white/5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge className="bg-amber-500/20 text-amber-400 font-mono text-xs">{selectedSet.code}</Badge>
+                      <span className="text-sm font-semibold text-white">{selectedSet.name}</span>
+                      {selectedSet.description && <span className="text-xs text-muted-foreground">{selectedSet.description}</span>}
+                      <span className="ml-auto text-xs text-muted-foreground">{selectedSet.lines.reduce((a, l) => a + l.qty, 0)} units · QAR {selectedSet.lines.reduce((a, l) => a + l.qty * l.item.priceQAR, 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSet.lines.map(l => (
+                        <div key={l.item.code} className="flex items-center gap-1.5 bg-[#13161f] rounded px-2 py-1 border border-white/5">
+                          <span className="text-xs text-gray-300">{l.item.name}</span>
+                          {l.item.brand && <span className="text-[10px] text-muted-foreground">{l.item.brand}</span>}
+                          <Badge variant="outline" className="text-[10px] px-1 h-4 border-white/10 text-gray-400">×{l.qty}</Badge>
+                          <span className="text-[10px] text-amber-400">QAR {(l.qty * l.item.priceQAR).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── BOTTOM: Item Library + Set Builder ───────────────────────── */}
+        <div className="flex gap-4 flex-1 min-h-0">
+
+          {/* Left: Item Library */}
+          <Card className="bg-[#13161f] border-white/10 flex flex-col flex-1 min-w-0">
+            <CardHeader className="pb-2 pt-4 px-4 shrink-0">
+              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
+                <Tag className="h-4 w-4 text-blue-400" />
+                Item Library
+                <Badge variant="outline" className="ml-auto border-white/10 text-gray-400 text-xs">{filteredItems.length} items</Badge>
+              </CardTitle>
+              {/* Filters */}
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <Select value={libCategory} onValueChange={v => { setLibCategory(v); setLibSubCat("all"); }}>
+                  <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-gray-200 h-8 w-48 text-xs">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {subCategories.length > 0 && (
+                  <Select value={libSubCat} onValueChange={setLibSubCat}>
+                    <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-gray-200 h-8 w-44 text-xs">
+                      <SelectValue placeholder="All Sub-Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sub-Categories</SelectItem>
+                      {subCategories.map(sc => <SelectItem key={sc} value={sc}>{sc}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+                <div className="relative flex-1 min-w-[140px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 h-8 pl-7 text-xs"
+                    placeholder="Search items…" value={libSearch} onChange={e => setLibSearch(e.target.value)} />
+                </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-0">
-              <div className="divide-y">
+            <CardContent className="flex-1 overflow-y-auto px-4 pb-4">
+              <div className="grid grid-cols-1 gap-1.5">
                 {filteredItems.map(item => (
-                  <div key={item.code}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 cursor-pointer group transition-colors"
+                  <button key={item.code}
                     onClick={() => addToDraft(item)}
-                  >
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#1a1d2e] border border-white/5 hover:border-red-500/40 hover:bg-red-500/5 transition-colors text-left group">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{item.name}</span>
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${CAT_COLORS[item.category]}`}>
-                          {item.category}
-                        </Badge>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-200 truncate">{item.name}</span>
+                        {item.brand && <span className="text-[10px] text-blue-400 shrink-0">{item.brand}</span>}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
-                        <span className="font-mono">{item.code}</span>
-                        {item.brand && <span>· {item.brand}</span>}
-                        {item.model && <span className="font-mono">· {item.model}</span>}
-                        {item.spec && <span className="text-amber-400/80 font-medium">· {item.spec}</span>}
-                        <span>· {item.unit}</span>
-                      </div>
+                      {item.spec && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.spec}</p>}
                     </div>
-                    <Button size="icon" variant="ghost"
-                      className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-primary"
-                      onClick={e => { e.stopPropagation(); addToDraft(item); }}>
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-semibold text-amber-400">QAR {item.priceQAR.toLocaleString()}</span>
+                      <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-400 transition-colors" />
+                    </div>
+                  </button>
                 ))}
                 {filteredItems.length === 0 && (
-                  <div className="py-12 text-center text-muted-foreground text-sm">No items match your search.</div>
+                  <p className="text-xs text-muted-foreground py-4 text-center">No items match the current filter.</p>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* ── RIGHT: Set Builder / Viewer ────────────────────────────────── */}
-          <div className="flex flex-col gap-3 overflow-hidden">
-
-            {/* Saved sets chips */}
-            {sets.length > 0 && builderMode === "idle" && (
-              <Card className="shrink-0">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle className="text-xs text-muted-foreground uppercase tracking-wide">Saved Sets</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 pb-3">
-                  <div className="flex flex-wrap gap-2">
-                    {sets.map(s => (
-                      <button key={s.id}
-                        onClick={() => setSelectedSetId(s.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
-                          selectedSetId === s.id
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
-                        }`}>
-                        <Layers className="h-3 w-3" />
-                        <span className="font-mono text-xs">{s.code}</span>
-                        <span>{s.name}</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          ({s.lines.reduce((a, l) => a + l.qty, 0)} units)
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Builder / Viewer card */}
-            <Card className="flex flex-col flex-1 overflow-hidden">
-              <CardHeader className="pb-3 shrink-0">
-                {builderMode !== "idle" ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">
-                        {builderMode === "new" ? "New Asset Set" : "Edit Set"}
-                      </CardTitle>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelDraft}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input placeholder="Set Name *" className="h-9 text-sm"
+          {/* Right: Set Builder */}
+          <Card className="bg-[#13161f] border-white/10 flex flex-col w-[420px] shrink-0">
+            <CardHeader className="pb-2 pt-4 px-4 shrink-0">
+              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
+                {builderMode === "idle" ? "Set Builder" : builderMode === "new" ? "New Set" : "Edit Set"}
+              </CardTitle>
+            </CardHeader>
+            {builderMode === "idle" ? (
+              <CardContent className="flex-1 flex flex-col items-center justify-center text-center gap-3 px-4 pb-4">
+                <Package className="h-10 w-10 text-muted-foreground opacity-30" />
+                <p className="text-xs text-muted-foreground">Click <strong>New Set</strong> above to start building,<br />or select a saved set and click <strong>Edit</strong>.</p>
+              </CardContent>
+            ) : (
+              <>
+                <CardContent className="flex-1 overflow-y-auto px-4 pb-2">
+                  {/* Set name & description */}
+                  <div className="space-y-2 mb-3">
+                    <div>
+                      <Label className="text-xs text-gray-400">Set Name *</Label>
+                      <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 h-8 text-xs mt-1"
+                        placeholder="e.g. 3BR Villa Standard Package"
                         value={draftName} onChange={e => setDraftName(e.target.value)} />
-                      <Input placeholder="Description (optional)" className="h-9 text-sm"
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-400">Description</Label>
+                      <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 h-8 text-xs mt-1"
+                        placeholder="Optional notes"
                         value={draftDesc} onChange={e => setDraftDesc(e.target.value)} />
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded px-3 py-2">
-                      <ChevronRight className="h-3 w-3 text-primary shrink-0" />
-                      Click any item in the library to add it to this set. Adjust quantities and enter serial numbers below.
-                    </div>
                   </div>
-                ) : selectedSet ? (
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-xs text-primary">{selectedSet.code}</span>
-                        <CardTitle className="text-base">{selectedSet.name}</CardTitle>
-                      </div>
-                      {selectedSet.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{selectedSet.description}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {selectedSet.lines.length} item types · {selectedSet.lines.reduce((a, l) => a + l.qty, 0)} total units
-                        · Created {new Date(selectedSet.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button variant="outline" size="sm" className="h-8 gap-1" onClick={() => startEdit(selectedSet)}>
-                        <Edit2 className="h-3 w-3" /> Edit
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8 text-red-400 hover:text-red-400"
-                        onClick={() => deleteSet(selectedSet.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                    <Layers className="h-12 w-12 mb-3 opacity-20" />
-                    <p className="text-sm font-medium">No set selected</p>
-                    <p className="text-xs mt-1 text-center max-w-xs">
-                      Click <strong>New Set</strong> to start building, or select a saved set above.
-                      Each set can be attached to a lease.
-                    </p>
-                    <Button size="sm" className="mt-4 gap-1.5" onClick={startNew}>
-                      <Plus className="h-3.5 w-3.5" /> New Set
-                    </Button>
-                  </div>
-                )}
-              </CardHeader>
-
-              {(builderMode !== "idle" || selectedSet) && (
-                <>
-                  <Separator />
-                  <CardContent className="flex-1 overflow-y-auto p-0">
-                    {activeLines.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
-                        <Plus className="h-6 w-6 mb-2 opacity-30" />
-                        Click items from the library to add them here
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {activeLines.map(line => (
-                          <div key={line.item.code} className="px-4 py-3">
-                            {/* Item header row */}
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold text-sm">{line.item.name}</span>
-                                  {line.item.brand && (
-                                    <span className="text-xs text-muted-foreground">{line.item.brand}</span>
-                                  )}
-                                  {line.item.spec && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-400 border-amber-400/30">
-                                      {line.item.spec}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <span className="font-mono text-[11px] text-muted-foreground">{line.item.code}</span>
-                              </div>
-                              {builderMode !== "idle" ? (
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <Button variant="outline" size="icon" className="h-6 w-6"
-                                    onClick={() => changeQty(line.item.code, -1)}>
-                                    <Minus className="h-3 w-3" />
-                                  </Button>
-                                  <span className="w-7 text-center text-sm font-bold">{line.qty}</span>
-                                  <Button variant="outline" size="icon" className="h-6 w-6"
-                                    onClick={() => changeQty(line.item.code, 1)}>
-                                    <Plus className="h-3 w-3" />
-                                  </Button>
-                                  <span className="text-xs text-muted-foreground ml-1">{line.item.unit}</span>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-400 ml-1"
-                                    onClick={() => removeFromDraft(line.item.code)}>
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Badge variant="outline" className="shrink-0 text-xs">
-                                  {line.qty} {line.item.unit}
-                                </Badge>
-                              )}
+                  <Separator className="bg-white/5 mb-3" />
+                  {draftLines.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Click items from the library to add them here.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {draftLines.map(line => (
+                        <div key={line.item.code} className="bg-[#1a1d2e] rounded-lg p-2.5 border border-white/5">
+                          {/* Item header */}
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-200 truncate">{line.item.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{line.item.brand} · {line.item.spec}</p>
                             </div>
-                            {/* Serial numbers */}
-                            <div className="grid grid-cols-2 gap-1.5">
-                              {Array.from({ length: line.qty }).map((_, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5">
-                                  <span className="text-[10px] text-muted-foreground w-10 shrink-0 font-mono">
-                                    #{idx + 1}
-                                  </span>
-                                  {builderMode !== "idle" ? (
-                                    <Input
-                                      className="h-7 text-xs font-mono"
-                                      placeholder="Serial No. (optional)"
-                                      value={line.serialNumbers[idx] ?? ""}
-                                      onChange={e => updateSerial(line.item.code, idx, e.target.value)}
-                                    />
-                                  ) : (
-                                    <span className="text-xs font-mono text-muted-foreground">
-                                      {line.serialNumbers[idx] || <span className="opacity-40">—</span>}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                            {/* Purchase Date & Warranty Expiry */}
-                            <div className="grid grid-cols-2 gap-1.5 mt-1.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-muted-foreground w-20 shrink-0">Purchase Date</span>
-                                {builderMode !== "idle" ? (
-                                  <Input type="date" className="h-7 text-xs" value={line.purchaseDate}
-                                    onChange={e => updateDate(line.item.code, "purchaseDate", e.target.value)} />
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">{line.purchaseDate || <span className="opacity-40">—</span>}</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-muted-foreground w-20 shrink-0">Warranty Exp.</span>
-                                {builderMode !== "idle" ? (
-                                  <Input type="date" className="h-7 text-xs" value={line.warrantyExpiry}
-                                    onChange={e => updateDate(line.item.code, "warrantyExpiry", e.target.value)} />
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">{line.warrantyExpiry || <span className="opacity-40">—</span>}</span>
-                                )}
-                              </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button size="icon" variant="ghost" className="h-5 w-5 text-gray-400 hover:text-white"
+                                onClick={() => changeQty(line.item.code, -1)}><Minus className="h-3 w-3" /></Button>
+                              <span className="text-xs font-mono w-5 text-center text-white">{line.qty}</span>
+                              <Button size="icon" variant="ghost" className="h-5 w-5 text-gray-400 hover:text-white"
+                                onClick={() => changeQty(line.item.code, 1)}><Plus className="h-3 w-3" /></Button>
+                              <Button size="icon" variant="ghost" className="h-5 w-5 text-red-400 hover:text-red-300 ml-1"
+                                onClick={() => removeFromDraft(line.item.code)}><Trash2 className="h-3 w-3" /></Button>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-
-                  {builderMode !== "idle" && (
-                    <>
-                      <Separator />
-                      <div className="px-4 py-3 flex items-center justify-between shrink-0 bg-muted/20">
-                        <span className="text-xs text-muted-foreground">
-                          {draftLines.length} item types · <strong>{totalItems}</strong> total units
-                        </span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="h-8" onClick={cancelDraft}>Cancel</Button>
-                          <Button size="sm" className="h-8 gap-1.5" onClick={saveSet}>
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            {builderMode === "new" ? "Save Set" : "Update Set"}
-                          </Button>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] text-amber-400">QAR {line.item.priceQAR.toLocaleString()} × {line.qty} = QAR {(line.item.priceQAR * line.qty).toLocaleString()}</span>
+                          </div>
+                          {/* Serial numbers */}
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {Array.from({ length: line.qty }).map((_, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground w-8 shrink-0 font-mono">#{idx + 1}</span>
+                                <Input className="h-6 text-[10px] font-mono bg-[#13161f] border-white/5"
+                                  placeholder="Serial No." value={line.serialNumbers[idx] ?? ""}
+                                  onChange={e => updateSerial(line.item.code, idx, e.target.value)} />
+                              </div>
+                            ))}
+                          </div>
+                          {/* Lease Date & Warranty Expiry */}
+                          <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">Lease Date</Label>
+                              <Input type="date" className="h-6 text-[10px] bg-[#13161f] border-white/5 mt-0.5"
+                                value={line.leaseDate} onChange={e => updateDate(line.item.code, "leaseDate", e.target.value)} />
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">Warranty Exp.</Label>
+                              <Input type="date" className="h-6 text-[10px] bg-[#13161f] border-white/5 mt-0.5"
+                                value={line.warrantyExpiry} onChange={e => updateDate(line.item.code, "warrantyExpiry", e.target.value)} />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </>
+                      ))}
+                    </div>
                   )}
-                </>
-              )}
-            </Card>
-          </div>
+                </CardContent>
+                <Separator className="bg-white/5" />
+                <div className="px-4 py-3 shrink-0 bg-[#0f1117]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">{draftLines.length} item types · <strong className="text-white">{totalItems}</strong> units</span>
+                    <span className="text-xs font-semibold text-amber-400">QAR {totalValue.toLocaleString()}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 border-white/10 text-gray-300" onClick={cancelDraft}>Cancel</Button>
+                    <Button size="sm" className="flex-1 h-8 bg-red-600 hover:bg-red-700 text-white gap-1.5" onClick={saveSet}>
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {builderMode === "new" ? "Save Set" : "Update Set"}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </Card>
         </div>
       </div>
     </DashboardLayout>

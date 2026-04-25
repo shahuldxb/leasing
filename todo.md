@@ -757,3 +757,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## New Lease Date Fields (Apr 25)
 - [x] NewLease.tsx — add Contract Prepared Date and Created Date fields (Step 1 or Review step)
+
+## Sub-Asset Registry Redesign (Apr 25)
+- [x] AssetRegistry.tsx — new layout: top = saved sets dropdown panel, bottom-left = item library, bottom-right = set builder
+- [x] AssetRegistry.tsx — 300+ items with approximate QAR prices and category/sub-category dropdowns
+- [x] AssetRegistry.tsx — rename "Purchase Date" to "Lease Date" in set builder
