@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -48,16 +48,29 @@ export default function NewLease() {
   const { data: subAssetGroupsRaw = [] } = trpc.asset.getSubAssetGroups.useQuery();
   // Parse sub-asset groups for display
   const subAssetGroups = subAssetGroupsRaw.map(r => {
-    let itemCount = 0; let totalQAR = 0;
-    try {
-      const lines = JSON.parse(r.tags || "[]") as Array<{ code: string; qty: number }>;
-      itemCount = lines.reduce((s, l) => s + l.qty, 0);
-    } catch { /* ignore */ }
-    return { assetId: r.assetId, assetCode: r.assetCode, setName: r.setName, description: r.description, itemCount, totalQAR };
+    let items: {code:string;name:string;category:string;brand?:string;model?:string;spec?:string;qty:number;unitPrice?:number}[] = [];
+    try { items = JSON.parse(r.tags || "[]"); } catch { /* ignore */ }
+    const itemCount = items.reduce((s, l) => s + l.qty, 0);
+    const totalQAR  = items.reduce((s, l) => s + (l.unitPrice ?? 0) * l.qty, 0);
+    return { assetId: r.assetId, assetCode: r.assetCode, setName: r.setName, description: r.description, itemCount, totalQAR, items };
   });
   // Selected sub-asset set IDs for this lease
   const [selectedSetIds, setSelectedSetIds] = useState<number[]>([]);
   const [setPickerValue, setSetPickerValue] = useState<string>("none");
+  // Expanded state per set card
+  const [expandedSets, setExpandedSets] = useState<Record<number, boolean>>({});
+  // Per-item detail fields
+  type SetItemDetail = { serialNumber: string; leasedDate: string; warrantyEndDate: string; status: string };
+  const [setItemDetails, setSetItemDetails] = useState<Record<string, SetItemDetail>>({});
+  function toggleSetExpand(id: number) { setExpandedSets(prev => ({ ...prev, [id]: !prev[id] })); }
+  function getItemKey(setId: number, code: string, unitIdx: number) { return `${setId}:${code}:${unitIdx}`; }
+  function getItemDetail(setId: number, code: string, unitIdx: number): SetItemDetail {
+    return setItemDetails[getItemKey(setId, code, unitIdx)] ?? { serialNumber: "", leasedDate: "", warrantyEndDate: "", status: "Active" };
+  }
+  function updateItemDetail(setId: number, code: string, unitIdx: number, field: keyof SetItemDetail, value: string) {
+    const key = getItemKey(setId, code, unitIdx);
+    setSetItemDetails(prev => ({ ...prev, [key]: { ...getItemDetail(setId, code, unitIdx), [field]: value } }));
+  }
   const computeMutation = trpc.genai.computeIFRS16.useMutation({
     onSuccess: (data) => setIfrs16Result(data),
     onError: (e) => toast.error("IFRS 16 computation failed: " + e.message),
@@ -327,23 +340,93 @@ export default function NewLease() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* Selected set cards */}
+                  {/* Selected set cards — expandable accordion */}
                   {selectedSetIds.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                    <div className="space-y-2 mt-1">
                       {selectedSetIds.map(id => {
                         const g = subAssetGroups.find(x => x.assetId === id);
                         if (!g) return null;
+                        const isOpen = !!expandedSets[id];
                         return (
-                          <div key={id} className="flex items-start justify-between bg-muted/40 border border-border rounded-lg p-3">
-                            <div className="space-y-0.5">
-                              <p className="text-xs font-mono text-[#e60000]">{g.assetCode}</p>
-                              <p className="text-sm font-medium">{g.setName}</p>
-                              <p className="text-xs text-muted-foreground">{g.itemCount} item{g.itemCount !== 1 ? "s" : ""}</p>
-                              {g.description && <p className="text-xs text-muted-foreground italic truncate max-w-[180px]">{g.description}</p>}
+                          <div key={id} className="border border-border rounded-lg overflow-hidden">
+                            <div
+                              className="flex items-center justify-between bg-muted/40 px-4 py-3 cursor-pointer hover:bg-muted/60 transition-colors select-none"
+                              onClick={() => toggleSetExpand(id)}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
+                                <span className="text-xs font-mono text-[#e60000] shrink-0">{g.assetCode}</span>
+                                <span className="text-sm font-medium truncate">{g.setName}</span>
+                                <span className="text-xs text-muted-foreground shrink-0">{g.itemCount} item{g.itemCount !== 1 ? "s" : ""}</span>
+                                {g.totalQAR > 0 && <span className="text-xs text-muted-foreground shrink-0">· QAR {g.totalQAR.toLocaleString()}</span>}
+                              </div>
+                              <button
+                                className="text-muted-foreground hover:text-red-400 transition-colors ml-3 shrink-0"
+                                onClick={e => { e.stopPropagation(); setSelectedSetIds(prev => prev.filter(x => x !== id)); }}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
                             </div>
-                            <button className="text-muted-foreground hover:text-red-400 transition-colors mt-0.5" onClick={() => setSelectedSetIds(prev => prev.filter(x => x !== id))}>
-                              <X className="w-4 h-4" />
-                            </button>
+                            {isOpen && (
+                              <div className="overflow-x-auto border-t border-border">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="bg-muted/20 text-muted-foreground border-b border-border">
+                                      <th className="text-left py-2 pl-4 pr-2 font-medium">#</th>
+                                      <th className="text-left py-2 px-2 font-medium">Item</th>
+                                      <th className="text-left py-2 px-2 font-medium">Category</th>
+                                      <th className="text-left py-2 px-2 font-medium">Brand / Spec</th>
+                                      <th className="text-left py-2 px-2 font-medium">Serial Number <span className="text-red-400">*</span></th>
+                                      <th className="text-left py-2 px-2 font-medium">Leased Date <span className="text-red-400">*</span></th>
+                                      <th className="text-left py-2 px-2 font-medium">Warranty End</th>
+                                      <th className="text-left py-2 pl-2 pr-4 font-medium">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {g.items.flatMap((item, itemIdx) =>
+                                      Array.from({ length: item.qty }, (_, unitIdx) => {
+                                        const detail = getItemDetail(id, item.code, unitIdx);
+                                        return (
+                                          <tr key={`${id}-${itemIdx}-${unitIdx}`} className="border-b border-border/50 last:border-0 hover:bg-muted/20">
+                                            <td className="py-2 pl-4 pr-2 text-muted-foreground">{itemIdx + 1}{item.qty > 1 ? `.${unitIdx + 1}` : ""}</td>
+                                            <td className="py-2 px-2 font-medium">{item.name}</td>
+                                            <td className="py-2 px-2 text-muted-foreground">{item.category}</td>
+                                            <td className="py-2 px-2 text-muted-foreground">{[item.brand, item.spec].filter(Boolean).join(" · ") || "—"}</td>
+                                            <td className="py-1.5 px-2">
+                                              <Input className="h-7 text-xs px-2 bg-background border-border" placeholder="SN-XXXXXXXX"
+                                                value={detail.serialNumber}
+                                                onChange={e => updateItemDetail(id, item.code, unitIdx, "serialNumber", e.target.value)} />
+                                            </td>
+                                            <td className="py-1.5 px-2">
+                                              <Input type="date" className="h-7 text-xs px-2 bg-background border-border"
+                                                value={detail.leasedDate}
+                                                onChange={e => updateItemDetail(id, item.code, unitIdx, "leasedDate", e.target.value)} />
+                                            </td>
+                                            <td className="py-1.5 px-2">
+                                              <Input type="date" className="h-7 text-xs px-2 bg-background border-border"
+                                                value={detail.warrantyEndDate}
+                                                onChange={e => updateItemDetail(id, item.code, unitIdx, "warrantyEndDate", e.target.value)} />
+                                            </td>
+                                            <td className="py-1.5 pl-2 pr-4">
+                                              <Select value={detail.status} onValueChange={v => updateItemDetail(id, item.code, unitIdx, "status", v)}>
+                                                <SelectTrigger className="h-7 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="Active">Active</SelectItem>
+                                                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                                  <SelectItem value="Returned">Returned</SelectItem>
+                                                  <SelectItem value="BackIn">Back In</SelectItem>
+                                                  <SelectItem value="Replaced">Replaced</SelectItem>
+                                                </SelectContent>
+                                              </Select>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

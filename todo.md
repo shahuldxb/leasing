@@ -853,3 +853,11 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add tRPC procedure asset.getExpiringWarranties
 - [x] Add warranty expiry alert card to Dashboard (show count of expiring items, link to Lease Sub-Assets)
 - [x] Add warranty expiry section to AlertCentre with item-level detail (lease, set, item, serial, expiry date)
+
+## New Lease Step 2 — Expandable Sub-Asset Set Panel
+- [x] Replace compact set chip with expandable accordion panel in NewLease.tsx Step 2
+- [x] Clicking the set header (chevron) expands to show all items in a table
+- [x] Per-item editable fields: Serial Number, Leased Date, Warranty End Date, Status
+- [x] Status dropdown options: Active, Cancelled, Returned, BackIn, Replaced
+- [x] Validate serial numbers are filled before allowing Step 3
+- [x] Show item count and total QAR value in collapsed header
