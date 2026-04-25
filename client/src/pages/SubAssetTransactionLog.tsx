@@ -294,81 +294,96 @@ export default function SubAssetTransactionLog() {
           </div>
 
           {/* ── Filters ─────────────────────────────────────── */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-2 p-3 bg-muted/20 border border-border rounded-lg">
-            {/* Lease Number */}
-            <div className="xl:col-span-2">
-              <Label className="text-xs text-muted-foreground mb-1 block">Lease Number</Label>
-              <Select value={filterLeaseId} onValueChange={v => { setFilterLeaseId(v); setFilterSetId("all"); setSelectedId(null); }}>
-                <SelectTrigger className="h-8 text-xs bg-background border-border">
-                  <SelectValue placeholder="All Leases" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leases</SelectItem>
-                  {(leases as any[]).map((l: any) => (
-                    <SelectItem key={l.leaseId} value={l.leaseId}>
-                      <span className="font-mono text-[#e60000]">{l.leaseRef}</span>
-                      {l.assetName ? <span className="text-muted-foreground ml-1">— {l.assetName}</span> : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col gap-2 p-3 bg-muted/20 border border-border rounded-lg">
+            {/* Row 1: Lease Number + Sub-Asset Set — full width, side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Lease Number */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Lease Number</Label>
+                <Select value={filterLeaseId} onValueChange={v => { setFilterLeaseId(v); setFilterSetId("all"); setSelectedId(null); }}>
+                  <SelectTrigger className="h-8 text-xs bg-background border-border">
+                    <SelectValue placeholder="All Leases" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[520px]">
+                    <SelectItem value="all">All Leases</SelectItem>
+                    {(leases as any[]).map((l: any) => (
+                      <SelectItem key={l.leaseId} value={l.leaseId}>
+                        <span className="font-mono text-[#e60000]">{l.leaseRef}</span>
+                        {l.assetName ? <span className="text-muted-foreground ml-1">&mdash; {l.assetName}</span> : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Sub-Asset Set */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Sub-Asset Set</Label>
+                <Select value={filterSetId} onValueChange={setFilterSetId} disabled={filterLeaseId === "all"}>
+                  <SelectTrigger className="h-8 text-xs bg-background border-border">
+                    <SelectValue placeholder={filterLeaseId === "all" ? "Select a lease first" : "All Sets"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[520px]">
+                    <SelectItem value="all">{filterLeaseId === "all" ? "Select a lease first" : "All Sets"}</SelectItem>
+                    {filterLeaseId !== "all" && (leaseSubAssets as any[]).map((lsa: any) => (
+                      <SelectItem key={lsa.leaseSubAssetId} value={String(lsa.leaseSubAssetId)}>
+                        <span className="font-mono text-[#e60000]">{lsa.assetCode}</span>
+                        <span className="text-muted-foreground ml-1">&middot; {lsa.setName}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-
-            {/* Sub-Asset Set */}
-            <div className="xl:col-span-2">
-              <Label className="text-xs text-muted-foreground mb-1 block">Sub-Asset Set</Label>
-              <Select value={filterSetId} onValueChange={setFilterSetId}>
-                <SelectTrigger className="h-8 text-xs bg-background border-border">
-                  <SelectValue placeholder="All Sets" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{filterLeaseId === "all" ? "Select a lease first" : "All Sets"}</SelectItem>
-                  {filterLeaseId !== "all" && (leaseSubAssets as any[]).map((lsa: any) => (
-                    <SelectItem key={lsa.leaseSubAssetId} value={String(lsa.leaseSubAssetId)}>
-                      <span className="font-mono text-[#e60000]">{lsa.assetCode}</span>
-                      <span className="text-muted-foreground ml-1">· {lsa.setName}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Row 2: Action + Entity Type + Changed By + Date From + Date To */}
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+              {/* Action */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Action</Label>
+                <Select value={filterAction} onValueChange={setFilterAction}>
+                  <SelectTrigger className="h-8 text-xs bg-background border-border">
+                    <SelectValue placeholder="All Actions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Actions</SelectItem>
+                    {["INSERT","UPDATE","DELETE","ATTACH","STATUS_CHANGE","OWNERSHIP_CHANGE","ITEM_ADD","ITEM_EDIT","ITEM_DELETE"].map(a => (
+                      <SelectItem key={a} value={a}>{a.replace(/_/g," ")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Entity Type */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Entity Type</Label>
+                <Select value={filterEntityType} onValueChange={setFilterEntityType}>
+                  <SelectTrigger className="h-8 text-xs bg-background border-border">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {["SET","ITEM","LEASE_SUB_ASSET"].map(t => (
+                      <SelectItem key={t} value={t}>{t.replace(/_/g," ")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Changed By */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Changed By</Label>
+                <Input className="h-8 text-xs bg-background border-border" placeholder="User name..." value={filterUser} onChange={e => setFilterUser(e.target.value)} />
+              </div>
+              {/* Date From */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Date From</Label>
+                <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+              </div>
+              {/* Date To */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Date To</Label>
+                <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+              </div>
             </div>
-
-            {/* Action */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Action</Label>
-              <Select value={filterAction} onValueChange={setFilterAction}>
-                <SelectTrigger className="h-8 text-xs bg-background border-border">
-                  <SelectValue placeholder="All Actions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Actions</SelectItem>
-                  {["INSERT","UPDATE","DELETE","ATTACH","STATUS_CHANGE","OWNERSHIP_CHANGE","ITEM_ADD","ITEM_EDIT","ITEM_DELETE"].map(a => (
-                    <SelectItem key={a} value={a}>{a.replace(/_/g," ")}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Changed By */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Changed By</Label>
-              <Input className="h-8 text-xs bg-background border-border" placeholder="User name..." value={filterUser} onChange={e => setFilterUser(e.target.value)} />
-            </div>
-
-            {/* Date From */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Date From</Label>
-              <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
-            </div>
-
-            {/* Date To */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Date To</Label>
-              <Input type="date" className="h-8 text-xs bg-background border-border" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
-            </div>
-
             {/* Buttons */}
-            <div className="xl:col-span-7 flex gap-2 pt-1">
+            <div className="flex gap-2 pt-1">
               <Button size="sm" className="h-8 gap-1.5 text-xs bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={() => refetch()} disabled={isFetching}>
                 <Filter className="w-3.5 h-3.5" /> Apply Filters
               </Button>
