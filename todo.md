@@ -749,3 +749,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [ ] Set has: Set Code (auto), Set Name, Description, items with qty + serial numbers
 - [ ] Save/Edit/Delete sets; sets can later be attached to a lease
 - [ ] Update App.tsx route and sidebar nav label to "Sub-Asset Registry"
+
+## Menu & Date Field Updates (Apr 25)
+- [x] DashboardLayout.tsx — rename "Asset Registry" nav label to "Sub-Asset Registry"
+- [x] AssetRegistry.tsx — add Purchase Date and Warranty Expiry date fields to set builder items
+- [x] LessorMaster.tsx — add date fields (Contract Start Date, Contract End Date, Registration Date)

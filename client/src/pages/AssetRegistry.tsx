@@ -163,6 +163,8 @@ interface SetLine {
   item: MasterItem;
   qty: number;
   serialNumbers: string[];
+  purchaseDate: string;
+  warrantyExpiry: string;
 }
 
 interface AssetSet {
@@ -219,7 +221,7 @@ export default function AssetRegistry() {
           : l
         );
       }
-      return [...prev, { item, qty: 1, serialNumbers: [""] }];
+      return [...prev, { item, qty: 1, serialNumbers: [""], purchaseDate: "", warrantyExpiry: "" }];
     });
   }
 
@@ -236,6 +238,12 @@ export default function AssetRegistry() {
       while (sns.length > newQty) sns.pop();
       return { ...l, qty: newQty, serialNumbers: sns };
     }));
+  }
+
+  function updateDate(code: string, field: "purchaseDate" | "warrantyExpiry", val: string) {
+    setDraftLines(prev => prev.map(l =>
+      l.item.code === code ? { ...l, [field]: val } : l
+    ));
   }
 
   function updateSerial(code: string, idx: number, val: string) {
@@ -557,6 +565,27 @@ export default function AssetRegistry() {
                                   )}
                                 </div>
                               ))}
+                            </div>
+                            {/* Purchase Date & Warranty Expiry */}
+                            <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground w-20 shrink-0">Purchase Date</span>
+                                {builderMode !== "idle" ? (
+                                  <Input type="date" className="h-7 text-xs" value={line.purchaseDate}
+                                    onChange={e => updateDate(line.item.code, "purchaseDate", e.target.value)} />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">{line.purchaseDate || <span className="opacity-40">—</span>}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-muted-foreground w-20 shrink-0">Warranty Exp.</span>
+                                {builderMode !== "idle" ? (
+                                  <Input type="date" className="h-7 text-xs" value={line.warrantyExpiry}
+                                    onChange={e => updateDate(line.item.code, "warrantyExpiry", e.target.value)} />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">{line.warrantyExpiry || <span className="opacity-40">—</span>}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}

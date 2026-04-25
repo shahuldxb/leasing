@@ -30,7 +30,7 @@ const ACCOUNT_TYPES = ["Current", "Savings", "Fixed"];
 
 type ViewMode = "list" | "detail" | "form_lessor" | "form_contact" | "form_bank" | "form_note";
 
-const EMPTY_FORM = { lessorName: "", lessorType: "Company", registrationNo: "", taxId: "", country: "QA", city: "", addressLine1: "", addressLine2: "", postalCode: "", website: "", creditRating: "", paymentTerms: 30, preferredCurrency: "QAR", status: "Active", blacklistReason: "" };
+const EMPTY_FORM = { lessorName: "", lessorType: "Company", registrationNo: "", taxId: "", country: "QA", city: "", addressLine1: "", addressLine2: "", postalCode: "", website: "", creditRating: "", paymentTerms: 30, preferredCurrency: "QAR", status: "Active", blacklistReason: "", registrationDate: "", contractStartDate: "", contractEndDate: "" };
 const EMPTY_CONTACT = { contactType: "Primary", fullName: "", jobTitle: "", department: "", email: "", phonePrimary: "", phoneSecondary: "", whatsapp: "", isPrimary: false, notes: "" };
 const EMPTY_BANK = { bankName: "", accountName: "", accountNumber: "", iban: "", swiftCode: "", currency: "QAR", accountType: "Current", branchName: "", country: "QA", verifiedBy: "" };
 const EMPTY_NOTE = { noteType: "General", subject: "", noteText: "", isPrivate: false };
@@ -262,6 +262,18 @@ export default function LessorMaster() {
               <div>
                 <Label className="text-xs text-gray-400">Preferred Currency</Label>
                 <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" value={form.preferredCurrency} onChange={e => setForm(f => ({ ...f, preferredCurrency: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs text-gray-400">Registration Date</Label>
+                <Input type="date" className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" value={form.registrationDate} onChange={e => setForm(f => ({ ...f, registrationDate: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs text-gray-400">Contract Start Date</Label>
+                <Input type="date" className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" value={form.contractStartDate} onChange={e => setForm(f => ({ ...f, contractStartDate: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs text-gray-400">Contract End Date</Label>
+                <Input type="date" className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" value={form.contractEndDate} onChange={e => setForm(f => ({ ...f, contractEndDate: e.target.value }))} />
               </div>
               {form.status === "Blacklisted" && (
                 <div className="col-span-2">
@@ -559,6 +571,7 @@ export default function LessorMaster() {
                     creditRating: String(l.credit_rating ?? ""), paymentTerms: Number(l.payment_terms ?? 30),
                     preferredCurrency: String(l.preferred_currency ?? "QAR"), status: String(l.status ?? "Active"),
                     blacklistReason: String(l.blacklist_reason ?? ""),
+                    registrationDate: String(l.registration_date ?? ""), contractStartDate: String(l.contract_start_date ?? ""), contractEndDate: String(l.contract_end_date ?? ""),
                   });
                   setViewMode("form_lessor");
                 }}>
@@ -828,6 +841,7 @@ export default function LessorMaster() {
                             creditRating: String(l.credit_rating ?? ""), paymentTerms: Number(l.payment_terms ?? 30),
                             preferredCurrency: String(l.preferred_currency ?? "QAR"), status: String(l.status ?? "Active"),
                             blacklistReason: String(l.blacklist_reason ?? ""),
+                            registrationDate: String(l.registration_date ?? ""), contractStartDate: String(l.contract_start_date ?? ""), contractEndDate: String(l.contract_end_date ?? ""),
                           });
                           setViewMode("form_lessor");
                         }}>
