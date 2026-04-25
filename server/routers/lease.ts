@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
-import { execSPP, execSPPOne, sql } from '../db-sqlserver';
+import { execSPP, execSPPOne, execSPPMulti, sql } from '../db-sqlserver';
 import { writeAuditLog, writeErrorLog, extractClientInfo } from '../audit';
 import { TRPCError } from '@trpc/server';
 
@@ -104,9 +104,18 @@ export const leaseRouter = router({
   getAmortisationSchedule: protectedProcedure
     .input(z.object({ contractId: z.number() }))
     .query(async ({ input }) => {
-      return execSPP('sp_GetAmortisationSchedule', [
+      // SP returns 2 result sets: [0] contract header, [1] schedule rows
+      const sets = await execSPPMulti('sp_GetAmortisationSchedule', [
         { name: 'ContractId', type: sql.Int, value: input.contractId },
       ]);
+      const header   = sets[0]?.[0] ?? null;
+      const schedule = sets[1] ?? [];
+      return { header, schedule };
+    }),
+
+  getLeaseListForAmortisation: protectedProcedure
+    .query(async () => {
+      return execSPP('sp_GetLeaseListForAmortisation', []);
     }),
 
   // ── CREATE LEASE ────────────────────────────────────────

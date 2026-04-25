@@ -952,3 +952,19 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] On success: invalidate getLeaseSubAssets + getSubAssetTxns, close dialog, reset form, show toast
 - [x] Warning shown if set is not yet attached to a lease
 - [x] TypeScript: 0 errors
+
+## Amortisation Schedule — Monthly/Yearly UI (Apr 25)
+- [x] Audit existing Amortisation.tsx and sp_GetAmortisationSchedule
+- [x] Recreate sp_GetAmortisationSchedule: returns 2 result sets (contract header + schedule rows), computes on-the-fly using effective interest method if no saved rows exist
+- [x] Create sp_GetLeaseListForAmortisation (all contracts with lessor name for selector)
+- [x] Add tRPC lease.getLeaseListForAmortisation (protectedProcedure)
+- [x] Update tRPC lease.getAmortisationSchedule to use execSPPMulti for dual result sets
+- [x] Rebuild Amortisation.tsx: lease selector with contract ref + asset + lessor display
+- [x] Monthly/Yearly toggle buttons (red active state)
+- [x] 4 KPI summary cards (Total Payments, Interest, Principal, Depreciation)
+- [x] Monthly view: full schedule table with 11 columns, click-to-expand accordion per row
+- [x] Accordion: 2 journal entries per period (JE-1 payment, JE-2 depreciation) with GL account codes
+- [x] Yearly view: aggregated table with 9 columns, click-to-expand accordion per year
+- [x] Yearly accordion: consolidated JEs + monthly breakdown sub-table
+- [x] Save to DB button wired to saveAmortisationSchedule mutation
+- [x] TypeScript: 0 errors
