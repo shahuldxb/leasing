@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,8 +216,7 @@ interface AssetSet {
   createdAt: string;
 }
 
-let setCounter = 1;
-function nextSetCode() { return `ASET-${String(setCounter++).padStart(3, "0")}`; }
+// setCounter derived from savedSets at call time (passed as arg)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
@@ -340,7 +340,7 @@ export default function AssetRegistry() {
     if (builderMode === "new") {
       const newSet: AssetSet = {
         id: crypto.randomUUID(),
-        code: nextSetCode(),
+        code: `ASET-${String(savedSets.length + 1).padStart(3, "0")}`,
         name: draftName.trim(),
         description: draftDesc.trim(),
         lines: draftLines,
@@ -370,7 +370,7 @@ export default function AssetRegistry() {
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full gap-4 p-4 overflow-auto">
-
+        <ScreenHeader screenId="VFLSASSET001" title="Sub-Asset Registry" formType="asset_registry" onAIFormFill={() => {}} />
         {/* ── TOP: Saved Sets Panel ─────────────────────────────────────── */}
         <Card className="bg-[#13161f] border-white/10 shrink-0">
           <CardHeader className="pb-2 pt-4 px-4">
