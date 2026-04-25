@@ -898,3 +898,17 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Wire lessorName/lesseeName on doStatusChange() in LeaseSubAssets.tsx (Returned → lessor, BackIn → lessee)
 - [x] Fix confirmAttach() in SubAssetTransactionLog.tsx to pass lesseeName
 - [x] Fix confirmAction() in SubAssetTransactionLog.tsx to pass lessorName/lesseeName based on action type
+
+## Lessee Details Tab Rebuild (Apr 25)
+- [x] Add handleLesseeAIFill handler to map AI-generated data to lesseeForm state
+- [x] Add Gen AI Fill button to Lessee tab header (only visible in edit mode)
+- [x] Rebuild read-only view: profile hero card with avatar initials, type/grade/department badges, staff number + employee ID in header
+- [x] Rebuild read-only view: Employment Details section (staff no, employee ID, grade, position, department, place of work) with icons
+- [x] Rebuild read-only view: Contact section (email, phone) with icons
+- [x] Rebuild edit form: Identity section (lessee type select, full name input)
+- [x] Rebuild edit form: Employment Details section (staff number, employee ID, grade, position, department, place of work) with leading icons
+- [x] Rebuild edit form: Contact Information section (email, phone) with leading icons
+- [x] Add bottom save bar with Cancel + Save Lessee Details buttons
+- [x] Add lessee name required validation before save
+- [x] Add lessee type badge in tab header (Staff=blue, Client=green, Other=gray) in read-only mode
+- [x] TypeScript: 0 errors

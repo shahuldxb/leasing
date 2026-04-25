@@ -15,7 +15,9 @@ import { GenAIFillButton } from "@/components/GenAIFillButton";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   Building2, Plus, Search, Phone, Mail, CreditCard,
-  FileText, MapPin, ArrowLeft, Pencil, Trash2, Eye
+  FileText, MapPin, ArrowLeft, Pencil, Trash2, Eye,
+  User2, Briefcase, GraduationCap, IdCard, Hash, Building,
+  CheckCircle2, XCircle, Sparkles, Save, UserCheck,
 } from "lucide-react";
 
 const LESSEE_TYPES = ["Staff", "Client", "Other"];
@@ -156,6 +158,22 @@ export default function LessorMaster() {
       lesseeContactPhone: String(lessor.lessee_contact_phone ?? ""),
     });
     setEditingLessee(true);
+  };
+
+  const handleLesseeAIFill = (data: Record<string, string>) => {
+    setLesseeForm(f => ({
+      ...f,
+      lesseeType: (data.lessee_type ?? data.lesseeType ?? f.lesseeType) as "Staff" | "Client" | "Other",
+      lesseeName: data.lessee_name ?? data.lesseeName ?? f.lesseeName,
+      staffNumber: data.staff_number ?? data.staffNumber ?? f.staffNumber,
+      grade: data.grade ?? f.grade,
+      position: data.position ?? f.position,
+      placeOfWork: data.place_of_work ?? data.placeOfWork ?? f.placeOfWork,
+      lesseeDepartment: data.department ?? data.lesseeDepartment ?? f.lesseeDepartment,
+      employeeId: data.employee_id ?? data.employeeId ?? f.employeeId,
+      lesseeContactEmail: data.lessee_contact_email ?? data.lesseeContactEmail ?? f.lesseeContactEmail,
+      lesseeContactPhone: data.lessee_contact_phone ?? data.lesseeContactPhone ?? f.lesseeContactPhone,
+    }));
   };
 
   const handleAIFormFill = (data: Record<string, string>) => {
@@ -659,156 +677,340 @@ export default function LessorMaster() {
 
                 {/* ── LESSEE TAB ─────────────────────────────────────────── */}
                 <TabsContent value="lessee">
-                  <div className="max-w-3xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-sm font-semibold text-white">Lessee Details</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Staff member or client who is the lessee on this record</p>
-                      </div>
-                      {!editingLessee ? (
-                        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
-                          onClick={() => handleLesseeFormFill(detail?.lessor ?? {})}>
-                          <Pencil className="w-3 h-3 mr-1" /> {detail?.lessor?.lessee_name ? "Edit Lessee" : "Add Lessee"}
-                        </Button>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="border-white/10 text-gray-400 text-xs h-7"
-                            onClick={() => setEditingLessee(false)}>Cancel</Button>
-                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
-                            disabled={upsertMutation.isPending}
-                            onClick={() => {
-                              const l = detail?.lessor;
-                              if (!l) return;
-                              upsertMutation.mutate({
-                                lessorId: Number(l.lessor_id),
-                                lessorName: String(l.lessor_name),
-                                lessorType: l.lessor_type as "Individual" | "Company" | "Government" | "REIT" | "Trust",
-                                registrationNo: l.registration_no || undefined,
-                                taxId: l.tax_id || undefined,
-                                country: String(l.country ?? "AE"),
-                                city: l.city || undefined,
-                                addressLine1: l.address_line1 || undefined,
-                                addressLine2: l.address_line2 || undefined,
-                                postalCode: l.postal_code || undefined,
-                                website: l.website || undefined,
-                                creditRating: l.credit_rating || undefined,
-                                paymentTerms: Number(l.payment_terms ?? 30),
-                                preferredCurrency: String(l.preferred_currency ?? "AED"),
-                                status: l.status as "Active" | "Inactive" | "Blacklisted",
-                                blacklistReason: l.blacklist_reason || undefined,
-                                lesseeType: lesseeForm.lesseeType,
-                                lesseeName: lesseeForm.lesseeName || undefined,
-                                staffNumber: lesseeForm.staffNumber || undefined,
-                                grade: lesseeForm.grade || undefined,
-                                position: lesseeForm.position || undefined,
-                                placeOfWork: lesseeForm.placeOfWork || undefined,
-                                lesseeDepartment: lesseeForm.lesseeDepartment || undefined,
-                                employeeId: lesseeForm.employeeId || undefined,
-                                lesseeContactEmail: lesseeForm.lesseeContactEmail || undefined,
-                                lesseeContactPhone: lesseeForm.lesseeContactPhone || undefined,
-                              });
-                              setEditingLessee(false);
-                            }}>
-                            {upsertMutation.isPending ? "Saving..." : "Save Lessee"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                  {(() => {
+                    const l = detail?.lessor;
+                    const hasLessee = !!l?.lessee_name;
 
-                    {!editingLessee ? (
-                      // ── READ-ONLY VIEW ──────────────────────────────────────
-                      detail?.lessor?.lessee_name ? (
-                        <div className="grid grid-cols-3 gap-4">
-                          {[
-                            ["Lessee Type", detail.lessor.lessee_type],
-                            ["Lessee Name", detail.lessor.lessee_name],
-                            ["Staff Number", detail.lessor.staff_number],
-                            ["Employee ID", detail.lessor.employee_id],
-                            ["Grade", detail.lessor.grade],
-                            ["Position", detail.lessor.position],
-                            ["Department", detail.lessor.department],
-                            ["Place of Work", detail.lessor.place_of_work],
-                            ["Contact Email", detail.lessor.lessee_contact_email],
-                            ["Contact Phone", detail.lessor.lessee_contact_phone],
-                          ].filter(([, v]) => v).map(([label, value]) => (
-                            <div key={String(label)} className="bg-[#1a1d2e] rounded-lg p-3 border border-white/10">
-                              <p className="text-xs text-gray-500 mb-1">{String(label)}</p>
-                              <p className="text-sm text-white font-medium">{String(value)}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-16 text-gray-500 gap-3">
-                          <div className="w-12 h-12 rounded-full bg-[#1a1d2e] border border-white/10 flex items-center justify-center">
-                            <Building2 className="w-5 h-5 opacity-40" />
+                    // ── Save helper ────────────────────────────────────────────
+                    const saveLessee = () => {
+                      if (!l) return;
+                      if (!lesseeForm.lesseeName.trim()) { toast.error("Lessee Name is required"); return; }
+                      upsertMutation.mutate({
+                        lessorId: Number(l.lessor_id),
+                        lessorName: String(l.lessor_name),
+                        lessorType: l.lessor_type as "Individual" | "Company" | "Government" | "REIT" | "Trust",
+                        registrationNo: l.registration_no || undefined,
+                        taxId: l.tax_id || undefined,
+                        country: String(l.country ?? "QA"),
+                        city: l.city || undefined,
+                        addressLine1: l.address_line1 || undefined,
+                        addressLine2: l.address_line2 || undefined,
+                        postalCode: l.postal_code || undefined,
+                        website: l.website || undefined,
+                        creditRating: l.credit_rating || undefined,
+                        paymentTerms: Number(l.payment_terms ?? 30),
+                        preferredCurrency: String(l.preferred_currency ?? "QAR"),
+                        status: l.status as "Active" | "Inactive" | "Blacklisted",
+                        blacklistReason: l.blacklist_reason || undefined,
+                        lesseeType: lesseeForm.lesseeType,
+                        lesseeName: lesseeForm.lesseeName || undefined,
+                        staffNumber: lesseeForm.staffNumber || undefined,
+                        grade: lesseeForm.grade || undefined,
+                        position: lesseeForm.position || undefined,
+                        placeOfWork: lesseeForm.placeOfWork || undefined,
+                        lesseeDepartment: lesseeForm.lesseeDepartment || undefined,
+                        employeeId: lesseeForm.employeeId || undefined,
+                        lesseeContactEmail: lesseeForm.lesseeContactEmail || undefined,
+                        lesseeContactPhone: lesseeForm.lesseeContactPhone || undefined,
+                      });
+                      setEditingLessee(false);
+                    };
+
+                    return (
+                      <div className="space-y-5">
+                        {/* ── Tab header bar ──────────────────────────────── */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="w-4 h-4 text-[#e60000]" />
+                            <span className="text-sm font-semibold text-white">Lessee Details</span>
+                            {hasLessee && !editingLessee && (
+                              <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                                l.lessee_type === "Staff"
+                                  ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                                  : l.lessee_type === "Client"
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                  : "bg-gray-500/15 text-gray-400 border-gray-500/30"
+                              }`}>{l.lessee_type ?? "—"}</span>
+                            )}
                           </div>
-                          <p className="text-sm">No lessee assigned to this lessor record</p>
-                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
-                            onClick={() => { setLesseeForm(EMPTY_LESSEE_FORM); setEditingLessee(true); }}>
-                            <Plus className="w-3 h-3 mr-1" /> Assign Lessee
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {editingLessee && (
+                              <GenAIFillButton
+                                formType="lessee_details"
+                                existingData={{ lessor_name: l?.lessor_name, lessee_type: lesseeForm.lesseeType }}
+                                onFill={handleLesseeAIFill}
+                                label="Gen AI Fill"
+                              />
+                            )}
+                            {!editingLessee ? (
+                              <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white text-xs h-7 gap-1"
+                                onClick={() => handleLesseeFormFill(l ?? {})}>
+                                <Pencil className="w-3 h-3" />
+                                {hasLessee ? "Edit Lessee" : "Assign Lessee"}
+                              </Button>
+                            ) : (
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" className="border-white/10 text-gray-400 text-xs h-7"
+                                  onClick={() => setEditingLessee(false)}>Cancel</Button>
+                                <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white text-xs h-7 gap-1"
+                                  disabled={upsertMutation.isPending} onClick={saveLessee}>
+                                  <Save className="w-3 h-3" />
+                                  {upsertMutation.isPending ? "Saving…" : "Save Lessee"}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )
-                    ) : (
-                      // ── EDIT FORM ───────────────────────────────────────────
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-xs text-gray-400">Lessee Type</Label>
-                          <Select value={lesseeForm.lesseeType} onValueChange={v => setLesseeForm(f => ({ ...f, lesseeType: v as "Staff" | "Client" | "Other" }))}>
-                            <SelectTrigger className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-[#1a1d2e] border-white/10 text-gray-200">
-                              {LESSEE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Lessee Name *</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="Full name"
-                            value={lesseeForm.lesseeName} onChange={e => setLesseeForm(f => ({ ...f, lesseeName: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Staff Number</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. VF-00123"
-                            value={lesseeForm.staffNumber} onChange={e => setLesseeForm(f => ({ ...f, staffNumber: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Employee ID</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="HR system ID"
-                            value={lesseeForm.employeeId} onChange={e => setLesseeForm(f => ({ ...f, employeeId: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Grade</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. G5, Senior"
-                            value={lesseeForm.grade} onChange={e => setLesseeForm(f => ({ ...f, grade: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Position / Job Title</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. Network Engineer"
-                            value={lesseeForm.position} onChange={e => setLesseeForm(f => ({ ...f, position: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Department</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. Technology"
-                            value={lesseeForm.lesseeDepartment} onChange={e => setLesseeForm(f => ({ ...f, lesseeDepartment: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Place of Work</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="e.g. Doha HQ, Site B"
-                            value={lesseeForm.placeOfWork} onChange={e => setLesseeForm(f => ({ ...f, placeOfWork: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Contact Email</Label>
-                          <Input type="email" className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="lessee@company.com"
-                            value={lesseeForm.lesseeContactEmail} onChange={e => setLesseeForm(f => ({ ...f, lesseeContactEmail: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-400">Contact Phone</Label>
-                          <Input className="bg-[#1a1d2e] border-white/10 text-gray-200 mt-1" placeholder="+974 xxxx xxxx"
-                            value={lesseeForm.lesseeContactPhone} onChange={e => setLesseeForm(f => ({ ...f, lesseeContactPhone: e.target.value }))} />
-                        </div>
+
+                        {!editingLessee ? (
+                          hasLessee ? (
+                            /* ── READ-ONLY PROFILE CARD ─────────────────────── */
+                            <div className="space-y-4">
+                              {/* Profile hero */}
+                              <div className="flex items-start gap-5 bg-gradient-to-r from-[#1a1d2e] to-[#13161f] border border-white/10 rounded-xl p-5">
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#e60000]/30 to-[#e60000]/10 border-2 border-[#e60000]/40 flex items-center justify-center shrink-0">
+                                  <span className="text-xl font-bold text-[#e60000]">
+                                    {String(l.lessee_name).split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-lg font-bold text-white">{l.lessee_name}</h3>
+                                  <p className="text-sm text-gray-400 mt-0.5">{l.position || "—"}</p>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {l.lessee_type && (
+                                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                        l.lessee_type === "Staff"
+                                          ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                                          : l.lessee_type === "Client"
+                                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                          : "bg-gray-500/15 text-gray-400 border-gray-500/30"
+                                      }`}>{l.lessee_type}</span>
+                                    )}
+                                    {l.grade && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-amber-500/15 text-amber-400 border-amber-500/30">
+                                        Grade: {l.grade}
+                                      </span>
+                                    )}
+                                    {l.department && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-violet-500/15 text-violet-400 border-violet-500/30">
+                                        {l.department}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  {l.staff_number && (
+                                    <div className="text-xs text-gray-500">Staff No.</div>
+                                  )}
+                                  {l.staff_number && (
+                                    <div className="text-sm font-mono text-white font-semibold">{l.staff_number}</div>
+                                  )}
+                                  {l.employee_id && (
+                                    <div className="text-xs text-gray-500 mt-1">Employee ID</div>
+                                  )}
+                                  {l.employee_id && (
+                                    <div className="text-sm font-mono text-white">{l.employee_id}</div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Detail sections */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Identity & Employment */}
+                                <div className="md:col-span-2 bg-[#1a1d2e] border border-white/10 rounded-xl p-4 space-y-3">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Briefcase className="w-3.5 h-3.5 text-[#e60000]" />
+                                    <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Employment Details</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                      { icon: <Hash className="w-3 h-3" />, label: "Staff Number", value: l.staff_number },
+                                      { icon: <IdCard className="w-3 h-3" />, label: "Employee ID", value: l.employee_id },
+                                      { icon: <GraduationCap className="w-3 h-3" />, label: "Grade", value: l.grade },
+                                      { icon: <Briefcase className="w-3 h-3" />, label: "Position / Title", value: l.position },
+                                      { icon: <Building className="w-3 h-3" />, label: "Department", value: l.department },
+                                      { icon: <MapPin className="w-3 h-3" />, label: "Place of Work", value: l.place_of_work },
+                                    ].map(({ icon, label, value }) => (
+                                      <div key={label} className="flex items-start gap-2">
+                                        <span className="text-gray-600 mt-0.5">{icon}</span>
+                                        <div>
+                                          <p className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</p>
+                                          <p className="text-sm text-white font-medium">{value || <span className="text-gray-600 italic">—</span>}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Contact */}
+                                <div className="bg-[#1a1d2e] border border-white/10 rounded-xl p-4 space-y-3">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Phone className="w-3.5 h-3.5 text-[#e60000]" />
+                                    <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Contact</span>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <div className="flex items-start gap-2">
+                                      <Mail className="w-3.5 h-3.5 text-gray-500 mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-wide">Email</p>
+                                        <p className="text-sm text-white break-all">{l.lessee_contact_email || <span className="text-gray-600 italic">—</span>}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                      <Phone className="w-3.5 h-3.5 text-gray-500 mt-0.5 shrink-0" />
+                                      <div>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-wide">Phone</p>
+                                        <p className="text-sm text-white">{l.lessee_contact_phone || <span className="text-gray-600 italic">—</span>}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            /* ── EMPTY STATE ────────────────────────────────── */
+                            <div className="flex flex-col items-center justify-center py-20 text-gray-500 gap-4">
+                              <div className="w-16 h-16 rounded-full bg-[#1a1d2e] border-2 border-dashed border-white/10 flex items-center justify-center">
+                                <User2 className="w-7 h-7 opacity-30" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-sm font-medium text-gray-400">No lessee assigned</p>
+                                <p className="text-xs text-gray-600 mt-1">Assign a staff member or client as the lessee for this lessor record</p>
+                              </div>
+                              <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white text-xs h-8 gap-1.5 mt-1"
+                                onClick={() => { setLesseeForm(EMPTY_LESSEE_FORM); setEditingLessee(true); }}>
+                                <Plus className="w-3.5 h-3.5" /> Assign Lessee
+                              </Button>
+                            </div>
+                          )
+                        ) : (
+                          /* ── EDIT FORM ──────────────────────────────────────── */
+                          <div className="space-y-5">
+                            {/* Section: Identity */}
+                            <div className="bg-[#1a1d2e] border border-white/10 rounded-xl p-5">
+                              <div className="flex items-center gap-2 mb-4">
+                                <User2 className="w-3.5 h-3.5 text-[#e60000]" />
+                                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Identity</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-xs text-gray-400">Lessee Type</Label>
+                                  <Select value={lesseeForm.lesseeType} onValueChange={v => setLesseeForm(f => ({ ...f, lesseeType: v as "Staff" | "Client" | "Other" }))}>
+                                    <SelectTrigger className="bg-[#13161f] border-white/10 text-gray-200 mt-1 h-9">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#1a1d2e] border-white/10 text-gray-200">
+                                      {LESSEE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Lessee Full Name <span className="text-red-400">*</span></Label>
+                                  <Input className="bg-[#13161f] border-white/10 text-gray-200 mt-1 h-9" placeholder="e.g. Ahmed Al Rashidi"
+                                    value={lesseeForm.lesseeName} onChange={e => setLesseeForm(f => ({ ...f, lesseeName: e.target.value }))} />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Section: Employment */}
+                            <div className="bg-[#1a1d2e] border border-white/10 rounded-xl p-5">
+                              <div className="flex items-center gap-2 mb-4">
+                                <Briefcase className="w-3.5 h-3.5 text-[#e60000]" />
+                                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Employment Details</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-xs text-gray-400">Staff Number</Label>
+                                  <div className="relative mt-1">
+                                    <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="e.g. VF-00123"
+                                      value={lesseeForm.staffNumber} onChange={e => setLesseeForm(f => ({ ...f, staffNumber: e.target.value }))} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Employee ID</Label>
+                                  <div className="relative mt-1">
+                                    <IdCard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="HR system ID"
+                                      value={lesseeForm.employeeId} onChange={e => setLesseeForm(f => ({ ...f, employeeId: e.target.value }))} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Grade</Label>
+                                  <div className="relative mt-1">
+                                    <GraduationCap className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="e.g. G5, Senior, Band 4"
+                                      value={lesseeForm.grade} onChange={e => setLesseeForm(f => ({ ...f, grade: e.target.value }))} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Position / Job Title</Label>
+                                  <div className="relative mt-1">
+                                    <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="e.g. Network Engineer"
+                                      value={lesseeForm.position} onChange={e => setLesseeForm(f => ({ ...f, position: e.target.value }))} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Department</Label>
+                                  <div className="relative mt-1">
+                                    <Building className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="e.g. Technology, Finance"
+                                      value={lesseeForm.lesseeDepartment} onChange={e => setLesseeForm(f => ({ ...f, lesseeDepartment: e.target.value }))} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Place of Work</Label>
+                                  <div className="relative mt-1">
+                                    <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="e.g. Doha HQ, Al Rayyan Site"
+                                      value={lesseeForm.placeOfWork} onChange={e => setLesseeForm(f => ({ ...f, placeOfWork: e.target.value }))} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Section: Contact */}
+                            <div className="bg-[#1a1d2e] border border-white/10 rounded-xl p-5">
+                              <div className="flex items-center gap-2 mb-4">
+                                <Phone className="w-3.5 h-3.5 text-[#e60000]" />
+                                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Contact Information</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-xs text-gray-400">Contact Email</Label>
+                                  <div className="relative mt-1">
+                                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input type="email" className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="lessee@vodafone.qa"
+                                      value={lesseeForm.lesseeContactEmail} onChange={e => setLesseeForm(f => ({ ...f, lesseeContactEmail: e.target.value }))} />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-400">Contact Phone</Label>
+                                  <div className="relative mt-1">
+                                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                                    <Input className="bg-[#13161f] border-white/10 text-gray-200 pl-8 h-9" placeholder="+974 xxxx xxxx"
+                                      value={lesseeForm.lesseeContactPhone} onChange={e => setLesseeForm(f => ({ ...f, lesseeContactPhone: e.target.value }))} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Save bar */}
+                            <div className="flex justify-end gap-3 pt-1">
+                              <Button variant="outline" size="sm" className="border-white/10 text-gray-400 h-9"
+                                onClick={() => setEditingLessee(false)}>Cancel</Button>
+                              <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white h-9 gap-1.5"
+                                disabled={upsertMutation.isPending} onClick={saveLessee}>
+                                <Save className="w-3.5 h-3.5" />
+                                {upsertMutation.isPending ? "Saving…" : "Save Lessee Details"}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
                 </TabsContent>
 
                 <TabsContent value="contacts">
