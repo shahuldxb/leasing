@@ -118,6 +118,30 @@ export const leaseRouter = router({
       return execSPP('sp_GetLeaseListForAmortisation', []);
     }),
 
+  getAmortisationScheduleAll: protectedProcedure
+    .input(z.object({
+      year:     z.number().default(0),
+      viewMode: z.enum(['monthly', 'yearly']).default('monthly'),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_GetAmortisationScheduleAll', [
+        { name: 'Year',     type: sql.Int,          value: input.year },
+        { name: 'ViewMode', type: sql.NVarChar(10),  value: input.viewMode },
+      ]);
+    }),
+
+  getConsolidatedGLEntries: protectedProcedure
+    .input(z.object({
+      year:     z.number().default(0),
+      viewMode: z.enum(['monthly', 'yearly']).default('monthly'),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_GetConsolidatedGLEntries', [
+        { name: 'Year',     type: sql.Int,          value: input.year },
+        { name: 'ViewMode', type: sql.NVarChar(10),  value: input.viewMode },
+      ]);
+    }),
+
   // ── CREATE LEASE ────────────────────────────────────────
   createLease: protectedProcedure
     .input(z.object({
