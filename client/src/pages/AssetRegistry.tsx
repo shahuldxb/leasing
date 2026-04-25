@@ -647,19 +647,15 @@ export default function AssetRegistry() {
                       </button>
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="text-xs font-semibold text-amber-400">QAR {item.priceQAR.toLocaleString()}</span>
-                        {isCustom && (
-                          <>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-blue-400"
-                              onClick={e => { e.stopPropagation(); openEditLibItem(item); }}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400"
-                              onClick={e => { e.stopPropagation(); deleteLibItem(item.code); }}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </>
-                        )}
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-blue-400"
+                          onClick={e => { e.stopPropagation(); openEditLibItem(item); }}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400"
+                          onClick={e => { e.stopPropagation(); deleteLibItem(item.code); }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-green-400"
                           onClick={() => addToDraft(item)}>
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
