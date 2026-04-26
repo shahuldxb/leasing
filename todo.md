@@ -1082,3 +1082,16 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Register route /accounting/fx-revaluation in App.tsx
 - [x] Add "FX Revaluation" nav link under Accounting Engine in sidebar
 - [x] Vitest tests for FX revaluation procedures (13/13 passing)
+
+## Feature 6 — Renewal Due Badge Counter & Email Notification
+- [x] Create sp_GetRenewalDueCount SP (returns count of leases expiring within 90 days that have no Pending/Approved renewal)
+- [x] Create sp_GetRenewalDueLeases SP (returns list of leases entering the 90-day window for the first time today)
+- [x] Add tRPC lease.getRenewalDueCount procedure (public, called by sidebar on mount)
+- [x] Add tRPC lease.checkAndNotifyRenewalDue procedure (protected, checks for new entries and sends owner notification)
+- [x] Add live badge count to sidebar "Renewal Engine" nav link in DashboardLayout.tsx
+- [x] Badge shows red pill with count when > 0, hidden when 0
+- [x] Add server-side owner notification email when a lease first enters the 90-day window
+- [x] Notification includes: lease ref, lessor name, expiry date, days remaining
+- [x] Add a lease.renewal_notifications table to track which leases have already been notified (prevent duplicate emails)
+- [x] Wire checkAndNotifyRenewalDue to run on DashboardLayout mount (once per session)
+- [x] Vitest tests for getRenewalDueCount and checkAndNotifyRenewalDue (9/9 passing)

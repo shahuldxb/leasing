@@ -7,6 +7,7 @@ import { protectedProcedure, router } from '../_core/trpc';
 import { execSPP, execSPPOne, execSPPMulti, sql } from '../db-sqlserver';
 import { writeAuditLog, writeErrorLog, extractClientInfo } from '../audit';
 import { TRPCError } from '@trpc/server';
+import { notifyOwner } from '../_core/notification';
 
 export const leaseRouter = router({
 
@@ -689,5 +690,69 @@ export const leaseRouter = router({
         { name: 'Month', type: sql.Int, value: input.month },
       ]);
       return (row ?? {}) as Record<string, unknown>;
+    }),
+
+  // ── Feature 6: Renewal Due Badge Counter ─────────────────────────────────
+
+  /** Returns count of active leases expiring within 90 days with no pending/approved renewal */
+  getRenewalDueCount: protectedProcedure
+    .query(async () => {
+      const row = await execSPPOne('sp_GetRenewalDueCount', []);
+      return { count: (row as any)?.renewal_due_count ?? 0 };
+    }),
+
+  /**
+   * Checks for leases newly entering the 90-day window (not yet notified),
+   * sends an owner notification for each, and marks them as notified.
+   * Safe to call on every DashboardLayout mount — idempotent.
+   */
+  checkAndNotifyRenewalDue: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      type RenewalDueLease = {
+        contract_id: number;
+        contract_ref: string;
+        asset_description: string;
+        currency: string;
+        monthly_payment: number;
+        expiry_date: string;
+        days_remaining: number;
+        lessor_name: string;
+        lifecycle_status: string;
+      };
+
+      const leases = await execSPP('sp_GetRenewalDueLeases', []) as RenewalDueLease[];
+      if (!leases || leases.length === 0) return { notified: 0 };
+
+      const leaseLines = leases.map(l =>
+        `• ${l.contract_ref} — ${l.lessor_name} | Expires: ${l.expiry_date} (${l.days_remaining} days remaining)`
+      ).join('\n');
+
+      const title = `⚠️ ${leases.length} Lease${leases.length > 1 ? 's' : ''} Due for Renewal (within 90 days)`;
+      const content = [
+        `The following lease${leases.length > 1 ? 's have' : ' has'} entered the 90-day renewal window and require${leases.length === 1 ? 's' : ''} action:`,
+        '',
+        leaseLines,
+        '',
+        'Please review and initiate renewal workflows in the Renewal Engine.',
+      ].join('\n');
+
+      try {
+        await notifyOwner({ title, content });
+      } catch (e) {
+        await writeErrorLog({ severity: 'Warning', module: 'Lease', screenId: 'RENEWAL_BADGE', message: String(e) });
+      }
+
+      for (const lease of leases) {
+        try {
+          await execSPPOne('sp_MarkRenewalNotified', [
+            { name: 'ContractId',    type: sql.Int,          value: lease.contract_id },
+            { name: 'ContractRef',   type: sql.NVarChar(50), value: lease.contract_ref },
+            { name: 'DaysRemaining', type: sql.Int,          value: lease.days_remaining },
+            { name: 'ExpiryDate',    type: sql.Date,         value: new Date(lease.expiry_date) },
+          ]);
+        } catch (_) { /* continue even if one mark fails */ }
+      }
+
+      return { notified: leases.length };
     }),
 });

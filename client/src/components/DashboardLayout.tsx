@@ -32,6 +32,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { trpc } from "@/lib/trpc";
 
 type NavItem = {
   icon: React.ElementType;
@@ -351,6 +352,22 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
+  // ── Renewal Due Badge ────────────────────────────────────────────────────
+  const { data: renewalDueData } = trpc.lease.getRenewalDueCount.useQuery(undefined, {
+    refetchInterval: 5 * 60 * 1000, // refresh every 5 minutes
+    staleTime: 2 * 60 * 1000,
+  });
+  const renewalDueCount = renewalDueData?.count ?? 0;
+
+  const checkAndNotify = trpc.lease.checkAndNotifyRenewalDue.useMutation();
+  const hasCheckedRef = useRef(false);
+  useEffect(() => {
+    if (!hasCheckedRef.current && user) {
+      hasCheckedRef.current = true;
+      checkAndNotify.mutate();
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (isCollapsed) {
       setIsResizing(false);
@@ -441,13 +458,18 @@ function DashboardLayoutContent({
                               <button
                                 key={child.path}
                                 onClick={() => setLocation(child.path)}
-                                className={`text-left text-sm px-2 py-1.5 rounded-md transition-colors w-full ${
+                                className={`text-left text-sm px-2 py-1.5 rounded-md transition-colors w-full flex items-center justify-between ${
                                   location === child.path
                                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                                 }`}
                               >
-                                {child.label}
+                                <span>{child.label}</span>
+                                {child.path === "/leases/renewal-engine" && renewalDueCount > 0 && (
+                                  <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none">
+                                    {renewalDueCount > 99 ? "99+" : renewalDueCount}
+                                  </span>
+                                )}
                               </button>
                             ))}
                           </div>
