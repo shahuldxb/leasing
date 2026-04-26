@@ -405,7 +405,7 @@ export default function Amortisation() {
                                 {meta.ifrs16_classification}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                {rows.length} {viewMode === "yearly" ? "years" : "months"}
+                                {meta.term_months} months
                               </span>
                             </div>
                           </TableCell>
