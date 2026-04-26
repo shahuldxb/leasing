@@ -119,7 +119,6 @@ import MSCContractViewer     from "./pages/MSCContractViewer";
 
 // Lessor & Asset
 import LessorMaster              from "./pages/LessorMaster";
-import AssetRegistry             from "./pages/AssetRegistry";
 import SubAssetTransactionLog    from "./pages/SubAssetTransactionLog";
 import LeaseSubAssets            from "./pages/LeaseSubAssets";
 
@@ -227,8 +226,6 @@ function Router() {
 
       {/* Lessor & Asset */}
       <Route path="/lessor-master"                    component={LessorMaster} />
-      <Route path="/asset-registry"                   component={AssetRegistry} />
-      <Route path="/sub-asset-registry"               component={AssetRegistry} />
       <Route path="/sub-asset-registry/transactions"  component={SubAssetTransactionLog} />
       <Route path="/lease-sub-assets"                   component={LeaseSubAssets} />
 
