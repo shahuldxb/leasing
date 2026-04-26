@@ -142,8 +142,6 @@ export default function LeaseRegister() {
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Lessor</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Lessee</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Asset Type</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Asset Name</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Liability</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Monthly Pmt</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Commencement</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Expiry</th>
@@ -155,14 +153,14 @@ export default function LeaseRegister() {
                   {isLoading && aiLeases.length === 0 ? (
                     Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i} className="border-b">
-                        {Array.from({ length: 11 }).map((__, j) => (
+                        {Array.from({ length: 9 }).map((__, j) => (
                           <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
                         ))}
                       </tr>
                     ))
                   ) : leases.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-4 py-12 text-center text-muted-foreground">
+                      <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                         No leases found. <button className="text-primary underline" onClick={() => setLocation("/leases/new")}>Create the first lease.</button>
                       </td>
                     </tr>
@@ -187,8 +185,6 @@ export default function LeaseRegister() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.asset_type}</td>
-                        <td className="px-4 py-3 truncate max-w-40">{lease.asset_name}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{lease.lease_liability ? fmt(Number(lease.lease_liability)) : "—"}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{lease.monthly_payment ? fmt(Number(lease.monthly_payment)) : "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.commencement_date ? new Date(lease.commencement_date).toLocaleDateString() : "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.expiry_date ? new Date(lease.expiry_date).toLocaleDateString() : "—"}</td>
