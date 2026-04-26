@@ -429,4 +429,83 @@ export const leaseRouter = router({
         rows_inserted:       (result as any)?.rows_inserted       ?? 0,
       };
     }),
+
+  // ── LIFECYCLE: ORIGINATE ──────────────────────────────────────────────────
+  originateLease: protectedProcedure
+    .input(z.object({ contractId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await execSPPOne('lease.sp_OriginateLease', [
+        { name: 'ContractId', type: sql.Int,           value: input.contractId },
+        { name: 'PostedBy',   type: sql.NVarChar(100), value: ctx.user.name ?? ctx.user.email ?? 'system' },
+      ]);
+      return result as { result: string; opening_liability: number; periods_generated: number };
+    }),
+
+  // ── LIFECYCLE: POST PERIOD ────────────────────────────────────────────────
+  postPeriod: protectedProcedure
+    .input(z.object({ contractId: z.number(), periodDate: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await execSPPOne('lease.sp_PostPeriod', [
+        { name: 'ContractId', type: sql.Int,           value: input.contractId },
+        { name: 'PeriodDate', type: sql.Date,          value: new Date(input.periodDate) },
+        { name: 'PostedBy',   type: sql.NVarChar(100), value: ctx.user.name ?? ctx.user.email ?? 'system' },
+      ]);
+      return result as { result: string; period_posted: string; interest: number; payment: number; depreciation: number };
+    }),
+
+  // ── LIFECYCLE: MODIFY LEASE ───────────────────────────────────────────────
+  modifyLease: protectedProcedure
+    .input(z.object({
+      contractId:        z.number(),
+      newMonthlyPayment: z.number(),
+      effectiveDate:     z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await execSPPOne('lease.sp_ModifyLease', [
+        { name: 'ContractId',        type: sql.Int,           value: input.contractId },
+        { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment },
+        { name: 'EffectiveDate',     type: sql.Date,          value: new Date(input.effectiveDate) },
+        { name: 'PostedBy',          type: sql.NVarChar(100), value: ctx.user.name ?? ctx.user.email ?? 'system' },
+      ]);
+      return result as { result: string; old_liability: number; new_liability: number; remeasurement_amount: number; periods_regenerated: number };
+    }),
+
+  // ── LIFECYCLE: CLOSE LEASE ────────────────────────────────────────────────
+  closeLease: protectedProcedure
+    .input(z.object({ contractId: z.number(), closeDate: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await execSPPOne('lease.sp_CloseLease', [
+        { name: 'ContractId', type: sql.Int,           value: input.contractId },
+        { name: 'CloseDate',  type: sql.Date,          value: new Date(input.closeDate) },
+        { name: 'PostedBy',   type: sql.NVarChar(100), value: ctx.user.name ?? ctx.user.email ?? 'system' },
+      ]);
+      return result as { result: string; remaining_liability: number; rou_nbv: number; gain_loss: number };
+    }),
+
+  // ── LIFECYCLE: GET SCHEDULE WITH STATUS ──────────────────────────────────
+  getLeaseLifecycle: protectedProcedure
+    .input(z.object({ contractId: z.number().optional(), year: z.number().optional() }))
+    .query(async ({ input }) => {
+      return execSPP('lease.sp_GetLeaseLifecycle', [
+        { name: 'ContractId', type: sql.Int, value: input.contractId ?? null },
+        { name: 'Year',       type: sql.Int, value: input.year       ?? null },
+      ]);
+    }),
+
+  // ── LIFECYCLE: GET GL POSTINGS LEDGER ────────────────────────────────────
+  getGLPostings: protectedProcedure
+    .input(z.object({
+      contractId: z.number().optional(),
+      jeRef:      z.string().optional(),
+      fromDate:   z.string().optional(),
+      toDate:     z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('lease.sp_GetGLPostings', [
+        { name: 'ContractId', type: sql.Int,           value: input.contractId ?? null },
+        { name: 'JeRef',      type: sql.NVarChar(10),  value: input.jeRef      ?? null },
+        { name: 'FromDate',   type: sql.Date,          value: input.fromDate ? new Date(input.fromDate) : null },
+        { name: 'ToDate',     type: sql.Date,          value: input.toDate   ? new Date(input.toDate)   : null },
+      ]);
+    }),
 });

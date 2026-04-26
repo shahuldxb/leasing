@@ -11,7 +11,9 @@ import { toast } from "sonner";
 import { Calculator, Download, ChevronDown, ChevronRight,
   TrendingDown, Banknote, BookOpen, Building2,
   ArrowDownRight, BarChart3, HelpCircle, Info, X,
+  Zap, CheckCircle2, Lock, Play, Edit3, XCircle, Receipt,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -48,7 +50,7 @@ interface ScheduleRow {
   commencement_date: string;
   expiry_date: string;
   ifrs16_classification: string;
-  contract_status: string;
+  contract_status?: string;
   lessor_name: string;
   period_date: string;
   period_year: number;
@@ -62,12 +64,16 @@ interface ScheduleRow {
   rou_nbv: number;
   depreciation: number;
   cumulative_depr: number;
-  gl_lease_liability: string;
-  gl_rou_asset: string;
-  gl_accum_depreciation: string;
-  gl_interest_expense: string;
-  gl_depreciation_expense: string;
-  gl_cash_bank: string;
+  gl_lease_liability?: string;
+  gl_rou_asset?: string;
+  gl_accum_depreciation?: string;
+  gl_interest_expense?: string;
+  gl_depreciation_expense?: string;
+  gl_cash_bank?: string;
+  lifecycle_status: string;
+  posting_status: string;
+  posted_at: string | null;
+  posted_by: string | null;
 }
 
 interface GLEntry {
@@ -97,6 +103,12 @@ const CLASS_COLOUR: Record<string, string> = {
   Operating: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   ShortTerm: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   LowValue:  "bg-purple-500/20 text-purple-400 border-purple-500/30",
+};
+const LIFECYCLE_COLOUR: Record<string, string> = {
+  Draft:    "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+  Active:   "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  Modified: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  Closed:   "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
 // ── Group rows by contract ─────────────────────────────────────────────────────
@@ -218,6 +230,13 @@ export default function Amortisation() {
   const [showGLExplain, setShowGLExplain]         = useState(false);
   const [glViewMode, setGlViewMode]               = useState<"monthly" | "yearly">("monthly");
   const [glSelectedMonth, setGlSelectedMonth]     = useState<string>("");
+  // ── Lifecycle action state ─────────────────────────────────────────────────
+  const [modifyDialogId, setModifyDialogId]       = useState<number | null>(null);
+  const [modifyAmount, setModifyAmount]           = useState<string>("");
+  const [modifyDate, setModifyDate]               = useState<string>("");
+  const [closeDialogId, setCloseDialogId]         = useState<number | null>(null);
+  const [closeDate, setCloseDate]                 = useState<string>("");
+  const [glPostingsContractId, setGlPostingsContractId] = useState<number | null>(null);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
@@ -228,6 +247,13 @@ export default function Amortisation() {
 
   const scheduleRows: ScheduleRow[] = Array.isArray(rawSchedule) ? rawSchedule as ScheduleRow[] : [];
   const glEntries:   GLEntry[]      = Array.isArray(rawGL)       ? rawGL       as GLEntry[]      : [];
+  // ── GL Postings query (per-lease audit ledger) ─────────────────────────────
+  const { data: rawGLPostings, isLoading: loadingGLPostings, refetch: refetchGLPostings } =
+    trpc.lease.getGLPostings.useQuery(
+      { contractId: glPostingsContractId ?? undefined },
+      { enabled: glPostingsContractId !== null }
+    );
+  const glPostings = Array.isArray(rawGLPostings) ? rawGLPostings as any[] : [];
 
   const grouped    = useMemo(() => groupByContract(scheduleRows), [scheduleRows]);
   const allGLPeriods = useMemo(() => groupGLByPeriod(glEntries), [glEntries]);
@@ -302,6 +328,42 @@ export default function Amortisation() {
       utils.lease.getConsolidatedGLEntries.invalidate();
     },
     onError: (err) => toast.error(`Calculation failed: ${err.message}`),
+  });
+  // ── Lifecycle mutations ───────────────────────────────────────────────────
+  const originateMut = trpc.lease.originateLease.useMutation({
+    onSuccess: (data) => {
+      const d = data as any;
+      toast.success(`Lease originated — Opening Liability: QAR ${(d?.opening_liability ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`);
+      utils.lease.getAmortisationScheduleAll.invalidate();
+    },
+    onError: (err) => toast.error(`Origination failed: ${err.message}`),
+  });
+  const postPeriodMut = trpc.lease.postPeriod.useMutation({
+    onSuccess: (data) => {
+      const d = data as any;
+      toast.success(`Period posted — ${d?.period_posted ?? ''}: Interest QAR ${(d?.interest ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`);
+      utils.lease.getAmortisationScheduleAll.invalidate();
+      if (glPostingsContractId) refetchGLPostings();
+    },
+    onError: (err) => toast.error(`Post period failed: ${err.message}`),
+  });
+  const modifyMut = trpc.lease.modifyLease.useMutation({
+    onSuccess: (data) => {
+      const d = data as any;
+      toast.success(`Lease modified — Remeasurement: QAR ${(d?.remeasurement_amount ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`);
+      setModifyDialogId(null);
+      utils.lease.getAmortisationScheduleAll.invalidate();
+    },
+    onError: (err) => toast.error(`Modification failed: ${err.message}`),
+  });
+  const closeMut = trpc.lease.closeLease.useMutation({
+    onSuccess: (data) => {
+      const d = data as any;
+      toast.success(`Lease closed — Gain/Loss: QAR ${(d?.gain_loss ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`);
+      setCloseDialogId(null);
+      utils.lease.getAmortisationScheduleAll.invalidate();
+    },
+    onError: (err) => toast.error(`Closure failed: ${err.message}`),
   });
 
   const toggleContract = (id: number) => {
@@ -507,14 +569,76 @@ export default function Amortisation() {
                             </div>
                           </TableCell>
                           <TableCell className="py-2.5">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-mono text-[#e60000] font-semibold text-sm">{meta.contract_ref}</span>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded border ${CLASS_COLOUR[meta.ifrs16_classification] ?? "bg-muted text-muted-foreground"}`}>
                                 {meta.ifrs16_classification}
                               </span>
+                              {/* Lifecycle status badge */}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${LIFECYCLE_COLOUR[meta.lifecycle_status] ?? "bg-muted text-muted-foreground border-border"}`}>
+                                {meta.lifecycle_status ?? "Draft"}
+                              </span>
                               <span className="text-xs text-muted-foreground">
                                 {meta.term_months} months
                               </span>
+                              {/* Lifecycle action buttons */}
+                              <div className="flex items-center gap-1 ml-1" onClick={e => e.stopPropagation()}>
+                                {/* Originate — only for Draft leases */}
+                                {(meta.lifecycle_status === "Draft" || !meta.lifecycle_status) && (
+                                  <button
+                                    onClick={() => originateMut.mutate({ contractId: meta.contract_id })}
+                                    disabled={originateMut.isPending}
+                                    title="Originate lease — recognise ROU asset and liability (IFRS 16 Day 1)"
+                                    className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
+                                  >
+                                    <Zap className="w-2.5 h-2.5" /> Originate
+                                  </button>
+                                )}
+                                {/* Post Period — for Active/Modified leases */}
+                                {(meta.lifecycle_status === "Active" || meta.lifecycle_status === "Modified") && (
+                                  <button
+                                    onClick={() => postPeriodMut.mutate({ contractId: meta.contract_id, periodDate: new Date().toISOString().slice(0, 10) })}
+                                    disabled={postPeriodMut.isPending}
+                                    title="Post next projected period — creates GL journal entries"
+                                    className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.4)", color: "#a5b4fc" }}
+                                  >
+                                    <Play className="w-2.5 h-2.5" /> Post Period
+                                  </button>
+                                )}
+                                {/* Modify — for Active/Modified leases */}
+                                {(meta.lifecycle_status === "Active" || meta.lifecycle_status === "Modified") && (
+                                  <button
+                                    onClick={() => { setModifyDialogId(meta.contract_id); setModifyAmount(""); setModifyDate(""); }}
+                                    title="Modify lease — remeasure liability with new rent amount"
+                                    className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all hover:scale-105 active:scale-95"
+                                    style={{ background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24" }}
+                                  >
+                                    <Edit3 className="w-2.5 h-2.5" /> Modify
+                                  </button>
+                                )}
+                                {/* Close — for Active/Modified leases */}
+                                {(meta.lifecycle_status === "Active" || meta.lifecycle_status === "Modified") && (
+                                  <button
+                                    onClick={() => { setCloseDialogId(meta.contract_id); setCloseDate(""); }}
+                                    title="Close lease — derecognise ROU asset and liability"
+                                    className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all hover:scale-105 active:scale-95"
+                                    style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", color: "#f87171" }}
+                                  >
+                                    <XCircle className="w-2.5 h-2.5" /> Close
+                                  </button>
+                                )}
+                                {/* GL Postings ledger button */}
+                                <button
+                                  onClick={() => setGlPostingsContractId(glPostingsContractId === meta.contract_id ? null : meta.contract_id)}
+                                  title="View GL Postings ledger for this lease"
+                                  className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all hover:scale-105 active:scale-95"
+                                  style={{ background: glPostingsContractId === meta.contract_id ? "rgba(14,165,233,0.25)" : "rgba(14,165,233,0.10)", border: "1px solid rgba(14,165,233,0.4)", color: "#38bdf8" }}
+                                >
+                                  <Receipt className="w-2.5 h-2.5" /> GL Ledger
+                                </button>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="py-2.5">
@@ -568,9 +692,65 @@ export default function Amortisation() {
                             <TableCell className="py-1.5 text-xs text-right font-mono text-muted-foreground">—</TableCell>
                           </TableRow>
                         ))}
+                        {/* ── GL Postings inline ledger ────────────────── */}
+                        {glPostingsContractId === meta.contract_id && (
+                          <TableRow>
+                            <TableCell colSpan={11} className="p-0">
+                              <div className="mx-2 my-2 rounded-lg border border-sky-500/30 bg-sky-500/5 overflow-hidden">
+                                <div className="px-3 py-2 border-b border-sky-500/20 flex items-center gap-2">
+                                  <Receipt className="w-3.5 h-3.5 text-sky-400" />
+                                  <span className="text-xs font-semibold text-sky-400">GL Postings Ledger — {meta.contract_ref}</span>
+                                  <span className="text-[10px] text-muted-foreground ml-1">Actual journal entries posted to the general ledger</span>
+                                  <button onClick={() => setGlPostingsContractId(null)} className="ml-auto text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                                </div>
+                                {loadingGLPostings ? (
+                                  <div className="px-4 py-3 text-xs text-muted-foreground">Loading postings…</div>
+                                ) : glPostings.length === 0 ? (
+                                  <div className="px-4 py-3 text-xs text-muted-foreground">No GL postings yet for this lease. Use <strong>Originate</strong> or <strong>Post Period</strong> to create entries.</div>
+                                ) : (
+                                  <table className="w-full text-xs">
+                                    <thead>
+                                      <tr className="bg-sky-500/10">
+                                        <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Date</th>
+                                        <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">JE Ref</th>
+                                        <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Description</th>
+                                        <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Ledger No.</th>
+                                        <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Account</th>
+                                        <th className="text-center px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Dr/Cr</th>
+                                        <th className="text-right px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Amount</th>
+                                        <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">Posted By</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/30">
+                                      {glPostings.map((p: any, i: number) => (
+                                        <tr key={p.posting_id ?? i} className="hover:bg-sky-500/5">
+                                          <td className="px-3 py-1 font-mono text-[10px] text-muted-foreground whitespace-nowrap">{p.posting_date ? new Date(p.posting_date).toLocaleDateString() : "—"}</td>
+                                          <td className="px-3 py-1 font-mono text-[10px] text-sky-400 font-bold">{p.je_ref}</td>
+                                          <td className="px-3 py-1 text-[10px] text-muted-foreground">{p.je_label}</td>
+                                          <td className="px-3 py-1 font-mono text-[10px]">{p.ledger_no}</td>
+                                          <td className="px-3 py-1 text-[10px]">{p.ledger_name}</td>
+                                          <td className="px-3 py-1 text-center">
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${
+                                              p.dr_cr === "Dr"
+                                                ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                                                : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                            }`}>{p.dr_cr}</span>
+                                          </td>
+                                          <td className="px-3 py-1 text-right font-mono text-[10px] font-semibold">{fmtNum(p.amount)}</td>
+                                          <td className="px-3 py-1 text-[10px] text-muted-foreground">{p.posted_by ?? "—"}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </React.Fragment>
                     );
                   })}
+
                   {/* ── Grand totals row ─────────────────────────────────── */}
                   {scheduleRows.length > 0 && (
                     <TableRow className="bg-[#e60000]/10 border-t-2 border-[#e60000]/30 font-bold">
@@ -1146,6 +1326,110 @@ export default function Amortisation() {
 
             <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/30 px-3 py-2 text-xs text-indigo-300">
               <strong>Key rule:</strong> Every journal entry must balance — total Debits = total Credits for each period. Blue rows are Debits (assets increase / liabilities decrease). Green rows are Credits (assets decrease / liabilities increase).
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* ── Modify Lease Dialog ─────────────────────────────────────────── */}
+      <Dialog open={modifyDialogId !== null} onOpenChange={open => !open && setModifyDialogId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-amber-400" />
+              Modify Lease — Remeasure Liability
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              IFRS 16 Para 45: When monthly rent changes, the lease liability is remeasured at the new PV of remaining payments.
+              A remeasurement journal entry (JE-4) is posted to adjust the ROU asset and liability.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">New Monthly Payment (QAR)</label>
+              <Input
+                type="number"
+                placeholder="e.g. 13500"
+                value={modifyAmount}
+                onChange={e => setModifyAmount(e.target.value)}
+                className="border-amber-500/40 focus:border-amber-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Modification Effective Date</label>
+              <Input
+                type="date"
+                value={modifyDate}
+                onChange={e => setModifyDate(e.target.value)}
+                className="border-amber-500/40 focus:border-amber-500"
+              />
+            </div>
+            <div className="rounded bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300">
+              <strong>What happens:</strong> The system will recalculate the remaining schedule from the modification date using the new rent amount and post a remeasurement journal entry (JE-4) to adjust the ROU asset and lease liability.
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setModifyDialogId(null)}>Cancel</Button>
+              <Button
+                size="sm"
+                disabled={!modifyAmount || !modifyDate || modifyMut.isPending}
+                onClick={() => {
+                  if (modifyDialogId && modifyAmount && modifyDate) {
+                    modifyMut.mutate({
+                      contractId: modifyDialogId,
+                      newMonthlyPayment: Number(modifyAmount),
+                      effectiveDate: modifyDate,
+                    });
+                  }
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                {modifyMut.isPending ? "Modifying…" : "Confirm Modification"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Close Lease Dialog ───────────────────────────────────────────── */}
+      <Dialog open={closeDialogId !== null} onOpenChange={open => !open && setCloseDialogId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="w-4 h-4 text-red-400" />
+              Close Lease — Derecognise Assets & Liabilities
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              IFRS 16 Para 46: On lease termination, the ROU asset and lease liability are derecognised.
+              Any difference between the carrying amounts is recognised as a gain or loss in P&amp;L (JE-5).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Closure / Termination Date</label>
+              <Input
+                type="date"
+                value={closeDate}
+                onChange={e => setCloseDate(e.target.value)}
+                className="border-red-500/40 focus:border-red-500"
+              />
+            </div>
+            <div className="rounded bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-300">
+              <strong>Warning:</strong> This action is irreversible. The lease will be moved to <strong>Closed</strong> status.
+              The ROU asset and remaining liability will be derecognised and a gain/loss entry (JE-5) will be posted.
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setCloseDialogId(null)}>Cancel</Button>
+              <Button
+                size="sm"
+                disabled={!closeDate || closeMut.isPending}
+                onClick={() => {
+                  if (closeDialogId && closeDate) {
+                    closeMut.mutate({ contractId: closeDialogId, closeDate: closeDate });
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {closeMut.isPending ? "Closing…" : "Confirm Closure"}
+              </Button>
             </div>
           </div>
         </DialogContent>

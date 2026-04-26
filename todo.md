@@ -1011,3 +1011,21 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Wire Initiate Renewal → /leases/renewals
 - [x] Replace fake Delete toast with confirmation dialog + real deleteLease mutation
 - [x] TypeScript: 0 errors
+
+## IFRS 16 Lifecycle Engine (Production-Grade)
+- [ ] Add lifecycle_status column to lease.contracts (Draft/Active/Modified/Closed)
+- [ ] Add originated_at, modified_at columns to lease.contracts
+- [ ] Add posting_status (Projected/Posted/Locked) and posted_at to lease.amortisation_schedule
+- [ ] Create lease.gl_postings table (permanent audit ledger of every JE posted)
+- [ ] Create sp_OriginateLease (one-time JE-1, generates projected schedule, sets status=Active)
+- [ ] Create sp_PostPeriod (posts JE-2/3/4 for a specific month, marks period as Posted)
+- [ ] Create sp_ModifyLease (JE-6 remeasurement, regenerates remaining Projected periods)
+- [ ] Create sp_CloseLease (JE-5 derecognition, sets status=Closed)
+- [ ] Create sp_GetLeaseLifecycle (returns schedule with posting_status per period)
+- [ ] Add tRPC procedures: originateLease, postPeriod, modifyLease, closeLease, getLifecycle
+- [ ] Update Amortisation screen: lifecycle status badge per lease row
+- [ ] Add Originate button per lease (disabled after origination)
+- [ ] Add Post Period button per month row (disabled if Posted or future)
+- [ ] Add Modify Rent button per lease (only for Active/Modified leases)
+- [ ] Add Close Lease button per lease (only for Active/Modified leases)
+- [ ] Add GL Postings ledger panel showing all posted JEs with timestamps and je_ref
