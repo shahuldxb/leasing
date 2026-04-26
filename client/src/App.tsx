@@ -138,6 +138,12 @@ import AlertsReports      from "./pages/AlertsReports";
 import FurnitureCollections    from "./pages/FurnitureCollections";
 import FurnitureCollectionDetail from "./pages/FurnitureCollectionDetail";
 
+// Phase 5 Features
+import DisclosureNotes  from "./pages/DisclosureNotes";
+import RenewalEngine   from "./pages/RenewalEngine";
+import PeriodClose     from "./pages/PeriodClose";
+import IAS17Comparison from "./pages/IAS17Comparison";
+
 function Router() {
   return (
     <Switch>
@@ -291,6 +297,12 @@ function Router() {
       {/* Property Furniture Collections */}
       <Route path="/assets/furniture"            component={FurnitureCollections} />
       <Route path="/assets/furniture/:id"        component={FurnitureCollectionDetail} />
+
+      {/* Phase 5: IFRS 16 Lifecycle Features */}
+      <Route path="/accounting/disclosure-notes"  component={DisclosureNotes} />
+      <Route path="/leases/renewal-engine"        component={RenewalEngine} />
+      <Route path="/accounting/period-close"      component={PeriodClose} />
+      <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
 
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />

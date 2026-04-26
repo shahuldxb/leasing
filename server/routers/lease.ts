@@ -508,4 +508,121 @@ export const leaseRouter = router({
         { name: 'ToDate',     type: sql.Date,          value: input.toDate   ? new Date(input.toDate)   : null },
       ]);
     }),
+
+  // ── FEATURE 1: IFRS 16 DISCLOSURE NOTES ─────────────────────────────────
+  getDisclosureNotes: protectedProcedure
+    .input(z.object({ reportingYear: z.number() }))
+    .query(async ({ input }) => {
+      const result = await execSPPMulti('sp_GetIFRS16DisclosureNotes', [
+        { name: 'ReportingYear', type: sql.Int, value: input.reportingYear },
+      ]);
+      return {
+        maturityAnalysis:        (result[0] ?? []) as Record<string, unknown>[],
+        rouMovement:             (result[1] ?? []) as Record<string, unknown>[],
+        liabilityReconciliation: (result[2]?.[0] ?? {}) as Record<string, unknown>,
+        keyAssumptions:          (result[3]?.[0] ?? {}) as Record<string, unknown>,
+      };
+    }),
+
+  // ── FEATURE 2: RENEWALS ──────────────────────────────────────────────────
+  getRenewals: protectedProcedure
+    .input(z.object({ status: z.string().optional(), contractId: z.number().optional() }))
+    .query(async ({ input }) => {
+      return execSPP('sp_GetRenewals', [
+        { name: 'Status',     type: sql.NVarChar(20), value: input.status     ?? null },
+        { name: 'ContractId', type: sql.Int,          value: input.contractId ?? null },
+      ]);
+    }),
+
+  initiateRenewal: protectedProcedure
+    .input(z.object({
+      contractId:        z.number(),
+      newExpiryDate:     z.string(),
+      newMonthlyPayment: z.number(),
+      newTermMonths:     z.number(),
+      newIBR:            z.number(),
+      notes:             z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await execSPPOne('sp_InitiateRenewal', [
+        { name: 'ContractId',        type: sql.Int,           value: input.contractId },
+        { name: 'NewExpiryDate',     type: sql.Date,          value: new Date(input.newExpiryDate) },
+        { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment },
+        { name: 'NewTermMonths',     type: sql.Int,           value: input.newTermMonths },
+        { name: 'NewIBR',            type: sql.Decimal(8,6),  value: input.newIBR },
+        { name: 'Notes',             type: sql.NVarChar(500), value: input.notes ?? null },
+        { name: 'CreatedBy',         type: sql.NVarChar(100), value: ctx.user.name ?? 'system' },
+      ]) as { result: string; renewal_id: number; message: string };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  approveRenewal: protectedProcedure
+    .input(z.object({ renewalId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await execSPPOne('sp_ApproveRenewal', [
+        { name: 'RenewalId',  type: sql.Int,           value: input.renewalId },
+        { name: 'ApprovedBy', type: sql.NVarChar(100), value: ctx.user.name ?? 'system' },
+      ]) as { result: string; message: string };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  rejectRenewal: protectedProcedure
+    .input(z.object({ renewalId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await execSPPOne('sp_RejectRenewal', [
+        { name: 'RenewalId',   type: sql.Int,           value: input.renewalId },
+        { name: 'RejectedBy',  type: sql.NVarChar(100), value: ctx.user.name ?? 'system' },
+      ]) as { result: string; message: string };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  // ── FEATURE 3: PERIOD-END CLOSE ──────────────────────────────────────────
+  getPeriodCloseStatus: protectedProcedure
+    .input(z.object({ year: z.number() }))
+    .query(async ({ input }) => {
+      return execSPP('sp_GetPeriodCloseStatus', [
+        { name: 'Year', type: sql.Int, value: input.year },
+      ]);
+    }),
+
+  closePeriod: protectedProcedure
+    .input(z.object({ year: z.number(), month: z.number(), notes: z.string().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await execSPPOne('sp_ClosePeriod', [
+        { name: 'Year',     type: sql.Int,           value: input.year },
+        { name: 'Month',    type: sql.Int,           value: input.month },
+        { name: 'ClosedBy', type: sql.NVarChar(100), value: ctx.user.name ?? 'system' },
+        { name: 'Notes',    type: sql.NVarChar(500), value: input.notes ?? null },
+      ]) as { result: string; message: string };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  reopenPeriod: protectedProcedure
+    .input(z.object({ year: z.number(), month: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await execSPPOne('sp_ReopenPeriod', [
+        { name: 'Year',       type: sql.Int,           value: input.year },
+        { name: 'Month',      type: sql.Int,           value: input.month },
+        { name: 'ReopenedBy', type: sql.NVarChar(100), value: ctx.user.name ?? 'system' },
+      ]) as { result: string; message: string };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  // ── FEATURE 4: IAS 17 COMPARISON ─────────────────────────────────────────
+  getIAS17Comparison: protectedProcedure
+    .input(z.object({ year: z.number() }))
+    .query(async ({ input }) => {
+      const result = await execSPPMulti('sp_GetIAS17Comparison', [
+        { name: 'Year', type: sql.Int, value: input.year },
+      ]);
+      return {
+        leases:  (result[0] ?? []) as Record<string, unknown>[],
+        summary: (result[1]?.[0] ?? {}) as Record<string, unknown>,
+      };
+    }),
 });

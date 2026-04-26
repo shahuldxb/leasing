@@ -1013,19 +1013,59 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] TypeScript: 0 errors
 
 ## IFRS 16 Lifecycle Engine (Production-Grade)
-- [ ] Add lifecycle_status column to lease.contracts (Draft/Active/Modified/Closed)
-- [ ] Add originated_at, modified_at columns to lease.contracts
-- [ ] Add posting_status (Projected/Posted/Locked) and posted_at to lease.amortisation_schedule
-- [ ] Create lease.gl_postings table (permanent audit ledger of every JE posted)
-- [ ] Create sp_OriginateLease (one-time JE-1, generates projected schedule, sets status=Active)
-- [ ] Create sp_PostPeriod (posts JE-2/3/4 for a specific month, marks period as Posted)
-- [ ] Create sp_ModifyLease (JE-6 remeasurement, regenerates remaining Projected periods)
-- [ ] Create sp_CloseLease (JE-5 derecognition, sets status=Closed)
-- [ ] Create sp_GetLeaseLifecycle (returns schedule with posting_status per period)
-- [ ] Add tRPC procedures: originateLease, postPeriod, modifyLease, closeLease, getLifecycle
-- [ ] Update Amortisation screen: lifecycle status badge per lease row
-- [ ] Add Originate button per lease (disabled after origination)
-- [ ] Add Post Period button per month row (disabled if Posted or future)
-- [ ] Add Modify Rent button per lease (only for Active/Modified leases)
-- [ ] Add Close Lease button per lease (only for Active/Modified leases)
-- [ ] Add GL Postings ledger panel showing all posted JEs with timestamps and je_ref
+- [x] Add lifecycle_status column to lease.contracts (Draft/Active/Modified/Closed)
+- [x] Add originated_at, modified_at columns to lease.contracts
+- [x] Add posting_status (Projected/Posted/Locked) and posted_at to lease.amortisation_schedule
+- [x] Create lease.gl_postings table (permanent audit ledger of every JE posted)
+- [x] Create sp_OriginateLease (one-time JE-1, generates projected schedule, sets status=Active)
+- [x] Create sp_PostPeriod (posts JE-2/3/4 for a specific month, marks period as Posted)
+- [x] Create sp_ModifyLease (JE-6 remeasurement, regenerates remaining Projected periods)
+- [x] Create sp_CloseLease (JE-5 derecognition, sets status=Closed)
+- [x] Create sp_GetLeaseLifecycle (returns schedule with posting_status per period)
+- [x] Add tRPC procedures: originateLease, postPeriod, modifyLease, closeLease, getLifecycle
+- [x] Update Amortisation screen: lifecycle status badge per lease row
+- [x] Add Originate button per lease (disabled after origination)
+- [x] Add Post Period button per month row (disabled if Posted or future)
+- [x] Add Modify Rent button per lease (only for Active/Modified leases)
+- [x] Add Close Lease button per lease (only for Active/Modified leases)
+- [x] Add GL Postings ledger panel showing all posted JEs with timestamps and je_ref
+
+## Feature 1 — IFRS 16 Disclosure Notes Generator
+- [x] Create sp_GetIFRS16DisclosureNotes SP (maturity analysis, ROU movement, weighted avg IBR, lease liability reconciliation)
+- [x] Add tRPC lease.getDisclosureNotes procedure (input: reportingYear)
+- [x] Create DisclosureNotes.tsx page with 4 tables: Maturity Analysis, ROU Asset Movement, Liability Reconciliation, Key Assumptions
+- [x] Add Copy to Clipboard and Export to Excel buttons
+- [x] Register route /accounting/disclosure-notes in App.tsx
+- [x] Add "Disclosure Notes" nav link under Accounting Engine in sidebar
+
+## Feature 2 — Lease Renewal Engine
+- [x] Create lease.renewals table (renewal_id, contract_id, renewal_date, new_expiry_date, new_monthly_payment, new_term_months, new_ibr, status, created_by, created_at)
+- [x] Create sp_InitiateRenewal SP (inserts into lease.renewals, sets status=Pending)
+- [x] Create sp_ApproveRenewal SP (extends contract expiry, recalculates PV, appends new Projected schedule rows, posts JE-7 remeasurement, sets status=Approved)
+- [x] Create sp_GetRenewals SP (returns all renewals with contract details)
+- [x] Add tRPC procedures: initiateRenewal, approveRenewal, getRenewals, rejectRenewal
+- [x] Create RenewalEngine.tsx page with pending renewals list, Approve/Reject actions, and new terms form
+- [x] Register route /leases/renewal-engine in App.tsx
+- [x] Add "Renewal Engine" nav link under Lease Management in sidebar
+
+## Feature 3 — Period-End Close Lock
+- [x] Create lease.period_close table (close_id, period_year, period_month, closed_at, closed_by, status)
+- [x] Create sp_ClosePeriod SP (locks all Posted rows for a given year/month, inserts into period_close, prevents re-posting)
+- [x] Create sp_GetPeriodCloseStatus SP (returns close status for each month of a given year)
+- [x] Create sp_ReopenPeriod SP (unlocks rows for a given year/month)
+- [x] Add tRPC procedures: closePeriod, getPeriodCloseStatus, reopenPeriod
+- [x] Create PeriodClose.tsx page with 12-month calendar grid showing Open/Closed status per month
+- [x] Add Close/Reopen Period buttons with confirmation dialogs
+- [x] Register route /accounting/period-close in App.tsx
+- [x] Add "Period-End Close" nav link under Accounting Engine in sidebar
+
+## Feature 4 — IFRS 16 vs IAS 17 Comparative Report
+- [x] Create sp_GetIAS17Comparison SP (calculates straight-line rent expense per period vs IFRS 16 interest+depreciation, returns side-by-side per lease per year)
+- [x] Add tRPC lease.getIAS17Comparison procedure (input: year)
+- [x] Create IAS17Comparison.tsx page with year selector
+- [x] Table: per-lease comparison (IAS 17 rent expense vs IFRS 16 interest + depreciation + difference)
+- [x] Summary KPI cards: Total IAS 17 expense, Total IFRS 16 expense, Net P&L impact, Balance sheet impact
+- [x] Bar chart: IAS 17 vs IFRS 16 expense per year (Recharts grouped bar)
+- [x] Export to Excel button
+- [x] Register route /accounting/ias17-comparison in App.tsx
+- [x] Add "IAS 17 vs IFRS 16" nav link under Accounting Engine in sidebar
