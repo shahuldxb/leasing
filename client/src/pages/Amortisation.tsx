@@ -174,6 +174,19 @@ export default function Amortisation() {
   const totalDepreciation = scheduleRows.reduce((s, r) => s + r.depreciation,     0);
   const leaseCount        = grouped.length;
 
+  // ── Calculate amortisation mutation ─────────────────────────────────────
+  const utils = trpc.useUtils();
+  const calcMut = trpc.lease.calculateAmortisationAll.useMutation({
+    onSuccess: (data) => {
+      toast.success(
+        `Amortisation calculated: ${data.contracts_processed} leases, ${data.rows_inserted} schedule rows generated.`
+      );
+      utils.lease.getAmortisationScheduleAll.invalidate();
+      utils.lease.getConsolidatedGLEntries.invalidate();
+    },
+    onError: (err) => toast.error(`Calculation failed: ${err.message}`),
+  });
+
   const toggleContract = (id: number) => {
     setExpandedContracts(prev => {
       const next = new Set(prev);
@@ -241,10 +254,19 @@ export default function Amortisation() {
             </div>
           </div>
 
-          {/* Expand / Collapse all */}
-          <div className="ml-auto flex gap-2">
+          {/* Expand / Collapse all + Calculate */}
+          <div className="ml-auto flex gap-2 items-end">
             <Button size="sm" variant="outline" onClick={expandAll}>Expand All</Button>
             <Button size="sm" variant="outline" onClick={collapseAll}>Collapse All</Button>
+            <Button
+              size="sm"
+              className="bg-[#e60000] hover:bg-[#cc0000] text-white flex items-center gap-1.5"
+              onClick={() => calcMut.mutate()}
+              disabled={calcMut.isPending}
+            >
+              <Calculator className="h-4 w-4" />
+              {calcMut.isPending ? "Calculating…" : "Calculate Amortisation"}
+            </Button>
           </div>
         </div>
       </div>

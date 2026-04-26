@@ -416,4 +416,17 @@ export const leaseRouter = router({
       ]);
       return { success: true };
     }),
+
+  // ── CALCULATE AMORTISATION (ALL LEASES) ─────────────────────────────────
+  calculateAmortisationAll: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const result = await execSPPOne('sp_CalculateAmortisationAll', [
+        { name: 'MakerId',  type: sql.Int,         value: ctx.user.id },
+        { name: 'ScreenId', type: sql.VarChar(50), value: 'VFLAMORT0001P001' },
+      ]);
+      return {
+        contracts_processed: (result as any)?.contracts_processed ?? 0,
+        rows_inserted:       (result as any)?.rows_inserted       ?? 0,
+      };
+    }),
 });
