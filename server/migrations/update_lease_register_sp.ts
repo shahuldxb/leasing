@@ -55,8 +55,8 @@ async function run() {
         c.is_lto,
         c.maintenance_responsibility,
         -- Maker/checker
-        ISNULL(mu.name, '') AS maker_name,
-        ISNULL(cu.name, '') AS checker_name,
+        ISNULL(mu.username, '') AS maker_name,
+        ISNULL(cu.username, '') AS checker_name,
         c.approved_at,
         c.created_at,
         -- Total count for pagination
@@ -64,8 +64,8 @@ async function run() {
       FROM lease.contracts c
       LEFT JOIN lease.lessors ll ON ll.lessor_id = c.lessor_id
       LEFT JOIN lease.lease_lessee_details ld ON ld.contract_id = c.contract_id
-      LEFT JOIN dbo.[user] mu ON mu.user_id = c.maker_id
-      LEFT JOIN dbo.[user] cu ON cu.user_id = c.checker_id
+      LEFT JOIN security.users mu ON mu.user_id = c.maker_id
+      LEFT JOIN security.users cu ON cu.user_id = c.checker_id
       WHERE
         (@StatusFilter IS NULL OR c.status = @StatusFilter)
         AND (@AssetType IS NULL OR c.asset_type = @AssetType)

@@ -970,14 +970,14 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] TypeScript: 0 errors
 
 ## Amortisation — All Leases Grouped + Consolidated GL Grid (Apr 25)
-- [ ] Create sp_GetAmortisationScheduleAll SP (all contracts, filtered by year/month, returns lease header + schedule rows)
-- [ ] Create sp_GetConsolidatedGLEntries SP (groups all leases by GL account per period, returns consolidated debit/credit lines)
-- [ ] Add tRPC lease.getAmortisationScheduleAll (protectedProcedure, input: year, viewMode)
-- [ ] Add tRPC lease.getConsolidatedGLEntries (protectedProcedure, input: year, viewMode)
-- [ ] Rebuild Amortisation.tsx: year selector + monthly/yearly toggle at top
-- [ ] Grid 1: all leases grouped by lease (collapsible rows), 11 columns + totals row
-- [ ] Grid 2: consolidated GL accounting entries (one row per GL account per period, debit/credit columns, total row)
-- [ ] TypeScript: 0 errors
+- [x] Create sp_GetAmortisationScheduleAll SP (all contracts, filtered by year/month, returns lease header + schedule rows)
+- [x] Create sp_GetConsolidatedGLEntries SP (groups all leases by GL account per period, returns consolidated debit/credit lines)
+- [x] Add tRPC lease.getAmortisationScheduleAll (protectedProcedure, input: year, viewMode)
+- [x] Add tRPC lease.getConsolidatedGLEntries (protectedProcedure, input: year, viewMode)
+- [x] Rebuild Amortisation.tsx: year selector + monthly/yearly toggle at top
+- [x] Grid 1: all leases grouped by lease (collapsible rows), 11 columns + totals row
+- [x] Grid 2: consolidated GL accounting entries (one row per GL account per period, debit/credit columns, total row)
+- [x] TypeScript: 0 errors
 
 ## Amortisation — All Leases Grouped + Consolidated GL Grid (Apr 25) — COMPLETED
 - [x] Create sp_GetAmortisationScheduleAll SP (all contracts, filtered by year/month, returns lease header + schedule rows joined with contract header and lessor name)
