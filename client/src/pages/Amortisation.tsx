@@ -73,14 +73,16 @@ interface ScheduleRow {
 interface GLEntry {
   period_year: number;
   period_month: number;
+  period_date: string;
   month_name: string;
   je_ref: string;
-  description: string;
-  account_code: string;
-  account_name: string;
-  total_debit: number;
-  total_credit: number;
+  je_label: string;
+  ledger_no: string;
+  ledger_name: string;
+  dr_cr: "Dr" | "Cr";
+  amount: number;
   lease_count: number;
+  sort_order: number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -143,16 +145,55 @@ function aggregateYearly(rows: ScheduleRow[]) {
 }
 
 // ── GL period grouping ─────────────────────────────────────────────────────────
-function groupGLByPeriod(entries: GLEntry[]) {
-  const map = new Map<string, { label: string; year: number; month: number; rows: GLEntry[] }>();
+interface GLPair {
+  je_ref: string;
+  je_label: string;
+  lines: GLEntry[];
+}
+interface GLPeriod {
+  key: string;
+  label: string;
+  year: number;
+  month: number;
+  pairs: GLPair[];
+  totalDr: number;
+  totalCr: number;
+}
+function groupGLByPeriod(entries: GLEntry[]): GLPeriod[] {
+  const periodMap = new Map<string, GLPeriod>();
   for (const e of entries) {
     const key = `${e.period_year}-${String(e.period_month).padStart(2, "0")}`;
-    if (!map.has(key)) {
-      map.set(key, { label: `${e.month_name} ${e.period_year}`, year: e.period_year, month: e.period_month, rows: [] });
+    if (!periodMap.has(key)) {
+      periodMap.set(key, {
+        key,
+        label: e.month_name,
+        year: e.period_year,
+        month: e.period_month,
+        pairs: [],
+        totalDr: 0,
+        totalCr: 0,
+      });
     }
-    map.get(key)!.rows.push(e);
+    const period = periodMap.get(key)!;
+    if (e.dr_cr === "Dr") period.totalDr += e.amount;
+    else period.totalCr += e.amount;
+    // Group by JE pair
+    let pair = period.pairs.find(p => p.je_ref === e.je_ref);
+    if (!pair) {
+      pair = { je_ref: e.je_ref, je_label: e.je_label, lines: [] };
+      period.pairs.push(pair);
+    }
+    pair.lines.push(e);
   }
-  return Array.from(map.values()).sort((a, b) =>
+  // Sort pairs by je_ref within each period
+  const periodArr = Array.from(periodMap.values());
+  for (const p of periodArr) {
+    p.pairs.sort((a: GLPair, b: GLPair) => a.je_ref.localeCompare(b.je_ref));
+    for (const pair of p.pairs) {
+      pair.lines.sort((a: GLEntry, b: GLEntry) => a.sort_order - b.sort_order);
+    }
+  }
+  return periodArr.sort((a: GLPeriod, b: GLPeriod) =>
     a.year !== b.year ? a.year - b.year : a.month - b.month
   );
 }
@@ -175,6 +216,8 @@ export default function Amortisation() {
   const [showGuide, setShowGuide]                 = useState(false);
   const [blackboardRow, setBlackboardRow]         = useState<ScheduleRow | null>(null);
   const [showGLExplain, setShowGLExplain]         = useState(false);
+  const [glViewMode, setGlViewMode]               = useState<"monthly" | "yearly">("monthly");
+  const [glSelectedMonth, setGlSelectedMonth]     = useState<string>("");
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
@@ -187,7 +230,54 @@ export default function Amortisation() {
   const glEntries:   GLEntry[]      = Array.isArray(rawGL)       ? rawGL       as GLEntry[]      : [];
 
   const grouped    = useMemo(() => groupByContract(scheduleRows), [scheduleRows]);
-  const glPeriods  = useMemo(() => groupGLByPeriod(glEntries),    [glEntries]);
+  const allGLPeriods = useMemo(() => groupGLByPeriod(glEntries), [glEntries]);
+  // Available months for the month picker
+  const glAvailMonths = useMemo(() =>
+    allGLPeriods.map(p => ({ key: p.key, label: p.label })),
+    [allGLPeriods]
+  );
+  // Filtered periods based on GL view mode and selected month
+  const glPeriods = useMemo(() => {
+    if (glViewMode === "yearly") {
+      // Aggregate by year: one period per year, all pairs combined
+      const yearMap = new Map<number, GLPeriod>();
+      for (const p of allGLPeriods) {
+        if (!yearMap.has(p.year)) {
+          yearMap.set(p.year, { key: `${p.year}`, label: `Year ${p.year}`, year: p.year, month: 0, pairs: [], totalDr: 0, totalCr: 0 });
+        }
+        const yp = yearMap.get(p.year)!;
+        yp.totalDr += p.totalDr;
+        yp.totalCr += p.totalCr;
+        for (const pair of p.pairs) {
+          let yPair = yp.pairs.find(x => x.je_ref === pair.je_ref);
+          if (!yPair) {
+            yPair = { je_ref: pair.je_ref, je_label: pair.je_label, lines: [] };
+            yp.pairs.push(yPair);
+          }
+          // Aggregate lines by ledger_no + dr_cr
+          for (const line of pair.lines) {
+            const existing = yPair.lines.find(l => l.ledger_no === line.ledger_no && l.dr_cr === line.dr_cr);
+            if (existing) {
+              existing.amount += line.amount;
+            } else {
+              yPair.lines.push({ ...line });
+            }
+          }
+        }
+      }
+      const yearArr = Array.from(yearMap.values());
+      for (const yp of yearArr) {
+        yp.pairs.sort((a: GLPair, b: GLPair) => a.je_ref.localeCompare(b.je_ref));
+        for (const pair of yp.pairs) pair.lines.sort((a: GLEntry, b: GLEntry) => a.sort_order - b.sort_order);
+      }
+      return yearArr.sort((a: GLPeriod, b: GLPeriod) => a.year - b.year);
+    }
+    // Monthly mode
+    if (glSelectedMonth) {
+      return allGLPeriods.filter(p => p.key === glSelectedMonth);
+    }
+    return allGLPeriods;
+  }, [allGLPeriods, glViewMode, glSelectedMonth]);
   const availYears = useMemo(() => {
     const ys = getYears(scheduleRows);
     if (!ys.includes(currentYear)) ys.unshift(currentYear);
@@ -505,30 +595,53 @@ export default function Amortisation() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          GRID 2 — Consolidated GL Accounting Entries
+          GRID 2 — Consolidated GL Accounting Entries (Row-wise Journal)
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="px-6 pb-8">
         <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {/* ── Section header ── */}
           <div className="px-4 py-3 border-b border-border flex items-center gap-2 flex-wrap">
+            {/* How is this calculated? — FIRST button */}
             <button
               onClick={() => setShowGLExplain(true)}
               className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md font-semibold transition-all hover:scale-105 active:scale-95"
               style={{ background: "#1a1a2e", border: "1px solid #6366f1", color: "#a5b4fc" }}
-              title="Explain GL entries"
+              title="How is each journal entry calculated?"
             >
-              <Info className="w-3.5 h-3.5" /> Explain
+              <Info className="w-3.5 h-3.5" /> How is this calculated?
             </button>
             <BookOpen className="w-4 h-4 text-[#e60000]" />
             <span className="text-sm font-semibold">Consolidated GL Accounting Entries</span>
-            <span className="ml-2 text-xs text-muted-foreground">
-              All leases · grouped by period
-            </span>
-            <span className="ml-auto text-xs text-muted-foreground italic">
-              <span className="inline-block w-2 h-2 rounded-full bg-blue-400 mr-1"></span>Dr
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mx-1 ml-2"></span>Cr
-            </span>
+            <span className="text-xs text-muted-foreground">All leases</span>
+            {/* GL View toggle: Monthly / Yearly */}
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <div className="flex rounded-md overflow-hidden border border-border text-xs">
+                <button
+                  onClick={() => { setGlViewMode("monthly"); setGlSelectedMonth(""); }}
+                  className={`px-3 py-1 font-semibold transition-colors ${glViewMode === "monthly" ? "bg-[#e60000] text-white" : "bg-card text-muted-foreground hover:bg-muted/20"}`}
+                >Monthly</button>
+                <button
+                  onClick={() => setGlViewMode("yearly")}
+                  className={`px-3 py-1 font-semibold transition-colors ${glViewMode === "yearly" ? "bg-[#e60000] text-white" : "bg-card text-muted-foreground hover:bg-muted/20"}`}
+                >Yearly</button>
+              </div>
+              {/* Month picker — only shown in monthly mode */}
+              {glViewMode === "monthly" && glAvailMonths.length > 0 && (
+                <select
+                  value={glSelectedMonth}
+                  onChange={e => setGlSelectedMonth(e.target.value)}
+                  className="text-xs px-2 py-1 rounded-md border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-[#e60000]"
+                >
+                  <option value="">All months</option>
+                  {glAvailMonths.map(m => (
+                    <option key={m.key} value={m.key}>{m.label}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
 
+          {/* ── Body ── */}
           {loadingGL ? (
             <div className="py-10 text-center text-muted-foreground text-sm">
               <BookOpen className="w-6 h-6 mx-auto mb-2 animate-pulse" />
@@ -536,125 +649,119 @@ export default function Amortisation() {
             </div>
           ) : glPeriods.length === 0 ? (
             <div className="py-10 text-center text-muted-foreground text-sm">
-              No GL entries found for the selected period.
+              No GL entries found. Click <strong>Calculate Amortisation</strong> first.
             </div>
           ) : (
-            <div className="overflow-x-auto overflow-y-auto max-h-[420px]">
-              <Table>
-                <TableHeader className="sticky top-0 z-10 bg-card">
-                  <TableRow className="bg-muted/10">
-                    <TableHead className="w-8"></TableHead>
-                    <TableHead className="text-xs whitespace-nowrap">Period</TableHead>
-                    <TableHead className="text-xs whitespace-nowrap">Ledger No.</TableHead>
-                    <TableHead className="text-xs whitespace-nowrap">Description</TableHead>
-                    <TableHead className="text-xs whitespace-nowrap text-center">Dr / Cr</TableHead>
-                    <TableHead className="text-xs text-right whitespace-nowrap">Amount</TableHead>
-                    <TableHead className="text-xs text-right whitespace-nowrap">Leases</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+              <table className="w-full text-xs border-collapse">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-muted/20 border-b border-border">
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground w-10">#</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground w-24">Ledger No.</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Ledger Description</th>
+                    <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground w-16">Dr / Cr</th>
+                    <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground w-36">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {glPeriods.map(period => {
-                    const key     = `gl-${period.year}-${period.month}`;
-                    const isOpen  = expandedPeriods.has(key);
-                    const pDebit  = period.rows.reduce((s, r) => s + r.total_debit,  0);
-                    const pCredit = period.rows.reduce((s, r) => s + r.total_credit, 0);
-
+                    let lineNo = 0;
+                    const totalDr = period.totalDr;
+                    const totalCr = period.totalCr;
                     return (
-                      <React.Fragment key={key}>
-                        {/* ── Period group header ───────────────────────── */}
-                        <TableRow
-                          className="cursor-pointer bg-muted/5 hover:bg-muted/15 transition-colors border-t-2 border-border/60"
-                          onClick={() => togglePeriod(key)}
-                        >
-                          <TableCell className="py-2.5 px-2">
-                            <div className="flex items-center gap-1">
-                              {isOpen
-                                ? <ChevronDown className="w-4 h-4 text-[#e60000]" />
-                                : <ChevronRight className="w-4 h-4 text-[#e60000]" />}
-                              <button
-                                onClick={e => { e.stopPropagation(); navigate(`/leases/amortisation/blackboard`); }}
-                                title="Show step-by-step calculation"
-                                className="flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold transition-all hover:scale-110 active:scale-95"
-                                style={{ background: "#0f2e0f", border: "1px solid #4ade80", color: "#4ade80", lineHeight: 1 }}
-                              >&#x1F4D0;</button>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2.5 font-semibold text-sm">{period.label}</TableCell>
-                          <TableCell className="py-2.5 text-xs text-muted-foreground">—</TableCell>
-                          <TableCell className="py-2.5 text-xs text-muted-foreground">{period.rows.length} journal lines</TableCell>
-                          <TableCell className="py-2.5 text-xs text-center text-muted-foreground">—</TableCell>
-                          <TableCell className="py-2.5 text-xs text-right font-mono font-semibold text-muted-foreground">{fmtNum(pDebit + pCredit)}</TableCell>
-                          <TableCell className="py-2.5 text-xs text-right text-muted-foreground">
-                            {Math.max(...period.rows.map(r => r.lease_count))}
-                          </TableCell>
-                        </TableRow>
-
-                        {/* ── Expanded: individual GL lines as paired Dr/Cr rows ── */}
-                        {isOpen && period.rows.map((e, i) => {
-                          const isDr = e.total_debit > 0;
-                          const amount = isDr ? e.total_debit : e.total_credit;
-                          return (
-                            <TableRow
-                              key={`${key}-${i}`}
-                              className={`hover:bg-muted/8 border-l-2 ${isDr ? "border-l-blue-500/50 bg-blue-500/3" : "border-l-emerald-500/50 bg-emerald-500/3"}`}
-                            >
-                              <TableCell className="py-1.5 px-2"></TableCell>
-                              <TableCell className="py-1.5 pl-6">
-                                <span className="text-[10px] font-mono bg-[#e60000]/15 text-[#e60000] px-1.5 py-0.5 rounded">
-                                  {e.je_ref}
+                      <React.Fragment key={period.key}>
+                        {/* ── Period header row ── */}
+                        <tr className="bg-[#e60000]/10 border-y border-[#e60000]/20">
+                          <td colSpan={5} className="px-3 py-2 font-bold text-[#e60000] text-xs tracking-wide">
+                            {period.label}
+                            <span className="ml-3 font-normal text-muted-foreground text-[10px]">
+                              Dr {fmtNum(totalDr)} · Cr {fmtNum(totalCr)}
+                              {Math.abs(totalDr - totalCr) < 0.01
+                                ? <span className="ml-2 text-emerald-400">✓ Balanced</span>
+                                : <span className="ml-2 text-amber-400">⚠ Unbalanced</span>}
+                            </span>
+                          </td>
+                        </tr>
+                        {period.pairs.map(pair => (
+                          <React.Fragment key={`${period.key}-${pair.je_ref}`}>
+                            {/* ── JE pair header ── */}
+                            <tr className="bg-muted/10 border-b border-border/30">
+                              <td colSpan={5} className="px-3 py-1.5">
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#e60000]/15 text-[#e60000]">{pair.je_ref}</span>
+                                  <span className="text-muted-foreground font-medium">{pair.je_label}</span>
                                 </span>
-                              </TableCell>
-                              {/* Ledger No. */}
-                              <TableCell className={`py-1.5 text-xs font-mono font-bold ${isDr ? "text-blue-400" : "text-emerald-400"}`}>
-                                {e.account_code}
-                              </TableCell>
-                              {/* Description */}
-                              <TableCell className="py-1.5 text-xs">
-                                <div className="font-medium">{e.account_name}</div>
-                                <div className="text-[10px] text-muted-foreground">{e.description}</div>
-                              </TableCell>
-                              {/* Dr / Cr badge */}
-                              <TableCell className="py-1.5 text-center">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  isDr
-                                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
-                                    : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                }`}>
-                                  {isDr ? "Dr" : "Cr"}
-                                </span>
-                              </TableCell>
-                              {/* Amount */}
-                              <TableCell className={`py-1.5 text-xs text-right font-mono font-semibold ${isDr ? "text-blue-400" : "text-emerald-400"}`}>
-                                {fmtNum(amount)}
-                              </TableCell>
-                              <TableCell className="py-1.5 text-xs text-right text-muted-foreground">{e.lease_count}</TableCell>
-                            </TableRow>
-                          );
-                        })}
+                              </td>
+                            </tr>
+                            {/* ── Individual Dr/Cr lines ── */}
+                            {pair.lines.map(line => {
+                              lineNo++;
+                              const isDr = line.dr_cr === "Dr";
+                              return (
+                                <tr
+                                  key={`${period.key}-${pair.je_ref}-${line.ledger_no}-${line.dr_cr}`}
+                                  className={`border-b border-border/20 hover:bg-muted/10 transition-colors ${isDr ? "border-l-2 border-l-blue-500/60" : "border-l-2 border-l-emerald-500/60"}`}
+                                >
+                                  {/* # */}
+                                  <td className="px-3 py-2 text-muted-foreground text-[10px] font-mono">{lineNo}</td>
+                                  {/* Ledger No. */}
+                                  <td className={`px-3 py-2 font-mono font-bold ${isDr ? "text-blue-400" : "text-emerald-400"}`}>
+                                    {line.ledger_no}
+                                  </td>
+                                  {/* Ledger Description */}
+                                  <td className="px-3 py-2 font-medium">
+                                    {isDr ? "" : <span className="inline-block w-4" />}
+                                    {line.ledger_name}
+                                  </td>
+                                  {/* Dr / Cr badge */}
+                                  <td className="px-3 py-2 text-center">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                      isDr
+                                        ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                                        : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                    }`}>
+                                      {line.dr_cr}
+                                    </span>
+                                  </td>
+                                  {/* Amount */}
+                                  <td className={`px-3 py-2 text-right font-mono font-semibold ${isDr ? "text-blue-400" : "text-emerald-400"}`}>
+                                    {fmtNum(line.amount)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        ))}
+                        {/* ── Period subtotal ── */}
+                        <tr className="bg-muted/5 border-b-2 border-border/40">
+                          <td colSpan={3} className="px-3 py-1.5 text-[10px] text-muted-foreground italic">
+                            {period.pairs.reduce((s, p) => s + p.lines.length, 0)} lines · {period.pairs.length} journal entries
+                          </td>
+                          <td className="px-3 py-1.5 text-center text-[10px] font-bold text-muted-foreground">TOTAL</td>
+                          <td className="px-3 py-1.5 text-right font-mono font-bold text-muted-foreground text-xs">
+                            {fmtNum(totalDr + totalCr)}
+                          </td>
+                        </tr>
                       </React.Fragment>
                     );
                   })}
-                      {/* ── Grand totals row ──────────────────────── */}
-                  {glEntries.length > 0 && (
-                    <TableRow className="bg-[#e60000]/10 border-t-2 border-[#e60000]/30 font-bold">
-                      <TableCell></TableCell>
-                      <TableCell className="py-2.5 text-sm text-[#e60000]">TOTAL</TableCell>
-                      <TableCell></TableCell>
-                      <TableCell></TableCell>
-                      <TableCell></TableCell>
-                      <TableCell className="py-2.5 text-xs text-right font-mono text-[#e60000]">
-                        {fmtNum(glEntries.reduce((s, e) => s + e.total_debit + e.total_credit, 0))}
-                      </TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
+                  {/* ── Grand total ── */}
+                  {glPeriods.length > 0 && (
+                    <tr className="bg-[#e60000]/10 border-t-2 border-[#e60000]/30">
+                      <td colSpan={3} className="px-3 py-2.5 font-bold text-[#e60000] text-xs">GRAND TOTAL</td>
+                      <td className="px-3 py-2.5 text-center text-[10px] font-bold text-[#e60000]">ALL</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-[#e60000] text-xs">
+                        {fmtNum(glPeriods.reduce((s, p) => s + p.totalDr + p.totalCr, 0))}
+                      </td>
+                    </tr>
                   )}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
-      {/* ── How is this calculated? Guide Modal ─────────────────────────── */}
+            {/* ── How is this calculated? Guide Modal ─────────────────────────── */}
       <Dialog open={showGuide} onOpenChange={setShowGuide}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
