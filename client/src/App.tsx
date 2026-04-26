@@ -143,6 +143,7 @@ import DisclosureNotes  from "./pages/DisclosureNotes";
 import RenewalEngine   from "./pages/RenewalEngine";
 import PeriodClose     from "./pages/PeriodClose";
 import IAS17Comparison from "./pages/IAS17Comparison";
+import FXRevaluation   from "./pages/FXRevaluation";
 
 function Router() {
   return (
@@ -302,8 +303,8 @@ function Router() {
       <Route path="/accounting/disclosure-notes"  component={DisclosureNotes} />
       <Route path="/leases/renewal-engine"        component={RenewalEngine} />
       <Route path="/accounting/period-close"      component={PeriodClose} />
-      <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
-
+       <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
+      <Route path="/accounting/fx-revaluation"     component={FXRevaluation} />
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />
       <Route                                 component={NotFound} />

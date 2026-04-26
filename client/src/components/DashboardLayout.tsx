@@ -141,6 +141,7 @@ const menuItems: NavItem[] = [
       { label: "Disclosure Notes",     path: "/accounting/disclosure-notes" },
       { label: "IAS 17 vs IFRS 16",    path: "/accounting/ias17-comparison" },
       { label: "Period-End Close",     path: "/accounting/period-close" },
+      { label: "FX Revaluation",        path: "/accounting/fx-revaluation" },
       { label: "Roll-Forward Report", path: "/accounting/roll-forward" },
       { label: "ERP Export",          path: "/accounting/erp-export" },
       { label: "Bulk Operations",     path: "/accounting/bulk" },

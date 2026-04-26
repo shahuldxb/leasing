@@ -625,4 +625,69 @@ export const leaseRouter = router({
         summary: (result[1]?.[0] ?? {}) as Record<string, unknown>,
       };
     }),
+
+  // ── FEATURE 5: FX REVALUATION ───────────────────────────────────────────
+  getFXRates: protectedProcedure
+    .input(z.object({ currency: z.string().optional() }))
+    .query(async ({ input }) => {
+      const rows = await execSPP('sp_GetFXRates', [
+        { name: 'Currency', type: sql.NVarChar(3), value: input.currency ?? null },
+      ]);
+      return rows as Record<string, unknown>[];
+    }),
+
+  upsertFXRate: protectedProcedure
+    .input(z.object({
+      currency:    z.string().length(3),
+      rateDate:    z.string(),
+      closingRate: z.number().positive(),
+      source:      z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await execSPPOne('sp_UpsertFXRate', [
+        { name: 'Currency',    type: sql.NVarChar(3),    value: input.currency },
+        { name: 'RateDate',    type: sql.Date,            value: new Date(input.rateDate) },
+        { name: 'ClosingRate', type: sql.Decimal(18, 6),  value: input.closingRate },
+        { name: 'Source',      type: sql.NVarChar(50),    value: input.source ?? null },
+      ]) as { result: string; message: string };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  runFXRevaluation: protectedProcedure
+    .input(z.object({ year: z.number(), month: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await execSPPOne('sp_RunFXRevaluation', [
+        { name: 'Year',     type: sql.Int,           value: input.year },
+        { name: 'Month',    type: sql.Int,           value: input.month },
+        { name: 'PostedBy', type: sql.NVarChar(100), value: ctx.user.name ?? 'system' },
+      ]) as { result: string; message: string; revalued_count: number };
+      if (result.result !== 'OK') throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+      return result;
+    }),
+
+  getFXRevaluationLog: protectedProcedure
+    .input(z.object({
+      year:       z.number().optional(),
+      month:      z.number().optional(),
+      contractId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const rows = await execSPP('sp_GetFXRevaluationLog', [
+        { name: 'Year',       type: sql.Int, value: input.year       ?? null },
+        { name: 'Month',      type: sql.Int, value: input.month      ?? null },
+        { name: 'ContractId', type: sql.Int, value: input.contractId ?? null },
+      ]);
+      return rows as Record<string, unknown>[];
+    }),
+
+  getFXRevaluationSummary: protectedProcedure
+    .input(z.object({ year: z.number(), month: z.number() }))
+    .query(async ({ input }) => {
+      const row = await execSPPOne('sp_GetFXRevaluationSummary', [
+        { name: 'Year',  type: sql.Int, value: input.year },
+        { name: 'Month', type: sql.Int, value: input.month },
+      ]);
+      return (row ?? {}) as Record<string, unknown>;
+    }),
 });

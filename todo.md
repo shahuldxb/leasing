@@ -1069,3 +1069,16 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Export to Excel button
 - [x] Register route /accounting/ias17-comparison in App.tsx
 - [x] Add "IAS 17 vs IFRS 16" nav link under Accounting Engine in sidebar
+
+## Feature 5 — Multi-Currency FX Revaluation
+- [x] Create lease.fx_rates table (rate_id, currency_code, rate_date, closing_rate, source, created_at)
+- [x] Create lease.fx_revaluation_log table (reval_id, contract_id, period_year, period_month, currency_code, original_amount_fc, closing_rate, revalued_amount_lc, prev_carrying_lc, fx_gain_loss, je_ref, posted_by, posted_at)
+- [x] Create sp_UpsertFXRate SP (upsert closing rate for a currency/date)
+- [x] Create sp_GetFXRates SP (returns rate history for a currency)
+- [x] Create sp_RunFXRevaluation SP (for a given year/month: revalues all non-QAR lease liabilities, posts JE-8 FX gain/loss, inserts into fx_revaluation_log)
+- [x] Create sp_GetFXRevaluationLog SP (returns revaluation history with JE refs)
+- [x] Add tRPC procedures: getFXRates, upsertFXRate, runFXRevaluation, getFXRevaluationLog, getFXRevaluationSummary
+- [x] Create FXRevaluation.tsx page with: currency rate table, Run Revaluation button, revaluation log, KPI cards
+- [x] Register route /accounting/fx-revaluation in App.tsx
+- [x] Add "FX Revaluation" nav link under Accounting Engine in sidebar
+- [x] Vitest tests for FX revaluation procedures (13/13 passing)
