@@ -645,7 +645,7 @@ export default function Amortisation() {
           {loadingGL ? (
             <div className="py-10 text-center text-muted-foreground text-sm">
               <BookOpen className="w-6 h-6 mx-auto mb-2 animate-pulse" />
-              Loading GL entries…
+              Loading GL entries...
             </div>
           ) : glPeriods.length === 0 ? (
             <div className="py-10 text-center text-muted-foreground text-sm">
