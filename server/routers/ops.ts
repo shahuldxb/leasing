@@ -729,7 +729,7 @@ export const leaseModificationRouter = router({
           SELECT m.*, c.contract_ref, l.lessor_name
           FROM lease.modifications m
           JOIN lease.contracts c ON c.contract_id=m.contract_id
-          LEFT JOIN lease.lessors l ON l.lessor_id=c.lessor_id
+          LEFT JOIN lessor.lessors l ON l.lessor_id=c.lessor_id
           WHERE (@cid IS NULL OR m.contract_id=@cid)
             AND (@status IS NULL OR m.status=@status)
           ORDER BY m.created_at DESC
@@ -814,7 +814,7 @@ export const leaseRenewalRouter = router({
           SELECT r.*, c.contract_ref, c.expiry_date AS current_expiry, l.lessor_name
           FROM lease.lease_renewals r
           JOIN lease.contracts c ON c.contract_id=r.contract_id
-          LEFT JOIN lease.lessors l ON l.lessor_id=c.lessor_id
+          LEFT JOIN lessor.lessors l ON l.lessor_id=c.lessor_id
           WHERE (@status IS NULL OR r.status=@status)
           ORDER BY r.created_at DESC
         `);

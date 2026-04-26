@@ -42,7 +42,7 @@ export const furnishedAssetsRouter = router({
                  l.lessor_name
           FROM lease.furnished_assets fa
           JOIN lease.contracts c ON c.contract_id = fa.contract_id
-          LEFT JOIN lease.lessors l ON l.lessor_id = c.lessor_id
+          LEFT JOIN lessor.lessors l ON l.lessor_id = c.lessor_id
           WHERE (@cat IS NULL OR fa.asset_category = @cat)
             AND (@cond IS NULL OR fa.condition_at_handover = @cond)
             AND (@search IS NULL OR fa.asset_name LIKE @search OR fa.serial_number LIKE @search OR fa.brand LIKE @search)
@@ -182,7 +182,7 @@ export const assetDepositRouter = router({
                  (ad.deposit_amount - ISNULL((SELECT SUM(deduction_amount) FROM lease.asset_deposit_deductions dd WHERE dd.deposit_id = ad.deposit_id AND dd.status = 'APPROVED'), 0)) AS net_refundable
           FROM lease.asset_deposits ad
           JOIN lease.contracts c ON c.contract_id = ad.contract_id
-          LEFT JOIN lease.lessors l ON l.lessor_id = c.lessor_id
+          LEFT JOIN lessor.lessors l ON l.lessor_id = c.lessor_id
           WHERE (@status IS NULL OR ad.status = @status)
             AND (@cid IS NULL OR ad.contract_id = @cid)
           ORDER BY ad.deposit_date DESC

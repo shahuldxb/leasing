@@ -309,7 +309,7 @@ export const reportBuilderRouter = router({
             l.lessor_name, c.commencement_date, c.expiry_date,
             DATEDIFF(month, GETDATE(), c.expiry_date) AS months_remaining,
             c.monthly_payment, c.ibr, c.rou_asset_value, c.lease_liability_value
-            FROM lease.contracts c LEFT JOIN lease.lessors l ON l.lessor_id=c.lessor_id
+            FROM lease.contracts c LEFT JOIN lessor.lessors l ON l.lessor_id=c.lessor_id
             ORDER BY c.expiry_date`;
           break;
         case "AMORTISATION_SUMMARY":
@@ -376,7 +376,7 @@ export const reportBuilderRouter = router({
             l.lessor_name, c.expiry_date,
             DATEDIFF(day,GETDATE(),c.expiry_date) AS days_until_expiry,
             c.monthly_payment, c.lease_liability_value
-            FROM lease.contracts c LEFT JOIN lease.lessors l ON l.lessor_id=c.lessor_id
+            FROM lease.contracts c LEFT JOIN lessor.lessors l ON l.lessor_id=c.lessor_id
             WHERE c.status='Active' AND c.expiry_date <= DATEADD(year,2,GETDATE())
             ORDER BY c.expiry_date`;
           break;
@@ -459,7 +459,7 @@ export const asc842Router = router({
       FROM lease.asc842_parallel a
       JOIN lease.contracts c ON c.contract_id = a.contract_id
       LEFT JOIN lease.lease_classification cl ON cl.contract_id = a.contract_id AND cl.standard='IFRS16'
-      LEFT JOIN lease.lessors l ON l.lessor_id = c.lessor_id
+      LEFT JOIN lessor.lessors l ON l.lessor_id = c.lessor_id
       ORDER BY c.contract_ref
     `);
     return r.recordset;
@@ -1125,7 +1125,7 @@ export const terminationRouter = router({
       SELECT t.*, c.contract_ref, c.asset_description, c.monthly_payment, l.lessor_name
       FROM lease.termination_requests t
       JOIN lease.contracts c ON t.contract_id = c.contract_id
-      LEFT JOIN lease.lessors l ON c.lessor_id = l.lessor_id
+      LEFT JOIN lessor.lessors l ON c.lessor_id = l.lessor_id
       ORDER BY t.created_at DESC`);
     return r.recordset;
   }),
@@ -1208,7 +1208,7 @@ export const bouncePenaltyRouter = router({
       SELECT e.*, cr.cheque_number, cr.amount as cheque_amount, l.lessor_name
       FROM cheque.bounce_events e
       JOIN cheque.cheque_register cr ON e.cheque_id = cr.cheque_id
-      LEFT JOIN lease.lessors l ON cr.payee_lessor_id = l.lessor_id
+      LEFT JOIN lessor.lessors l ON cr.payee_lessor_id = l.lessor_id
       ORDER BY e.bounce_date DESC`);
     return r.recordset;
   }),
@@ -1237,7 +1237,7 @@ export const leaseOriginationNewRouter = router({
     const pool = await getPool();
     const r = await pool.request().query(`
       SELECT o.*, l.lessor_name FROM lease.origination_requests o
-      LEFT JOIN lease.lessors l ON o.lessor_id = l.lessor_id
+      LEFT JOIN lessor.lessors l ON o.lessor_id = l.lessor_id
       ORDER BY o.created_at DESC`);
     return r.recordset;
   }),
