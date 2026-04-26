@@ -989,3 +989,11 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Grid 2: consolidated GL accounting entries (one row per GL account per period, debit=blue/credit=emerald, grand totals row, click-to-expand per period)
 - [x] 5 KPI cards: Leases count, Total Payments, Total Interest, Total Principal, Total Depreciation
 - [x] TypeScript: 0 errors
+
+## Lease Register — Lessee Name & Date Columns (Apr 26)
+- [x] Audit LeaseRegister.tsx and sp_GetLeaseRegister to understand current columns
+- [x] Update sp_GetLeaseRegister to JOIN lease_lessee_details and return lessee_name, lessee_type, lessee_staff_number, lessee_position, lessee_department
+- [x] commencement_date and expiry_date were already returned — confirmed present
+- [x] Add Lessee column to Lease Register table (amber User icon + name + type badge; shows — if no lessee)
+- [x] Lessee name also searchable via SearchTerm filter in the SP
+- [x] TypeScript: 0 errors

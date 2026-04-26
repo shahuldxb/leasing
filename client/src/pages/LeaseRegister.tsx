@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2 } from "lucide-react";
+import { Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
@@ -140,6 +140,7 @@ export default function LeaseRegister() {
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Lease Ref</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Lessor</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Lessee</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Asset Type</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Asset Name</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Liability</th>
@@ -154,14 +155,14 @@ export default function LeaseRegister() {
                   {isLoading && aiLeases.length === 0 ? (
                     Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i} className="border-b">
-                        {Array.from({ length: 10 }).map((__, j) => (
+                        {Array.from({ length: 11 }).map((__, j) => (
                           <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td>
                         ))}
                       </tr>
                     ))
                   ) : leases.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
+                      <td colSpan={11} className="px-4 py-12 text-center text-muted-foreground">
                         No leases found. <button className="text-primary underline" onClick={() => setLocation("/leases/new")}>Create the first lease.</button>
                       </td>
                     </tr>
@@ -170,6 +171,21 @@ export default function LeaseRegister() {
                       <tr key={lease.lease_id ?? idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{lease.contract_ref}</td>
                         <td className="px-4 py-3 truncate max-w-36">{lease.lessor_name}</td>
+                        <td className="px-4 py-3 max-w-36">
+                          {lease.lessee_name ? (
+                            <div className="flex items-center gap-1.5">
+                              <User className="h-3 w-3 text-amber-400 shrink-0" />
+                              <span className="truncate text-xs">{lease.lessee_name}</span>
+                              {lease.lessee_type && (
+                                <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium shrink-0">
+                                  {lease.lessee_type}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground/40 text-xs">—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">{lease.asset_type}</td>
                         <td className="px-4 py-3 truncate max-w-40">{lease.asset_name}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{lease.lease_liability ? fmt(Number(lease.lease_liability)) : "—"}</td>
