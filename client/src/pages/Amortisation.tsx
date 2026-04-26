@@ -4,13 +4,33 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { toast } from "sonner";
 import {
   Calculator, Download, ChevronDown, ChevronRight,
   TrendingDown, Banknote, BookOpen, Building2,
-  ArrowDownRight, BarChart3,
+  ArrowDownRight, BarChart3, HelpCircle,
 } from "lucide-react";
+
+// ── Column header with tooltip helper ─────────────────────────────────────────
+function ColHead({ label, tip }: { label: string; tip: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1 cursor-help">
+            {label}
+            <HelpCircle className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+          {tip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface ScheduleRow {
@@ -313,24 +333,40 @@ export default function Amortisation() {
           ) : grouped.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground text-sm">
               No amortisation data found for the selected period.
-              <div className="text-xs mt-1">Generate schedules via the New Lease wizard or Amortisation engine.</div>
+              <div className="text-xs mt-1">Click <strong>Calculate Amortisation</strong> to generate schedules for all active leases.</div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[520px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow className="bg-muted/10">
                     <TableHead className="w-8"></TableHead>
-                    <TableHead className="text-xs">Lease / Period</TableHead>
-                    <TableHead className="text-xs">Asset / Lessor</TableHead>
-                    <TableHead className="text-xs text-right">Opening Liability</TableHead>
-                    <TableHead className="text-xs text-right">Interest</TableHead>
-                    <TableHead className="text-xs text-right">Payment</TableHead>
-                    <TableHead className="text-xs text-right">Principal</TableHead>
-                    <TableHead className="text-xs text-right">Closing Liability</TableHead>
-                    <TableHead className="text-xs text-right">ROU NBV</TableHead>
-                    <TableHead className="text-xs text-right">Depreciation</TableHead>
-                    <TableHead className="text-xs text-right">Cumul. Depr.</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Lease / Period</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Asset / Lessor</TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Opening Liability" tip="The outstanding lease obligation at the start of the period — i.e. how much of the villa rent is still owed to the lessor under IFRS 16 at the beginning of this month/year." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Interest" tip="The finance cost for this period. Under IFRS 16, even a simple villa lease is treated like a loan: the outstanding obligation earns interest at the IBR (Incremental Borrowing Rate). This is the cost of 'borrowing' the right to use the property." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Payment" tip="The actual monthly rent paid to the lessor for this period. This is the cash that leaves your bank account." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Principal" tip="The portion of the monthly rent that reduces the lease obligation. Payment = Interest + Principal. After paying interest, the remainder chips away at the outstanding liability — like paying down a mortgage." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Closing Liability" tip="The outstanding lease obligation at the end of the period (Opening Liability minus Principal). This is what remains on the balance sheet as a liability after this month's payment." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="ROU NBV" tip="Right-of-Use Asset Net Book Value — the remaining value of your right to occupy the villa. It starts at the total lease value and reduces each month by the depreciation charge, similar to how a fixed asset depreciates." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Depreciation" tip="The monthly portion of the Right-of-Use asset value charged to the P&L. The villa's usage right is spread evenly over the lease term (straight-line). This is an accounting charge, not a cash payment." />
+                    </TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">
+                      <ColHead label="Cumul. Depr." tip="Total depreciation charged from the lease start date up to this period. When this equals the original ROU asset value, the asset is fully depreciated." />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -477,18 +513,18 @@ export default function Amortisation() {
               No GL entries found for the selected period.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[420px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow className="bg-muted/10">
                     <TableHead className="w-8"></TableHead>
-                    <TableHead className="text-xs">Period / JE</TableHead>
-                    <TableHead className="text-xs">Description</TableHead>
-                    <TableHead className="text-xs">Account Code</TableHead>
-                    <TableHead className="text-xs">Account Name</TableHead>
-                    <TableHead className="text-xs text-right">Debit</TableHead>
-                    <TableHead className="text-xs text-right">Credit</TableHead>
-                    <TableHead className="text-xs text-right">Leases</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Period / JE</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Description</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Account Code</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Account Name</TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">Debit</TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">Credit</TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">Leases</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
