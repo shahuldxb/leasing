@@ -144,6 +144,7 @@ import RenewalEngine   from "./pages/RenewalEngine";
 import PeriodClose     from "./pages/PeriodClose";
 import IAS17Comparison from "./pages/IAS17Comparison";
 import FXRevaluation   from "./pages/FXRevaluation";
+import LeaseTransactionCentre from "./pages/LeaseTransactionCentre";
 
 function Router() {
   return (
@@ -159,6 +160,7 @@ function Router() {
       <Route path="/leases/amortisation/blackboard"     component={AmortisationBlackboard} />
       <Route path="/leases/renewals"         component={LeaseRenewals} />
       <Route path="/leases/modifications"    component={LeaseModifications} />
+      <Route path="/leases/transaction-centre" component={LeaseTransactionCentre} />
       <Route path="/leases/terminations"     component={LeaseTerminations} />
       <Route path="/cheques/bounce"           component={BouncePenalty} />
 

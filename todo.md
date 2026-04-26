@@ -1095,3 +1095,25 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add a lease.renewal_notifications table to track which leases have already been notified (prevent duplicate emails)
 - [x] Wire checkAndNotifyRenewalDue to run on DashboardLayout mount (once per session)
 - [x] Vitest tests for getRenewalDueCount and checkAndNotifyRenewalDue (9/9 passing)
+
+## Feature 7 — Lease Transaction Centre
+- [x] Create sp_GetLeasesForTransaction SP (returns Active/Modified leases with current carrying amounts, remaining term, next payment date)
+- [x] Create sp_PreviewModification SP (input: contract_id, new_monthly_payment, effective_date, new_ibr; returns: new PV, ROU delta, liability delta, remeasurement gain/loss, new amortisation schedule preview)
+- [x] Create sp_PreviewTermination SP (input: contract_id, termination_date; returns: derecognition JE amounts, gain/loss on termination)
+- [x] Create sp_PreviewRenewal SP (input: contract_id, new_expiry_date, new_monthly_payment, new_ibr; returns: new PV, JE-7 amounts, new schedule preview)
+- [x] Create sp_GetLeaseTransactionHistory SP (returns all posted transactions for a lease: modifications, terminations, renewals with JE refs)
+- [x] Create sp_PostLeaseTransaction SP (unified posting: type=Modification|Termination|Renewal; posts correct JE, updates schedule, updates lifecycle_status)
+- [x] Add tRPC procedures: getLeasesForTransaction, previewModification, previewTermination, previewRenewal, postLeaseTransaction, getLeaseTransactionHistory
+- [x] Build LeaseTransactionCentre.tsx page with:
+  - [x] Left panel: searchable lease selector with current status, liability balance, expiry date
+  - [x] Right panel: 3-tab transaction type selector (Modify Rent | Terminate Lease | Renew Lease)
+  - [x] Step 1 — Input Form: transaction-specific fields with inline validation
+  - [x] Step 2 — Remeasurement Preview: before/after KPI cards (PV, ROU, Liability, Gain/Loss)
+  - [x] Step 3 — Journal Entry Preview: Dr/Cr table with GL codes, amounts, effective date
+  - [x] Step 4 — New Amortisation Schedule: accordion grid showing regenerated monthly schedule
+  - [x] Step 5 — Post: system posts JE and updates schedule with confirmation dialog
+  - [x] Step 6 — Confirmation: JE reference, timestamp, posted-by, link to GL Postings ledger
+  - [x] Transaction History panel: accordion list of all past transactions for the selected lease
+- [x] Register route /leases/transaction-centre in App.tsx
+- [x] Add "Transaction Centre" nav link under Lease Management in sidebar
+- [x] Vitest integration tests: 9/9 passing

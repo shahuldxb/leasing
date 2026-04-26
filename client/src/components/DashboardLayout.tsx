@@ -53,6 +53,7 @@ const menuItems: NavItem[] = [
       { label: "Amortisation",      path: "/leases/amortisation" },
       { label: "Renewal Engine",     path: "/leases/renewal-engine" },
       { label: "Lease Renewals",    path: "/leases/renewals" },
+      { label: "Transaction Centre", path: "/leases/transaction-centre" },
       { label: "Modifications",     path: "/leases/modifications" },
       { label: "Terminations",      path: "/leases/terminations" },
     ],

@@ -755,4 +755,125 @@ export const leaseRouter = router({
 
       return { notified: leases.length };
     }),
+
+  // ── LEASE TRANSACTION CENTRE ─────────────────────────────────────────────
+
+  getLeasesForTransaction: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const rows = await execSPP('sp_GetLeasesForTransaction', [
+        { name: 'Search', type: sql.NVarChar(100), value: input.search ?? null },
+      ]);
+      return rows as Array<{
+        contract_id: number; contract_ref: string; asset_description: string;
+        asset_type: string; commencement_date: Date; expiry_date: Date;
+        term_months: number; monthly_payment: number; currency: string;
+        ibr: number; lifecycle_status: string; status: string;
+        current_liability: number; current_rou_nbv: number;
+        last_period_date: Date; remaining_months: number;
+        lessor_name: string; pending_drafts: number;
+      }>;
+    }),
+
+  previewModification: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      newMonthlyPayment: z.number(),
+      effectiveDate: z.string(),
+      newIBR: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const results = await execSPPMulti('sp_PreviewModification', [
+        { name: 'ContractId',        type: sql.Int,           value: input.contractId },
+        { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment },
+        { name: 'EffectiveDate',     type: sql.Date,          value: new Date(input.effectiveDate) },
+        { name: 'NewIBR',            type: sql.Decimal(8,6),  value: input.newIBR ?? null },
+      ]);
+      return {
+        summary:  (results[0] ?? [])[0] as Record<string, unknown>,
+        jeLines:  (results[1] ?? []) as Array<Record<string, unknown>>,
+        schedule: (results[2] ?? []) as Array<Record<string, unknown>>,
+      };
+    }),
+
+  previewTermination: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      terminationDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const results = await execSPPMulti('sp_PreviewTermination', [
+        { name: 'ContractId',      type: sql.Int,  value: input.contractId },
+        { name: 'TerminationDate', type: sql.Date, value: new Date(input.terminationDate) },
+      ]);
+      return {
+        summary: (results[0] ?? [])[0] as Record<string, unknown>,
+        jeLines: (results[1] ?? []) as Array<Record<string, unknown>>,
+      };
+    }),
+
+  previewRenewal: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      newExpiryDate: z.string(),
+      newMonthlyPayment: z.number(),
+      newIBR: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const results = await execSPPMulti('sp_PreviewRenewal', [
+        { name: 'ContractId',        type: sql.Int,           value: input.contractId },
+        { name: 'NewExpiryDate',     type: sql.Date,          value: new Date(input.newExpiryDate) },
+        { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment },
+        { name: 'NewIBR',            type: sql.Decimal(8,6),  value: input.newIBR ?? null },
+      ]);
+      return {
+        summary: (results[0] ?? [])[0] as Record<string, unknown>,
+        jeLines: (results[1] ?? []) as Array<Record<string, unknown>>,
+      };
+    }),
+
+  postLeaseTransaction: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      transactionType: z.enum(['Modification','Termination','Renewal']),
+      effectiveDate: z.string(),
+      newMonthlyPayment: z.number().optional(),
+      newIBR: z.number().optional(),
+      newExpiryDate: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const postedBy = ctx.user.name ?? ctx.user.openId;
+      const result = await execSPPOne('sp_PostLeaseTransaction', [
+        { name: 'ContractId',        type: sql.Int,           value: input.contractId },
+        { name: 'TransactionType',   type: sql.NVarChar(20),  value: input.transactionType },
+        { name: 'EffectiveDate',     type: sql.Date,          value: new Date(input.effectiveDate) },
+        { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment ?? null },
+        { name: 'NewIBR',            type: sql.Decimal(8,6),  value: input.newIBR ?? null },
+        { name: 'NewExpiryDate',     type: sql.Date,          value: input.newExpiryDate ? new Date(input.newExpiryDate) : null },
+        { name: 'Notes',             type: sql.NVarChar(500), value: input.notes ?? null },
+        { name: 'PostedBy',          type: sql.NVarChar(100), value: postedBy },
+      ]);
+      await writeAuditLog({
+        userId: ctx.user.id, username: ctx.user.name ?? '',
+        userRole: ctx.user.role ?? 'user',
+        module: 'LeaseTransactionCentre',
+        actionType: `POST_${input.transactionType.toUpperCase()}`,
+        screenId: 'LTC', recordId: String(input.contractId),
+        outcome: 'Success', processStartTime: new Date(),
+      });
+      return result as { je_ref: string; je_num: string; je_label: string; posted_at: Date; posted_by: string };
+    }),
+
+  getLeaseTransactionHistory: protectedProcedure
+    .input(z.object({ contractId: z.number() }))
+    .query(async ({ input }) => {
+      const results = await execSPPMulti('sp_GetLeaseTransactionHistory', [
+        { name: 'ContractId', type: sql.Int, value: input.contractId },
+      ]);
+      return {
+        drafts:   (results[0] ?? []) as Array<Record<string, unknown>>,
+        postings: (results[1] ?? []) as Array<Record<string, unknown>>,
+      };
+    }),
 });
