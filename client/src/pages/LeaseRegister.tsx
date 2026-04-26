@@ -12,11 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2, User } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2, User,
+  BarChart2, RefreshCcw,
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,6 +44,10 @@ export default function LeaseRegister() {
   const [assetType, setAssetType] = useState("all");
   const [page, setPage]           = useState(1);
   const [aiLeases, setAiLeases]   = useState<Record<string, unknown>[]>([]);
+
+  // Delete confirmation dialog state
+  const [deleteTarget, setDeleteTarget] = useState<{ contractId: number; contractRef: string } | null>(null);
+
   const PAGE_SIZE = 50;
 
   const { data, isLoading, refetch } = trpc.lease.getLeaseRegister.useQuery({
@@ -51,13 +61,27 @@ export default function LeaseRegister() {
   });
 
   const utils = trpc.useUtils();
+
   const submitMut = trpc.lease.submitForApproval.useMutation({
     onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Submitted for approval"); },
     onError: (e) => toast.error(e.message),
   });
+
   const approveRejectMut = trpc.lease.approveRejectLease.useMutation({
     onSuccess: () => { utils.lease.getLeaseRegister.invalidate(); toast.success("Decision recorded"); },
     onError: (e) => toast.error(e.message),
+  });
+
+  const deleteMut = trpc.lease.deleteLease.useMutation({
+    onSuccess: () => {
+      utils.lease.getLeaseRegister.invalidate();
+      toast.success(`Lease ${deleteTarget?.contractRef} deleted successfully`);
+      setDeleteTarget(null);
+    },
+    onError: (e) => {
+      toast.error(`Delete failed: ${e.message}`);
+      setDeleteTarget(null);
+    },
   });
 
   // Merge AI-generated rows with real data (AI rows take precedence when present)
@@ -166,7 +190,7 @@ export default function LeaseRegister() {
                     </tr>
                   ) : (
                     leases.map((lease: any, idx: number) => (
-                      <tr key={lease.lease_id ?? idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                      <tr key={lease.contract_id ?? idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                         <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{lease.contract_ref}</td>
                         <td className="px-4 py-3 truncate max-w-36">{lease.lessor_name}</td>
                         <td className="px-4 py-3 max-w-36">
@@ -199,19 +223,28 @@ export default function LeaseRegister() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setLocation(`/leases/${lease.lease_id}`)}>
+                              {/* View Details — opens the new lease wizard in view mode */}
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/new?view=${lease.contract_id}`)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setLocation(`/leases/${lease.lease_id}/edit`)}>
+                              {/* Modify Lease — opens the wizard in edit mode */}
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/new?edit=${lease.contract_id}`)}>
                                 <Edit className="mr-2 h-4 w-4" /> Modify Lease
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.info("Amortisation schedule opening...")}>
-                                View Amortisation
+                              {/* View Amortisation — navigates to the amortisation screen */}
+                              <DropdownMenuItem onClick={() => setLocation("/leases/amortisation")}>
+                                <BarChart2 className="mr-2 h-4 w-4" /> View Amortisation
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.info("Renewal workflow initiated")}>
-                                Initiate Renewal
+                              {/* Initiate Renewal — navigates to the renewals screen */}
+                              <DropdownMenuItem onClick={() => setLocation("/leases/renewals")}>
+                                <RefreshCcw className="mr-2 h-4 w-4" /> Initiate Renewal
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-400" onClick={() => toast.success(`Lease ${lease.contract_ref} deleted`)}>
+                              <DropdownMenuSeparator />
+                              {/* Delete Lease — soft delete with confirmation */}
+                              <DropdownMenuItem
+                                className="text-red-400 focus:text-red-400"
+                                onClick={() => setDeleteTarget({ contractId: lease.contract_id, contractRef: lease.contract_ref })}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Lease
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -239,6 +272,46 @@ export default function LeaseRegister() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2 className="h-5 w-5" />
+              Delete Lease
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete lease{" "}
+              <span className="font-mono font-semibold text-foreground">{deleteTarget?.contractRef}</span>?
+              <br />
+              <span className="text-xs text-muted-foreground mt-1 block">
+                This is a soft delete — the lease will be marked as Deleted and excluded from all views and reports. This action cannot be undone from the UI.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMut.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteMut.mutate({ contractId: deleteTarget.contractId });
+                }
+              }}
+              disabled={deleteMut.isPending}
+            >
+              {deleteMut.isPending ? "Deleting…" : "Delete Lease"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

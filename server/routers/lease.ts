@@ -404,4 +404,16 @@ export const leaseRouter = router({
         { name: 'Status', type: sql.VarChar(20), value: input.status || null },
       ]);
     }),
+
+  // ── SOFT DELETE ──────────────────────────────────────────────────────────
+  deleteLease: protectedProcedure
+    .input(z.object({ contractId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await execSPP('sp_SoftDeleteContract', [
+        { name: 'ContractId', type: sql.Int,         value: input.contractId },
+        { name: 'MakerId',    type: sql.Int,         value: ctx.user.id },
+        { name: 'ScreenId',   type: sql.VarChar(50), value: 'VFLSLSREG0001P001' },
+      ]);
+      return { success: true };
+    }),
 });

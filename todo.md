@@ -997,3 +997,17 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add Lessee column to Lease Register table (amber User icon + name + type badge; shows — if no lessee)
 - [x] Lessee name also searchable via SearchTerm filter in the SP
 - [x] TypeScript: 0 errors
+
+## Soft Delete & Action Menu Fix (Apr 26)
+- [x] Create sp_SoftDeleteContract SP (UPDATE lease.contracts SET status='Deleted' WHERE contract_id=@ContractId)
+- [x] Update sp_GetLeaseRegister to exclude status='Deleted'
+- [x] Update sp_GetAmortisationScheduleAll to exclude status='Deleted'
+- [x] Update sp_GetConsolidatedGLEntries to exclude status='Deleted'
+- [x] Add deleteLease tRPC procedure (calls sp_SoftDeleteContract)
+- [x] Fix LeaseRegister.tsx: use contract_id (not lease_id) in all menu handlers
+- [x] Wire View Details → /leases/new?view={contract_id}
+- [x] Wire Modify Lease → /leases/new?edit={contract_id}
+- [x] Wire View Amortisation → /leases/amortisation
+- [x] Wire Initiate Renewal → /leases/renewals
+- [x] Replace fake Delete toast with confirmation dialog + real deleteLease mutation
+- [x] TypeScript: 0 errors
