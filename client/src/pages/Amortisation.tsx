@@ -171,6 +171,7 @@ export default function Amortisation() {
   const [expandedContracts, setExpandedContracts] = useState<Set<number>>(new Set());
   const [expandedPeriods, setExpandedPeriods]     = useState<Set<string>>(new Set());
   const [showGuide, setShowGuide]                 = useState(false);
+  const [showBlackboard, setShowBlackboard]       = useState(false);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
@@ -751,6 +752,203 @@ export default function Amortisation() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Floating Blackboard Button ─────────────────────────────── */}
+      <button
+        onClick={() => setShowBlackboard(true)}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-2xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+        style={{ background: "#1a1a2e", border: "2px solid #4ade80", color: "#4ade80", fontFamily: "'Courier New', monospace" }}
+        title="Show blackboard calculation"
+      >
+        <span style={{ fontSize: "1.1rem" }}>&#x1F4D0;</span>
+        Show Calculation
+      </button>
+
+      {/* ── Blackboard Calculation Modal ──────────────────────────── */}
+      {showBlackboard && (() => {
+        const ex = grouped[0]?.rows[0];
+        if (!ex) return null;
+        const PMT  = ex.monthly_payment;
+        const IBR  = ex.ibr;
+        const N    = ex.term_months;
+        const r    = IBR / 12 / 100;
+        const PV   = PMT * (1 - Math.pow(1 + r, -N)) / r;
+        const INT  = PV * r;
+        const PRIN = PMT - INT;
+        const CL   = PV - PRIN;
+        const DEPR = PV / N;
+        const cur  = ex.currency || "QAR";
+        const f    = (v: number) => `${cur} ${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const fp   = (v: number) => `${(v * 100).toFixed(4)}%`;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.85)" }}
+            onClick={() => setShowBlackboard(false)}
+          >
+            <div
+              className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-xl shadow-2xl"
+              style={{
+                background: "#1a2e1a",
+                border: "3px solid #4ade80",
+                fontFamily: "'Courier New', monospace",
+                color: "#e2ffe2",
+                boxShadow: "0 0 40px rgba(74,222,128,0.25), inset 0 0 60px rgba(0,0,0,0.4)",
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Chalk-dust texture overlay */}
+              <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(74,222,128,0.03) 28px, rgba(74,222,128,0.03) 29px)" }} />
+
+              {/* Header */}
+              <div className="relative flex items-center justify-between px-6 pt-5 pb-3 border-b" style={{ borderColor: "rgba(74,222,128,0.3)" }}>
+                <div>
+                  <div className="text-lg font-bold" style={{ color: "#4ade80", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>IFRS 16 — Amortisation Calculation</div>
+                  <div className="text-xs mt-0.5" style={{ color: "rgba(74,222,128,0.6)" }}>Using: {ex.contract_ref} · Month 1 ({ex.month_name} {ex.period_year})</div>
+                </div>
+                <button onClick={() => setShowBlackboard(false)} style={{ color: "rgba(74,222,128,0.7)", fontSize: "1.4rem", lineHeight: 1 }}>&times;</button>
+              </div>
+
+              <div className="relative px-6 py-5 space-y-6">
+
+                {/* Given values */}
+                <div>
+                  <div className="text-xs mb-2" style={{ color: "rgba(74,222,128,0.5)" }}>GIVEN (from Lease Register)</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { lbl: "Monthly Rent (PMT)",  val: f(PMT) },
+                      { lbl: "IBR (Annual %)",       val: `${IBR}%` },
+                      { lbl: "Term (months)",        val: `${N} months` },
+                    ].map(({ lbl, val }) => (
+                      <div key={lbl} className="rounded p-2.5 text-center" style={{ background: "rgba(74,222,128,0.07)", border: "1px solid rgba(74,222,128,0.2)" }}>
+                        <div className="text-[10px] mb-1" style={{ color: "rgba(74,222,128,0.55)" }}>{lbl}</div>
+                        <div className="text-sm font-bold" style={{ color: "#86efac" }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Step 1 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 1 — Monthly Interest Rate (r)</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    r &nbsp;= &nbsp;IBR &divide; 12 &divide; 100
+                  </div>
+                  <div className="text-sm pl-4" style={{ color: "#86efac" }}>
+                    r &nbsp;= &nbsp;{IBR}% &divide; 12 &divide; 100 &nbsp;= &nbsp;<span style={{ color: "#fde68a", fontWeight: "bold" }}>{fp(r)}</span>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 2 — Opening Liability (Present Value of all future rents)</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    <span style={{ color: "#93c5fd" }}>Opening Liability</span> &nbsp;= &nbsp;PMT &times; (1 &minus; (1 + r)<sup>&minus;N</sup>) &divide; r
+                  </div>
+                  <div className="text-sm pl-4" style={{ color: "#86efac" }}>
+                    = &nbsp;{f(PMT)} &times; (1 &minus; (1 + {fp(r)})<sup>&minus;{N}</sup>) &divide; {fp(r)}
+                  </div>
+                  <div className="text-sm pl-4 font-bold" style={{ color: "#93c5fd" }}>
+                    <span style={{ color: "#93c5fd" }}>Opening Liability</span> &nbsp;= &nbsp;<span style={{ color: "#fde68a" }}>{f(PV)}</span>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 3 — Interest (Finance Cost for Month 1)</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    <span style={{ color: "#fbbf24" }}>Interest</span> &nbsp;= &nbsp;<span style={{ color: "#93c5fd" }}>Opening Liability</span> &times; r
+                  </div>
+                  <div className="text-sm pl-4" style={{ color: "#86efac" }}>
+                    = &nbsp;{f(PV)} &times; {fp(r)}
+                  </div>
+                  <div className="text-sm pl-4 font-bold">
+                    <span style={{ color: "#fbbf24" }}>Interest</span> &nbsp;= &nbsp;<span style={{ color: "#fde68a" }}>{f(INT)}</span>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 4 — Payment (Cash paid to landlord)</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    <span style={{ color: "#60a5fa" }}>Payment</span> &nbsp;= &nbsp;Monthly Rent (fixed)
+                  </div>
+                  <div className="text-sm pl-4 font-bold">
+                    <span style={{ color: "#60a5fa" }}>Payment</span> &nbsp;= &nbsp;<span style={{ color: "#fde68a" }}>{f(PMT)}</span>
+                  </div>
+                </div>
+
+                {/* Step 5 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 5 — Principal (Liability Reduction)</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    <span style={{ color: "#34d399" }}>Principal</span> &nbsp;= &nbsp;<span style={{ color: "#60a5fa" }}>Payment</span> &minus; <span style={{ color: "#fbbf24" }}>Interest</span>
+                  </div>
+                  <div className="text-sm pl-4" style={{ color: "#86efac" }}>
+                    = &nbsp;{f(PMT)} &minus; {f(INT)}
+                  </div>
+                  <div className="text-sm pl-4 font-bold">
+                    <span style={{ color: "#34d399" }}>Principal</span> &nbsp;= &nbsp;<span style={{ color: "#fde68a" }}>{f(PRIN)}</span>
+                  </div>
+                </div>
+
+                {/* Step 6 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 6 — Closing Liability</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    <span style={{ color: "#a78bfa" }}>Closing Liability</span> &nbsp;= &nbsp;<span style={{ color: "#93c5fd" }}>Opening Liability</span> &minus; <span style={{ color: "#34d399" }}>Principal</span>
+                  </div>
+                  <div className="text-sm pl-4" style={{ color: "#86efac" }}>
+                    = &nbsp;{f(PV)} &minus; {f(PRIN)}
+                  </div>
+                  <div className="text-sm pl-4 font-bold">
+                    <span style={{ color: "#a78bfa" }}>Closing Liability</span> &nbsp;= &nbsp;<span style={{ color: "#fde68a" }}>{f(CL)}</span>
+                  </div>
+                </div>
+
+                {/* Step 7 */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold" style={{ color: "#fde68a" }}>STEP 7 — Depreciation (ROU Asset written off per month)</div>
+                  <div className="text-sm pl-4" style={{ color: "#e2ffe2" }}>
+                    <span style={{ color: "#c084fc" }}>Depreciation</span> &nbsp;= &nbsp;<span style={{ color: "#93c5fd" }}>Opening Liability</span> &divide; Term
+                  </div>
+                  <div className="text-sm pl-4" style={{ color: "#86efac" }}>
+                    = &nbsp;{f(PV)} &divide; {N}
+                  </div>
+                  <div className="text-sm pl-4 font-bold">
+                    <span style={{ color: "#c084fc" }}>Depreciation</span> &nbsp;= &nbsp;<span style={{ color: "#fde68a" }}>{f(DEPR)}</span>
+                  </div>
+                </div>
+
+                {/* Summary row */}
+                <div className="rounded-lg p-4 mt-2" style={{ background: "rgba(74,222,128,0.06)", border: "1px dashed rgba(74,222,128,0.35)" }}>
+                  <div className="text-xs font-bold mb-3" style={{ color: "#4ade80" }}>MONTH 1 SUMMARY</div>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
+                    {[
+                      { lbl: "Opening Liability",  val: f(PV),   col: "#93c5fd" },
+                      { lbl: "Interest",            val: f(INT),  col: "#fbbf24" },
+                      { lbl: "Payment",             val: f(PMT),  col: "#60a5fa" },
+                      { lbl: "Principal",           val: f(PRIN), col: "#34d399" },
+                      { lbl: "Closing Liability",   val: f(CL),   col: "#a78bfa" },
+                      { lbl: "Depreciation",        val: f(DEPR), col: "#c084fc" },
+                    ].map(({ lbl, val, col }) => (
+                      <div key={lbl} className="flex justify-between items-center">
+                        <span style={{ color: "rgba(226,255,226,0.7)" }}>{lbl}</span>
+                        <span className="font-bold" style={{ color: col }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 text-xs" style={{ borderTop: "1px solid rgba(74,222,128,0.2)", color: "rgba(74,222,128,0.6)" }}>
+                    P&amp;L charge this month: Interest ({f(INT)}) + Depreciation ({f(DEPR)}) = <span style={{ color: "#fde68a", fontWeight: "bold" }}>{f(INT + DEPR)}</span>
+                    &nbsp;&nbsp;·&nbsp;&nbsp; Cash paid: <span style={{ color: "#60a5fa" }}>{f(PMT)}</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </DashboardLayout>
   );
 }
