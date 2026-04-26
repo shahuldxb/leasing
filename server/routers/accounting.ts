@@ -662,6 +662,95 @@ const bulkRouter = router({
     }),
 });
 
+// ─── Feature 12: Disclosure Pack ─────────────────────────────────────────────
+const disclosurePackRouter = router({
+  generate: protectedProcedure
+    .input(z.object({
+      periodEnd:   z.string(),
+      periodStart: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { execSPPMulti } = await import("../db-sqlserver");
+      const sets = await execSPPMulti("lease.sp_GetDisclosurePack", [
+        { name: "PeriodEnd",   type: "Date", value: new Date(input.periodEnd) },
+        { name: "PeriodStart", type: "Date", value: input.periodStart ? new Date(input.periodStart) : null },
+      ]);
+      return {
+        summary:      sets[0]?.[0] ?? {},
+        balanceSheet: sets[1] ?? [],
+        incomeStmt:   sets[2] ?? [],
+        rouRollFwd:   sets[3] ?? [],
+        liabRollFwd:  sets[4] ?? [],
+        maturity:     sets[5] ?? [],
+        exemptions:   sets[6] ?? [],
+      };
+    }),
+});
+
+// ─── Feature 13: Budget vs Actual ────────────────────────────────────────────
+const budgetVsActualRouter = router({
+  getVariance: protectedProcedure
+    .input(z.object({
+      periodYear:  z.number(),
+      periodMonth: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { execSPPMulti } = await import("../db-sqlserver");
+      const sets = await execSPPMulti("lease.sp_GetBudgetVsActual", [
+        { name: "PeriodYear",  type: "Int", value: input.periodYear },
+        { name: "PeriodMonth", type: "Int", value: input.periodMonth ?? null },
+      ]);
+      return { rows: sets[0] ?? [], summary: sets[1]?.[0] ?? {} };
+    }),
+  getSummary: protectedProcedure
+    .input(z.object({ periodYear: z.number() }))
+    .query(async ({ input }) => {
+      const { execSPP } = await import("../db-sqlserver");
+      return execSPP("lease.sp_GetBudgetSummary", [
+        { name: "PeriodYear", type: "Int", value: input.periodYear },
+      ]);
+    }),
+  upsertLine: protectedProcedure
+    .input(z.object({
+      contractId:           z.number(),
+      periodYear:           z.number(),
+      periodMonth:          z.number(),
+      budgetedPayment:      z.number(),
+      budgetedDepreciation: z.number().default(0),
+      budgetedInterest:     z.number().default(0),
+      costCentre:           z.string().optional(),
+      notes:                z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { execSPP } = await import("../db-sqlserver");
+      await execSPP("lease.sp_UpsertBudgetLine", [
+        { name: "ContractId",           type: "Int",      value: input.contractId },
+        { name: "PeriodYear",           type: "Int",      value: input.periodYear },
+        { name: "PeriodMonth",          type: "Int",      value: input.periodMonth },
+        { name: "BudgetedPayment",      type: "Decimal",  value: input.budgetedPayment },
+        { name: "BudgetedDepreciation", type: "Decimal",  value: input.budgetedDepreciation },
+        { name: "BudgetedInterest",     type: "Decimal",  value: input.budgetedInterest },
+        { name: "CostCentre",           type: "NVarChar", value: input.costCentre ?? null },
+        { name: "Notes",                type: "NVarChar", value: input.notes ?? null },
+        { name: "CreatedBy",            type: "Int",      value: ctx.user.id },
+      ]);
+      return { success: true };
+    }),
+});
+
+// ─── Feature 14: Maturity Ladder ─────────────────────────────────────────────
+const maturityLadderRouter = router({
+  get: protectedProcedure
+    .input(z.object({ asOfDate: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { execSPPMulti } = await import("../db-sqlserver");
+      const sets = await execSPPMulti("lease.sp_GetMaturityLadder", [
+        { name: "AsOfDate", type: "Date", value: input.asOfDate ? new Date(input.asOfDate) : null },
+      ]);
+      return { rows: sets[0] ?? [], totals: sets[1]?.[0] ?? {} };
+    }),
+});
+
 // ─── Main accounting router ───────────────────────────────────────────────────
 export const accountingRouter = router({
   ibr: ibrRouter,
@@ -673,4 +762,7 @@ export const accountingRouter = router({
   reporting: reportingRouter,
   erpExport: erpExportRouter,
   bulk: bulkRouter,
+  disclosurePack: disclosurePackRouter,
+  budgetVsActual: budgetVsActualRouter,
+  maturityLadder: maturityLadderRouter,
 });

@@ -149,6 +149,10 @@ import LeaseTransactionCentre from "./pages/LeaseTransactionCentre";
 // Phase 6 — IFRS Financial Statements
 import FinancialStatements   from "./pages/FinancialStatements";
 import TrialBalance          from "./pages/TrialBalance";
+// Phase 7 — Features 12, 13, 14
+import DisclosurePack        from "./pages/DisclosurePack";
+import BudgetVsActual        from "./pages/BudgetVsActual";
+import MaturityLadder        from "./pages/MaturityLadder";
 
 function Router() {
   return (
@@ -309,8 +313,12 @@ function Router() {
       <Route path="/accounting/disclosure-notes"  component={DisclosureNotes} />
       <Route path="/leases/renewal-engine"        component={RenewalEngine} />
       <Route path="/accounting/period-close"      component={PeriodClose} />
-       <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
-      <Route path="/accounting/fx-revaluation"     component={FXRevaluation} />
+      <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
+      <Route path="/accounting/fx-revaluation"    component={FXRevaluation} />
+      {/* Phase 7: Features 12, 13, 14 */}
+      <Route path="/accounting/disclosure-pack"   component={DisclosurePack} />
+      <Route path="/accounting/budget-vs-actual"  component={BudgetVsActual} />
+      <Route path="/accounting/maturity-ladder"   component={MaturityLadder} />
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />
       <Route                                 component={NotFound} />

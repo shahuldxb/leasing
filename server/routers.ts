@@ -16,6 +16,21 @@ import { accountingRouter } from "./routers/accounting";
 import { furnishedAssetsRouter, assetDepositRouter, handoverChecklistRouter } from "./routers/furnishedAssets";
 import { masterContractsRouter } from "./routers/masterContracts";
 import { aiFillRouter }         from "./routers/aiFill";
+import { protectedProcedure }   from "./_core/trpc";
+import { z }                    from "zod";
+import { getPool }              from "./db-sqlserver";
+
+const screenMetaRouter = router({
+  get: protectedProcedure
+    .input(z.object({ screenId: z.string() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("screenId", input.screenId);
+      const r = await req.query(`SELECT screen_id,screen_name,module,sub_module,screen_type,route,stored_procedures,db_tables,computation_techniques,accounting_standards FROM security.screen_registry WHERE screen_id=@screenId`);
+      return r.recordset[0] ?? null;
+    }),
+});
 import { furnitureCollectionsRouter } from "./routers/furnitureCollections";
 import { vendorRouter, brokerRouter, loiRouter, tiAllowanceRouter, deskBookingRouter, workOrderRouter, notificationSettingsRouter, ssoConfigRouter, apiWebhookRouter, leaseModificationRouter, leaseRenewalRouter, glJournalRouter, leaseComparisonRouter, eSignatureRouter } from "./routers/ops";
 import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, reportBuilderRouter, scenarioRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter, terminationRouter, bouncePenaltyRouter, leaseOriginationNewRouter } from "./routers/features";
@@ -91,6 +106,7 @@ export const appRouter = router({
   glJournal:    glJournalRouter,
   leaseComparison: leaseComparisonRouter,
   eSignature:   eSignatureRouter,
+  screenMeta:   screenMetaRouter,
 });
 
 export type AppRouter = typeof appRouter;

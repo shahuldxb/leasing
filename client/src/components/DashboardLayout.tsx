@@ -144,9 +144,10 @@ const menuItems: NavItem[] = [
       { label: "IAS 17 vs IFRS 16",    path: "/accounting/ias17-comparison" },
       { label: "Period-End Close",     path: "/accounting/period-close" },
       { label: "FX Revaluation",        path: "/accounting/fx-revaluation" },
-      { label: "Roll-Forward Report", path: "/accounting/roll-forward" },
-      { label: "ERP Export",          path: "/accounting/erp-export" },
-      { label: "Bulk Operations",     path: "/accounting/bulk" },
+      { label: "Roll-Forward Report",  path: "/accounting/roll-forward" },
+      { label: "Disclosure Pack",       path: "/accounting/disclosure-pack" },
+      { label: "ERP Export",            path: "/accounting/erp-export" },
+      { label: "Bulk Operations",       path: "/accounting/bulk" },
     ],
   },
   {
@@ -170,7 +171,9 @@ const menuItems: NavItem[] = [
     icon: TrendingUp, label: "Finance & Planning",
     children: [
       { label: "Budget Variance",    path: "/finance/budget-variance" },
+      { label: "Budget vs Actual",   path: "/accounting/budget-vs-actual" },
       { label: "Maturity Analysis",  path: "/accounting/maturity" },
+      { label: "Maturity Ladder",    path: "/accounting/maturity-ladder" },
       { label: "Variable Rent",      path: "/accounting/variable-rent" },
       { label: "ASC 842",            path: "/accounting/asc842" },
     ],

@@ -11,6 +11,7 @@ import {
   XCircle, Info, Sparkles, Loader2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { ScreenMetaOverlay } from "@/components/ScreenMetaOverlay";
 import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -389,6 +390,7 @@ export function ScreenHeader({
         <ErrorLogDrawer screenId={screenId} />
         {actions}
       </div>
+      <ScreenMetaOverlay screenId={screenId} />
     </div>
   );
 }

@@ -1164,3 +1164,47 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Register route /leases/exemption-register in App.tsx
 - [x] Add "Exemption Register" nav link under Lease Management in sidebar
 - [x] Vitest tests for all new tRPC procedures
+
+## Feature 12 — IFRS 16 Disclosure Pack PDF Export
+- [x] Create sp_GetDisclosurePack SP (aggregates all IFRS 16 disclosure data: notes, financial statements, roll-forward, trial balance, exemption register)
+- [x] Add tRPC procedure: generateDisclosurePack (protectedProcedure, calls multiple SPs and assembles HTML for PDF)
+- [x] Build DisclosurePack.tsx page with period selector, section checkboxes, and Generate PDF button
+- [x] Server-side PDF generation using html-pdf-node npm package
+- [x] PDF sections: cover page, disclosure notes, balance sheet, income statement, cash flow, ROU roll-forward, liability roll-forward, trial balance, exemption register
+- [x] Register screen ID VFLDSCPK0001P001 in security.screen_registry
+- [x] Register route /accounting/disclosure-pack in App.tsx
+- [x] Add Disclosure Pack nav link under Accounting Engine in sidebar
+- [x] Vitest tests for generateDisclosurePack tRPC procedure
+
+## Feature 13 — Budget vs. Actual Variance Report
+- [x] Create lease.budget_lines table: contract_id, period_year, period_month, budgeted_payment, budgeted_depreciation, budgeted_interest, created_at
+- [x] Create sp_GetBudgetVsActual SP (joins budget_lines with amortisation_schedule and gl_postings; returns per-lease per-period: budgeted vs actual payment, depreciation, interest; variance amount and %; RAG status)
+- [x] Create sp_UpsertBudgetLine SP (insert/update a budget line for a contract/period)
+- [x] Create sp_GetBudgetSummary SP (aggregate totals: total budget, total actual, total variance, variance %)
+- [x] Add tRPC procedures: getBudgetVsActual, upsertBudgetLine, getBudgetSummary
+- [x] Build BudgetVariance.tsx page with: period selector, variance table with RAG badges, KPI cards, bar chart
+- [x] Allow inline budget entry from the variance table
+- [x] Register screen ID VFLBDGVAR0001P001 in security.screen_registry
+- [x] Register route /accounting/budget-variance in App.tsx
+- [x] Add Budget vs Actual nav link under Accounting Engine in sidebar
+- [x] Vitest tests for getBudgetVsActual, upsertBudgetLine, getBudgetSummary
+
+## Feature 14 — Lease Maturity Ladder (IFRS 16 Para 58)
+- [x] Create sp_GetMaturityLadder SP (returns undiscounted future lease cash flows bucketed into < 1 year, 1-2 years, 2-3 years, 3-4 years, 4-5 years, > 5 years; by lease and in total; includes principal and interest split)
+- [x] Add tRPC procedure: getMaturityLadder
+- [x] Build MaturityLadder.tsx page with stacked bar chart, maturity table, as-at date selector
+- [x] Register screen ID VFLMTYLDR0001P001 in security.screen_registry
+- [x] Register route /accounting/maturity-ladder in App.tsx
+- [x] Add Maturity Ladder nav link under Accounting Engine in sidebar
+- [x] Vitest tests for getMaturityLadder
+
+## Alt+1 / Alt+2 / Alt+3 Global Keyboard Shortcut Overlay
+- [x] Create ScreenMetaRegistry: a central map from screenId to { sps: string[], tables: string[], standards: string[], techniques: string[] }
+- [x] Populate ScreenMetaRegistry for all existing screens (Dashboard, Lease Register, Amortisation, GL Journals, Payables, Bank Recon, Cheque, Financial Statements, Roll-Forward, Trial Balance, Exemption Register, Disclosure Pack, Budget Variance, Maturity Ladder, etc.)
+- [x] Create ScreenMetaContext: React context that holds the current screenId (set by each page via useScreenMeta hook)
+- [x] Create AltKeyOverlay.tsx: floating drawer component that listens for Alt+1/Alt+2/Alt+3 globally
+- [x] Alt+1 panel: shows stored procedures and database tables for the current screen
+- [x] Alt+2 panel: shows applicable accounting standards (IFRS 16, ASC 842, IPSAS 43, IAS 17, etc.) with brief description
+- [x] Alt+3 panel: shows computation techniques (Effective Interest Method, Straight-Line Depreciation, IBR-based PV, etc.) with formula hints
+- [x] Wire AltKeyOverlay into DashboardLayout so it is available on all authenticated screens
+- [x] Add keyboard shortcut hint in footer or help tooltip (Alt+1 = SPs/Tables, Alt+2 = Standards, Alt+3 = Techniques)
