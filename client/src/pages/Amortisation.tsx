@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { toast } from "sonner";
-import {
-  Calculator, Download, ChevronDown, ChevronRight,
+import { Calculator, Download, ChevronDown, ChevronRight,
   TrendingDown, Banknote, BookOpen, Building2,
-  ArrowDownRight, BarChart3, HelpCircle,
+  ArrowDownRight, BarChart3, HelpCircle, Info, X,
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 
 // ── Column header with tooltip helper ─────────────────────────────────────────
 function ColHead({ label, tip }: { label: string; tip: string }) {
@@ -168,6 +170,7 @@ export default function Amortisation() {
   const [viewMode, setViewMode] = useState<"monthly" | "yearly">("monthly");
   const [expandedContracts, setExpandedContracts] = useState<Set<number>>(new Set());
   const [expandedPeriods, setExpandedPeriods]     = useState<Set<string>>(new Set());
+  const [showGuide, setShowGuide]                 = useState(false);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
@@ -276,6 +279,10 @@ export default function Amortisation() {
 
           {/* Expand / Collapse all + Calculate */}
           <div className="ml-auto flex gap-2 items-end">
+            <Button size="sm" variant="outline" onClick={() => setShowGuide(true)} className="flex items-center gap-1.5">
+              <Info className="h-4 w-4" />
+              How is this calculated?
+            </Button>
             <Button size="sm" variant="outline" onClick={expandAll}>Expand All</Button>
             <Button size="sm" variant="outline" onClick={collapseAll}>Collapse All</Button>
             <Button
@@ -386,10 +393,9 @@ export default function Amortisation() {
                     const displayRows = viewMode === "yearly" ? aggregateYearly(rows) : null;
 
                     return (
-                      <>
-                        {/* ── Contract group header row ─────────────────── */}
+                      <React.Fragment key={`c-${meta.contract_id}`}>
+                        {/* ── Contract group header row ───────────────── */}
                         <TableRow
-                          key={`c-${meta.contract_id}`}
                           className="cursor-pointer bg-muted/5 hover:bg-muted/15 transition-colors border-t-2 border-border/60"
                           onClick={() => toggleContract(meta.contract_id)}
                         >
@@ -460,10 +466,9 @@ export default function Amortisation() {
                             <TableCell className="py-1.5 text-xs text-right font-mono text-muted-foreground">—</TableCell>
                           </TableRow>
                         ))}
-                      </>
+                      </React.Fragment>
                     );
                   })}
-
                   {/* ── Grand totals row ─────────────────────────────────── */}
                   {scheduleRows.length > 0 && (
                     <TableRow className="bg-[#e60000]/10 border-t-2 border-[#e60000]/30 font-bold">
@@ -535,10 +540,9 @@ export default function Amortisation() {
                     const pCredit = period.rows.reduce((s, r) => s + r.total_credit, 0);
 
                     return (
-                      <>
+                      <React.Fragment key={key}>
                         {/* ── Period group header ───────────────────────── */}
                         <TableRow
-                          key={key}
                           className="cursor-pointer bg-muted/5 hover:bg-muted/15 transition-colors border-t-2 border-border/60"
                           onClick={() => togglePeriod(key)}
                         >
@@ -581,14 +585,13 @@ export default function Amortisation() {
                             <TableCell className="py-1.5 text-xs text-right font-mono text-emerald-400">
                               {e.total_credit > 0 ? fmtNum(e.total_credit) : "—"}
                             </TableCell>
-                            <TableCell className="py-1.5 text-xs text-right text-muted-foreground">{e.lease_count}</TableCell>
+                                <TableCell className="py-1.5 text-xs text-right text-muted-foreground">{e.lease_count}</TableCell>
                           </TableRow>
                         ))}
-                      </>
+                      </React.Fragment>
                     );
                   })}
-
-                  {/* ── Grand totals row ─────────────────────────────────── */}
+                  {/* ── Grand totals row ──────────────────────────────── */}
                   {glEntries.length > 0 && (
                     <TableRow className="bg-[#e60000]/10 border-t-2 border-[#e60000]/30 font-bold">
                       <TableCell></TableCell>
@@ -611,6 +614,143 @@ export default function Amortisation() {
           )}
         </div>
       </div>
+      {/* ── How is this calculated? Guide Modal ─────────────────────────── */}
+      <Dialog open={showGuide} onOpenChange={setShowGuide}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Info className="h-5 w-5 text-[#e60000]" />
+              How is the Amortisation Schedule Calculated?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              IFRS 16 Effective Interest Method — plain-English guide with a worked example
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 text-sm">
+
+            {/* ── Step 1: Opening Liability ── */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold text-[#e60000] mb-2">Step 1 — Opening Liability (Present Value)</h3>
+              <p className="text-muted-foreground mb-3">
+                On Day 1, the lease is recognised on the balance sheet at its <strong>Present Value (PV)</strong> —
+                what all future rent payments are worth <em>today</em>, discounted at the lease's IBR (Incremental Borrowing Rate).
+                This is the <strong>Opening Liability</strong> shown in the first row.
+              </p>
+              <div className="bg-muted/40 rounded p-3 font-mono text-xs space-y-1">
+                <div className="text-muted-foreground">Formula: PV = PMT × (1 − (1 + r)^−n) / r</div>
+                <div className="text-muted-foreground">Where: PMT = monthly rent, r = IBR ÷ 12, n = term in months</div>
+                <div className="mt-2 text-foreground font-semibold">Example (12,000/month × 36 months @ 5% IBR):</div>
+                <div>r = 5% ÷ 12 = 0.4167% per month</div>
+                <div>PV = 12,000 × (1 − (1.004167)^−36) / 0.004167</div>
+                <div className="text-emerald-400 font-bold">Opening Liability = QAR 395,400</div>
+              </div>
+            </div>
+
+            {/* ── Step 2: Monthly Interest ── */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold text-amber-400 mb-2">Step 2 — Interest (Finance Cost)</h3>
+              <p className="text-muted-foreground mb-3">
+                Each month, the outstanding liability "earns" interest at the IBR rate — just like a bank loan.
+                This is the <strong>Interest</strong> column. It is a P&amp;L charge (finance cost) but <em>no cash moves</em>.
+              </p>
+              <div className="bg-muted/40 rounded p-3 font-mono text-xs space-y-1">
+                <div className="text-muted-foreground">Formula: Interest = Opening Liability × (IBR ÷ 12)</div>
+                <div className="mt-2 text-foreground font-semibold">Month 1 example:</div>
+                <div>Interest = 395,400 × (5% ÷ 12)</div>
+                <div className="text-amber-400 font-bold">Interest = QAR 1,648</div>
+              </div>
+            </div>
+
+            {/* ── Step 3: Payment ── */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold text-blue-400 mb-2">Step 3 — Payment (Cash Out)</h3>
+              <p className="text-muted-foreground mb-3">
+                The <strong>Payment</strong> column is the actual monthly rent paid to the landlord — the cash that leaves your bank account.
+                This is always the fixed monthly rent amount from the Lease Register.
+              </p>
+              <div className="bg-muted/40 rounded p-3 font-mono text-xs space-y-1">
+                <div className="text-muted-foreground">Payment = monthly_payment from Lease Register</div>
+                <div className="mt-2 text-foreground font-semibold">Month 1 example:</div>
+                <div className="text-blue-400 font-bold">Payment = QAR 12,000</div>
+              </div>
+            </div>
+
+            {/* ── Step 4: Principal ── */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold text-emerald-400 mb-2">Step 4 — Principal (Liability Reduction)</h3>
+              <p className="text-muted-foreground mb-3">
+                <strong>Principal</strong> is the portion of the payment that reduces the outstanding lease obligation.
+                Think of it as "paying down the debt". It is calculated as Payment minus Interest.
+              </p>
+              <div className="bg-muted/40 rounded p-3 font-mono text-xs space-y-1">
+                <div className="text-muted-foreground">Formula: Principal = Payment − Interest</div>
+                <div className="mt-2 text-foreground font-semibold">Month 1 example:</div>
+                <div>Principal = 12,000 − 1,648</div>
+                <div className="text-emerald-400 font-bold">Principal = QAR 10,352</div>
+              </div>
+            </div>
+
+            {/* ── Step 5: Closing Liability ── */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold mb-2">Step 5 — Closing Liability</h3>
+              <p className="text-muted-foreground mb-3">
+                The <strong>Closing Liability</strong> is what remains on the balance sheet after this month's payment.
+                It becomes next month's Opening Liability. By the final month it reaches zero.
+              </p>
+              <div className="bg-muted/40 rounded p-3 font-mono text-xs space-y-1">
+                <div className="text-muted-foreground">Formula: Closing = Opening − Principal</div>
+                <div className="mt-2 text-foreground font-semibold">Month 1 example:</div>
+                <div>Closing = 395,400 − 10,352</div>
+                <div className="font-bold">Closing Liability = QAR 385,048</div>
+              </div>
+            </div>
+
+            {/* ── Step 6: Depreciation ── */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="font-semibold text-purple-400 mb-2">Step 6 — Depreciation (ROU Asset)</h3>
+              <p className="text-muted-foreground mb-3">
+                On Day 1, a <strong>Right-of-Use (ROU) Asset</strong> equal to the Opening Liability is recognised.
+                This asset is depreciated straight-line over the lease term. The <strong>Depreciation</strong> column
+                is the monthly P&amp;L charge — it is non-cash (no money moves).
+              </p>
+              <div className="bg-muted/40 rounded p-3 font-mono text-xs space-y-1">
+                <div className="text-muted-foreground">Formula: Depreciation = Opening Liability ÷ Term Months</div>
+                <div className="mt-2 text-foreground font-semibold">Example:</div>
+                <div>Depreciation = 395,400 ÷ 36</div>
+                <div className="text-purple-400 font-bold">Monthly Depreciation = QAR 10,983</div>
+              </div>
+            </div>
+
+            {/* ── Full Month 1 Summary ── */}
+            <div className="rounded-lg border border-[#e60000]/30 bg-[#e60000]/5 p-4">
+              <h3 className="font-semibold text-[#e60000] mb-3">Full Worked Example — Month 1 (Jan 2026)</h3>
+              <p className="text-muted-foreground text-xs mb-3">Lease: 12,000/month × 36 months @ 5% IBR</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-1.5 font-semibold">Column</th>
+                    <th className="text-right py-1.5 font-semibold">Amount (QAR)</th>
+                    <th className="text-left py-1.5 pl-4 font-semibold">What it means</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  <tr><td className="py-1.5">Opening Liability</td><td className="text-right font-mono">395,400</td><td className="pl-4 text-muted-foreground">PV of all future rents on Day 1</td></tr>
+                  <tr><td className="py-1.5 text-amber-400">Interest</td><td className="text-right font-mono text-amber-400">1,648</td><td className="pl-4 text-muted-foreground">Finance cost (IBR × opening liability ÷ 12)</td></tr>
+                  <tr><td className="py-1.5 text-blue-400">Payment</td><td className="text-right font-mono text-blue-400">12,000</td><td className="pl-4 text-muted-foreground">Cash paid to landlord this month</td></tr>
+                  <tr><td className="py-1.5 text-emerald-400">Principal</td><td className="text-right font-mono text-emerald-400">10,352</td><td className="pl-4 text-muted-foreground">Debt reduction (Payment − Interest)</td></tr>
+                  <tr><td className="py-1.5">Closing Liability</td><td className="text-right font-mono">385,048</td><td className="pl-4 text-muted-foreground">Remaining obligation (Opening − Principal)</td></tr>
+                  <tr><td className="py-1.5 text-purple-400">Depreciation</td><td className="text-right font-mono text-purple-400">10,983</td><td className="pl-4 text-muted-foreground">ROU asset written off (non-cash P&amp;L)</td></tr>
+                </tbody>
+              </table>
+              <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+                <strong>P&amp;L impact this month:</strong> Interest (1,648) + Depreciation (10,983) = <strong className="text-foreground">QAR 12,631</strong> — slightly more than the cash paid (12,000) because interest is front-loaded.
+              </div>
+            </div>
+
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
