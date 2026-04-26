@@ -174,6 +174,7 @@ export default function Amortisation() {
   const [expandedPeriods, setExpandedPeriods]     = useState<Set<string>>(new Set());
   const [showGuide, setShowGuide]                 = useState(false);
   const [blackboardRow, setBlackboardRow]         = useState<ScheduleRow | null>(null);
+  const [showGLExplain, setShowGLExplain]         = useState(false);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
@@ -508,14 +509,23 @@ export default function Amortisation() {
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="px-6 pb-8">
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowGLExplain(true)}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md font-semibold transition-all hover:scale-105 active:scale-95"
+              style={{ background: "#1a1a2e", border: "1px solid #6366f1", color: "#a5b4fc" }}
+              title="Explain GL entries"
+            >
+              <Info className="w-3.5 h-3.5" /> Explain
+            </button>
             <BookOpen className="w-4 h-4 text-[#e60000]" />
             <span className="text-sm font-semibold">Consolidated GL Accounting Entries</span>
             <span className="ml-2 text-xs text-muted-foreground">
               All leases · grouped by period
             </span>
             <span className="ml-auto text-xs text-muted-foreground italic">
-              Debit = blue · Credit = emerald
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-400 mr-1"></span>Dr
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mx-1 ml-2"></span>Cr
             </span>
           </div>
 
@@ -534,12 +544,11 @@ export default function Amortisation() {
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow className="bg-muted/10">
                     <TableHead className="w-8"></TableHead>
-                    <TableHead className="text-xs whitespace-nowrap">Period / JE</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Period</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">Ledger No.</TableHead>
                     <TableHead className="text-xs whitespace-nowrap">Description</TableHead>
-                    <TableHead className="text-xs whitespace-nowrap">Account Code</TableHead>
-                    <TableHead className="text-xs whitespace-nowrap">Account Name</TableHead>
-                    <TableHead className="text-xs text-right whitespace-nowrap">Debit</TableHead>
-                    <TableHead className="text-xs text-right whitespace-nowrap">Credit</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap text-center">Dr / Cr</TableHead>
+                    <TableHead className="text-xs text-right whitespace-nowrap">Amount</TableHead>
                     <TableHead className="text-xs text-right whitespace-nowrap">Leases</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -571,46 +580,61 @@ export default function Amortisation() {
                             </div>
                           </TableCell>
                           <TableCell className="py-2.5 font-semibold text-sm">{period.label}</TableCell>
-                          <TableCell className="py-2.5 text-xs text-muted-foreground">{period.rows.length} entries</TableCell>
                           <TableCell className="py-2.5 text-xs text-muted-foreground">—</TableCell>
-                          <TableCell className="py-2.5 text-xs text-muted-foreground">—</TableCell>
-                          <TableCell className="py-2.5 text-xs text-right font-mono text-blue-400 font-semibold">{fmtNum(pDebit)}</TableCell>
-                          <TableCell className="py-2.5 text-xs text-right font-mono text-emerald-400 font-semibold">{fmtNum(pCredit)}</TableCell>
+                          <TableCell className="py-2.5 text-xs text-muted-foreground">{period.rows.length} journal lines</TableCell>
+                          <TableCell className="py-2.5 text-xs text-center text-muted-foreground">—</TableCell>
+                          <TableCell className="py-2.5 text-xs text-right font-mono font-semibold text-muted-foreground">{fmtNum(pDebit + pCredit)}</TableCell>
                           <TableCell className="py-2.5 text-xs text-right text-muted-foreground">
                             {Math.max(...period.rows.map(r => r.lease_count))}
                           </TableCell>
                         </TableRow>
 
-                        {/* ── Expanded: individual GL lines ─────────────── */}
-                        {isOpen && period.rows.map((e, i) => (
-                          <TableRow
-                            key={`${key}-${i}`}
-                            className={`hover:bg-muted/8 ${e.total_debit > 0 ? "bg-blue-500/3" : "bg-emerald-500/3"}`}
-                          >
-                            <TableCell className="py-1.5 px-2"></TableCell>
-                            <TableCell className="py-1.5 pl-6">
-                              <span className="text-[10px] font-mono bg-[#e60000]/15 text-[#e60000] px-1.5 py-0.5 rounded">
-                                {e.je_ref}
-                              </span>
-                            </TableCell>
-                            <TableCell className="py-1.5 text-xs text-muted-foreground">{e.description}</TableCell>
-                            <TableCell className={`py-1.5 text-xs font-mono font-semibold ${e.total_debit > 0 ? "text-blue-400" : "text-emerald-400"}`}>
-                              {e.account_code}
-                            </TableCell>
-                            <TableCell className="py-1.5 text-xs">{e.account_name}</TableCell>
-                            <TableCell className="py-1.5 text-xs text-right font-mono text-blue-400">
-                              {e.total_debit > 0 ? fmtNum(e.total_debit) : "—"}
-                            </TableCell>
-                            <TableCell className="py-1.5 text-xs text-right font-mono text-emerald-400">
-                              {e.total_credit > 0 ? fmtNum(e.total_credit) : "—"}
-                            </TableCell>
-                                <TableCell className="py-1.5 text-xs text-right text-muted-foreground">{e.lease_count}</TableCell>
-                          </TableRow>
-                        ))}
+                        {/* ── Expanded: individual GL lines as paired Dr/Cr rows ── */}
+                        {isOpen && period.rows.map((e, i) => {
+                          const isDr = e.total_debit > 0;
+                          const amount = isDr ? e.total_debit : e.total_credit;
+                          return (
+                            <TableRow
+                              key={`${key}-${i}`}
+                              className={`hover:bg-muted/8 border-l-2 ${isDr ? "border-l-blue-500/50 bg-blue-500/3" : "border-l-emerald-500/50 bg-emerald-500/3"}`}
+                            >
+                              <TableCell className="py-1.5 px-2"></TableCell>
+                              <TableCell className="py-1.5 pl-6">
+                                <span className="text-[10px] font-mono bg-[#e60000]/15 text-[#e60000] px-1.5 py-0.5 rounded">
+                                  {e.je_ref}
+                                </span>
+                              </TableCell>
+                              {/* Ledger No. */}
+                              <TableCell className={`py-1.5 text-xs font-mono font-bold ${isDr ? "text-blue-400" : "text-emerald-400"}`}>
+                                {e.account_code}
+                              </TableCell>
+                              {/* Description */}
+                              <TableCell className="py-1.5 text-xs">
+                                <div className="font-medium">{e.account_name}</div>
+                                <div className="text-[10px] text-muted-foreground">{e.description}</div>
+                              </TableCell>
+                              {/* Dr / Cr badge */}
+                              <TableCell className="py-1.5 text-center">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  isDr
+                                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                                    : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                }`}>
+                                  {isDr ? "Dr" : "Cr"}
+                                </span>
+                              </TableCell>
+                              {/* Amount */}
+                              <TableCell className={`py-1.5 text-xs text-right font-mono font-semibold ${isDr ? "text-blue-400" : "text-emerald-400"}`}>
+                                {fmtNum(amount)}
+                              </TableCell>
+                              <TableCell className="py-1.5 text-xs text-right text-muted-foreground">{e.lease_count}</TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </React.Fragment>
                     );
                   })}
-                  {/* ── Grand totals row ──────────────────────────────── */}
+                      {/* ── Grand totals row ──────────────────────── */}
                   {glEntries.length > 0 && (
                     <TableRow className="bg-[#e60000]/10 border-t-2 border-[#e60000]/30 font-bold">
                       <TableCell></TableCell>
@@ -618,11 +642,8 @@ export default function Amortisation() {
                       <TableCell></TableCell>
                       <TableCell></TableCell>
                       <TableCell></TableCell>
-                      <TableCell className="py-2.5 text-xs text-right font-mono text-blue-400">
-                        {fmtNum(glEntries.reduce((s, e) => s + e.total_debit,  0))}
-                      </TableCell>
-                      <TableCell className="py-2.5 text-xs text-right font-mono text-emerald-400">
-                        {fmtNum(glEntries.reduce((s, e) => s + e.total_credit, 0))}
+                      <TableCell className="py-2.5 text-xs text-right font-mono text-[#e60000]">
+                        {fmtNum(glEntries.reduce((s, e) => s + e.total_debit + e.total_credit, 0))}
                       </TableCell>
                       <TableCell></TableCell>
                     </TableRow>
@@ -955,6 +976,73 @@ export default function Amortisation() {
           </div>
         );
       })()}
+
+      {/* ── GL Entries Explain Modal ─────────────────────────────────── */}
+      <Dialog open={showGLExplain} onOpenChange={setShowGLExplain}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <BookOpen className="w-5 h-5 text-indigo-400" />
+              How are GL Entries generated?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <p className="text-muted-foreground">Under IFRS 16, every lease payment creates <strong>4 paired journal entries</strong> each month. Each pair has one Debit (Dr) and one Credit (Cr) of equal value — so total Dr always equals total Cr.</p>
+
+            {/* Entry 1 */}
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="px-3 py-2 bg-muted/20 font-semibold text-xs text-[#e60000]">Entry 1 — Lease Liability Reduction (Principal)</div>
+              <table className="w-full text-xs">
+                <thead><tr className="bg-muted/10"><th className="text-left px-3 py-1.5">Ledger No.</th><th className="text-left px-3 py-1.5">Account</th><th className="text-center px-3 py-1.5">Dr/Cr</th><th className="text-left px-3 py-1.5">What it means</th></tr></thead>
+                <tbody>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-blue-400">2100</td><td className="px-3 py-1.5">Lease Liability</td><td className="px-3 py-1.5 text-center"><span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Dr</span></td><td className="px-3 py-1.5 text-muted-foreground">Reduces the liability on the balance sheet (paying down the "loan")</td></tr>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-emerald-400">1010</td><td className="px-3 py-1.5">Bank / Cash</td><td className="px-3 py-1.5 text-center"><span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Cr</span></td><td className="px-3 py-1.5 text-muted-foreground">Cash leaves the bank (actual rent payment minus interest portion)</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Entry 2 */}
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="px-3 py-2 bg-muted/20 font-semibold text-xs text-[#e60000]">Entry 2 — Finance Cost (Interest)</div>
+              <table className="w-full text-xs">
+                <thead><tr className="bg-muted/10"><th className="text-left px-3 py-1.5">Ledger No.</th><th className="text-left px-3 py-1.5">Account</th><th className="text-center px-3 py-1.5">Dr/Cr</th><th className="text-left px-3 py-1.5">What it means</th></tr></thead>
+                <tbody>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-blue-400">6200</td><td className="px-3 py-1.5">Interest Expense</td><td className="px-3 py-1.5 text-center"><span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Dr</span></td><td className="px-3 py-1.5 text-muted-foreground">Finance cost charged to P&amp;L (IBR × opening liability ÷ 12)</td></tr>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-emerald-400">2100</td><td className="px-3 py-1.5">Lease Liability</td><td className="px-3 py-1.5 text-center"><span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Cr</span></td><td className="px-3 py-1.5 text-muted-foreground">Interest accrued increases the liability before the payment reduces it</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Entry 3 */}
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="px-3 py-2 bg-muted/20 font-semibold text-xs text-[#e60000]">Entry 3 — ROU Asset Depreciation</div>
+              <table className="w-full text-xs">
+                <thead><tr className="bg-muted/10"><th className="text-left px-3 py-1.5">Ledger No.</th><th className="text-left px-3 py-1.5">Account</th><th className="text-center px-3 py-1.5">Dr/Cr</th><th className="text-left px-3 py-1.5">What it means</th></tr></thead>
+                <tbody>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-blue-400">6100</td><td className="px-3 py-1.5">Depreciation — ROU Asset</td><td className="px-3 py-1.5 text-center"><span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Dr</span></td><td className="px-3 py-1.5 text-muted-foreground">Monthly usage charge to P&amp;L (opening liability ÷ term months, straight-line)</td></tr>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-emerald-400">1500</td><td className="px-3 py-1.5">Accumulated Depreciation</td><td className="px-3 py-1.5 text-center"><span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Cr</span></td><td className="px-3 py-1.5 text-muted-foreground">Reduces the net book value of the ROU asset on the balance sheet</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Entry 4 */}
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="px-3 py-2 bg-muted/20 font-semibold text-xs text-[#e60000]">Entry 4 — ROU Asset Recognition (Day 1 only)</div>
+              <table className="w-full text-xs">
+                <thead><tr className="bg-muted/10"><th className="text-left px-3 py-1.5">Ledger No.</th><th className="text-left px-3 py-1.5">Account</th><th className="text-center px-3 py-1.5">Dr/Cr</th><th className="text-left px-3 py-1.5">What it means</th></tr></thead>
+                <tbody>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-blue-400">1400</td><td className="px-3 py-1.5">ROU Asset</td><td className="px-3 py-1.5 text-center"><span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Dr</span></td><td className="px-3 py-1.5 text-muted-foreground">The right to use the property is capitalised at PV of future payments</td></tr>
+                  <tr className="border-t border-border/40"><td className="px-3 py-1.5 font-mono text-emerald-400">2100</td><td className="px-3 py-1.5">Lease Liability</td><td className="px-3 py-1.5 text-center"><span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[10px] font-bold">Cr</span></td><td className="px-3 py-1.5 text-muted-foreground">Equal and opposite liability recognised — total Dr = total Cr on Day 1</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/30 px-3 py-2 text-xs text-indigo-300">
+              <strong>Key rule:</strong> Every journal entry must balance — total Debits = total Credits for each period. Blue rows are Debits (assets increase / liabilities decrease). Green rows are Credits (assets decrease / liabilities increase).
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
