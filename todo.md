@@ -1117,3 +1117,50 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Register route /leases/transaction-centre in App.tsx
 - [x] Add "Transaction Centre" nav link under Lease Management in sidebar
 - [x] Vitest integration tests: 9/9 passing
+
+## Feature 8 — Live Consolidated Financial Statements (IAS 1)
+- [x] Audit existing gl_postings and coa tables to confirm account type classification (Asset/Liability/Equity/Revenue/Expense)
+- [x] Create sp_GetBalanceSheet SP (aggregates gl_postings by account type as at period-end date, returns Assets/Liabilities/Equity sections)
+- [x] Create sp_GetIncomeStatement SP (aggregates P&L accounts for a period: depreciation, interest, FX gain/loss, rent expense)
+- [x] Create sp_GetCashFlowStatement SP (classifies lease cash flows: principal repayments=Financing, interest=Financing, short-term/low-value=Operating)
+- [x] Add tRPC procedures: getBalanceSheet, getIncomeStatement, getCashFlowStatement
+- [x] Build FinancialStatements.tsx page with 3 tabs: Balance Sheet | Income Statement | Cash Flow
+- [x] Balance Sheet: Assets section (ROU Asset gross, Accumulated Depreciation, Net ROU; other assets), Liabilities section (Current lease liability, Non-current lease liability), Equity section
+- [x] Income Statement: Depreciation expense, Interest on lease liabilities, FX revaluation gain/loss, Short-term/low-value lease expense, Net IFRS 16 P&L impact
+- [x] Cash Flow: Financing activities (principal + interest payments), Operating activities (short-term/low-value payments)
+- [x] Period selector (year/quarter/month), Export to Excel, Print view
+- [x] Register route /accounting/financial-statements in App.tsx
+- [x] Add "Financial Statements" nav link under Accounting Engine in sidebar
+
+## Feature 9 — ROU Asset & Lease Liability Roll-Forward (IFRS 16 Para 53)
+- [x] Create sp_GetROURollForward SP (Opening → Additions → Depreciation → Modifications → Disposals/Terminations → FX → Closing, by asset class)
+- [x] Create sp_GetLiabilityRollForward SP (Opening → Additions → Interest accrued → Payments → Modifications → FX revaluation → Terminations → Closing)
+- [x] Add tRPC procedures: getROURollForward, getLiabilityRollForward
+- [x] Build RollForwardReport.tsx page (update existing page or create new) with 2 tabs: ROU Asset | Lease Liability
+- [x] Each tab: movement table with opening/closing balances and all movement lines, subtotals, Export to Excel
+- [x] Asset class breakdown (Property, Vehicles, Equipment, etc.)
+- [x] Register route /accounting/roll-forward in App.tsx
+- [x] Add "Roll-Forward" nav link under Accounting Engine in sidebar
+
+## Feature 10 — Trial Balance (IAS 1)
+- [x] Create sp_GetTrialBalance SP (returns all GL accounts with debit total, credit total, and net balance as at period-end; grouped by account type)
+- [x] Add tRPC procedure: getTrialBalance
+- [x] Build TrialBalance.tsx page with: account code, account name, type, debit total, credit total, net balance
+- [x] Show totals row: total debits must equal total credits (balanced check)
+- [x] Filter by account type (All / Assets / Liabilities / Equity / Revenue / Expense)
+- [x] Period-end date selector, Export to Excel
+- [x] Register route /accounting/trial-balance in App.tsx
+- [x] Add "Trial Balance" nav link under Accounting Engine in sidebar
+
+## Feature 11 — Short-term & Low-value Exemption Register (IFRS 16 Para 5)
+- [x] Add exemption_type column to lease.contracts (None / ShortTerm / LowValue)
+- [x] Add exemption_reason text column to lease.contracts
+- [x] Create sp_GetExemptionRegister SP (returns all exempted leases with: contract_ref, asset, lessor, monthly_payment, start_date, expiry_date, exemption_type, total_expense_ytd, total_expense_life)
+- [x] Create sp_GetExemptionExpenseSummary SP (returns straight-line expense per period for all exempted leases)
+- [x] Add tRPC procedures: getExemptionRegister, getExemptionExpenseSummary, updateLeaseExemption
+- [x] Build ExemptionRegister.tsx page with: exemption register table, YTD expense summary, straight-line expense chart
+- [x] Allow marking a lease as Short-term or Low-value from the register (with reason)
+- [x] Show total exempted lease expense in Income Statement (feeding into Feature 8)
+- [x] Register route /leases/exemption-register in App.tsx
+- [x] Add "Exemption Register" nav link under Lease Management in sidebar
+- [x] Vitest tests for all new tRPC procedures

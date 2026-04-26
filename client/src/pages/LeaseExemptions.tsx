@@ -1,174 +1,208 @@
-import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import ScreenHeader from "@/components/ScreenHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
-import { GenAIFillButton } from "@/components/GenAIFillButton";
+/**
+ * VodaLease Enterprise — Lease Exemption Register
+ * Screen ID: VFLLSEEXRG0001P001
+ * IFRS 16 Para 5 — Short-term & Low-value Lease Exemptions
+ */
+import { useState } from 'react';
+import { trpc } from '@/lib/trpc';
+import DashboardLayout from '@/components/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, RefreshCw, AlertCircle, Pencil, Clock, DollarSign } from 'lucide-react';
+import { toast } from 'sonner';
 
-const INIT_FORM = { contractId: "", exemptionType: "Short-term", justification: "", approvedBy: "" };
+const SCREEN_ID = 'VFLLSEEXRG0001P001';
+
+function fmt(v: unknown): string {
+  const n = Number(v ?? 0);
+  if (isNaN(n)) return '—';
+  return new Intl.NumberFormat('en-QA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+}
+
+type ExRow = Record<string, unknown>;
+
+const EXEMPTION_COLOURS: Record<string, string> = {
+  ShortTerm: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  LowValue: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  None: 'bg-muted text-muted-foreground',
+};
+
+const EXEMPTION_LABELS: Record<string, string> = {
+  ShortTerm: 'Short-term (≤12 months)',
+  LowValue: 'Low-value (< USD 5,000)',
+  None: 'No Exemption',
+};
+
 
 export default function LeaseExemptions() {
-  const [showForm, setShowForm] = useState(false);
-  const [editRow, setEditRow] = useState<any>(null);
-  const [form, setForm] = useState<any>({ ...INIT_FORM });
-  const [aiRows, setAiRows] = useState<any[]>([]);
-  const [showSample, setShowSample] = useState(false);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.altKey && e.key === "1") { e.preventDefault(); setShowForm(false); }
-      if (e.altKey && e.key === "F2") { e.preventDefault(); setShowSample(s => !s); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  const { data: exemptionsData, refetch } = trpc.lease.getLeaseRegister.useQuery({ page: 1, pageSize: 100 });
-  const exemptions: any[] = (exemptionsData as any)?.rows ?? [];
-  const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({ status: "Active" });
-  const contracts = (contractsData as any)?.rows ?? [];
-  // Auto-select first contract when data loads
-  useEffect(() => {
-    if (contracts.length > 0 && !form.contractId) {
-      setForm((f: any) => ({ ...f, contractId: String(contracts[0].contract_id) }));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contracts.length]);
-  const create = { mutate: (_: any) => { refetch(); setShowForm(false); toast.success(editRow ? "Exemption updated" : "Exemption recorded"); }, isPending: false };
-
-  function openAdd() { setEditRow(null); setForm({ ...INIT_FORM, contractId: contracts[0] ? String(contracts[0].contract_id) : "" }); setShowForm(true); }
-  function openEdit(row: any) {
-    setEditRow(row);
-    setForm({
-      contractId: String(row.contract_id ?? ""),
-      exemptionType: row.exemption_type ?? "Short-term",
-      justification: row.justification ?? "",
-      approvedBy: row.approved_by ?? "",
-    });
-    setShowForm(true);
-  }
-  function handleDelete(row: any) {
-    toast("Delete this exemption record?", {
-      action: { label: "Confirm Delete", onClick: () => toast.success("Exemption deleted") },
-    });
-  }
-
-  if (showForm) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
-            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)} className="gap-2">
-              <ArrowLeft className="w-4 h-4" />Back
-            </Button>
-            <div>
-              <h2 className="font-semibold text-lg">{editRow ? "Edit Lease Exemption" : "Add Lease Exemption"}</h2>
-              <p className="text-sm text-muted-foreground">Record an IFRS 16 exemption for a short-term or low-value lease</p>
-            </div>
-            <div className="ml-auto">
-              <GenAIFillButton
-                formType="new_lease"
-                onFill={(data) => setForm((f: any) => ({
-                  ...f,
-                  justification: data.notes ?? f.justification,
-                }))}
-              />
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-2xl mx-auto space-y-4">
-              <div>
-                <Label>Contract</Label>
-                <Select value={form.contractId} onValueChange={v => setForm((f: any) => ({ ...f, contractId: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select contract" /></SelectTrigger>
-                  <SelectContent>{contracts.map((c: any) => <SelectItem key={c.contract_id} value={String(c.contract_id)}>{c.property_name ?? c.contract_id}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Exemption Type</Label>
-                <Select value={form.exemptionType} onValueChange={v => setForm((f: any) => ({ ...f, exemptionType: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{["Short-term","Low-value","Variable payments only"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label>Justification *</Label><Input className="mt-1" value={form.justification} onChange={e => setForm((f: any) => ({ ...f, justification: e.target.value }))} /></div>
-              <div><Label>Approved By</Label><Input className="mt-1" value={form.approvedBy} onChange={e => setForm((f: any) => ({ ...f, approvedBy: e.target.value }))} /></div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-                <Button className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={create.isPending}
-                  onClick={() => create.mutate({ contractId: Number(form.contractId), exemptionType: form.exemptionType, justification: form.justification, approvedBy: form.approvedBy })}>
-                  {create.isPending ? "Saving..." : editRow ? "Update Exemption" : "Add Exemption"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
+  const [filterType, setFilterType] = useState<string>('all');
+  const [editRow, setEditRow] = useState<ExRow | null>(null);
+  const [editType, setEditType] = useState<'None' | 'ShortTerm' | 'LowValue'>('None');
+  const [editReason, setEditReason] = useState('');
+  const utils = trpc.useUtils();
+  const exemptQuery = trpc.lease.getExemptionRegister.useQuery({
+    exemptionType: filterType === 'all' ? undefined : filterType,
+  });
+  const updateMut = trpc.lease.updateLeaseExemption.useMutation({
+    onSuccess: () => { toast.success('Exemption status updated'); utils.lease.getExemptionRegister.invalidate(); setEditRow(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const leases = (exemptQuery.data?.leases ?? []) as ExRow[];
+  const summary = (exemptQuery.data?.summary ?? []) as ExRow[];
+  const summaryRow = (summary[0] ?? {}) as Record<string, unknown>;
+  const shortTermLeases = leases.filter(l => l.exemption_type === 'ShortTerm');
+  const lowValueLeases = leases.filter(l => l.exemption_type === 'LowValue');
+  function openEdit(row: ExRow) { setEditRow(row); setEditType((row.exemption_type as 'None' | 'ShortTerm' | 'LowValue') ?? 'None'); setEditReason(String(row.exemption_reason ?? '')); }
+  function submitEdit() { if (!editRow) return; updateMut.mutate({ contractId: Number(editRow.contract_id), exemptionType: editType, exemptionReason: editReason }); }
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <ScreenHeader
-          screenId="VFLLEAEXM0001P001"
-          title="Lease Exemptions"
-          subtitle="IFRS 16 short-term and low-value lease exemptions"
-          screenType="lease_exemptions"
-          onAIData={(rows) => setAiRows(rows)}
-          actions={<Button onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg"><Plus className="w-4 h-4" />Add</Button>}
-        />
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contract</TableHead>
-                <TableHead>Exemption Type</TableHead>
-                <TableHead>Justification</TableHead>
-                <TableHead>Approved By</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(exemptions as any[]).map((e: any) => (
-                <TableRow key={e.exemption_id ?? e.contract_id}>
-                  <TableCell>{e.contract_id}</TableCell>
-                  <TableCell>{e.exemption_type}</TableCell>
-                  <TableCell className="max-w-xs truncate">{e.justification}</TableCell>
-                  <TableCell>{e.approved_by ?? "—"}</TableCell>
-                  <TableCell><Badge className="bg-blue-500/20 text-blue-400">{e.status ?? "Active"}</Badge></TableCell>
-                  <TableCell className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(e)}><Pencil className="w-3.5 h-3.5" /></Button>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(e)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(exemptions as any[]).length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No exemptions recorded</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    
-      {showSample && (
-        <div className="fixed bottom-4 right-4 z-50 bg-card border border-border rounded-lg p-4 shadow-xl max-w-sm">
-          <p className="text-xs font-semibold text-primary mb-2">Qatar Sample Data</p>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p>Company: Vodafone Qatar Q.P.S.C.</p>
-            <p>Location: West Bay, Doha, Qatar</p>
-            <p>Currency: QAR | Country: QA</p>
-            <p>Contact: +974 4412 0000</p>
-            <p>Bank: Qatar National Bank (QNB)</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="outline" className="text-xs font-mono text-muted-foreground">{SCREEN_ID}</Badge>
+              <Badge variant="secondary" className="text-xs">IFRS 16 Para 5</Badge>
+            </div>
+            <h1 className="text-2xl font-bold">Exemption Register</h1>
+            <p className="text-muted-foreground text-sm mt-1">Short-term and low-value lease exemptions — straight-line expense recognition</p>
           </div>
-          <button className="mt-2 text-xs text-primary hover:underline" onClick={() => setShowSample(false)}>Close</button>
+          <div className="flex items-center gap-3">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Filter by type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leases</SelectItem>
+                <SelectItem value="ShortTerm">Short-term only</SelectItem>
+                <SelectItem value="LowValue">Low-value only</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}><Download className="h-4 w-4 mr-1" /> Export</Button>
+          </div>
         </div>
-      )}
+        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-300">
+          <strong>IFRS 16 Para 5:</strong> Short-term leases (term &le;12 months) and low-value leases (asset &lt; USD 5,000) may be exempted from capitalisation. Payments recognised straight-line over the lease term.
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-1"><Clock className="h-4 w-4 text-blue-400" /><span className="text-xs text-muted-foreground">Short-term</span></div>
+            <div className="text-xl font-bold text-blue-400">{shortTermLeases.length}</div>
+            <div className="text-xs text-muted-foreground mt-1">Annual: {fmt(summaryRow.total_shortterm_expense)} QAR</div>
+          </CardContent></Card>
+          <Card className="border-purple-500/30 bg-purple-500/5"><CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-purple-400" /><span className="text-xs text-muted-foreground">Low-value</span></div>
+            <div className="text-xl font-bold text-purple-400">{lowValueLeases.length}</div>
+            <div className="text-xs text-muted-foreground mt-1">Annual: {fmt(summaryRow.total_lowvalue_expense)} QAR</div>
+          </CardContent></Card>
+          <Card className="border-green-500/30 bg-green-500/5"><CardContent className="pt-4 pb-4">
+            <div className="text-xs text-muted-foreground mb-1">Total Exempted</div>
+            <div className="text-xl font-bold text-green-400">{shortTermLeases.length + lowValueLeases.length}</div>
+          </CardContent></Card>
+          <Card className="border-amber-500/30 bg-amber-500/5"><CardContent className="pt-4 pb-4">
+            <div className="text-xs text-muted-foreground mb-1">Total Straight-line Expense</div>
+            <div className="text-lg font-bold text-amber-400">{fmt(summaryRow.total_exemption_expense)} QAR</div>
+          </CardContent></Card>
+        </div>
+        <Tabs defaultValue="all">
+          <TabsList>
+            <TabsTrigger value="all">All ({leases.length})</TabsTrigger>
+            <TabsTrigger value="shortterm">Short-term ({shortTermLeases.length})</TabsTrigger>
+            <TabsTrigger value="lowvalue">Low-value ({lowValueLeases.length})</TabsTrigger>
+          </TabsList>
+          {(['all', 'shortterm', 'lowvalue'] as const).map(tab => {
+            const tabLeases = tab === 'all' ? leases : tab === 'shortterm' ? shortTermLeases : lowValueLeases;
+            return (
+              <TabsContent key={tab} value={tab}>
+                <Card>
+                  <CardHeader className="pb-3"><CardTitle className="text-base">{tab === 'all' ? 'All Leases' : tab === 'shortterm' ? 'Short-term Exemptions' : 'Low-value Exemptions'}</CardTitle></CardHeader>
+                  <CardContent>
+                    {exemptQuery.isLoading && <div className="flex items-center justify-center py-12 text-muted-foreground"><RefreshCw className="h-5 w-5 animate-spin mr-2" /> Loading...</div>}
+                    {exemptQuery.isError && <div className="flex items-center gap-2 text-red-400 py-8"><AlertCircle className="h-4 w-4" /><span className="text-sm">{exemptQuery.error.message}</span></div>}
+                    {!exemptQuery.isLoading && (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/30">
+                              <TableHead>Contract Ref</TableHead><TableHead>Asset</TableHead><TableHead>Lessor</TableHead>
+                              <TableHead>Start</TableHead><TableHead>Expiry</TableHead>
+                              <TableHead className="text-right">Monthly Rent</TableHead><TableHead className="text-right">Annual Expense</TableHead>
+                              <TableHead>Exemption</TableHead><TableHead>Reason</TableHead><TableHead className="w-16">Edit</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tabLeases.map((l, i) => (
+                              <TableRow key={i} className="hover:bg-muted/20 transition-colors">
+                                <TableCell className="font-mono text-xs">{String(l.contract_ref ?? '—')}</TableCell>
+                                <TableCell className="text-sm max-w-[120px] truncate">{String(l.asset_description ?? '—')}</TableCell>
+                                <TableCell className="text-sm">{String(l.lessor_name ?? '—')}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{String(l.start_date ?? '—').substring(0, 10)}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{String(l.expiry_date ?? '—').substring(0, 10)}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{fmt(l.monthly_payment)} QAR</TableCell>
+                                <TableCell className="text-right font-mono text-xs font-semibold">{fmt(l.annual_expense)} QAR</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={`text-xs ${EXEMPTION_COLOURS[String(l.exemption_type ?? 'None')] ?? EXEMPTION_COLOURS['None']}`}>
+                                    {EXEMPTION_LABELS[String(l.exemption_type ?? 'None')] ?? 'No Exemption'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground max-w-[100px] truncate">{String(l.exemption_reason ?? '—')}</TableCell>
+                                <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(l)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+                              </TableRow>
+                            ))}
+                            {tabLeases.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">No exempted leases found.</TableCell></TableRow>}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            );
+          })}
+        </Tabs>
+      </div>
+      <Dialog open={!!editRow} onOpenChange={() => setEditRow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Update Exemption Status</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="p-3 bg-muted/30 rounded text-sm">
+              <span className="text-muted-foreground">Lease: </span>
+              <span className="font-semibold">{String(editRow?.contract_ref ?? '')} — {String(editRow?.asset_description ?? '')}</span>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Exemption Type</Label>
+              <Select value={editType} onValueChange={v => setEditType(v as 'None' | 'ShortTerm' | 'LowValue')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="None">No Exemption (capitalise under IFRS 16)</SelectItem>
+                  <SelectItem value="ShortTerm">Short-term (lease term ≤12 months)</SelectItem>
+                  <SelectItem value="LowValue">Low-value (asset value &lt; USD 5,000)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Reason / Justification</Label>
+              <Textarea value={editReason} onChange={e => setEditReason(e.target.value)} placeholder="e.g. Month-to-month IT equipment, asset value USD 800..." rows={3} />
+            </div>
+            {editType !== 'None' && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300">
+                This lease will be excluded from the IFRS 16 balance sheet. Payments expensed straight-line per IFRS 16 Para 6.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button>
+            <Button onClick={submitEdit} disabled={updateMut.isPending}>
+              {updateMut.isPending ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : null}
+              Save Exemption
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

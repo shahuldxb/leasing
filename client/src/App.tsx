@@ -146,6 +146,10 @@ import IAS17Comparison from "./pages/IAS17Comparison";
 import FXRevaluation   from "./pages/FXRevaluation";
 import LeaseTransactionCentre from "./pages/LeaseTransactionCentre";
 
+// Phase 6 — IFRS Financial Statements
+import FinancialStatements   from "./pages/FinancialStatements";
+import TrialBalance          from "./pages/TrialBalance";
+
 function Router() {
   return (
     <Switch>

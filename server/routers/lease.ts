@@ -876,4 +876,121 @@ export const leaseRouter = router({
         postings: (results[1] ?? []) as Array<Record<string, unknown>>,
       };
     }),
+
+  // ── FEATURE 8: FINANCIAL STATEMENTS (IAS 1) ─────────────────────────────────
+  getBalanceSheet: protectedProcedure
+    .input(z.object({ periodEnd: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLACCFNST0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetBalanceSheet', [
+          { name: 'PeriodEnd', type: sql.Date, value: new Date(input.periodEnd) },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Accounting Engine', subModule: 'Financial Reporting', actionType: 'VIEW_BALANCE_SHEET', screenId, outcome: 'Success', processStartTime: t0 });
+        return { lines: (results[0] ?? []) as Array<Record<string, unknown>>, summary: (results[1]?.[0] ?? {}) as Record<string, unknown> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Accounting Engine', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  getIncomeStatement: protectedProcedure
+    .input(z.object({ periodStart: z.string(), periodEnd: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLACCFNST0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetIncomeStatement', [
+          { name: 'PeriodStart', type: sql.Date, value: new Date(input.periodStart) },
+          { name: 'PeriodEnd',   type: sql.Date, value: new Date(input.periodEnd) },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Accounting Engine', subModule: 'Financial Reporting', actionType: 'VIEW_INCOME_STATEMENT', screenId, outcome: 'Success', processStartTime: t0 });
+        return { lines: (results[0] ?? []) as Array<Record<string, unknown>>, summary: (results[1]?.[0] ?? {}) as Record<string, unknown> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Accounting Engine', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  getCashFlowStatement: protectedProcedure
+    .input(z.object({ periodStart: z.string(), periodEnd: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLACCFNST0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetCashFlowStatement', [
+          { name: 'PeriodStart', type: sql.Date, value: new Date(input.periodStart) },
+          { name: 'PeriodEnd',   type: sql.Date, value: new Date(input.periodEnd) },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Accounting Engine', subModule: 'Financial Reporting', actionType: 'VIEW_CASH_FLOW', screenId, outcome: 'Success', processStartTime: t0 });
+        return { lines: (results[0] ?? []) as Array<Record<string, unknown>>, summary: (results[1]?.[0] ?? {}) as Record<string, unknown> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Accounting Engine', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  // ── FEATURE 9: ROLL-FORWARD (IFRS 16 Para 53) ────────────────────────────────
+  getROURollForward: protectedProcedure
+    .input(z.object({ periodStart: z.string(), periodEnd: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLACCRLFW0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetROURollForward', [
+          { name: 'PeriodStart', type: sql.Date, value: new Date(input.periodStart) },
+          { name: 'PeriodEnd',   type: sql.Date, value: new Date(input.periodEnd) },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Accounting Engine', subModule: 'Financial Reporting', actionType: 'VIEW_ROU_ROLLFORWARD', screenId, outcome: 'Success', processStartTime: t0 });
+        return { movements: (results[0] ?? []) as Array<Record<string, unknown>>, summary: (results[1]?.[0] ?? {}) as Record<string, unknown> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Accounting Engine', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  getLiabilityRollForward: protectedProcedure
+    .input(z.object({ periodStart: z.string(), periodEnd: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLACCRLFW0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetLiabilityRollForward', [
+          { name: 'PeriodStart', type: sql.Date, value: new Date(input.periodStart) },
+          { name: 'PeriodEnd',   type: sql.Date, value: new Date(input.periodEnd) },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Accounting Engine', subModule: 'Financial Reporting', actionType: 'VIEW_LIABILITY_ROLLFORWARD', screenId, outcome: 'Success', processStartTime: t0 });
+        return { movements: (results[0] ?? []) as Array<Record<string, unknown>>, summary: (results[1]?.[0] ?? {}) as Record<string, unknown> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Accounting Engine', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  // ── FEATURE 10: TRIAL BALANCE (IAS 1) ───────────────────────────────────────
+  getTrialBalance: protectedProcedure
+    .input(z.object({ periodEnd: z.string(), accountClass: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLACCTBAL0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetTrialBalance', [
+          { name: 'PeriodEnd', type: sql.Date, value: new Date(input.periodEnd) },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Accounting Engine', subModule: 'Financial Reporting', actionType: 'VIEW_TRIAL_BALANCE', screenId, outcome: 'Success', processStartTime: t0 });
+        let lines = (results[0] ?? []) as Array<Record<string, unknown>>;
+        if (input.accountClass && input.accountClass !== 'All') lines = lines.filter(l => l.account_class === input.accountClass);
+        return { lines, totals: (results[1]?.[0] ?? {}) as Record<string, unknown> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Accounting Engine', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  // ── FEATURE 11: EXEMPTION REGISTER (IFRS 16 Para 5) ─────────────────────────
+  getExemptionRegister: protectedProcedure
+    .input(z.object({ exemptionType: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLLSEEXRG0001P001';
+      try {
+        const results = await execSPPMulti('sp_GetExemptionRegister', [
+          { name: 'ExemptionType', type: sql.VarChar(20), value: input.exemptionType || null },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Lease Management', subModule: 'Exemptions', actionType: 'VIEW_EXEMPTION_REGISTER', screenId, outcome: 'Success', processStartTime: t0 });
+        return { leases: (results[0] ?? []) as Array<Record<string, unknown>>, summary: (results[1] ?? []) as Array<Record<string, unknown>> };
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  updateLeaseExemption: protectedProcedure
+    .input(z.object({ contractId: z.number(), exemptionType: z.enum(['None', 'ShortTerm', 'LowValue']), exemptionReason: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLLSEEXRG0001P001';
+      try {
+        const result = await execSPPOne<Record<string, unknown>>('sp_UpdateLeaseExemption', [
+          { name: 'ContractId',      type: sql.Int,           value: input.contractId },
+          { name: 'ExemptionType',   type: sql.VarChar(20),   value: input.exemptionType },
+          { name: 'ExemptionReason', type: sql.NVarChar(500), value: input.exemptionReason || null },
+          { name: 'UpdatedBy',       type: sql.NVarChar(200), value: ctx.user.name ?? '' },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Lease Management', subModule: 'Exemptions', actionType: 'UPDATE_EXEMPTION', screenId, recordTable: 'lease.contracts', recordId: String(input.contractId), afterState: { exemptionType: input.exemptionType, exemptionReason: input.exemptionReason }, outcome: 'Success', processStartTime: t0 });
+        return result;
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
 });
