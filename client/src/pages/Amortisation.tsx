@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -165,13 +166,14 @@ function getYears(rows: ScheduleRow[]) {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function Amortisation() {
+  const [, navigate] = useLocation();
   const currentYear = new Date().getFullYear();
   const [year, setYear]         = useState<number>(currentYear);
   const [viewMode, setViewMode] = useState<"monthly" | "yearly">("monthly");
   const [expandedContracts, setExpandedContracts] = useState<Set<number>>(new Set());
   const [expandedPeriods, setExpandedPeriods]     = useState<Set<string>>(new Set());
   const [showGuide, setShowGuide]                 = useState(false);
-  const [showBlackboard, setShowBlackboard]       = useState(false);
+  const [blackboardRow, setBlackboardRow]         = useState<ScheduleRow | null>(null);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
@@ -401,9 +403,17 @@ export default function Amortisation() {
                           onClick={() => toggleContract(meta.contract_id)}
                         >
                           <TableCell className="py-2.5 px-2">
-                            {isOpen
-                              ? <ChevronDown className="w-4 h-4 text-[#e60000]" />
-                              : <ChevronRight className="w-4 h-4 text-[#e60000]" />}
+                            <div className="flex items-center gap-1">
+                              {isOpen
+                                ? <ChevronDown className="w-4 h-4 text-[#e60000]" />
+                                : <ChevronRight className="w-4 h-4 text-[#e60000]" />}
+                              <button
+                                onClick={e => { e.stopPropagation(); navigate(`/leases/amortisation/blackboard?contractId=${meta.contract_id}`); }}
+                                title="Show step-by-step calculation"
+                                className="flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold transition-all hover:scale-110 active:scale-95"
+                                style={{ background: "#0f2e0f", border: "1px solid #4ade80", color: "#4ade80", lineHeight: 1 }}
+                              >&#x1F4D0;</button>
+                            </div>
                           </TableCell>
                           <TableCell className="py-2.5">
                             <div className="flex items-center gap-2">
@@ -548,9 +558,17 @@ export default function Amortisation() {
                           onClick={() => togglePeriod(key)}
                         >
                           <TableCell className="py-2.5 px-2">
-                            {isOpen
-                              ? <ChevronDown className="w-4 h-4 text-[#e60000]" />
-                              : <ChevronRight className="w-4 h-4 text-[#e60000]" />}
+                            <div className="flex items-center gap-1">
+                              {isOpen
+                                ? <ChevronDown className="w-4 h-4 text-[#e60000]" />
+                                : <ChevronRight className="w-4 h-4 text-[#e60000]" />}
+                              <button
+                                onClick={e => { e.stopPropagation(); navigate(`/leases/amortisation/blackboard`); }}
+                                title="Show step-by-step calculation"
+                                className="flex items-center justify-center w-5 h-5 rounded text-[11px] font-bold transition-all hover:scale-110 active:scale-95"
+                                style={{ background: "#0f2e0f", border: "1px solid #4ade80", color: "#4ade80", lineHeight: 1 }}
+                              >&#x1F4D0;</button>
+                            </div>
                           </TableCell>
                           <TableCell className="py-2.5 font-semibold text-sm">{period.label}</TableCell>
                           <TableCell className="py-2.5 text-xs text-muted-foreground">{period.rows.length} entries</TableCell>
@@ -753,21 +771,9 @@ export default function Amortisation() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Floating Blackboard Button ─────────────────────────────── */}
-      <button
-        onClick={() => setShowBlackboard(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-2xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
-        style={{ background: "#1a1a2e", border: "2px solid #4ade80", color: "#4ade80", fontFamily: "'Courier New', monospace" }}
-        title="Show blackboard calculation"
-      >
-        <span style={{ fontSize: "1.1rem" }}>&#x1F4D0;</span>
-        Show Calculation
-      </button>
-
       {/* ── Blackboard Calculation Modal ──────────────────────────── */}
-      {showBlackboard && (() => {
-        const ex = grouped[0]?.rows[0];
-        if (!ex) return null;
+      {blackboardRow && (() => {
+        const ex = blackboardRow;
         const PMT  = ex.monthly_payment;
         const IBR  = ex.ibr;
         const N    = ex.term_months;
@@ -784,7 +790,7 @@ export default function Amortisation() {
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: "rgba(0,0,0,0.85)" }}
-            onClick={() => setShowBlackboard(false)}
+            onClick={() => setBlackboardRow(null)}
           >
             <div
               className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-xl shadow-2xl"
@@ -806,7 +812,7 @@ export default function Amortisation() {
                   <div className="text-lg font-bold" style={{ color: "#4ade80", textShadow: "0 0 8px rgba(74,222,128,0.5)" }}>IFRS 16 — Amortisation Calculation</div>
                   <div className="text-xs mt-0.5" style={{ color: "rgba(74,222,128,0.6)" }}>Using: {ex.contract_ref} · Month 1 ({ex.month_name} {ex.period_year})</div>
                 </div>
-                <button onClick={() => setShowBlackboard(false)} style={{ color: "rgba(74,222,128,0.7)", fontSize: "1.4rem", lineHeight: 1 }}>&times;</button>
+                <button onClick={() => setBlackboardRow(null)} style={{ color: "rgba(74,222,128,0.7)", fontSize: "1.4rem", lineHeight: 1 }}>&times;</button>
               </div>
 
               <div className="relative px-6 py-5 space-y-6">

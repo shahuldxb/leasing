@@ -11,7 +11,8 @@ import Dashboard          from "./pages/Dashboard";
 // Lease Management
 import LeaseRegister      from "./pages/LeaseRegister";
 import NewLease           from "./pages/NewLease";
-import Amortisation       from "./pages/Amortisation";
+import Amortisation           from "./pages/Amortisation";
+import AmortisationBlackboard from "./pages/AmortisationBlackboard";
 import LeaseRenewals      from "./pages/LeaseRenewals";
 import LeaseModifications from "./pages/LeaseModifications";
 import LeaseTerminations  from "./pages/LeaseTerminations";
@@ -147,7 +148,8 @@ function Router() {
       {/* Lease Management */}
       <Route path="/leases"                  component={LeaseRegister} />
       <Route path="/leases/new"              component={NewLease} />
-      <Route path="/leases/amortisation"     component={Amortisation} />
+      <Route path="/leases/amortisation"                component={Amortisation} />
+      <Route path="/leases/amortisation/blackboard"     component={AmortisationBlackboard} />
       <Route path="/leases/renewals"         component={LeaseRenewals} />
       <Route path="/leases/modifications"    component={LeaseModifications} />
       <Route path="/leases/terminations"     component={LeaseTerminations} />
