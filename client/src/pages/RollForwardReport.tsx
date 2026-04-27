@@ -143,8 +143,8 @@ export default function RollForwardReport() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map((r: any) => (
-                      <TableRow key={r.contract_id}>
+                    {rows.map((r: any, idx: number) => (
+                      <TableRow key={`${r.contract_id}-${idx}`}>
                         <TableCell className="font-mono text-xs">{r.contract_ref}</TableCell>
                         <TableCell className="max-w-[140px] truncate text-sm">{r.asset_description}</TableCell>
                         <TableCell className="text-right font-mono text-xs">{fmt(r.opening_balance)}</TableCell>

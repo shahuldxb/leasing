@@ -151,9 +151,9 @@ export const aiAbstractionRouter = router({
   history: protectedProcedure.query(async () => {
     const pool = await getPool();
     const r = await pool.request().query(`
-      SELECT TOP 20 a.*, u.name AS abstracted_by_name
+      SELECT TOP 20 a.*, u.username AS abstracted_by_name
       FROM lease.ai_abstractions a
-      LEFT JOIN users u ON u.id = a.created_by
+      LEFT JOIN security.users u ON u.user_id = a.created_by
       ORDER BY a.created_at DESC
     `);
     return r.recordset;
@@ -285,9 +285,9 @@ export const reportBuilderRouter = router({
   savedReports: protectedProcedure.query(async () => {
     const pool = await getPool();
     const r = await pool.request().query(`
-      SELECT rb.*, u.name AS created_by_name
+      SELECT rb.*, u.username AS created_by_name
       FROM reporting.saved_reports rb
-      LEFT JOIN users u ON u.id = rb.created_by
+      LEFT JOIN security.users u ON u.user_id = rb.created_by
       ORDER BY rb.created_at DESC
     `);
     return r.recordset;
@@ -391,9 +391,9 @@ export const scenarioRouter = router({
   list: protectedProcedure.query(async () => {
     const pool = await getPool();
     const r = await pool.request().query(`
-      SELECT s.*, u.name AS created_by_name
+      SELECT s.*, u.username AS created_by_name
       FROM finance.scenarios s
-      LEFT JOIN users u ON u.id = s.created_by
+      LEFT JOIN security.users u ON u.user_id = s.created_by
       ORDER BY s.created_at DESC
     `);
     return r.recordset;
@@ -500,7 +500,7 @@ export const leaseOriginationRouter = router({
   list: protectedProcedure.query(async () => {
     const pool = await getPool();
     const r = await pool.request().query(`
-      SELECT lo.*, u.name AS requestor_name
+      SELECT lo.*, u.username AS requestor_name
       FROM lease.lease_origination lo
       LEFT JOIN security.users u ON u.user_id=lo.requestor_id
       ORDER BY lo.created_at DESC
@@ -1076,7 +1076,7 @@ export const scheduledReportsRouter = router({
   list: protectedProcedure.query(async () => {
     const pool = await getPool();
     const r = await pool.request().query(`
-      SELECT sr.*, u.name AS created_by_name
+      SELECT sr.*, u.username AS created_by_name
       FROM lease.scheduled_reports sr
       LEFT JOIN security.users u ON u.user_id=sr.created_by
       ORDER BY sr.next_run_at

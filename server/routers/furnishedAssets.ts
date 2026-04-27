@@ -322,10 +322,10 @@ export const assetDepositRouter = router({
       const r = await pool.request()
         .input("id", input.deposit_id)
         .query(`
-          SELECT dd.*, fa.asset_name, fa.asset_category, u.name AS approved_by_name
+          SELECT dd.*, fa.asset_name, fa.asset_category, u.username AS approved_by_name
           FROM lease.asset_deposit_deductions dd
           LEFT JOIN lease.furnished_assets fa ON fa.asset_id = dd.asset_id
-          LEFT JOIN users u ON u.id = dd.approved_by
+          LEFT JOIN security.users u ON u.user_id = dd.approved_by
           WHERE dd.deposit_id = @id
           ORDER BY dd.created_at DESC
         `);
@@ -345,11 +345,11 @@ export const handoverChecklistRouter = router({
       const r = await pool.request()
         .input("cid", input.contract_id)
         .query(`
-          SELECT hc.*, u.name AS conducted_by_name,
+          SELECT hc.*, u.username AS conducted_by_name,
                  (SELECT COUNT(*) FROM lease.asset_checklist_items ci WHERE ci.checklist_id = hc.checklist_id) AS item_count,
                  (SELECT SUM(ISNULL(repair_cost_estimate,0)) FROM lease.asset_checklist_items ci WHERE ci.checklist_id = hc.checklist_id AND ci.deduct_from_deposit = 1) AS total_deduction_estimate
           FROM lease.asset_handover_checklists hc
-          LEFT JOIN users u ON u.id = hc.conducted_by
+          LEFT JOIN security.users u ON u.user_id = hc.conducted_by
           WHERE hc.contract_id = @cid
           ORDER BY hc.conducted_date DESC
         `);
@@ -368,12 +368,12 @@ export const handoverChecklistRouter = router({
         .input("signed", input.signed_off !== undefined ? (input.signed_off ? 1 : 0) : null)
         .query(`
           SELECT hc.*, c.contract_ref, c.asset_description AS property_name,
-                 u.name AS conducted_by_name,
+                 u.username AS conducted_by_name,
                  (SELECT COUNT(*) FROM lease.asset_checklist_items ci WHERE ci.checklist_id = hc.checklist_id) AS item_count,
                  (SELECT SUM(ISNULL(repair_cost_estimate,0)) FROM lease.asset_checklist_items ci WHERE ci.checklist_id = hc.checklist_id AND ci.deduct_from_deposit = 1) AS total_deduction_estimate
           FROM lease.asset_handover_checklists hc
           JOIN lease.contracts c ON c.contract_id = hc.contract_id
-          LEFT JOIN users u ON u.id = hc.conducted_by
+          LEFT JOIN security.users u ON u.user_id = hc.conducted_by
           WHERE (@type IS NULL OR hc.checklist_type = @type)
             AND (@signed IS NULL OR hc.signed_off = @signed)
           ORDER BY hc.conducted_date DESC
