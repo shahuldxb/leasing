@@ -751,6 +751,42 @@ const maturityLadderRouter = router({
     }),
 });
 
+// ─── Feature 15: Multi-Standard Comparison ───────────────────────────────────
+const multiStandardRouter = router({
+  compare: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      periodStart: z.string().optional(),
+      periodEnd: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const r = await pool.request()
+        .input('ContractId',  input.contractId)
+        .input('PeriodStart', input.periodStart ? new Date(input.periodStart) : null)
+        .input('PeriodEnd',   input.periodEnd   ? new Date(input.periodEnd)   : null)
+        .execute('lease.sp_GetMultiStandardComparison');
+      const sets = r.recordsets as Array<Array<Record<string, unknown>>>;
+      return {
+        rows:    sets[0] ?? [],
+        summary: sets[1]?.[0] ?? {},
+      };
+    }),
+  portfolioSummary: protectedProcedure
+    .input(z.object({
+      periodStart: z.string().optional(),
+      periodEnd:   z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const r = await pool.request()
+        .input('PeriodStart', input.periodStart ? new Date(input.periodStart) : null)
+        .input('PeriodEnd',   input.periodEnd   ? new Date(input.periodEnd)   : null)
+        .execute('lease.sp_GetStandardSummary');
+      return { rows: (r.recordset ?? []) as Array<Record<string, unknown>> };
+    }),
+});
+
 // ─── Main accounting router ───────────────────────────────────────────────────
 export const accountingRouter = router({
   ibr: ibrRouter,
@@ -765,4 +801,5 @@ export const accountingRouter = router({
   disclosurePack: disclosurePackRouter,
   budgetVsActual: budgetVsActualRouter,
   maturityLadder: maturityLadderRouter,
+  multiStandard: multiStandardRouter,
 });

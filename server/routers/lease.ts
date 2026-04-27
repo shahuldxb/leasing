@@ -993,4 +993,59 @@ export const leaseRouter = router({
         return result;
       } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
     }),
+
+  // ── FEATURE 17: Lease Modifications ─────────────────────────────────────────
+  getLeaseModifications: protectedProcedure
+    .input(z.object({ contractId: z.number().optional(), status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const screenId = 'VFLLSMOD0001P001';
+      try {
+        return await execSPP('lease.sp_GetLeaseModifications', [
+          { name: 'ContractId', type: sql.Int,          value: input.contractId ?? null },
+          { name: 'Status',     type: sql.NVarChar(20), value: input.status ?? null },
+        ]);
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  createLeaseModification: protectedProcedure
+    .input(z.object({
+      contractId:        z.number(),
+      modificationDate:  z.string(),
+      modificationType:  z.enum(['extension', 'payment_change', 'scope_change', 'termination']),
+      newIBR:            z.number().optional(),
+      newTermEnd:        z.string().optional(),
+      newMonthlyPayment: z.number().optional(),
+      notes:             z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLLSMOD0001P001';
+      try {
+        const result = await execSPPOne<Record<string, unknown>>('lease.sp_CreateLeaseModification', [
+          { name: 'ContractId',        type: sql.Int,            value: input.contractId },
+          { name: 'ModificationDate',  type: sql.Date,           value: new Date(input.modificationDate) },
+          { name: 'ModificationType',  type: sql.NVarChar(50),   value: input.modificationType },
+          { name: 'NewIBR',            type: sql.Decimal(10, 6), value: input.newIBR ?? null },
+          { name: 'NewTermEnd',        type: sql.Date,           value: input.newTermEnd ? new Date(input.newTermEnd) : null },
+          { name: 'NewMonthlyPayment', type: sql.Decimal(18, 2), value: input.newMonthlyPayment ?? null },
+          { name: 'Notes',             type: sql.NVarChar(1000), value: input.notes ?? null },
+          { name: 'CreatedBy',         type: sql.Int,            value: ctx.user.id },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Lease Management', subModule: 'Modifications', actionType: 'CREATE_MODIFICATION', screenId, recordTable: 'lease.lease_modifications', recordId: String(input.contractId), afterState: input, outcome: 'Success', processStartTime: t0 });
+        return result;
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
+
+  applyLeaseModification: protectedProcedure
+    .input(z.object({ modificationId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const t0 = new Date(); const screenId = 'VFLLSMOD0001P001';
+      try {
+        const result = await execSPPOne<Record<string, unknown>>('lease.sp_ApplyLeaseModification', [
+          { name: 'ModificationId', type: sql.Int, value: input.modificationId },
+          { name: 'ApprovedBy',     type: sql.Int, value: ctx.user.id },
+        ]);
+        await writeAuditLog({ userId: ctx.user.id, username: ctx.user.name ?? '', userRole: ctx.user.role ?? 'user', module: 'Lease Management', subModule: 'Modifications', actionType: 'APPLY_MODIFICATION', screenId, recordTable: 'lease.lease_modifications', recordId: String(input.modificationId), afterState: { modificationId: input.modificationId, status: 'applied' }, outcome: 'Success', processStartTime: t0 });
+        return result;
+      } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
+    }),
 });

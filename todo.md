@@ -1208,3 +1208,28 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Alt+3 panel: shows computation techniques (Effective Interest Method, Straight-Line Depreciation, IBR-based PV, etc.) with formula hints
 - [x] Wire AltKeyOverlay into DashboardLayout so it is available on all authenticated screens
 - [x] Add keyboard shortcut hint in footer or help tooltip (Alt+1 = SPs/Tables, Alt+2 = Standards, Alt+3 = Techniques)
+
+## Feature 15 — Multi-Standard Parallel Computation (IFRS 16 vs ASC 842 vs IPSAS 43)
+- [ ] Create lease.sp_GetMultiStandardComparison SP (computes ROU asset, lease liability, depreciation, interest, P&L impact for a single lease under IFRS 16, ASC 842, and IPSAS 43 simultaneously; returns side-by-side rows per period)
+- [ ] Create lease.sp_GetStandardSummary SP (aggregate totals per standard: total ROU, total liability, total P&L impact)
+- [ ] Add tRPC procedures: getMultiStandardComparison, getStandardSummary
+- [ ] Build MultiStandardComparison.tsx page with: lease selector, period range, side-by-side comparison table (IFRS 16 | ASC 842 | IPSAS 43), difference columns, grouped bar chart
+- [ ] Add standard-specific notes panel (key differences: operating lease P&L for ASC 842, single-model for IFRS 16/IPSAS 43)
+- [ ] Register screen ID VFLMULSTD0001P001 in security.screen_registry with metadata
+- [ ] Register route /accounting/multi-standard in App.tsx
+- [ ] Add Multi-Standard nav link under Accounting Engine in sidebar
+- [ ] Vitest tests for getMultiStandardComparison, getStandardSummary
+
+## Feature 17 — Lease Modification Wizard
+- [ ] Create lease.lease_modifications table (modification_id, contract_id, modification_date, modification_type, old_ibr, new_ibr, old_term_end, new_term_end, old_payment, new_payment, old_rou_nbv, new_rou_nbv, old_liability, new_liability, remeasurement_gain_loss, status, created_by, created_at, approved_by, approved_at)
+- [ ] Create lease.sp_GetLeaseModifications SP (list all modifications for a contract)
+- [ ] Create lease.sp_CreateLeaseModification SP (validate inputs, compute remeasurement: new PV of revised cash flows at new IBR, delta ROU and liability, gain/loss; insert into lease_modifications as draft)
+- [ ] Create lease.sp_ApplyLeaseModification SP (on approval: update lease.contracts with new terms, regenerate amortisation schedule, post remeasurement GL journals)
+- [ ] Add tRPC procedures: getLeaseModifications, createLeaseModification, applyLeaseModification
+- [ ] Build LeaseModificationWizard.tsx: 4-step wizard (Step 1: select lease + modification type; Step 2: enter new terms IBR/payment/end date; Step 3: review remeasurement impact table; Step 4: confirm and generate GL journals)
+- [ ] Show before/after comparison on Step 3: old vs new ROU, liability, P&L impact
+- [ ] Auto-generate remeasurement GL journal entries on Step 4 approval
+- [ ] Register screen ID VFLLSMOD0001P001 in security.screen_registry with metadata
+- [ ] Register route /leases/modification-wizard in App.tsx
+- [ ] Add Lease Modification nav link under Contracts in sidebar
+- [ ] Vitest tests for getLeaseModifications, createLeaseModification, applyLeaseModification

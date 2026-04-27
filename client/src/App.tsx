@@ -150,9 +150,12 @@ import LeaseTransactionCentre from "./pages/LeaseTransactionCentre";
 import FinancialStatements   from "./pages/FinancialStatements";
 import TrialBalance          from "./pages/TrialBalance";
 // Phase 7 — Features 12, 13, 14
-import DisclosurePack        from "./pages/DisclosurePack";
-import BudgetVsActual        from "./pages/BudgetVsActual";
-import MaturityLadder        from "./pages/MaturityLadder";
+import DisclosurePack            from "./pages/DisclosurePack";
+import BudgetVsActual            from "./pages/BudgetVsActual";
+import MaturityLadder            from "./pages/MaturityLadder";
+// Phase 8 — Features 15, 17
+import MultiStandardComparison   from "./pages/MultiStandardComparison";
+import LeaseModificationWizard   from "./pages/LeaseModificationWizard";
 
 function Router() {
   return (
@@ -319,6 +322,9 @@ function Router() {
       <Route path="/accounting/disclosure-pack"   component={DisclosurePack} />
       <Route path="/accounting/budget-vs-actual"  component={BudgetVsActual} />
       <Route path="/accounting/maturity-ladder"   component={MaturityLadder} />
+      {/* Phase 8: Features 15, 17 */}
+      <Route path="/accounting/multi-standard"    component={MultiStandardComparison} />
+      <Route path="/leases/modification-wizard"   component={LeaseModificationWizard} />
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />
       <Route                                 component={NotFound} />
