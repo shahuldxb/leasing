@@ -3,7 +3,7 @@
  * Layout: full-width page, lease selector as top-bar dropdown,
  * all tabs use the entire remaining screen space.
  */
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, Fragment } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -144,9 +144,22 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
   const { data: lease, isLoading: leaseLoading } = trpc.lease.getLeaseById.useQuery({ contractId });
   const { data: lessee, isLoading: lesseeLoading } = trpc.lease.getLesseeDetails.useQuery({ contractId });
   const { data: subAssets = [], isLoading: subLoading } = trpc.lease.getSubAssetsByContractId.useQuery({ contractId });
-  const { data: assetGroups = [], isLoading: groupsLoading } = trpc.asset.getSubAssetGroups.useQuery();
-
-  // Attach modal state
+  const [showAllGroups, setShowAllGroups] = React.useState(false);
+  const [attachOpenForQuery, setAttachOpenForQuery] = React.useState(false);
+  const lessorId = lease ? (lease as Record<string, any>).lessor_id as number | undefined : undefined;
+  const { data: assetGroups = [], isLoading: groupsLoading } = trpc.asset.getSubAssetGroupsByLessor.useQuery(
+    { lessorId: showAllGroups ? undefined : lessorId },
+    { enabled: attachOpenForQuery }
+  );
+  // Expand row state (tags/serials detail)
+  const [expandedRow, setExpandedRow] = React.useState<number | null>(null);
+  // Transaction log modal state
+  const [txnLogTarget, setTxnLogTarget] = React.useState<{ id: number; code: string } | null>(null);
+  const { data: txnLog, isLoading: txnLogLoading } = trpc.asset.getSubAssetTxns.useQuery(
+    { entityId: txnLogTarget?.id, entityType: 'LEASE_SUB_ASSET', pageSize: 50 },
+    { enabled: !!txnLogTarget }
+  );
+  // Attach modal statee
   const [attachOpen, setAttachOpen] = React.useState(false);
   const [groupSearch, setGroupSearch] = React.useState('');
   const [selectedGroup, setSelectedGroup] = React.useState<{ assetId: number; assetCode: string; setName: string } | null>(null);
@@ -282,8 +295,8 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
               <p className="text-sm font-semibold">Sub-Assets</p>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0">{subAssets.length}</Badge>
             </div>
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setAttachOpen(true)}>
-              <Hash className="w-3 h-3" /> Attach Sub-Asset
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => { setAttachOpen(true); setAttachOpenForQuery(true); }}>
+            <Layers className="w-3 h-3" /> Attach Sub-Asset
             </Button>
           </div>
 
@@ -293,7 +306,7 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
             <div className="flex flex-col items-center justify-center py-10 rounded-lg border border-dashed border-border gap-3">
               <Layers className="w-8 h-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">No sub-assets attached to this lease yet.</p>
-              <Button size="sm" onClick={() => setAttachOpen(true)} className="gap-1.5">
+              <Button size="sm" onClick={() => { setAttachOpen(true); setAttachOpenForQuery(true); }} className="gap-1.5">
                 <Hash className="w-3.5 h-3.5" /> Attach Sub-Asset
               </Button>
             </div>
@@ -302,6 +315,7 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
               <table className="w-full text-xs">
                 <thead className="bg-muted/40">
                   <tr>
+                    <th className="w-6 px-2 py-2.5" />
                     <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Asset Code</th>
                     <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Set Name</th>
                     <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Tags / Serials</th>
@@ -313,28 +327,86 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {subAssets.map((sa) => (
-                    <tr key={sa.leaseSubAssetId} className="border-t border-border hover:bg-muted/20 transition-colors">
-                      <td className="px-3 py-2.5 font-mono text-primary font-medium">{sa.assetCode}</td>
-                      <td className="px-3 py-2.5 font-medium">{sa.setName}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground max-w-[160px] truncate" title={sa.tagsWithSerials || ''}>{sa.tagsWithSerials || '—'}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${SA_STATUS_CLS[sa.status] ?? 'bg-muted text-muted-foreground'}`}>{sa.status}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{sa.statusDate ? fmtDate(sa.statusDate) : '—'}</td>
-                      <td className="px-3 py-2.5">{sa.owner || '—'}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground max-w-[180px] truncate" title={sa.notes || ''}>{sa.notes || '—'}</td>
-                      <td className="px-3 py-2.5">
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => {
-                          setStatusTarget({ id: sa.leaseSubAssetId, code: sa.assetCode, current: sa.status });
-                          setNewStatus(sa.status as typeof newStatus);
-                          setStatusReason('');
-                          setStatusNotes('');
-                          setStatusOpen(true);
-                        }}>Change Status</Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {subAssets.map((sa) => {
+                    const isExpanded = expandedRow === sa.leaseSubAssetId;
+                    let parsedTags: Array<{ code?: string; name?: string; category?: string; quantity?: number; serial?: string }> = [];
+                    try { parsedTags = JSON.parse(sa.tagsWithSerials || '[]'); } catch { parsedTags = []; }
+                    const hasTags = parsedTags.length > 0;
+                    return (
+                      <Fragment key={sa.leaseSubAssetId}>
+                        <tr className="border-t border-border hover:bg-muted/20 transition-colors">
+                          <td className="px-2 py-2.5">
+                            <button
+                              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                              onClick={() => setExpandedRow(isExpanded ? null : sa.leaseSubAssetId)}
+                              title={hasTags ? (isExpanded ? 'Collapse' : 'Expand tags/serials') : 'No items'}
+                              disabled={!hasTags}
+                            >
+                              {hasTags ? (isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />) : <span className="text-[10px]">—</span>}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2.5 font-mono text-primary font-medium">{sa.assetCode}</td>
+                          <td className="px-3 py-2.5 font-medium">{sa.setName}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground">
+                            {hasTags ? (
+                              <button className="underline underline-offset-2 text-primary/80 hover:text-primary" onClick={() => setExpandedRow(isExpanded ? null : sa.leaseSubAssetId)}>
+                                {parsedTags.length} item{parsedTags.length !== 1 ? 's' : ''}
+                              </button>
+                            ) : <span className="text-muted-foreground/50">—</span>}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${SA_STATUS_CLS[sa.status] ?? 'bg-muted text-muted-foreground'}`}>{sa.status}</Badge>
+                          </td>
+                          <td className="px-3 py-2.5 text-muted-foreground">{sa.statusDate ? fmtDate(sa.statusDate) : '—'}</td>
+                          <td className="px-3 py-2.5">{sa.owner || '—'}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground max-w-[140px] truncate" title={sa.notes || ''}>{sa.notes || '—'}</td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-1">
+                              <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => {
+                                setStatusTarget({ id: sa.leaseSubAssetId, code: sa.assetCode, current: sa.status });
+                                setNewStatus(sa.status as typeof newStatus);
+                                setStatusReason('');
+                                setStatusNotes('');
+                                setStatusOpen(true);
+                              }}>Status</Button>
+                              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-muted-foreground" onClick={() => setTxnLogTarget({ id: sa.leaseSubAssetId, code: sa.assetCode })}>
+                                History
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && hasTags && (
+                          <tr className="border-t border-border bg-muted/10">
+                            <td colSpan={9} className="px-6 py-3">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold mb-2">Tags / Serials Detail — {sa.assetCode}</p>
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="text-muted-foreground">
+                                    <th className="text-left pr-4 pb-1 font-semibold">Code</th>
+                                    <th className="text-left pr-4 pb-1 font-semibold">Name</th>
+                                    <th className="text-left pr-4 pb-1 font-semibold">Category</th>
+                                    <th className="text-left pr-4 pb-1 font-semibold">Qty</th>
+                                    <th className="text-left pb-1 font-semibold">Serial / Tag</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {parsedTags.map((item, idx) => (
+                                    <tr key={idx} className="border-t border-border/40">
+                                      <td className="pr-4 py-1 font-mono text-primary">{item.code || '—'}</td>
+                                      <td className="pr-4 py-1">{item.name || '—'}</td>
+                                      <td className="pr-4 py-1 text-muted-foreground">{item.category || '—'}</td>
+                                      <td className="pr-4 py-1">{item.quantity ?? '—'}</td>
+                                      <td className="py-1 font-mono text-xs text-amber-400">{item.serial || '—'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -346,9 +418,30 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
       <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-amber-400" /> Attach Sub-Asset to Lease
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-amber-400" /> Attach Sub-Asset to Lease
+              </DialogTitle>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Show:</span>
+                <button
+                  className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${
+                    !showAllGroups ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted/30'
+                  }`}
+                  onClick={() => setShowAllGroups(false)}
+                >
+                  Lessor Only
+                </button>
+                <button
+                  className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${
+                    showAllGroups ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted/30'
+                  }`}
+                  onClick={() => setShowAllGroups(true)}
+                >
+                  All Assets
+                </button>
+              </div>
+            </div>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -477,6 +570,59 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
         </DialogContent>
       </Dialog>
 
+      {/* ── TRANSACTION LOG MODAL ── */}
+      <Dialog open={!!txnLogTarget} onOpenChange={(v) => { if (!v) setTxnLogTarget(null); }}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-blue-400" />
+              Sub-Asset History — <span className="font-mono text-primary">{txnLogTarget?.code}</span>
+            </DialogTitle>
+          </DialogHeader>
+          {txnLogLoading ? (
+            <p className="text-sm text-muted-foreground animate-pulse py-6 text-center">Loading history…</p>
+          ) : !txnLog || txnLog.rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No transaction history found for this sub-asset.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40">
+                  <tr>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Date</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Action</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Status / Change</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Entity</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">By</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Session Ref</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {txnLog.rows.map((row, idx: number) => (
+                    <tr key={idx} className="border-t border-border hover:bg-muted/10">
+                      <td className="px-3 py-2.5 text-muted-foreground">{row.changedAt ? fmtDate(row.changedAt) : '—'}</td>
+                      <td className="px-3 py-2.5">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{row.action}</Badge>
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground max-w-[200px] truncate" title={row.afterJson || ''}>
+                        {row.afterJson ? <span className="font-mono text-[10px]">{row.afterJson.slice(0, 60)}{row.afterJson.length > 60 ? '…' : ''}</span> : '—'}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className="font-mono text-primary text-[10px]">{row.entityCode || '—'}</span>
+                        {row.entityName && <span className="text-muted-foreground ml-1">{row.entityName}</span>}
+                      </td>
+                      <td className="px-3 py-2.5">{row.changedBy || '—'}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground font-mono text-[10px]">{row.sessionRef || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTxnLogTarget(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* ── FINANCIAL TERMS SECTION ── */}
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-5">

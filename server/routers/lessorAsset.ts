@@ -473,6 +473,35 @@ export const assetRouter = router({
         setName:     r.asset_name as string,
         description: (r.description as string | null) ?? "",
         tags:        (r.tags as string | null) ?? "[]",
+        lessorId:    (r.lessor_id as number | null) ?? null,
+        lessorName:  (r.lessor_name as string | null) ?? "",
+        createdAt:   r.created_at as string,
+        updatedAt:   r.updated_at as string,
+      }));
+    }),
+
+  getSubAssetGroupsByLessor: protectedProcedure
+    .input(z.object({ lessorId: z.number().int().optional() }))
+    .query(async ({ input }) => {
+      const params: SPPParam[] = [
+        { name: "SearchTerm",     type: "NVarChar", value: null },
+        { name: "AssetType",      type: "VarChar",  value: "SUB_ASSET_GROUP" },
+        { name: "Status",         type: "VarChar",  value: null },
+        { name: "Country",        type: "VarChar",  value: null },
+        { name: "LessorId",       type: "Int",      value: input.lessorId ?? null },
+        { name: "MaintenanceResp",type: "VarChar",  value: null },
+        { name: "PageNumber",     type: "Int",      value: 1 },
+        { name: "PageSize",       type: "Int",      value: 500 },
+      ];
+      const rows = await execSPP("sp_GetAssets", params);
+      return rows.map((r: Record<string, unknown>) => ({
+        assetId:     r.asset_id as number,
+        assetCode:   r.asset_code as string,
+        setName:     r.asset_name as string,
+        description: (r.description as string | null) ?? "",
+        tags:        (r.tags as string | null) ?? "[]",
+        lessorId:    (r.lessor_id as number | null) ?? null,
+        lessorName:  (r.lessor_name as string | null) ?? "",
         createdAt:   r.created_at as string,
         updatedAt:   r.updated_at as string,
       }));
