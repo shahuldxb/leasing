@@ -42,7 +42,7 @@ const EMPTY_FORM = {
 };
 
 export default function RenewalEngine() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showInitiate, setShowInitiate] = useState(false);
   const [confirmRow, setConfirmRow] = useState<{ action: 'approve' | 'reject'; renewal: Renewal } | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -50,7 +50,7 @@ export default function RenewalEngine() {
   const utils = trpc.useUtils();
 
   const { data: renewals = [], isLoading } = trpc.lease.getRenewals.useQuery(
-    { status: statusFilter || undefined },
+    { status: statusFilter === 'all' ? undefined : statusFilter },
     { retry: false }
   );
 
@@ -107,7 +107,7 @@ export default function RenewalEngine() {
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="Pending">Pending</SelectItem>
                 <SelectItem value="Approved">Approved</SelectItem>
                 <SelectItem value="Rejected">Rejected</SelectItem>
