@@ -146,6 +146,7 @@ import PeriodClose     from "./pages/PeriodClose";
 import IAS17Comparison from "./pages/IAS17Comparison";
 import FXRevaluation   from "./pages/FXRevaluation";
 import LeaseTransactionCentre from "./pages/LeaseTransactionCentre";
+import LeaseDetail           from "./pages/LeaseDetail";
 
 // Phase 6 — IFRS Financial Statements
 import FinancialStatements   from "./pages/FinancialStatements";
@@ -173,6 +174,7 @@ function Router() {
       <Route path="/leases/renewals"         component={LeaseRenewals} />
       <Route path="/leases/modifications"    component={LeaseModifications} />
       <Route path="/leases/transaction-centre" component={LeaseTransactionCentre} />
+      <Route path="/leases/detail"             component={LeaseDetail} />
       <Route path="/leases/terminations"     component={LeaseTerminations} />
       <Route path="/cheques/bounce"           component={BouncePenalty} />
 

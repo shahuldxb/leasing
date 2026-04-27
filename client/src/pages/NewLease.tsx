@@ -72,6 +72,11 @@ export default function NewLease() {
     { contractId: editContractId! },
     { enabled: isEditMode, retry: false }
   );
+  // Fetch existing lessee details in edit mode (separate table)
+  const { data: lesseeEditData } = trpc.lease.getLesseeDetails.useQuery(
+    { contractId: editContractId! },
+    { enabled: isEditMode, retry: false }
+  );
 
   // Pre-populate all form states when edit data loads
   useEffect(() => {
@@ -138,6 +143,24 @@ export default function NewLease() {
     // Pre-set the savedContractId so the wizard updates rather than creates
     setSavedContractId(d.contract_id);
   }, [editData]);
+
+  // Pre-populate lessee state when lessee edit data loads
+  useEffect(() => {
+    if (!lesseeEditData) return;
+    const ld = lesseeEditData as Record<string, any>;
+    setLessee({
+      lesseeType:   (ld.lesseeType  as 'Staff' | 'Client' | 'Other') || 'Staff',
+      lesseeName:   ld.lesseeName   || '',
+      staffNumber:  ld.staffNumber  || '',
+      employeeId:   ld.employeeId   || '',
+      grade:        ld.grade        || '',
+      position:     ld.position     || '',
+      department:   ld.department   || '',
+      placeOfWork:  ld.placeOfWork  || '',
+      contactEmail: ld.contactEmail || '',
+      contactPhone: ld.contactPhone || '',
+    });
+  }, [lesseeEditData]);
 
   const { data: lessors = [] } = trpc.lease.getLessors.useQuery({});
   const { data: subAssetGroupsRaw = [] } = trpc.asset.getSubAssetGroups.useQuery();

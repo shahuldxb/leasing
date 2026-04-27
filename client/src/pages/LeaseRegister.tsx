@@ -223,8 +223,8 @@ export default function LeaseRegister() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {/* View Details — opens the new lease wizard in view mode */}
-                              <DropdownMenuItem onClick={() => setLocation(`/leases/new?view=${lease.contract_id}`)}>
+                              {/* View Details — opens the dedicated read-only detail view */}
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}`)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
                               {/* Modify Lease — opens the wizard in edit mode */}
