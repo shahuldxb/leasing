@@ -1,17 +1,16 @@
 /**
  * VodaLease Enterprise — Lease Transaction Centre
- * Full-screen split layout: left = lease selector, right = full-width transaction forms
- * Tabs: Modification (JE-4) | Termination (JE-5) | Renewal (JE-7) | Transaction History & GL Ledger
+ * Layout: full-width page, lease selector as top-bar dropdown,
+ * all tabs use the entire remaining screen space.
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +23,7 @@ import {
 import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
+  ChevronDown, Search, X,
 } from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ function JETable({ lines }: { lines: Array<Record<string, unknown>> }) {
 
 function KPIRow({ items }: { items: { label: string; value: string; highlight?: boolean }[] }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
       {items.map((item, i) => (
         <div key={i} className={`rounded-lg border p-3 ${item.highlight ? 'border-amber-500/40 bg-amber-500/10' : 'border-border bg-muted/30'}`}>
           <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
@@ -131,8 +131,7 @@ function TransactionHistoryPanel({ contractId }: { contractId: number }) {
   const drafts   = data?.drafts   ?? [];
   const postings = data?.postings ?? [];
   return (
-    <div className="space-y-6">
-      {/* Transaction Log */}
+    <div className="space-y-8">
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><History className="w-4 h-4 text-primary" />Transaction Log</h3>
         {drafts.length === 0 ? (
@@ -169,7 +168,6 @@ function TransactionHistoryPanel({ contractId }: { contractId: number }) {
           </div>
         )}
       </div>
-      {/* GL Postings */}
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4 text-primary" />GL Postings</h3>
         {postings.length === 0 ? (
@@ -212,6 +210,124 @@ function TransactionHistoryPanel({ contractId }: { contractId: number }) {
   );
 }
 
+// ── Lease Selector Dropdown (top-bar) ─────────────────────────────────────────
+type LeaseRow = {
+  contract_id: number; contract_ref: string; asset_description: string;
+  asset_type: string; commencement_date: Date; expiry_date: Date;
+  term_months: number; monthly_payment: number; currency: string;
+  ibr: number; lifecycle_status: string; status: string;
+  current_liability: number; current_rou_nbv: number;
+  last_period_date: Date; remaining_months: number;
+  lessor_name: string; pending_drafts: number;
+};
+
+function LeaseDropdown({
+  leases,
+  loading,
+  search,
+  setSearch,
+  selectedId,
+  onSelect,
+}: {
+  leases: LeaseRow[];
+  loading: boolean;
+  search: string;
+  setSearch: (v: string) => void;
+  selectedId: number | null;
+  onSelect: (l: LeaseRow) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = useMemo(() => leases.find(l => l.contract_id === selectedId) ?? null, [leases, selectedId]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-3 h-10 px-4 rounded-lg border border-border bg-card hover:bg-muted/40 transition-colors min-w-[380px] max-w-[520px]"
+      >
+        {selected ? (
+          <>
+            <span className="font-mono font-bold text-[#e60000] text-sm">{selected.contract_ref}</span>
+            <span className="text-sm text-foreground truncate flex-1 text-left">{selected.asset_description}</span>
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 flex-shrink-0 ${LIFECYCLE_COLORS[selected.lifecycle_status] ?? ''}`}>
+              {selected.lifecycle_status}
+            </Badge>
+          </>
+        ) : (
+          <>
+            <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm text-muted-foreground flex-1 text-left">Select a lease…</span>
+          </>
+        )}
+        <ChevronDown className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 w-[560px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
+          {/* Search */}
+          <div className="p-3 border-b border-border flex items-center gap-2">
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <input
+              autoFocus
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="Search by ref, description, lessor…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>
+            )}
+          </div>
+          {/* List */}
+          <div className="max-h-80 overflow-y-auto divide-y divide-border">
+            {loading ? (
+              <p className="text-xs text-muted-foreground p-4 animate-pulse">Loading leases…</p>
+            ) : leases.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic p-4">No leases found.</p>
+            ) : (
+              leases.map(l => (
+                <button
+                  key={l.contract_id}
+                  onClick={() => { onSelect(l); setOpen(false); }}
+                  className={`w-full text-left px-4 py-3 hover:bg-muted/40 transition-colors ${selectedId === l.contract_id ? 'bg-[#e60000]/8' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className={`text-sm font-mono font-bold ${selectedId === l.contract_id ? 'text-[#e60000]' : 'text-primary'}`}>{l.contract_ref}</span>
+                    <div className="flex items-center gap-2">
+                      {l.pending_drafts > 0 && (
+                        <span className="text-[10px] text-amber-400 flex items-center gap-0.5"><AlertTriangle className="w-2.5 h-2.5" />{l.pending_drafts}</span>
+                      )}
+                      <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${LIFECYCLE_COLORS[l.lifecycle_status] ?? ''}`}>{l.lifecycle_status}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-foreground truncate">{l.asset_description}</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="text-[10px] text-muted-foreground">{l.lessor_name}</span>
+                    <span className="text-[10px] text-muted-foreground">Exp {fmtDate(l.expiry_date)}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{l.currency} {fmt(l.monthly_payment)}/mo</span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function LeaseTransactionCentre() {
   const [search, setSearch] = useState('');
@@ -230,7 +346,7 @@ export default function LeaseTransactionCentre() {
   const [trmDate, setTrmDate]   = useState(today());
   const [trmNotes, setTrmNotes] = useState('');
 
-  // Renewal inputs — full New Lease fields
+  // Renewal inputs
   const [renPayment, setRenPayment]         = useState('');
   const [renExpiry, setRenExpiry]           = useState('');
   const [renIBR, setRenIBR]                 = useState('');
@@ -254,23 +370,19 @@ export default function LeaseTransactionCentre() {
   const [renRenewalOption, setRenRenewalOption] = useState(false);
   const [renPurchaseOption, setRenPurchaseOption] = useState(false);
 
-  // Lease list
   const { data: leases = [], isLoading: leasesLoading, refetch: refetchLeases } =
     trpc.lease.getLeasesForTransaction.useQuery({ search: search || undefined });
   const selected = useMemo(() => leases.find(l => l.contract_id === selectedId) ?? null, [leases, selectedId]);
 
-  // Pre-populate renewal fields when a lease is selected
   const handleSelectLease = (l: typeof leases[0]) => {
     setSelectedId(l.contract_id);
     setPosted(null);
-    // Pre-fill renewal from existing lease data
     setRenPayment(l.monthly_payment ? String(l.monthly_payment) : '');
     setRenCurrency(l.currency || 'QAR');
     setRenAssetType(l.asset_type || '');
     setRenAssetDesc(l.asset_description || '');
   };
 
-  // Previews
   const modPreviewEnabled = txnType === 'Modification' && !!selectedId && !!modPayment && !!modDate;
   const trmPreviewEnabled = txnType === 'Termination' && !!selectedId && !!trmDate;
   const renPreviewEnabled = txnType === 'Renewal' && !!selectedId && !!renPayment && !!renExpiry;
@@ -312,510 +424,434 @@ export default function LeaseTransactionCentre() {
   };
 
   const isPreviewReady = txnType === 'Modification' ? !!modPreview : txnType === 'Termination' ? !!trmPreview : !!renPreview;
-
   const inputCls = "bg-background border-border text-foreground placeholder:text-muted-foreground";
   const labelCls = "text-xs font-medium text-foreground mb-1 block";
 
   return (
     <DashboardLayout>
-      {/* Full-height flex layout — sidebar is handled by DashboardLayout */}
-      <div className="flex h-[calc(100vh-0px)] overflow-hidden">
+      <div className="flex flex-col h-full overflow-hidden">
 
-        {/* ── LEFT PANEL: Lease Selector (fixed width) ─────────────────────── */}
-        <div className="w-56 flex-shrink-0 border-r border-border flex flex-col bg-card">
-          <div className="p-4 border-b border-border">
-            <h2 className="text-sm font-semibold mb-3">Select Lease</h2>
-            <Input
-              placeholder="Search by ref, description, lessor…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="h-8 text-xs"
+        {/* ══ TOP BAR ══════════════════════════════════════════════════════════ */}
+        <div className="flex-shrink-0 px-6 py-3 border-b border-border bg-card flex items-center gap-4 flex-wrap">
+          {/* Screen title */}
+          <div className="flex items-center gap-3 mr-2">
+            <ScreenHeader
+              screenId="VFLTXNCTR0001P001"
+              title="Lease Transaction Centre"
+              subtitle="IFRS 16 — Modification (JE-4) · Termination (JE-5) · Renewal (JE-7)"
             />
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-            {leasesLoading ? (
-              <p className="text-xs text-muted-foreground p-2 animate-pulse">Loading leases…</p>
-            ) : leases.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic p-2">No active leases found.</p>
-            ) : (
-              leases.map(l => (
-                <button
-                  key={l.contract_id}
-                  onClick={() => handleSelectLease(l)}
-                  className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all ${
-                    selectedId === l.contract_id
-                      ? 'border-[#e60000] bg-[#e60000]/10 shadow-sm'
-                      : 'border-border bg-muted/20 hover:bg-muted/40 hover:border-border/80'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1 mb-0.5">
-                    <span className={`text-xs font-mono font-semibold ${selectedId === l.contract_id ? 'text-[#e60000]' : 'text-primary'}`}>{l.contract_ref}</span>
-                    <Badge variant="outline" className={`text-[9px] px-1 py-0 ${LIFECYCLE_COLORS[l.lifecycle_status] ?? ''}`}>
-                      {l.lifecycle_status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-foreground truncate leading-snug">{l.asset_description}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{l.lessor_name}</p>
-                  <p className="text-[10px] text-muted-foreground">Exp {fmtDate(l.expiry_date)}</p>
-                  <div className="flex gap-3 mt-1">
-                    <span className="text-[10px] text-muted-foreground">Liability: <span className="font-mono text-foreground">{fmt(l.current_liability)}</span></span>
-                    <span className="text-[10px] text-muted-foreground">ROU: <span className="font-mono text-foreground">{fmt(l.current_rou_nbv)}</span></span>
-                  </div>
-                  {l.pending_drafts > 0 && (
-                    <span className="text-[10px] text-amber-400 flex items-center gap-1 mt-0.5"><AlertTriangle className="w-2.5 h-2.5" />{l.pending_drafts} pending</span>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
 
-        {/* ── RIGHT PANEL: Full-width transaction area ──────────────────────── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {!selected ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
-              <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center">
-                <FileText className="w-8 h-8 text-muted-foreground/50" />
+          {/* Lease selector dropdown */}
+          <LeaseDropdown
+            leases={leases}
+            loading={leasesLoading}
+            search={search}
+            setSearch={setSearch}
+            selectedId={selectedId}
+            onSelect={handleSelectLease}
+          />
+
+          {/* Selected lease KPI strip */}
+          {selected && (
+            <div className="flex items-center gap-3 ml-2 flex-wrap">
+              <div className="h-8 w-px bg-border" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Payment</span>
+                <span className="text-sm font-mono font-bold">{selected.currency} {fmt(selected.monthly_payment)}</span>
               </div>
-              <div className="text-center">
-                <p className="text-base font-medium">Select a lease to begin</p>
-                <p className="text-sm mt-1">Choose a lease from the left panel to post a Modification, Termination, or Renewal transaction.</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Expiry</span>
+                <span className="text-sm font-semibold">{fmtDate(selected.expiry_date)}</span>
               </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Contract Header Bar — redesigned */}
-              <div className="px-6 pt-5 pb-4 border-b border-border bg-card/50 flex-shrink-0">
-                {/* Row 1: Lease Number Hero + Screen Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Lease Number</p>
-                    <p className="text-3xl font-mono font-extrabold text-[#e60000] tracking-tight leading-none">{selected.contract_ref}</p>
-                    <p className="text-sm text-muted-foreground mt-1 max-w-xl truncate">{selected.asset_description}</p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <Badge variant="outline" className={`text-xs border ${LIFECYCLE_COLORS[selected.lifecycle_status] ?? ''}`}>{selected.lifecycle_status}</Badge>
-                    <ScreenHeader screenId="VFLTXNCTR0001P001" title="" subtitle="" />
-                  </div>
-                </div>
-                {/* Row 2: Key Info Cards */}
-                <div className="grid grid-cols-6 gap-2.5 mb-2.5">
-                  <div className="col-span-2 p-3 rounded-lg bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Lessor</p>
-                    <p className="text-sm font-semibold leading-snug">{selected.lessor_name}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Monthly Payment</p>
-                    <p className="text-xs text-muted-foreground">{selected.currency}</p>
-                    <p className="text-lg font-mono font-extrabold">{fmt(selected.monthly_payment)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Expiry Date</p>
-                    <p className="text-sm font-semibold">{fmtDate(selected.expiry_date)}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">IBR: {selected.ibr ? `${(Number(selected.ibr) * 100).toFixed(4)}%` : '—'}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                    <p className="text-[10px] text-blue-400 uppercase tracking-wide mb-1">Lease Liability</p>
-                    <p className="text-lg font-mono font-bold text-blue-300">{fmt(selected.current_liability)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                    <p className="text-[10px] text-emerald-400 uppercase tracking-wide mb-1">ROU NBV</p>
-                    <p className="text-lg font-mono font-bold text-emerald-300">{fmt(selected.current_rou_nbv)}</p>
-                  </div>
-                </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">IBR</span>
+                <span className="text-sm font-mono">{selected.ibr ? `${(Number(selected.ibr) * 100).toFixed(4)}%` : '—'}</span>
               </div>
-
-              {/* Main Tabs */}
-              <div className="flex-1 overflow-y-auto">
-                <Tabs value={txnType} onValueChange={v => { setTxnType(v as TxnType); setPosted(null); }} className="h-full flex flex-col">
-                  <div className="px-6 pt-4 flex-shrink-0">
-                    <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-                      <TabsTrigger value="Modification" className="flex items-center gap-1.5">
-                        <RefreshCw className="w-3.5 h-3.5" /> Modification (JE-4)
-                      </TabsTrigger>
-                      <TabsTrigger value="Termination" className="flex items-center gap-1.5">
-                        <XCircle className="w-3.5 h-3.5" /> Termination (JE-5)
-                      </TabsTrigger>
-                      <TabsTrigger value="Renewal" className="flex items-center gap-1.5">
-                        <ChevronRight className="w-3.5 h-3.5" /> Renewal (JE-7)
-                      </TabsTrigger>
-                      <TabsTrigger value="History" className="flex items-center gap-1.5">
-                        <History className="w-3.5 h-3.5" /> Txn History & GL
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
-
-                  {/* ── MODIFICATION TAB ── */}
-                  <TabsContent value="Modification" className="flex-1 px-6 pb-6 mt-4 space-y-6">
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <RefreshCw className="w-4 h-4 text-amber-400" />
-                        <h3 className="text-base font-semibold">Modification Terms</h3>
-                        <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 45)</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-5">
-                        <div>
-                          <label className={labelCls}>New Monthly Payment *</label>
-                          <Input className={inputCls} placeholder="e.g. 12500.00" value={modPayment} onChange={e => setModPayment(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Effective Date *</label>
-                          <Input type="date" className={inputCls} value={modDate} onChange={e => setModDate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>New IBR (optional)</label>
-                          <Input className={inputCls} placeholder="e.g. 0.0450" value={modIBR} onChange={e => setModIBR(e.target.value)} />
-                        </div>
-                        <div className="col-span-3">
-                          <label className={labelCls}>Notes</label>
-                          <Input className={inputCls} placeholder="Reason for modification…" value={modNotes} onChange={e => setModNotes(e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Remeasurement Preview */}
-                    {modFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating remeasurement…</p>}
-                    {modPreview?.summary && (
-                      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 space-y-4">
-                        <h4 className="text-sm font-semibold text-amber-400">Remeasurement Preview (IFRS 16 Para 45)</h4>
-                        <KPIRow items={[
-                          { label: 'Current Liability',   value: fmt(modPreview.summary.current_liability) },
-                          { label: 'New PV',              value: fmt(modPreview.summary.new_pv), highlight: true },
-                          { label: 'Liability Δ',         value: fmt(modPreview.summary.liability_delta), highlight: true },
-                          { label: 'Current ROU NBV',     value: fmt(modPreview.summary.current_rou_nbv) },
-                          { label: 'New ROU NBV',         value: fmt(modPreview.summary.new_rou_nbv), highlight: true },
-                          { label: 'ROU Δ',               value: fmt(modPreview.summary.rou_delta) },
-                          { label: 'Remeasurement G/L',   value: fmt(modPreview.summary.remeasurement_gain_loss) },
-                          { label: 'Remaining Months',    value: String(modPreview.summary.remaining_months ?? '—') },
-                        ]} />
-                        <div>
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-4)</h4>
-                          <JETable lines={modPreview.jeLines} />
-                        </div>
-                        {modPreview.schedule?.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Regenerated Schedule Preview</h4>
-                            <SchedulePreview rows={modPreview.schedule} />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Post Button */}
-                    {posted && txnType === 'Modification' ? (
-                      <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-400">Modification Posted Successfully</p>
-                          <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
-                          <p className="text-xs text-muted-foreground">{posted.je_label}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={() => setConfirmOpen(true)}
-                          disabled={!isPreviewReady || postMut.isPending}
-                          className="bg-amber-600 hover:bg-amber-700 text-white px-6"
-                        >
-                          {postMut.isPending ? 'Posting…' : 'Post Modification & Generate JE-4'}
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* ── TERMINATION TAB ── */}
-                  <TabsContent value="Termination" className="flex-1 px-6 pb-6 mt-4 space-y-6">
-                    <div className="rounded-xl border border-red-500/30 bg-card p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <XCircle className="w-4 h-4 text-red-400" />
-                        <h3 className="text-base font-semibold">Termination Terms</h3>
-                        <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 46)</span>
-                      </div>
-                      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 mb-5">
-                        <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Irreversible Action</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Posting this transaction will derecognise the ROU asset and lease liability, remove all future projected schedule rows, and set the lease status to Closed. This cannot be undone.
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-5">
-                        <div>
-                          <label className={labelCls}>Termination Date *</label>
-                          <Input type="date" className={inputCls} value={trmDate} onChange={e => setTrmDate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Notes / Reason</label>
-                          <Input className={inputCls} placeholder="Reason for termination…" value={trmNotes} onChange={e => setTrmNotes(e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Derecognition Preview */}
-                    {trmFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating derecognition…</p>}
-                    {trmPreview?.summary && (
-                      <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-6 space-y-4">
-                        <h4 className="text-sm font-semibold text-red-400">Derecognition Preview (IFRS 16 Para 46)</h4>
-                        <KPIRow items={[
-                          { label: 'Lease Liability Derecognised', value: fmt(trmPreview.summary.lease_liability_derecognised) },
-                          { label: 'ROU Asset Derecognised',       value: fmt(trmPreview.summary.rou_asset_derecognised) },
-                          { label: 'Gain / Loss',                  value: fmt(trmPreview.summary.gain_loss_on_termination), highlight: true },
-                          { label: 'Type',                         value: String(trmPreview.summary.gain_loss_type ?? '—') },
-                          { label: 'Months Early',                 value: String(trmPreview.summary.months_early ?? '—') },
-                          { label: 'Original Expiry',              value: fmtDate(trmPreview.summary.original_expiry_date) },
-                        ]} />
-                        <div>
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-5)</h4>
-                          <JETable lines={trmPreview.jeLines} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Post Button */}
-                    {posted && txnType === 'Termination' ? (
-                      <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-400">Termination Posted Successfully</p>
-                          <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={() => setConfirmOpen(true)}
-                          disabled={!isPreviewReady || postMut.isPending}
-                          className="bg-red-600 hover:bg-red-700 text-white px-6"
-                        >
-                          {postMut.isPending ? 'Posting…' : 'Post Termination & Generate JE-5'}
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* ── RENEWAL TAB ── */}
-                  <TabsContent value="Renewal" className="flex-1 px-6 pb-6 mt-4 space-y-6">
-                    {/* Section 1: Lessor & Asset Details */}
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <Building2 className="w-4 h-4 text-emerald-400" />
-                        <h3 className="text-base font-semibold">Asset Details</h3>
-                      </div>
-                      <div className="grid grid-cols-3 gap-5">
-                        <div>
-                          <label className={labelCls}>Asset Type</label>
-                          <Select value={renAssetType} onValueChange={setRenAssetType}>
-                            <SelectTrigger className={inputCls}><SelectValue placeholder="Select type" /></SelectTrigger>
-                            <SelectContent>
-                              {ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-2">
-                          <label className={labelCls}>Asset Description *</label>
-                          <Input className={inputCls} placeholder="e.g. Rooftop BTS Tower — Emaar Square Tower 1" value={renAssetDesc} onChange={e => setRenAssetDesc(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Asset Tag / Code</label>
-                          <Input className={inputCls} placeholder="e.g. VF-BTS-0042" value={renAssetTag} onChange={e => setRenAssetTag(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Location / Site</label>
-                          <Input className={inputCls} placeholder="City, Region" value={renLocation} onChange={e => setRenLocation(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Maintenance By</label>
-                          <Select value={renMaintenance} onValueChange={v => setRenMaintenance(v as typeof renMaintenance)}>
-                            <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Lessor">Lessor</SelectItem>
-                              <SelectItem value="Vodafone">Vodafone</SelectItem>
-                              <SelectItem value="Shared">Shared</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section 2: Financial Terms */}
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <DollarSign className="w-4 h-4 text-emerald-400" />
-                        <h3 className="text-base font-semibold">Financial Terms</h3>
-                        <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 46 — Renewal)</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-5">
-                        <div>
-                          <label className={labelCls}>New Commencement Date *</label>
-                          <Input type="date" className={inputCls} value={renCommDate} onChange={e => setRenCommDate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>New Expiry Date *</label>
-                          <Input type="date" className={inputCls} value={renExpiry} onChange={e => setRenExpiry(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Currency</label>
-                          <Select value={renCurrency} onValueChange={setRenCurrency}>
-                            <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <label className={labelCls}>New Monthly Payment *</label>
-                          <Input className={inputCls} placeholder="e.g. 15000.00" value={renPayment} onChange={e => setRenPayment(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>New IBR (Discount Rate)</label>
-                          <Input className={inputCls} placeholder="e.g. 0.0500" value={renIBR} onChange={e => setRenIBR(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Escalation Rate (%)</label>
-                          <Input className={inputCls} placeholder="e.g. 3.00" value={renEscalation} onChange={e => setRenEscalation(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Security Deposit</label>
-                          <Input className={inputCls} placeholder="e.g. 30000.00" value={renDeposit} onChange={e => setRenDeposit(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className={labelCls}>IFRS 16 Classification</label>
-                          <Select value={renClassification} onValueChange={v => setRenClassification(v as typeof renClassification)}>
-                            <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Finance">Finance Lease</SelectItem>
-                              <SelectItem value="Operating">Operating Lease</SelectItem>
-                              <SelectItem value="ShortTerm">Short-Term (Para 5a)</SelectItem>
-                              <SelectItem value="LowValue">Low-Value (Para 5b)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center gap-4 pt-5">
-                          <div className="flex items-center gap-2">
-                            <Checkbox id="ren-renewal" checked={renRenewalOption} onCheckedChange={v => setRenRenewalOption(!!v)} />
-                            <label htmlFor="ren-renewal" className="text-xs cursor-pointer">Renewal Option</label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Checkbox id="ren-purchase" checked={renPurchaseOption} onCheckedChange={v => setRenPurchaseOption(!!v)} />
-                            <label htmlFor="ren-purchase" className="text-xs cursor-pointer">Purchase Option</label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section 3: LTO Terms (optional) */}
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Package className="w-4 h-4 text-blue-400" />
-                        <h3 className="text-base font-semibold">Lease-to-Own (LTO) Terms</h3>
-                        <div className="flex items-center gap-2 ml-auto">
-                          <Checkbox id="ren-lto" checked={renIsLTO} onCheckedChange={v => setRenIsLTO(!!v)} />
-                          <label htmlFor="ren-lto" className="text-xs cursor-pointer">Enable LTO for this renewal</label>
-                        </div>
-                      </div>
-                      {renIsLTO && (
-                        <div className="grid grid-cols-3 gap-5">
-                          <div>
-                            <label className={labelCls}>Purchase Price</label>
-                            <Input className={inputCls} placeholder="e.g. 500000.00" value={renLTOPrice} onChange={e => setRenLTOPrice(e.target.value)} />
-                          </div>
-                          <div>
-                            <label className={labelCls}>LTO Deposit</label>
-                            <Input className={inputCls} placeholder="e.g. 50000.00" value={renLTODeposit} onChange={e => setRenLTODeposit(e.target.value)} />
-                          </div>
-                          <div>
-                            <label className={labelCls}>Total Instalments</label>
-                            <Input className={inputCls} placeholder="e.g. 36" value={renLTOInstalments} onChange={e => setRenLTOInstalments(e.target.value)} />
-                          </div>
-                          <div>
-                            <label className={labelCls}>Finance Charge Rate</label>
-                            <Input className={inputCls} placeholder="e.g. 0.0600" value={renLTORate} onChange={e => setRenLTORate(e.target.value)} />
-                          </div>
-                          <div>
-                            <label className={labelCls}>Balloon Amount</label>
-                            <Input className={inputCls} placeholder="e.g. 10000.00" value={renLTOBalloon} onChange={e => setRenLTOBalloon(e.target.value)} />
-                          </div>
-                        </div>
-                      )}
-                      {!renIsLTO && <p className="text-xs text-muted-foreground italic">LTO not applicable for this renewal. Enable above to configure.</p>}
-                    </div>
-
-                    {/* Section 4: Notes */}
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      <label className={labelCls}>Renewal Notes / Justification</label>
-                      <Input className={inputCls} placeholder="Reason for renewal, negotiation summary, approval reference…" value={renNotes} onChange={e => setRenNotes(e.target.value)} />
-                    </div>
-
-                    {/* Renewal Remeasurement Preview */}
-                    {renFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating renewal remeasurement…</p>}
-                    {renPreview?.summary && (
-                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 space-y-4">
-                        <h4 className="text-sm font-semibold text-emerald-400">Renewal Remeasurement Preview (JE-7)</h4>
-                        <KPIRow items={[
-                          { label: 'Current Liability',   value: fmt(renPreview.summary.current_liability) },
-                          { label: 'New PV',              value: fmt(renPreview.summary.new_pv), highlight: true },
-                          { label: 'Liability Δ',         value: fmt(renPreview.summary.liability_delta), highlight: true },
-                          { label: 'Current ROU NBV',     value: fmt(renPreview.summary.current_rou_nbv) },
-                          { label: 'New ROU NBV',         value: fmt(renPreview.summary.new_rou_nbv), highlight: true },
-                          { label: 'New Term (months)',   value: String(renPreview.summary.new_term_months ?? '—') },
-                          { label: 'Old Expiry',          value: fmtDate(renPreview.summary.old_expiry_date) },
-                          { label: 'New Expiry',          value: fmtDate(renPreview.summary.new_expiry_date) },
-                        ]} />
-                        <div>
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-7)</h4>
-                          <JETable lines={renPreview.jeLines} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Post Button */}
-                    {posted && txnType === 'Renewal' ? (
-                      <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-400">Renewal Posted Successfully</p>
-                          <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
-                          <p className="text-xs text-muted-foreground">{posted.je_label}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={() => {
-                          setRenPayment(''); setRenExpiry(''); setRenIBR(''); setRenNotes('');
-                          setRenCommDate(''); setRenEscalation(''); setRenDeposit('');
-                        }}>
-                          Reset Fields
-                        </Button>
-                        <Button
-                          onClick={() => setConfirmOpen(true)}
-                          disabled={!isPreviewReady || postMut.isPending}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-6"
-                        >
-                          {postMut.isPending ? 'Posting…' : 'Post Renewal & Generate JE-7'}
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* ── TRANSACTION HISTORY & GL LEDGER TAB ── */}
-                  <TabsContent value="History" className="flex-1 px-6 pb-6 mt-4">
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-2">
-                          <History className="w-4 h-4 text-primary" />
-                          <h3 className="text-base font-semibold">Transaction History & GL Ledger</h3>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => utils.lease.getLeaseTransactionHistory.invalidate({ contractId: selectedId! })}>
-                          <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh
-                        </Button>
-                      </div>
-                      <TransactionHistoryPanel contractId={selected.contract_id} />
-                    </div>
-                  </TabsContent>
-                </Tabs>
+              <div className="h-8 w-px bg-border" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-blue-400 uppercase tracking-wide">Liability</span>
+                <span className="text-sm font-mono font-bold text-blue-300">{fmt(selected.current_liability)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-emerald-400 uppercase tracking-wide">ROU NBV</span>
+                <span className="text-sm font-mono font-bold text-emerald-300">{fmt(selected.current_rou_nbv)}</span>
               </div>
             </div>
           )}
         </div>
+
+        {/* ══ CONTENT AREA ═════════════════════════════════════════════════════ */}
+        {!selected ? (
+          /* Empty state */
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+            <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center">
+              <FileText className="w-10 h-10 text-muted-foreground/40" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold">No lease selected</p>
+              <p className="text-sm mt-1 max-w-sm">Use the lease dropdown above to select a lease and post a Modification, Termination, or Renewal transaction.</p>
+            </div>
+          </div>
+        ) : (
+          /* Full-width tabs */
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <Tabs
+              value={txnType}
+              onValueChange={v => { setTxnType(v as TxnType); setPosted(null); }}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              {/* Tab bar */}
+              <div className="flex-shrink-0 px-6 pt-4 border-b border-border">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="Modification" className="flex items-center gap-2 text-sm py-2.5">
+                    <RefreshCw className="w-4 h-4" /> Modification (JE-4)
+                  </TabsTrigger>
+                  <TabsTrigger value="Termination" className="flex items-center gap-2 text-sm py-2.5">
+                    <XCircle className="w-4 h-4" /> Termination (JE-5)
+                  </TabsTrigger>
+                  <TabsTrigger value="Renewal" className="flex items-center gap-2 text-sm py-2.5">
+                    <ChevronRight className="w-4 h-4" /> Renewal (JE-7)
+                  </TabsTrigger>
+                  <TabsTrigger value="History" className="flex items-center gap-2 text-sm py-2.5">
+                    <History className="w-4 h-4" /> Txn History & GL
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* ── MODIFICATION TAB ── */}
+              <TabsContent value="Modification" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <RefreshCw className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-base font-semibold">Modification Terms</h3>
+                    <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 45)</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-5">
+                    <div>
+                      <label className={labelCls}>New Monthly Payment *</label>
+                      <Input className={inputCls} placeholder="e.g. 12500.00" value={modPayment} onChange={e => setModPayment(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Effective Date *</label>
+                      <Input type="date" className={inputCls} value={modDate} onChange={e => setModDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>New IBR (optional)</label>
+                      <Input className={inputCls} placeholder="e.g. 0.0450" value={modIBR} onChange={e => setModIBR(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Notes</label>
+                      <Input className={inputCls} placeholder="Reason for modification…" value={modNotes} onChange={e => setModNotes(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                {modFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating remeasurement…</p>}
+                {modPreview?.summary && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 space-y-4">
+                    <h4 className="text-sm font-semibold text-amber-400">Remeasurement Preview (IFRS 16 Para 45)</h4>
+                    <KPIRow items={[
+                      { label: 'Current Liability',   value: fmt(modPreview.summary.current_liability) },
+                      { label: 'New PV',              value: fmt(modPreview.summary.new_pv), highlight: true },
+                      { label: 'Liability Δ',         value: fmt(modPreview.summary.liability_delta), highlight: true },
+                      { label: 'Current ROU NBV',     value: fmt(modPreview.summary.current_rou_nbv) },
+                      { label: 'New ROU NBV',         value: fmt(modPreview.summary.new_rou_nbv), highlight: true },
+                      { label: 'ROU Δ',               value: fmt(modPreview.summary.rou_delta) },
+                      { label: 'Remeasurement G/L',   value: fmt(modPreview.summary.remeasurement_gain_loss) },
+                      { label: 'Remaining Months',    value: String(modPreview.summary.remaining_months ?? '—') },
+                    ]} />
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-4)</h4>
+                      <JETable lines={modPreview.jeLines} />
+                    </div>
+                    {modPreview.schedule?.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Regenerated Schedule Preview</h4>
+                        <SchedulePreview rows={modPreview.schedule} />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {posted && txnType === 'Modification' ? (
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-400">Modification Posted Successfully</p>
+                      <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
+                      <p className="text-xs text-muted-foreground">{posted.je_label}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end">
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || postMut.isPending} className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-2.5 text-sm">
+                      {postMut.isPending ? 'Posting…' : 'Post Modification & Generate JE-4'}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── TERMINATION TAB ── */}
+              <TabsContent value="Termination" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                <div className="rounded-xl border border-red-500/30 bg-card p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <XCircle className="w-4 h-4 text-red-400" />
+                    <h3 className="text-base font-semibold">Termination Terms</h3>
+                    <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 46)</span>
+                  </div>
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 mb-5">
+                    <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Irreversible Action</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Posting this transaction will derecognise the ROU asset and lease liability, remove all future projected schedule rows, and set the lease status to Closed. This cannot be undone.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-5">
+                    <div>
+                      <label className={labelCls}>Termination Date *</label>
+                      <Input type="date" className={inputCls} value={trmDate} onChange={e => setTrmDate(e.target.value)} />
+                    </div>
+                    <div className="col-span-3">
+                      <label className={labelCls}>Notes / Reason</label>
+                      <Input className={inputCls} placeholder="Reason for termination…" value={trmNotes} onChange={e => setTrmNotes(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                {trmFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating derecognition…</p>}
+                {trmPreview?.summary && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-6 space-y-4">
+                    <h4 className="text-sm font-semibold text-red-400">Derecognition Preview (IFRS 16 Para 46)</h4>
+                    <KPIRow items={[
+                      { label: 'Lease Liability Derecognised', value: fmt(trmPreview.summary.lease_liability_derecognised) },
+                      { label: 'ROU Asset Derecognised',       value: fmt(trmPreview.summary.rou_asset_derecognised) },
+                      { label: 'Gain / Loss',                  value: fmt(trmPreview.summary.gain_loss_on_termination), highlight: true },
+                      { label: 'Type',                         value: String(trmPreview.summary.gain_loss_type ?? '—') },
+                      { label: 'Months Early',                 value: String(trmPreview.summary.months_early ?? '—') },
+                      { label: 'Original Expiry',              value: fmtDate(trmPreview.summary.original_expiry_date) },
+                    ]} />
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-5)</h4>
+                      <JETable lines={trmPreview.jeLines} />
+                    </div>
+                  </div>
+                )}
+
+                {posted && txnType === 'Termination' ? (
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-400">Termination Posted Successfully</p>
+                      <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end">
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || postMut.isPending} className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 text-sm">
+                      {postMut.isPending ? 'Posting…' : 'Post Termination & Generate JE-5'}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── RENEWAL TAB ── */}
+              <TabsContent value="Renewal" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                {/* Asset Details */}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <Building2 className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-base font-semibold">Asset Details</h3>
+                  </div>
+                  <div className="grid grid-cols-4 gap-5">
+                    <div>
+                      <label className={labelCls}>Asset Type</label>
+                      <Select value={renAssetType} onValueChange={setRenAssetType}>
+                        <SelectTrigger className={inputCls}><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectContent>{ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelCls}>Asset Description *</label>
+                      <Input className={inputCls} placeholder="e.g. Rooftop BTS Tower — Emaar Square Tower 1" value={renAssetDesc} onChange={e => setRenAssetDesc(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Asset Tag / Code</label>
+                      <Input className={inputCls} placeholder="e.g. VF-BTS-0042" value={renAssetTag} onChange={e => setRenAssetTag(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Location / Site</label>
+                      <Input className={inputCls} placeholder="City, Region" value={renLocation} onChange={e => setRenLocation(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Maintenance By</label>
+                      <Select value={renMaintenance} onValueChange={v => setRenMaintenance(v as typeof renMaintenance)}>
+                        <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Lessor">Lessor</SelectItem>
+                          <SelectItem value="Vodafone">Vodafone</SelectItem>
+                          <SelectItem value="Shared">Shared</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Terms */}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-base font-semibold">Financial Terms</h3>
+                    <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 46 — Renewal)</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-5">
+                    <div>
+                      <label className={labelCls}>New Commencement Date *</label>
+                      <Input type="date" className={inputCls} value={renCommDate} onChange={e => setRenCommDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>New Expiry Date *</label>
+                      <Input type="date" className={inputCls} value={renExpiry} onChange={e => setRenExpiry(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Currency</label>
+                      <Select value={renCurrency} onValueChange={setRenCurrency}>
+                        <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                        <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>New Monthly Payment *</label>
+                      <Input className={inputCls} placeholder="e.g. 15000.00" value={renPayment} onChange={e => setRenPayment(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>New IBR (Discount Rate)</label>
+                      <Input className={inputCls} placeholder="e.g. 0.0500" value={renIBR} onChange={e => setRenIBR(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Escalation Rate (%)</label>
+                      <Input className={inputCls} placeholder="e.g. 3.00" value={renEscalation} onChange={e => setRenEscalation(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Security Deposit</label>
+                      <Input className={inputCls} placeholder="e.g. 30000.00" value={renDeposit} onChange={e => setRenDeposit(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>IFRS 16 Classification</label>
+                      <Select value={renClassification} onValueChange={v => setRenClassification(v as typeof renClassification)}>
+                        <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Finance">Finance Lease</SelectItem>
+                          <SelectItem value="Operating">Operating Lease</SelectItem>
+                          <SelectItem value="ShortTerm">Short-Term (Para 5a)</SelectItem>
+                          <SelectItem value="LowValue">Low-Value (Para 5b)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-6 pt-5">
+                      <div className="flex items-center gap-2">
+                        <Checkbox id="ren-renewal" checked={renRenewalOption} onCheckedChange={v => setRenRenewalOption(!!v)} />
+                        <label htmlFor="ren-renewal" className="text-xs cursor-pointer">Renewal Option</label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox id="ren-purchase" checked={renPurchaseOption} onCheckedChange={v => setRenPurchaseOption(!!v)} />
+                        <label htmlFor="ren-purchase" className="text-xs cursor-pointer">Purchase Option</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* LTO Terms */}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Package className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-base font-semibold">Lease-to-Own (LTO) Terms</h3>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <Checkbox id="ren-lto" checked={renIsLTO} onCheckedChange={v => setRenIsLTO(!!v)} />
+                      <label htmlFor="ren-lto" className="text-xs cursor-pointer">Enable LTO for this renewal</label>
+                    </div>
+                  </div>
+                  {renIsLTO ? (
+                    <div className="grid grid-cols-4 gap-5">
+                      <div><label className={labelCls}>Purchase Price</label><Input className={inputCls} placeholder="e.g. 500000.00" value={renLTOPrice} onChange={e => setRenLTOPrice(e.target.value)} /></div>
+                      <div><label className={labelCls}>LTO Deposit</label><Input className={inputCls} placeholder="e.g. 50000.00" value={renLTODeposit} onChange={e => setRenLTODeposit(e.target.value)} /></div>
+                      <div><label className={labelCls}>Total Instalments</label><Input className={inputCls} placeholder="e.g. 36" value={renLTOInstalments} onChange={e => setRenLTOInstalments(e.target.value)} /></div>
+                      <div><label className={labelCls}>Finance Charge Rate</label><Input className={inputCls} placeholder="e.g. 0.0600" value={renLTORate} onChange={e => setRenLTORate(e.target.value)} /></div>
+                      <div><label className={labelCls}>Balloon Amount</label><Input className={inputCls} placeholder="e.g. 10000.00" value={renLTOBalloon} onChange={e => setRenLTOBalloon(e.target.value)} /></div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">LTO not applicable for this renewal. Enable above to configure.</p>
+                  )}
+                </div>
+
+                {/* Notes */}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <label className={labelCls}>Renewal Notes / Justification</label>
+                  <Input className={inputCls} placeholder="Reason for renewal, negotiation summary, approval reference…" value={renNotes} onChange={e => setRenNotes(e.target.value)} />
+                </div>
+
+                {renFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating renewal remeasurement…</p>}
+                {renPreview?.summary && (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 space-y-4">
+                    <h4 className="text-sm font-semibold text-emerald-400">Renewal Remeasurement Preview (JE-7)</h4>
+                    <KPIRow items={[
+                      { label: 'Current Liability',   value: fmt(renPreview.summary.current_liability) },
+                      { label: 'New PV',              value: fmt(renPreview.summary.new_pv), highlight: true },
+                      { label: 'Liability Δ',         value: fmt(renPreview.summary.liability_delta), highlight: true },
+                      { label: 'Current ROU NBV',     value: fmt(renPreview.summary.current_rou_nbv) },
+                      { label: 'New ROU NBV',         value: fmt(renPreview.summary.new_rou_nbv), highlight: true },
+                      { label: 'New Term (months)',   value: String(renPreview.summary.new_term_months ?? '—') },
+                      { label: 'Old Expiry',          value: fmtDate(renPreview.summary.old_expiry_date) },
+                      { label: 'New Expiry',          value: fmtDate(renPreview.summary.new_expiry_date) },
+                    ]} />
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-7)</h4>
+                      <JETable lines={renPreview.jeLines} />
+                    </div>
+                  </div>
+                )}
+
+                {posted && txnType === 'Renewal' ? (
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-400">Renewal Posted Successfully</p>
+                      <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
+                      <p className="text-xs text-muted-foreground">{posted.je_label}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end gap-3">
+                    <Button variant="outline" onClick={() => {
+                      setRenPayment(''); setRenExpiry(''); setRenIBR(''); setRenNotes('');
+                      setRenCommDate(''); setRenEscalation(''); setRenDeposit('');
+                    }}>
+                      Reset Fields
+                    </Button>
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || postMut.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 text-sm">
+                      {postMut.isPending ? 'Posting…' : 'Post Renewal & Generate JE-7'}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── TRANSACTION HISTORY & GL LEDGER TAB ── */}
+              <TabsContent value="History" className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <History className="w-4 h-4 text-primary" />
+                      <h3 className="text-base font-semibold">Transaction History & GL Ledger</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => utils.lease.getLeaseTransactionHistory.invalidate({ contractId: selectedId! })}>
+                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh
+                    </Button>
+                  </div>
+                  <TransactionHistoryPanel contractId={selected.contract_id} />
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
       </div>
 
       {/* Confirm Dialog */}
@@ -831,7 +867,10 @@ export default function LeaseTransactionCentre() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePost} className={txnType === 'Termination' ? 'bg-red-600 hover:bg-red-700' : txnType === 'Renewal' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'}>
+            <AlertDialogAction
+              onClick={handlePost}
+              className={txnType === 'Termination' ? 'bg-red-600 hover:bg-red-700' : txnType === 'Renewal' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'}
+            >
               Post Transaction
             </AlertDialogAction>
           </AlertDialogFooter>
