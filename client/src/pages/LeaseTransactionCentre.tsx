@@ -3,7 +3,7 @@
  * Layout: full-width page, lease selector as top-bar dropdown,
  * all tabs use the entire remaining screen space.
  */
-import { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -23,7 +23,7 @@ import {
 import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
-  ChevronDown, Search, X,
+  ChevronDown, Search, X, User, Layers, MapPin, Phone, Mail, CreditCard, Hash,
 } from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ const fmtDate = (d: unknown) =>
   d ? new Date(d as string).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const today = () => new Date().toISOString().slice(0, 10);
 
-type TxnType = 'Modification' | 'Termination' | 'Renewal';
+type TxnType = 'Details' | 'Modification' | 'Termination' | 'Renewal';
 
 const LIFECYCLE_COLORS: Record<string, string> = {
   Active:   'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -121,6 +121,185 @@ function SchedulePreview({ rows }: { rows: Array<Record<string, unknown>> }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ── Lease Details Panel ─────────────────────────────────────────────────────
+function LeaseDetailsPanel({ contractId }: { contractId: number }) {
+  const { data: lease, isLoading: leaseLoading } = trpc.lease.getLeaseById.useQuery({ contractId });
+  const { data: lessee, isLoading: lesseeLoading } = trpc.lease.getLesseeDetails.useQuery({ contractId });
+  const { data: subAssets = [], isLoading: subLoading } = trpc.lease.getSubAssetsByContractId.useQuery({ contractId });
+
+  if (leaseLoading || lesseeLoading) {
+    return <div className="flex items-center justify-center h-48 text-muted-foreground text-sm animate-pulse">Loading lease details…</div>;
+  }
+  if (!lease) return <div className="text-muted-foreground text-sm p-6">No lease data found.</div>;
+
+  const d = lease as Record<string, any>;
+  let contact = { name: '', email: '', phone: '' };
+  try { const c = JSON.parse(d.contact_json || '{}'); contact = { name: c.name || '', email: c.email || '', phone: c.phone || '' }; } catch { /* ignore */ }
+  let loc = { address: '', city: '', country: 'QA' };
+  try { const l = JSON.parse(d.location_json || '{}'); loc = { address: l.address || '', city: l.city || '', country: l.country || 'QA' }; } catch { /* ignore */ }
+
+  const field = (label: string, value: unknown, icon?: React.ReactNode) => (
+    <div className="space-y-0.5">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
+      <div className="flex items-center gap-1.5">
+        {icon && <span className="text-muted-foreground">{icon}</span>}
+        <p className="text-sm font-medium text-foreground">{value ? String(value) : '—'}</p>
+      </div>
+    </div>
+  );
+
+  const STATUS_COLORS: Record<string, string> = {
+    Active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    Modified: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    Terminated: 'bg-red-500/15 text-red-400 border-red-500/30',
+    Draft: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+    Renewed: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* ── LESSOR SECTION ── */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Building2 className="w-4 h-4 text-primary" />
+          <h3 className="text-base font-semibold">Lessor Details</h3>
+        </div>
+        <div className="grid grid-cols-4 gap-5">
+          {field('Lessor Name', d.lessor_name, <Building2 className="w-3 h-3" />)}
+          {field('Lessor Country', d.lessor_country)}
+          {field('Tax / Reg No', d.tax_no)}
+          {field('Contact Person', contact.name, <User className="w-3 h-3" />)}
+          {field('Email', contact.email, <Mail className="w-3 h-3" />)}
+          {field('Phone', contact.phone, <Phone className="w-3 h-3" />)}
+          {field('Address', loc.address || loc.city, <MapPin className="w-3 h-3" />)}
+          {field('Country', loc.country)}
+        </div>
+      </div>
+
+      {/* ── LESSEE SECTION ── */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <User className="w-4 h-4 text-blue-400" />
+          <h3 className="text-base font-semibold">Lessee Details</h3>
+          {!lessee && !lesseeLoading && <span className="text-xs text-muted-foreground ml-2">(No lessee record attached)</span>}
+        </div>
+        {lessee ? (
+          <div className="grid grid-cols-4 gap-5">
+            {field('Lessee Type', lessee.lesseeType)}
+            {field('Lessee Name', lessee.lesseeName, <User className="w-3 h-3" />)}
+            {field('Staff Number', lessee.staffNumber, <Hash className="w-3 h-3" />)}
+            {field('Employee ID', lessee.employeeId)}
+            {field('Grade', lessee.grade)}
+            {field('Position', lessee.position)}
+            {field('Department', lessee.department)}
+            {field('Place of Work', lessee.placeOfWork, <MapPin className="w-3 h-3" />)}
+            {field('Contact Email', lessee.contactEmail, <Mail className="w-3 h-3" />)}
+            {field('Contact Phone', lessee.contactPhone, <Phone className="w-3 h-3" />)}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No lessee details on record for this lease.</p>
+        )}
+      </div>
+
+      {/* ── ASSET SECTION ── */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Package className="w-4 h-4 text-amber-400" />
+          <h3 className="text-base font-semibold">Asset Details</h3>
+        </div>
+        <div className="grid grid-cols-4 gap-5 mb-6">
+          {field('Asset Type', d.asset_type)}
+          {field('Asset Description', d.asset_description)}
+          {field('Asset Tag / Code', d.asset_tag, <Hash className="w-3 h-3" />)}
+          {field('Location / City', loc.city || loc.address, <MapPin className="w-3 h-3" />)}
+          {field('Country', loc.country)}
+          {field('Maintenance By', d.maintenance_responsibility)}
+          {field('IFRS 16 Classification', d.ifrs16_classification)}
+          {field('Status', d.lifecycle_status)}
+        </div>
+
+        {/* Sub-Assets Grid */}
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sub-Assets</p>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{subAssets.length}</Badge>
+          </div>
+          {subLoading ? (
+            <p className="text-xs text-muted-foreground animate-pulse">Loading sub-assets…</p>
+          ) : subAssets.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No sub-assets attached to this lease.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Asset Code</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Set Name</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Tags / Serials</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Status Date</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Owner</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subAssets.map((sa) => (
+                    <tr key={sa.leaseSubAssetId} className="border-t border-border hover:bg-muted/20">
+                      <td className="px-3 py-2 font-mono text-primary">{sa.assetCode}</td>
+                      <td className="px-3 py-2">{sa.setName}</td>
+                      <td className="px-3 py-2 text-muted-foreground max-w-[180px] truncate">{sa.tagsWithSerials || '—'}</td>
+                      <td className="px-3 py-2">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                          sa.status === 'Active' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                          sa.status === 'Cancelled' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
+                          sa.status === 'Returned' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' :
+                          'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                        }`}>{sa.status}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{sa.statusDate ? fmtDate(sa.statusDate) : '—'}</td>
+                      <td className="px-3 py-2">{sa.owner || '—'}</td>
+                      <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{sa.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── FINANCIAL TERMS SECTION ── */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <DollarSign className="w-4 h-4 text-emerald-400" />
+          <h3 className="text-base font-semibold">Financial Terms</h3>
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ml-2 ${STATUS_COLORS[d.lifecycle_status] ?? ''}`}>{d.lifecycle_status}</Badge>
+        </div>
+        <div className="grid grid-cols-4 gap-5">
+          {field('Commencement Date', fmtDate(d.commencement_date))}
+          {field('Expiry Date', fmtDate(d.expiry_date))}
+          {field('Term (Months)', d.term_months)}
+          {field('Currency', d.currency)}
+          {field('Monthly Payment', d.monthly_payment ? `${d.currency} ${fmt(d.monthly_payment)}` : '—')}
+          {field('IBR / Discount Rate', d.ibr ? `${(Number(d.ibr) * 100).toFixed(4)}%` : '—')}
+          {field('Escalation Rate', d.escalation_rate ? `${(Number(d.escalation_rate) * 100).toFixed(2)}%` : '—')}
+          {field('Security Deposit', d.deposit_amount ? `${d.currency} ${fmt(d.deposit_amount)}` : '—', <CreditCard className="w-3 h-3" />)}
+          {field('Current Lease Liability', d.current_liability !== undefined ? `${d.currency} ${fmt(d.current_liability)}` : '—')}
+          {field('ROU Asset NBV', d.current_rou_nbv !== undefined ? `${d.currency} ${fmt(d.current_rou_nbv)}` : '—')}
+          {field('IFRS 16 Classification', d.ifrs16_classification)}
+          {field('Renewal Option', d.renewal_option ? 'Yes' : 'No')}
+          {field('Purchase Option', d.purchase_option ? 'Yes' : 'No')}
+          {field('Make-Good Obligation', d.make_good_obligation ? 'Yes' : 'No')}
+          {field('Initial Direct Costs', d.initial_direct_costs ? `${d.currency} ${fmt(d.initial_direct_costs)}` : '—')}
+          {field('Is LTO', d.is_lto ? 'Yes' : 'No')}
+          {d.is_lto && field('LTO Purchase Price', d.lto_purchase_price ? `${d.currency} ${fmt(d.lto_purchase_price)}` : '—')}
+        </div>
+      </div>
     </div>
   );
 }
@@ -332,7 +511,7 @@ function LeaseDropdown({
 export default function LeaseTransactionCentre() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [txnType, setTxnType] = useState<TxnType>('Modification');
+  const [txnType, setTxnType] = useState<TxnType>('Details');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [posted, setPosted] = useState<{ je_ref: string; je_label: string } | null>(null);
 
@@ -413,7 +592,7 @@ export default function LeaseTransactionCentre() {
 
   const handlePost = () => {
     if (!selectedId) return;
-    const base = { contractId: selectedId, transactionType: txnType, effectiveDate: '' };
+    const base = { contractId: selectedId, transactionType: txnType as 'Modification' | 'Termination' | 'Renewal', effectiveDate: '' };
     if (txnType === 'Modification')
       postMut.mutate({ ...base, effectiveDate: modDate, newMonthlyPayment: parseFloat(modPayment), newIBR: modIBR ? parseFloat(modIBR) : undefined, notes: modNotes });
     else if (txnType === 'Termination')
@@ -503,7 +682,10 @@ export default function LeaseTransactionCentre() {
             >
               {/* Tab bar */}
               <div className="flex-shrink-0 px-6 pt-4 border-b border-border">
-                <TabsList className="grid grid-cols-4 w-full">
+                <TabsList className="grid grid-cols-5 w-full">
+                  <TabsTrigger value="Details" className="flex items-center gap-2 text-sm py-2.5">
+                    <FileText className="w-4 h-4" /> Lease Details
+                  </TabsTrigger>
                   <TabsTrigger value="Modification" className="flex items-center gap-2 text-sm py-2.5">
                     <RefreshCw className="w-4 h-4" /> Modification (JE-4)
                   </TabsTrigger>
@@ -519,6 +701,10 @@ export default function LeaseTransactionCentre() {
                 </TabsList>
               </div>
 
+              {/* ── LEASE DETAILS TAB ── */}
+              <TabsContent value="Details" className="flex-1 overflow-y-auto px-6 py-6">
+                <LeaseDetailsPanel contractId={selected.contract_id} />
+              </TabsContent>
               {/* ── MODIFICATION TAB ── */}
               <TabsContent value="Modification" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
                 <div className="rounded-xl border border-border bg-card p-6">
