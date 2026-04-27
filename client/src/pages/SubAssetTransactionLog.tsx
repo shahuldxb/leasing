@@ -28,7 +28,7 @@ import {
   RotateCcw, ShieldOff, Repeat2, Skull,
   Package, Calendar, User, Hash, Tag, FileText, AlertTriangle,
   CheckCircle2, XCircle, Clock, ArrowUpDown, Plus,
-  Pencil, Save, X as XIcon, Link2, Trash2,
+  Pencil, Save, X as XIcon, Link2, Trash2, Sparkles,
 } from "lucide-react";
 
 // ── Status badge colours ─────────────────────────────────────
@@ -209,6 +209,7 @@ export default function SubAssetTransactionLog() {
   const [attachItems, setAttachItems] = useState<any[]>([]);
   // ── Inline attach mode (editable grid instead of dialog) ──
   const [attachingInline, setAttachingInline] = useState(false);
+  const [aiFillingInline, setAiFillingInline] = useState(false);
 
   // ── Queries ───────────────────────────────────────────────
   const { data: leaseList = [] } = trpc.asset.getLeaseList.useQuery();
@@ -318,6 +319,7 @@ export default function SubAssetTransactionLog() {
     onError: (e) => toast.error(`Attach failed: ${e.message}`),
   });
 
+  const aiGenerateSerialsMutation = trpc.asset.aiGenerateSerials.useMutation();
   const addItemMutation = trpc.asset.addSubAssetItem.useMutation({
     onSuccess: () => {
       toast.success("Item added to set successfully");
@@ -375,15 +377,18 @@ export default function SubAssetTransactionLog() {
     const today = new Date().toISOString().slice(0, 10);
     let lines: any[] = [];
     try { lines = reg.tags ? JSON.parse(reg.tags) : []; } catch { lines = []; }
-    setAttachItems(lines.map((l: any) => ({
-      code:          l.code,
-      name:          l.name,
-      category:      l.category,
-      qty:           l.qty ?? 1,
-      serialNumbers: Array.from({ length: l.qty ?? 1 }, () => ""),
-      attachDate:    today,
-      warrantyExpiry: "",
-    })));
+    setAttachItems(lines.map((l: any) => {
+      const master = MASTER_ITEMS_MAP.get(l.code);
+      return {
+        code:          l.code,
+        name:          l.name || master?.name || "",
+        category:      l.category || master?.category || "",
+        qty:           l.qty ?? 1,
+        serialNumbers: Array.from({ length: l.qty ?? 1 }, () => ""),
+        attachDate:    today,
+        warrantyExpiry: "",
+      };
+    }));
     setAttachStep("serials");
   }
 
@@ -710,6 +715,31 @@ export default function SubAssetTransactionLog() {
                             <span className="text-xs font-semibold text-emerald-400">Fill in item details before attaching ({attachItems.length} items)</span>
                           </div>
                           <div className="flex items-center gap-1">
+                            <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+                              onClick={async () => {
+                                setAiFillingInline(true);
+                                try {
+                                  const firstDate = attachItems[0]?.attachDate || new Date().toISOString().slice(0,10);
+                                  const result = await aiGenerateSerialsMutation.mutateAsync({
+                                    items: attachItems.map(it => ({ code: it.code, name: it.name, category: it.category, qty: it.qty ?? 1 })),
+                                    attachDate: firstDate,
+                                  });
+                                  setAttachItems(prev => prev.map(item => {
+                                    const filled = result.items.find(r => r.code === item.code);
+                                    if (!filled) return item;
+                                    return { ...item, serialNumbers: filled.serialNumbers, warrantyExpiry: filled.warrantyExpiry };
+                                  }));
+                                  toast.success('AI filled serial numbers and warranty dates');
+                                } catch (e: any) {
+                                  toast.error('AI fill failed: ' + e.message);
+                                } finally {
+                                  setAiFillingInline(false);
+                                }
+                              }}
+                              disabled={aiFillingInline || aiGenerateSerialsMutation.isPending}>
+                              <Sparkles className="w-3 h-3" />
+                              {aiFillingInline ? 'Filling…' : 'AI Fill'}
+                            </Button>
                             <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
                               onClick={() => resetAttachDialog()}>
                               <XIcon className="w-3 h-3" /> Cancel

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { execSPP, execSPPMulti, SPPParam } from "../db-sqlserver";
+import { invokeLLM } from "../_core/llm";
 
 // ─── Lessor Router ────────────────────────────────────────────────────────────
 export const lessorRouter = router({
@@ -1018,7 +1019,65 @@ export const assetRouter = router({
         { name: "ScreenId",     type: "VarChar",  value: "VFLSEASTTXN0001P001" },
         { name: "IpAddress",    type: "VarChar",  value: null },
       ]);
-      return { ok: true };
+       return { ok: true };
     }),
 
+  aiGenerateSerials: protectedProcedure
+    .input(z.object({
+      items: z.array(z.object({
+        code:     z.string(),
+        name:     z.string(),
+        category: z.string(),
+        qty:      z.number().int().min(1),
+      })),
+      attachDate: z.string(), // YYYY-MM-DD
+    }))
+    .mutation(async ({ input }) => {
+      const prompt = `You are a property management system assistant. Generate realistic serial numbers and warranty expiry dates for the following furniture/appliance items being attached to a lease.
+
+Attach Date: ${input.attachDate}
+Warranty Expiry: exactly 1 year after attach date = ${new Date(new Date(input.attachDate).setFullYear(new Date(input.attachDate).getFullYear() + 1)).toISOString().slice(0, 10)}
+
+Items:
+${input.items.map((it, i) => `${i + 1}. Code: ${it.code}, Name: ${it.name}, Category: ${it.category}, Qty: ${it.qty}`).join('\n')}
+
+For each item, generate ${input.items.map(it => it.qty).join('+')} serial numbers total (one per unit). Serial number format: use the item code as prefix, then a dash, then a 6-digit alphanumeric string (e.g. FUR-SOF-001-A3X9K2). Return a JSON array with one object per item in the same order, each with: { "code": string, "serialNumbers": string[], "warrantyExpiry": string (YYYY-MM-DD, 1 year from attach date) }`;
+
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a property management assistant. Always respond with valid JSON only, no markdown." },
+          { role: "user", content: prompt },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "serial_fill",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                items: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      code:           { type: "string" },
+                      serialNumbers:  { type: "array", items: { type: "string" } },
+                      warrantyExpiry: { type: "string" },
+                    },
+                    required: ["code", "serialNumbers", "warrantyExpiry"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["items"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const content = (response.choices[0]?.message?.content ?? "{}") as string;
+      const parsed = JSON.parse(content);
+      return parsed as { items: { code: string; serialNumbers: string[]; warrantyExpiry: string }[] };
+    }),
 });
