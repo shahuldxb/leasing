@@ -702,10 +702,7 @@ export default function SubAssetTransactionLog() {
                 </div>
 
                 {/* Items table — inline-attach-editable or view mode */}
-                {(() => {
-                  // During inline attach: show attachItems as editable grid
-                  if (attachingInline && attachItems.length > 0) {
-                    return (
+                {attachingInline && attachItems.length > 0 && (
                       <div className="border-t border-emerald-500/40">
                         <div className="px-4 py-2 bg-emerald-500/10 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -848,11 +845,10 @@ export default function SubAssetTransactionLog() {
                           </div>
                         </div>
                       </div>
-                    );
-                  }
-                  // Normal view/edit mode
-                  if (setItems.length > 0) {
-                    return (
+                )}
+
+                {/* Normal view/edit mode */}
+                {!attachingInline && setItems.length > 0 && (
                       <div className="border-t border-border">
                         <div className="px-4 py-2 bg-muted/10 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -967,15 +963,15 @@ export default function SubAssetTransactionLog() {
                           </table>
                         </div>
                       </div>
-                    );
-                  }
-                  return (
-                    <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground italic flex items-center gap-2">
-                      <Package className="w-3.5 h-3.5" />
-                      No item details stored for this set.
-                    </div>
-                  );
-                })()}
+                )}
+
+                {/* Empty state */}
+                {!attachingInline && setItems.length === 0 && (
+                  <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground italic flex items-center gap-2">
+                    <Package className="w-3.5 h-3.5" />
+                    No item details stored for this set.
+                  </div>
+                )}
               </div>
             );
           })()}
