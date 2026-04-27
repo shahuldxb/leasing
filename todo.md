@@ -1233,3 +1233,22 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Register route /leases/modification-wizard in App.tsx
 - [x] Add Lease Modification nav link under Contracts in sidebar
 - [x] Vitest tests for getLeaseModifications, createLeaseModification, applyLeaseModification
+
+## Modify Lease Wizard Fix (Session continuation - Apr 27)
+- [x] Create sp_UpdateLeaseContract in dbo schema (updates asset/financial fields on existing contract)
+- [x] Add updateLease tRPC mutation in server/routers/lease.ts (calls sp_UpdateLeaseContract with audit log)
+- [x] NewLease.tsx: read ?edit=contractId URL param and set isEditMode flag
+- [x] NewLease.tsx: useEffect pre-populates all form states from trpc.lease.getLeaseById when editData loads
+- [x] NewLease.tsx: handleSubmit conditionally calls updateLeaseMutation (edit mode) or createLeaseMutation (new mode)
+- [x] NewLease.tsx: ScreenHeader title shows "Modify Lease" in edit mode
+- [x] NewLease.tsx: Submit button label shows "Update Lease" in edit mode
+- [x] TypeScript: 0 errors confirmed
+
+## Modify Lease Wizard Fix (Session continuation - Apr 27)
+- [x] Create sp_UpdateLeaseContract in dbo schema
+- [x] Add updateLease tRPC mutation in server/routers/lease.ts
+- [x] NewLease.tsx: edit mode pre-population from getLeaseById
+- [x] NewLease.tsx: handleSubmit calls updateLeaseMutation in edit mode
+- [x] NewLease.tsx: ScreenHeader title shows 'Modify Lease' in edit mode
+- [x] NewLease.tsx: Submit button shows 'Update Lease' in edit mode
+- [x] TypeScript: 0 errors confirmed

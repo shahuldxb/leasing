@@ -242,6 +242,69 @@ export const leaseRouter = router({
       }
     }),
 
+  updateLease: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      assetType: z.string(),
+      assetDescription: z.string(),
+      assetTag: z.string().optional(),
+      location: z.object({ address: z.string().optional(), country: z.string().optional(), coordinates: z.object({ lat: z.number(), lng: z.number() }).optional() }).optional(),
+      commencementDate: z.string(),
+      expiryDate: z.string(),
+      termMonths: z.number(),
+      monthlyPayment: z.number(),
+      currency: z.string().length(3),
+      ibr: z.number(),
+      escalationRate: z.number().default(0),
+      depositAmount: z.number().default(0),
+      maintenanceResponsibility: z.enum(['Vodafone', 'Lessor', 'Shared']).default('Lessor'),
+      isLTO: z.boolean().default(false),
+      ltoPurchasePrice: z.number().optional(),
+      ltoDeposit: z.number().optional(),
+      ltoTotalInstalments: z.number().optional(),
+      ltoFinanceChargeRate: z.number().optional(),
+      ltoBalloonAmount: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const start = new Date();
+      try {
+        const result = await execSPPOne<{ contract_id: number; status: string }>('sp_UpdateLeaseContract', [
+          { name: 'ContractId', type: sql.Int, value: input.contractId },
+          { name: 'AssetType', type: sql.VarChar(50), value: input.assetType },
+          { name: 'AssetDescription', type: sql.NVarChar(500), value: input.assetDescription },
+          { name: 'AssetTag', type: sql.VarChar(100), value: input.assetTag || null },
+          { name: 'LocationJson', type: sql.NVarChar(sql.MAX), value: input.location ? JSON.stringify(input.location) : null },
+          { name: 'CommencementDate', type: sql.Date, value: input.commencementDate },
+          { name: 'ExpiryDate', type: sql.Date, value: input.expiryDate },
+          { name: 'TermMonths', type: sql.Int, value: input.termMonths },
+          { name: 'MonthlyPayment', type: sql.Decimal(18, 2), value: input.monthlyPayment },
+          { name: 'Currency', type: sql.Char(3), value: input.currency },
+          { name: 'IBR', type: sql.Decimal(8, 6), value: input.ibr },
+          { name: 'EscalationRate', type: sql.Decimal(8, 4), value: input.escalationRate },
+          { name: 'DepositAmount', type: sql.Decimal(18, 2), value: input.depositAmount },
+          { name: 'MaintenanceResp', type: sql.VarChar(20), value: input.maintenanceResponsibility },
+          { name: 'IsLTO', type: sql.Bit, value: input.isLTO },
+          { name: 'LTOPurchasePrice', type: sql.Decimal(18, 2), value: input.ltoPurchasePrice || null },
+          { name: 'LTODeposit', type: sql.Decimal(18, 2), value: input.ltoDeposit || null },
+          { name: 'LTOTotalInstalments', type: sql.Int, value: input.ltoTotalInstalments || null },
+          { name: 'LTOFinanceChargeRate', type: sql.Decimal(8, 6), value: input.ltoFinanceChargeRate || null },
+          { name: 'LTOBalloonAmount', type: sql.Decimal(18, 2), value: input.ltoBalloonAmount || null },
+          { name: 'UpdatedBy', type: sql.Int, value: ctx.user!.id },
+        ]);
+        await writeAuditLog({
+          userId: ctx.user!.id, username: ctx.user!.name || '', userRole: ctx.user!.role,
+          module: 'Lease', subModule: 'Modification', actionType: 'UPDATE',
+          recordTable: 'lease.contracts', recordId: String(input.contractId),
+          afterState: { contract_id: input.contractId }, outcome: 'Success',
+          screenId: 'VFLNEWLEA0001P001', processStartTime: start,
+        });
+        return result;
+      } catch (err: any) {
+        await writeErrorLog({ severity: 'Error', module: 'Lease', message: err.message, stackTrace: err.stack, screenId: 'VFLNEWLEA0001P001' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
+      }
+    }),
+
   updateLeaseROU: protectedProcedure
     .input(z.object({
       contractId: z.number(),

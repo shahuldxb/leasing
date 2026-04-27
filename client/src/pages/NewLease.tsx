@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -27,6 +27,14 @@ const FREQ_OPTIONS = ["Monthly","Quarterly","Semi-Annual","Annual"];
 export default function NewLease() {
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
+
+  // ── Edit mode: read ?edit=<contractId> from URL ──
+  const editContractId = (() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('edit');
+    return v ? parseInt(v, 10) : null;
+  })();
+  const isEditMode = editContractId !== null;
 
   // Step 1 — Lessor
   const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "", contractPreparedDate: new Date().toISOString().split("T")[0], createdDate: new Date().toISOString().split("T")[0] });
@@ -58,6 +66,78 @@ export default function NewLease() {
   const [docs, setDocs] = useState<{ name: string; type: string; file?: File }[]>([]);
   // Step 6 — computed preview
   const [ifrs16Result, setIfrs16Result] = useState<any>(null);
+
+  // Fetch existing lease data in edit mode
+  const { data: editData } = trpc.lease.getLeaseById.useQuery(
+    { contractId: editContractId! },
+    { enabled: isEditMode, retry: false }
+  );
+
+  // Pre-populate all form states when edit data loads
+  useEffect(() => {
+    if (!editData) return;
+    const d = editData as Record<string, any>;
+    // Step 1 — Lessor
+    let contactPerson = '', email = '', phone = '';
+    try {
+      const c = JSON.parse(d.contact_json || '{}');
+      contactPerson = c.name || ''; email = c.email || ''; phone = c.phone || '';
+    } catch { /* ignore */ }
+    setLessor({
+      name: d.lessor_name || '',
+      contactPerson,
+      email,
+      phone,
+      address: (() => { try { return JSON.parse(d.location_json || '{}').address || ''; } catch { return ''; } })(),
+      country: d.lessor_country || 'QA',
+      taxId: d.tax_no || '',
+      contractPreparedDate: d.created_at ? new Date(d.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      createdDate: d.created_at ? new Date(d.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    });
+    // Step 3 — Asset
+    let locCity = 'Doha', locCountry = 'QA', gpsLat = '', gpsLng = '';
+    try {
+      const loc = JSON.parse(d.location_json || '{}');
+      locCity = loc.city || loc.address || 'Doha';
+      locCountry = loc.country || 'QA';
+      gpsLat = loc.lat ? String(loc.lat) : '';
+      gpsLng = loc.lng ? String(loc.lng) : '';
+    } catch { /* ignore */ }
+    setAsset({
+      assetType: d.asset_type || 'Villa',
+      assetName: d.asset_description || '',
+      assetCode: d.asset_tag || '',
+      location: locCity,
+      country: locCountry,
+      gpsLat,
+      gpsLng,
+      maintenanceBy: (d.maintenance_responsibility === 'Vodafone' ? 'Vodafone' : 'Lessor') as 'Lessor' | 'Vodafone',
+    });
+    // Step 4 — Financial Terms
+    const toDateStr = (v: any) => v ? new Date(v).toISOString().split('T')[0] : '';
+    setFinancial({
+      commencementDate: toDateStr(d.commencement_date),
+      endDate: toDateStr(d.expiry_date),
+      leaseTerm: String(d.term_months || ''),
+      currency: d.currency || 'QAR',
+      rentAmount: String(d.monthly_payment || ''),
+      paymentFrequency: 'Monthly',
+      escalationRate: d.escalation_rate ? String(Number(d.escalation_rate) * 100) : '',
+      escalationFrequency: 'Annual',
+      discountRate: d.ibr ? String(Number(d.ibr) * 100) : '',
+      securityDeposit: String(d.deposit_amount || ''),
+      noticePeriod: '90',
+      isLTO: Boolean(d.is_lto),
+      ltoPrice: String(d.lto_purchase_price || ''),
+      ltoDeposit: String(d.lto_deposit || ''),
+      ltoInstalments: String(d.lto_total_instalments || ''),
+      ltoRate: d.lto_finance_charge_rate ? String(Number(d.lto_finance_charge_rate) * 100) : '',
+      ltoBalloon: String(d.lto_balloon_amount || ''),
+      maintenanceBy: (d.maintenance_responsibility === 'Vodafone' ? 'Vodafone' : 'Lessor') as 'Lessor' | 'Vodafone',
+    });
+    // Pre-set the savedContractId so the wizard updates rather than creates
+    setSavedContractId(d.contract_id);
+  }, [editData]);
 
   const { data: lessors = [] } = trpc.lease.getLessors.useQuery({});
   const { data: subAssetGroupsRaw = [] } = trpc.asset.getSubAssetGroups.useQuery();
@@ -129,6 +209,14 @@ export default function NewLease() {
     onError: (e) => toast.error(e.message),
   });
 
+  const updateLeaseMutation = trpc.lease.updateLease.useMutation({
+    onSuccess: () => {
+      toast.success("Lease updated successfully!");
+      setLocation("/leases");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const inputCls = "bg-background border-border text-foreground placeholder:text-muted-foreground";
   const labelCls = "text-sm font-medium text-foreground";
 
@@ -150,8 +238,7 @@ export default function NewLease() {
   };
 
   const handleSubmit = () => {
-    createLeaseMutation.mutate({
-      lessorId:          1, // Will be replaced by lessor lookup/creation
+    const sharedPayload = {
       assetType:         asset.assetType || "Other",
       assetDescription:  asset.assetName || "New Asset",
       assetTag:          asset.assetCode || undefined,
@@ -175,7 +262,16 @@ export default function NewLease() {
       ltoFinanceChargeRate: financial.isLTO ? Number(financial.ltoRate) / 100 : undefined,
       ltoBalloonAmount:  financial.isLTO ? Number(financial.ltoBalloon) : undefined,
       maintenanceResponsibility: asset.maintenanceBy as "Vodafone" | "Lessor" | "Shared",
-    });
+    };
+
+    if (isEditMode && editContractId) {
+      updateLeaseMutation.mutate({ contractId: editContractId, ...sharedPayload });
+    } else {
+      createLeaseMutation.mutate({
+        lessorId: 1, // Will be replaced by lessor lookup/creation
+        ...sharedPayload,
+      });
+    }
   };
 
   return (
@@ -184,8 +280,8 @@ export default function NewLease() {
         {/* Header */}
         <ScreenHeader
   screenId="VFLNEWLEA0001P001"
-  title="New Lease Origination"
-  subtitle="IFRS 16 compliant lease creation wizard"
+  title={isEditMode ? "Modify Lease" : "New Lease Origination"}
+  subtitle={isEditMode ? "Update existing lease contract details" : "IFRS 16 compliant lease creation wizard"}
 
           formType="new_lease"
           onAIFormFill={(data) => {
@@ -841,7 +937,7 @@ export default function NewLease() {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-6">
-          <Button variant="outline" onClick={() => step === 1 ? setLocation("/leases") : setStep(s => s - 1)} disabled={createLeaseMutation.isPending}>
+          <Button variant="outline" onClick={() => step === 1 ? setLocation("/leases") : setStep(s => s - 1)} disabled={createLeaseMutation.isPending || updateLeaseMutation.isPending}>
             <ChevronLeft className="w-4 h-4 mr-1" /> {step === 1 ? "Cancel" : "Back"}
           </Button>
           {step < 6 ? (
@@ -849,8 +945,8 @@ export default function NewLease() {
               {step === 2 ? "Save & Continue" : "Next"} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={createLeaseMutation.isPending}>
-              {createLeaseMutation.isPending ? "Submitting..." : "Submit for Approval"}
+            <Button onClick={handleSubmit} className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={createLeaseMutation.isPending || updateLeaseMutation.isPending}>
+              {(createLeaseMutation.isPending || updateLeaseMutation.isPending) ? "Saving..." : isEditMode ? "Update Lease" : "Submit for Approval"}
             </Button>
           )}
         </div>
