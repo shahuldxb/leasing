@@ -425,6 +425,15 @@ export default function SubAssetTransactionLog() {
     setLocation(`/sub-asset-registry/transactions${qs ? `?${qs}` : ""}`, { replace: true });
   }, [selectedLeaseId, selectedAssetId]);
 
+  // ── Auto-select first attached set when lease changes ─────
+  useEffect(() => {
+    if (!leaseSelected || loadingSets) return;
+    const sets = leaseSets as any[];
+    if (sets.length > 0 && selectedAssetId === "none") {
+      setSelectedAssetId(String(sets[0].assetId));
+    }
+  }, [leaseSets, loadingSets, leaseSelected]);
+
   // ── Handlers ──────────────────────────────────────────────
   function handleLeaseChange(val: string) {
     setSelectedLeaseId(val);
@@ -817,6 +826,35 @@ export default function SubAssetTransactionLog() {
           })()}
 
           {/* Add Transaction Panel removed — actions are in the right-side panel */}
+
+          {/* ── Inline Attach CTA (shown when set selected but not attached) ───── */}
+          {setSelected && !isAlreadyAttached && (() => {
+            const rec = selectedSetRecord as any;
+            return (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-4">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-400 mb-0.5">Not yet attached to this lease</p>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-mono text-[#e60000]">{rec.assetCode}</span>
+                    {" · "}{rec.setName ?? rec.currentSetName} is in the master registry but has not been linked to this lease.
+                    Attach it to start recording transactions and tracking items.
+                  </p>
+                </div>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shrink-0"
+                  onClick={() => {
+                    resetAttachDialog();
+                    if (selectedAssetId !== "none") onPickAttachSet(selectedAssetId);
+                    setAttachOpen(true);
+                  }}
+                >
+                  <Link2 className="w-4 h-4" />
+                  Attach to Lease
+                </Button>
+              </div>
+            );
+          })()}
 
           {/* ── Transaction History ───────────────────────────── */}
           {setSelected && (
