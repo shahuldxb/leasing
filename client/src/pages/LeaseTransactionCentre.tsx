@@ -322,7 +322,7 @@ export default function LeaseTransactionCentre() {
       <div className="flex h-[calc(100vh-0px)] overflow-hidden">
 
         {/* ── LEFT PANEL: Lease Selector (fixed width) ─────────────────────── */}
-        <div className="w-72 flex-shrink-0 border-r border-border flex flex-col bg-card">
+        <div className="w-56 flex-shrink-0 border-r border-border flex flex-col bg-card">
           <div className="p-4 border-b border-border">
             <h2 className="text-sm font-semibold mb-3">Select Lease</h2>
             <Input
@@ -384,51 +384,43 @@ export default function LeaseTransactionCentre() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Contract Header Bar */}
-              <div className="px-6 py-4 border-b border-border bg-card/50 flex-shrink-0">
-                <ScreenHeader
-                  screenId="VFLTXNCTR0001P001"
-                  title="Lease Transaction Centre"
-                  subtitle="Post IFRS 16 lease transactions — Modification (JE-4), Termination (JE-5), Renewal (JE-7)"
-                />
-                <div className="grid grid-cols-6 gap-4 mt-3 p-3 rounded-lg bg-muted/30 border border-border">
+              {/* Contract Header Bar — redesigned */}
+              <div className="px-6 pt-5 pb-4 border-b border-border bg-card/50 flex-shrink-0">
+                {/* Row 1: Lease Number Hero + Screen Header */}
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Contract</p>
-                    <p className="text-sm font-mono font-bold text-[#e60000]">{selected.contract_ref}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Lease Number</p>
+                    <p className="text-3xl font-mono font-extrabold text-[#e60000] tracking-tight leading-none">{selected.contract_ref}</p>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-xl truncate">{selected.asset_description}</p>
                   </div>
-                  <div className="col-span-2">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Asset</p>
-                    <p className="text-sm font-medium truncate">{selected.asset_description}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Lessor</p>
-                    <p className="text-sm truncate">{selected.lessor_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expiry</p>
-                    <p className="text-sm">{fmtDate(selected.expiry_date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Monthly Payment</p>
-                    <p className="text-sm font-mono font-bold">{selected.currency} {fmt(selected.monthly_payment)}</p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Badge variant="outline" className={`text-xs border ${LIFECYCLE_COLORS[selected.lifecycle_status] ?? ''}`}>{selected.lifecycle_status}</Badge>
+                    <ScreenHeader screenId="VFLTXNCTR0001P001" title="" subtitle="" />
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-4 mt-2">
-                  <div className="p-2 rounded bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground">IBR</p>
-                    <p className="text-sm font-mono">{selected.ibr ? `${(Number(selected.ibr) * 100).toFixed(4)}%` : '—'}</p>
+                {/* Row 2: Key Info Cards */}
+                <div className="grid grid-cols-6 gap-2.5 mb-2.5">
+                  <div className="col-span-2 p-3 rounded-lg bg-muted/20 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Lessor</p>
+                    <p className="text-sm font-semibold leading-snug">{selected.lessor_name}</p>
                   </div>
-                  <div className="p-2 rounded bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground">Lease Liability</p>
-                    <p className="text-sm font-mono">{fmt(selected.current_liability)}</p>
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Monthly Payment</p>
+                    <p className="text-xs text-muted-foreground">{selected.currency}</p>
+                    <p className="text-lg font-mono font-extrabold">{fmt(selected.monthly_payment)}</p>
                   </div>
-                  <div className="p-2 rounded bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground">ROU NBV</p>
-                    <p className="text-sm font-mono">{fmt(selected.current_rou_nbv)}</p>
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Expiry Date</p>
+                    <p className="text-sm font-semibold">{fmtDate(selected.expiry_date)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">IBR: {selected.ibr ? `${(Number(selected.ibr) * 100).toFixed(4)}%` : '—'}</p>
                   </div>
-                  <div className="p-2 rounded bg-muted/20 border border-border">
-                    <p className="text-[10px] text-muted-foreground">Status</p>
-                    <Badge variant="outline" className={`text-xs ${LIFECYCLE_COLORS[selected.lifecycle_status] ?? ''}`}>{selected.lifecycle_status}</Badge>
+                  <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                    <p className="text-[10px] text-blue-400 uppercase tracking-wide mb-1">Lease Liability</p>
+                    <p className="text-lg font-mono font-bold text-blue-300">{fmt(selected.current_liability)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                    <p className="text-[10px] text-emerald-400 uppercase tracking-wide mb-1">ROU NBV</p>
+                    <p className="text-lg font-mono font-bold text-emerald-300">{fmt(selected.current_rou_nbv)}</p>
                   </div>
                 </div>
               </div>
