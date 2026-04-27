@@ -3,7 +3,7 @@
  * All tabs are editable in-place with individual Save buttons.
  * Amortisation tab shows schedule for this specific lease only.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
@@ -411,8 +411,8 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                 { ledger: '2100', account: 'Accounts Payable', drCr: 'CR', amount: Number(r.payment ?? 0) },
               ];
               return (
-                <>
-                  <tr key={`row-${i}`} className="border-t border-border hover:bg-muted/20">
+                <Fragment key={`period-${rowKey}`}>
+                  <tr className="border-t border-border hover:bg-muted/20">
                     <td className="px-2 py-2">
                       <Button
                         variant="ghost" size="icon"
@@ -463,7 +463,7 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
