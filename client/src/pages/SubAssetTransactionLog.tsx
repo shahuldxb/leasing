@@ -478,7 +478,9 @@ export default function SubAssetTransactionLog() {
           subtitle="Select a lease and sub-asset set to view details and record transactions"
         />
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 flex overflow-hidden">
+          {/* ── Left: main content ─────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
           {/* ── Step 1 & 2: Lease + Set Selector ─────────────── */}
           <div className="bg-card border border-border rounded-xl p-4">
@@ -546,23 +548,7 @@ export default function SubAssetTransactionLog() {
                       })}
                     </SelectContent>
                   </Select>
-                  {/* Add button — attaches the selected group to this lease */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 px-3 border-green-600 text-green-500 hover:bg-green-600/10 shrink-0"
-                    disabled={!leaseSelected || selectedAssetId === "none" || isAlreadyAttached}
-                    title={isAlreadyAttached ? "Already attached to this lease" : selectedAssetId === "none" ? "Select a group first" : "Attach selected group to this lease"}
-                    onClick={() => {
-                      resetAttachDialog();
-                      if (selectedAssetId !== "none") {
-                        onPickAttachSet(selectedAssetId);
-                      }
-                      setAttachOpen(true);
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Add
-                  </Button>
+                  {/* Attachment is handled by the right-side action panel */}
                 </div>
               </div>
             </div>
@@ -830,62 +816,7 @@ export default function SubAssetTransactionLog() {
             );
           })()}
 
-          {/* ── Add Transaction Panel ─────────────────────────── */}
-          {setSelected && selectedSetRecord && (() => {
-            const rec = selectedSetRecord as any;
-            const isTerminal = ["WriteOff", "Condemned", "Cancelled"].includes(rec.status);
-            return (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-border bg-muted/10 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-[#e60000]" />
-                  <span className="text-sm font-semibold text-foreground">Add Transaction</span>
-                  {isTerminal && (
-                    <span className="ml-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-0.5">
-                      Status is {rec.status} — limited actions available
-                    </span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Record a transaction for{" "}
-                    <span className="font-mono text-[#e60000]">{rec.assetCode}</span>
-                    {" · "}{rec.setName ?? rec.currentSetName}
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-                    {/* Add Item card — always first */}
-                    <button
-                      onClick={() => setAddItemOpen(true)}
-                      className="flex flex-col items-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/10 cursor-pointer text-emerald-400"
-                    >
-                      <Plus className="w-5 h-5 text-emerald-400" />
-                      <span>Add</span>
-                      <span className="text-[10px] text-muted-foreground font-normal text-center leading-tight">Add new item to set</span>
-                    </button>
-                    {ACTIONS.map(action => {
-                      const Icon = action.icon;
-                      const disabled = isTerminal && action.id !== "BackIn";
-                      return (
-                        <button
-                          key={action.id}
-                          onClick={() => !disabled && openAction(action.id)}
-                          disabled={disabled}
-                          className={`flex flex-col items-center gap-2 p-3 rounded-lg border text-xs font-medium transition-all
-                            ${disabled
-                              ? "border-border/30 text-muted-foreground/40 cursor-not-allowed opacity-40"
-                              : `border-border hover:border-[#e60000]/50 hover:bg-[#e60000]/5 cursor-pointer ${action.color}`
-                            }`}
-                        >
-                          <Icon className={`w-5 h-5 ${disabled ? "text-muted-foreground/40" : action.color}`} />
-                          <span>{action.label}</span>
-                          <span className="text-[10px] text-muted-foreground font-normal text-center leading-tight">{action.desc}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          {/* Add Transaction Panel removed — actions are in the right-side panel */}
 
           {/* ── Transaction History ───────────────────────────── */}
           {setSelected && (
@@ -1008,7 +939,132 @@ export default function SubAssetTransactionLog() {
             </div>
           )}
 
-        </div>
+          </div>{/* end left panel */}
+
+          {/* ── Right: context-aware action panel ──────────────── */}
+          <div className="w-72 shrink-0 border-l border-border overflow-y-auto p-4 flex flex-col gap-4 bg-card/50">
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <Plus className="w-4 h-4 text-[#e60000]" />
+              <span className="text-sm font-semibold text-foreground">Actions</span>
+            </div>
+
+            {/* State 1: No lease selected */}
+            {!leaseSelected && (
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <Hash className="w-10 h-10 text-muted-foreground/30" />
+                <p className="text-xs text-muted-foreground font-medium">Select a lease to get started</p>
+                <p className="text-[11px] text-muted-foreground/60">Choose a lease from the dropdown on the left</p>
+              </div>
+            )}
+
+            {/* State 2: Lease selected but no set selected */}
+            {leaseSelected && !setSelected && (
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <Package className="w-10 h-10 text-muted-foreground/30" />
+                <p className="text-xs text-muted-foreground font-medium">Select a sub-asset set</p>
+                <p className="text-[11px] text-muted-foreground/60">
+                  {leaseSets.length > 0
+                    ? `${leaseSets.length} set(s) attached to this lease`
+                    : "No sets attached yet — select any group to attach it"}
+                </p>
+              </div>
+            )}
+
+            {/* State 3: Set selected but NOT attached — show Attach CTA */}
+            {setSelected && !isAlreadyAttached && (() => {
+              const rec = selectedSetRecord as any;
+              return (
+                <div className="flex flex-col gap-3">
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-amber-400 mb-1 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Not Attached
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      <span className="font-mono text-[#e60000]">{rec.assetCode}</span>
+                      {" "}{rec.setName ?? rec.currentSetName} is not yet linked to this lease.
+                      Attach it to start recording transactions.
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                    onClick={() => {
+                      resetAttachDialog();
+                      if (selectedAssetId !== "none") onPickAttachSet(selectedAssetId);
+                      setAttachOpen(true);
+                    }}
+                  >
+                    <Link2 className="w-4 h-4" />
+                    Attach to Lease
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    This will create an ATTACH transaction log entry
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* State 4: Set IS attached — show 7 action buttons */}
+            {setSelected && isAlreadyAttached && (() => {
+              const rec = selectedSetRecord as any;
+              const isTerminal = ["WriteOff", "Condemned", "Cancelled"].includes(rec.status);
+              return (
+                <div className="flex flex-col gap-2">
+                  {/* Set info pill */}
+                  <div className="bg-muted/20 border border-border rounded-lg px-3 py-2 mb-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active Set</p>
+                    <p className="text-xs font-semibold text-foreground mt-0.5">
+                      <span className="font-mono text-[#e60000] mr-1">{rec.assetCode}</span>
+                      {rec.setName ?? rec.currentSetName}
+                    </p>
+                    <span className={`mt-1 inline-block text-[10px] px-1.5 py-0.5 rounded border font-medium ${STATUS_BADGE[rec.status] ?? "bg-muted text-muted-foreground"}`}>
+                      {rec.status}
+                    </span>
+                    {isTerminal && (
+                      <p className="text-[10px] text-amber-400 mt-1">Terminal status — limited actions</p>
+                    )}
+                  </div>
+
+                  {/* Add Item — always enabled */}
+                  <button
+                    onClick={() => setAddItemOpen(true)}
+                    className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg border border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/10 transition-all"
+                  >
+                    <Plus className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-400">Add Item</p>
+                      <p className="text-[10px] text-muted-foreground">Add new item to set</p>
+                    </div>
+                  </button>
+
+                  {/* Status-change actions */}
+                  {ACTIONS.map(action => {
+                    const Icon = action.icon;
+                    const disabled = isTerminal && action.id !== "BackIn";
+                    return (
+                      <button
+                        key={action.id}
+                        onClick={() => !disabled && openAction(action.id)}
+                        disabled={disabled}
+                        className={`flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg border transition-all
+                          ${disabled
+                            ? "border-border/20 opacity-30 cursor-not-allowed"
+                            : `border-border hover:border-[#e60000]/40 hover:bg-[#e60000]/5 cursor-pointer`
+                          }`}
+                      >
+                        <Icon className={`w-5 h-5 shrink-0 ${disabled ? "text-muted-foreground/40" : action.color}`} />
+                        <div>
+                          <p className={`text-xs font-semibold ${disabled ? "text-muted-foreground/40" : action.color}`}>{action.label}</p>
+                          <p className="text-[10px] text-muted-foreground">{action.desc}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>{/* end right panel */}
+
+        </div>{/* end horizontal split */}
       </div>
 
       {/* ── Attach Dialog ─────────────────────────────────────────────────────── */}
