@@ -1117,4 +1117,57 @@ export const leaseRouter = router({
         return result;
       } catch (err: unknown) { const e = err as Error; await writeErrorLog({ severity: 'Error', module: 'Lease Management', message: e.message, stackTrace: e.stack, screenId }); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message }); }
     }),
+
+  // ── LEASE CHEQUES ────────────────────────────────────────────
+  getLeaseCheques: protectedProcedure
+    .input(z.object({ contractId: z.number().int() }))
+    .query(async ({ input }) => {
+      try {
+        return await execSPP('sp_GetLeaseCheques', [
+          { name: 'ContractId', type: sql.Int, value: input.contractId },
+        ]);
+      } catch {
+        return [];
+      }
+    }),
+
+  upsertLeaseCheques: protectedProcedure
+    .input(z.object({
+      contractId: z.number().int(),
+      cheques: z.array(z.object({
+        chequeId:      z.number().int().optional(),
+        chequeNumber:  z.string().min(1),
+        bankName:      z.string().min(1),
+        bankAccountNo: z.string().optional(),
+        payeeName:     z.string().min(1),
+        amount:        z.number().positive(),
+        currency:      z.string().length(3).default('QAR'),
+        chequeDate:    z.string(),
+        chequeType:    z.enum(['Rent', 'Security Deposit', 'Advance', 'Other']).default('Rent'),
+        periodCovered: z.string().optional(),
+        remarks:       z.string().optional(),
+      })),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const t0 = new Date();
+      try {
+        const result = await execSPPOne<{ saved_count: number }>('sp_UpsertLeaseCheques', [
+          { name: 'ContractId',  type: sql.Int,              value: input.contractId },
+          { name: 'ChequesJson', type: sql.NVarChar(sql.MAX), value: JSON.stringify(input.cheques) },
+          { name: 'CreatedBy',   type: sql.Int,              value: ctx.user!.id },
+        ]);
+        await writeAuditLog({
+          userId: ctx.user!.id, username: ctx.user!.name ?? '', userRole: ctx.user!.role ?? 'user',
+          module: 'Lease', subModule: 'Cheques', actionType: 'UPSERT',
+          recordTable: 'cheque.lease_cheques', recordId: String(input.contractId),
+          afterState: { contractId: input.contractId, count: input.cheques.length },
+          outcome: 'Success', screenId: 'VFLNEWLEA0001P001', processStartTime: t0,
+        });
+        return result;
+      } catch (err: unknown) {
+        const e = err as Error;
+        await writeErrorLog({ severity: 'Error', module: 'Lease', message: e.message, stackTrace: e.stack, screenId: 'VFLNEWLEA0001P001' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message });
+      }
+    }),
 });

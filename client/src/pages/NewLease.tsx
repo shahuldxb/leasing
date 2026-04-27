@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin, CreditCard, Plus, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -16,9 +16,26 @@ const STEPS = [
   { id: 2, label: "Lessee Details",    icon: User },
   { id: 3, label: "Asset Details",     icon: FileText },
   { id: 4, label: "Financial Terms",   icon: DollarSign },
-  { id: 5, label: "Documents",         icon: Upload },
-  { id: 6, label: "Review & Post",     icon: Eye },
+  { id: 5, label: "Cheque Details",    icon: CreditCard },
+  { id: 6, label: "Documents",         icon: Upload },
+  { id: 7, label: "Review & Post",     icon: Eye },
 ];
+
+const CHEQUE_TYPES = ['Rent', 'Security Deposit', 'Advance', 'Other'] as const;
+type ChequeType = typeof CHEQUE_TYPES[number];
+interface ChequeRow {
+  id: string;
+  chequeNumber: string;
+  bankName: string;
+  bankAccountNo: string;
+  payeeName: string;
+  amount: string;
+  currency: string;
+  chequeDate: string;
+  chequeType: ChequeType;
+  periodCovered: string;
+  remarks: string;
+}
 
 const ASSET_TYPES = ["Villa","Apartment","Vehicle","Heavy Vehicle","Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Fleet Vehicle","Network Equipment","Generator Site","Other"];
 const CURRENCIES  = ["QAR","USD","GHS","EUR","GBP","ZAR","KES","NGN","ZMW"];
@@ -62,9 +79,14 @@ export default function NewLease() {
     contactPhone: "",
   });
   const [savedContractId, setSavedContractId] = useState<number | null>(null);
-  // Step 5 — Documents
+  // Step 5 — Cheque Details
+  const [cheques, setCheques] = useState<ChequeRow[]>([]);
+  const addCheque = () => setCheques(prev => [...prev, { id: crypto.randomUUID(), chequeNumber: '', bankName: '', bankAccountNo: '', payeeName: '', amount: '', currency: 'QAR', chequeDate: new Date().toISOString().split('T')[0], chequeType: 'Rent', periodCovered: '', remarks: '' }]);
+  const removeCheque = (id: string) => setCheques(prev => prev.filter(c => c.id !== id));
+  const updateCheque = (id: string, field: keyof ChequeRow, value: string) => setCheques(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  // Step 6 — Documents
   const [docs, setDocs] = useState<{ name: string; type: string; file?: File }[]>([]);
-  // Step 6 — computed preview
+  // Step 7 — computed preview
   const [ifrs16Result, setIfrs16Result] = useState<any>(null);
 
   // Fetch existing lease data in edit mode
@@ -257,7 +279,7 @@ export default function NewLease() {
         commencementDate: financial.commencementDate,
       });
     }
-    setStep(s => Math.min(s + 1, 6));
+    setStep(s => Math.min(s + 1, 7));
   };
 
   const handleSubmit = () => {
@@ -819,8 +841,91 @@ export default function NewLease() {
             </div>
           )}
 
-          {/* ── Step 5: Documents ── */}
+          {/* ── Step 5: Cheque Details ── */}
           {step === 5 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Step 5 — Cheque Details</h2>
+                <Button size="sm" variant="outline" onClick={addCheque} className="gap-1.5">
+                  <Plus className="w-4 h-4" /> Add Cheque
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">Record post-dated or security cheques associated with this lease. These will be tracked in the Cheque Register.</p>
+              {cheques.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-border rounded-xl gap-3 text-muted-foreground">
+                  <CreditCard className="w-10 h-10 opacity-30" />
+                  <p className="text-sm">No cheques added yet. This step is optional.</p>
+                  <Button size="sm" onClick={addCheque} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-1.5">
+                    <Plus className="w-4 h-4" /> Add Cheque
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cheques.map((ch, idx) => (
+                    <div key={ch.id} className="border border-border rounded-xl p-4 space-y-3 bg-muted/10">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-semibold text-[#e60000]">Cheque #{idx + 1}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeCheque(ch.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Cheque Number *</Label>
+                          <Input className="h-9 text-sm bg-muted/30" value={ch.chequeNumber} onChange={e => updateCheque(ch.id, 'chequeNumber', e.target.value)} placeholder="e.g. 000123" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Bank Name *</Label>
+                          <Input className="h-9 text-sm bg-muted/30" value={ch.bankName} onChange={e => updateCheque(ch.id, 'bankName', e.target.value)} placeholder="e.g. Qatar National Bank" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Bank Account No.</Label>
+                          <Input className="h-9 text-sm bg-muted/30" value={ch.bankAccountNo} onChange={e => updateCheque(ch.id, 'bankAccountNo', e.target.value)} placeholder="e.g. 0012345678" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Payee Name *</Label>
+                          <Input className="h-9 text-sm bg-muted/30" value={ch.payeeName} onChange={e => updateCheque(ch.id, 'payeeName', e.target.value)} placeholder="e.g. Emaar Properties PJSC" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Amount *</Label>
+                          <Input className="h-9 text-sm bg-muted/30" type="number" min="0" step="0.01" value={ch.amount} onChange={e => updateCheque(ch.id, 'amount', e.target.value)} placeholder="e.g. 15000.00" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Currency</Label>
+                          <Select value={ch.currency} onValueChange={v => updateCheque(ch.id, 'currency', v)}>
+                            <SelectTrigger className="h-9 text-sm bg-muted/30"><SelectValue /></SelectTrigger>
+                            <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Cheque Date *</Label>
+                          <Input type="date" className="h-9 text-sm bg-muted/30" value={ch.chequeDate} onChange={e => updateCheque(ch.id, 'chequeDate', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Cheque Type</Label>
+                          <Select value={ch.chequeType} onValueChange={v => updateCheque(ch.id, 'chequeType', v as ChequeType)}>
+                            <SelectTrigger className="h-9 text-sm bg-muted/30"><SelectValue /></SelectTrigger>
+                            <SelectContent>{CHEQUE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Period Covered</Label>
+                          <Input className="h-9 text-sm bg-muted/30" value={ch.periodCovered} onChange={e => updateCheque(ch.id, 'periodCovered', e.target.value)} placeholder="e.g. Jan 2026 – Dec 2026" />
+                        </div>
+                        <div className="space-y-1 col-span-2 sm:col-span-3">
+                          <Label className="text-[11px] text-muted-foreground uppercase tracking-wide">Remarks</Label>
+                          <Input className="h-9 text-sm bg-muted/30" value={ch.remarks} onChange={e => updateCheque(ch.id, 'remarks', e.target.value)} placeholder="Optional notes" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 6: Documents ── */}
+          {step === 6 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Step 5 — Document Upload</h2>
               <p className="text-sm text-muted-foreground">Upload the signed lease agreement and supporting documents. GPT-4o OCR will extract key terms automatically.</p>
@@ -852,8 +957,8 @@ export default function NewLease() {
             </div>
           )}
 
-          {/* ── Step 6: Review & Post ── */}
-          {step === 6 && (
+          {/* ── Step 7: Review & Post ── */}
+          {step === 7 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Step 6 — Review & Post</h2>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -963,7 +1068,7 @@ export default function NewLease() {
           <Button variant="outline" onClick={() => step === 1 ? setLocation("/leases") : setStep(s => s - 1)} disabled={createLeaseMutation.isPending || updateLeaseMutation.isPending}>
             <ChevronLeft className="w-4 h-4 mr-1" /> {step === 1 ? "Cancel" : "Back"}
           </Button>
-          {step < 6 ? (
+          {step < 7 ? (
             <Button onClick={handleNext} className="bg-[#e60000] hover:bg-[#cc0000] text-white" disabled={computeMutation.isPending}>
               {step === 2 ? "Save & Continue" : "Next"} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>

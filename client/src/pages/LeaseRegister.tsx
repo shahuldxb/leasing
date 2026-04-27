@@ -227,12 +227,12 @@ export default function LeaseRegister() {
                               <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}`)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
-                              {/* Modify Lease — opens the wizard in edit mode */}
-                              <DropdownMenuItem onClick={() => setLocation(`/leases/new?edit=${lease.contract_id}`)}>
+                              {/* Modify Lease — opens the unified detail page for in-place editing */}
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}`)}>
                                 <Edit className="mr-2 h-4 w-4" /> Modify Lease
                               </DropdownMenuItem>
-                              {/* View Amortisation — navigates to the amortisation screen */}
-                              <DropdownMenuItem onClick={() => setLocation("/leases/amortisation")}>
+                              {/* View Amortisation — opens the lease detail amortisation tab */}
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}#amortisation`)}>
                                 <BarChart2 className="mr-2 h-4 w-4" /> View Amortisation
                               </DropdownMenuItem>
                               {/* Initiate Renewal — navigates to the renewals screen */}
