@@ -61,9 +61,8 @@ export default function IBRLibrary() {
                 <div><Label>Currency</Label>
                   <Select value={form.currency} onValueChange={v => setForm((f: any) => ({ ...f, currency: v }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["QAR","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+                    <SelectContent>{["QAR","USD","EUR","GBP","SAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                   </Select>                </div>
                 <div><Label>Tenor (months)</Label><Input className="mt-1" type="number" value={form.tenor} onChange={e => setForm((f: any) => ({ ...f, tenor: e.target.value }))} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -101,7 +100,7 @@ export default function IBRLibrary() {
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Currencies</SelectItem>
-              {["QAR","USD","EUR","GBP","SAR","QAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {["QAR","USD","EUR","GBP","SAR"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
