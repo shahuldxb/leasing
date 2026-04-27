@@ -235,8 +235,8 @@ export default function LeaseRegister() {
                               <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}#amortisation`)}>
                                 <BarChart2 className="mr-2 h-4 w-4" /> View Amortisation
                               </DropdownMenuItem>
-                              {/* Initiate Renewal — navigates to the renewals screen */}
-                              <DropdownMenuItem onClick={() => setLocation("/leases/renewals")}>
+                              {/* Initiate Renewal — opens full-screen renewal wizard */}
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/renewal?id=${lease.contract_id}`)}>
                                 <RefreshCcw className="mr-2 h-4 w-4" /> Initiate Renewal
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
