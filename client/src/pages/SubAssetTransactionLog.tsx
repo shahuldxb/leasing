@@ -207,6 +207,8 @@ export default function SubAssetTransactionLog() {
   const [attachStep, setAttachStep] = useState<"select" | "serials">("select");
   const [attachSetId, setAttachSetId] = useState<string>("none");
   const [attachItems, setAttachItems] = useState<any[]>([]);
+  // ── Inline attach mode (editable grid instead of dialog) ──
+  const [attachingInline, setAttachingInline] = useState(false);
 
   // ── Queries ───────────────────────────────────────────────
   const { data: leaseList = [] } = trpc.asset.getLeaseList.useQuery();
@@ -363,6 +365,7 @@ export default function SubAssetTransactionLog() {
     setAttachSetId("none");
     setAttachItems([]);
     setAttachStep("select");
+    setAttachingInline(false);
   }
 
   function onPickAttachSet(setId: string) {
@@ -698,129 +701,226 @@ export default function SubAssetTransactionLog() {
                   )}
                 </div>
 
-                {/* Items table — editable */}
-                {setItems.length > 0 ? (
-                  <div className="border-t border-border">
-                    <div className="px-4 py-2 bg-muted/10 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Tag className="w-3.5 h-3.5 text-[#e60000]" />
-                        <span className="text-xs font-semibold text-foreground">Items in this Set ({setItems.length})</span>
-                      </div>
-                      {rec.leaseSubAssetId && (
-                        editingItems ? (
+                {/* Items table — inline-attach-editable or view mode */}
+                {(() => {
+                  // During inline attach: show attachItems as editable grid
+                  if (attachingInline && attachItems.length > 0) {
+                    return (
+                      <div className="border-t border-emerald-500/40">
+                        <div className="px-4 py-2 bg-emerald-500/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Link2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-xs font-semibold text-emerald-400">Fill in item details before attaching ({attachItems.length} items)</span>
+                          </div>
                           <div className="flex items-center gap-1">
                             <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
-                              onClick={() => setEditingItems(false)}>
+                              onClick={() => resetAttachDialog()}>
                               <XIcon className="w-3 h-3" /> Cancel
                             </Button>
-                            <Button size="sm" className="h-6 text-[10px] gap-1 px-2 bg-[#e60000] hover:bg-[#cc0000] text-white"
-                              onClick={saveEditItems}
-                              disabled={updateTagsMutation.isPending}>
+                            <Button size="sm" className="h-6 text-[10px] gap-1 px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={confirmAttach}
+                              disabled={attachMutation.isPending}>
                               <Save className="w-3 h-3" />
-                              {updateTagsMutation.isPending ? "Saving…" : "Save"}
+                              {attachMutation.isPending ? "Attaching…" : "Confirm Attach"}
                             </Button>
                           </div>
-                        ) : (
-                          <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
-                            onClick={startEditItems}>
-                            <Pencil className="w-3 h-3" /> Edit Items
-                          </Button>
-                        )
-                      )}
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-border bg-muted/5">
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Code</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Name</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Category</th>
+                                <th className="text-center py-2 px-4 font-medium text-muted-foreground">Qty</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Serial Numbers</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Attach Date</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Warranty Expiry</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {attachItems.map((item: any, i: number) => (
+                                <tr key={i} className="border-b border-border/50 bg-emerald-500/5">
+                                  <td className="py-2 px-4 font-mono text-[#e60000]">{item.code ?? "—"}</td>
+                                  <td className="py-2 px-4">{item.name ?? "—"}</td>
+                                  <td className="py-2 px-4 text-muted-foreground">{item.category ?? "—"}</td>
+                                  <td className="py-2 px-4 text-center">
+                                    <Input
+                                      type="number" min={1}
+                                      className="h-6 text-xs bg-background border-border w-16 text-center"
+                                      value={item.qty ?? 1}
+                                      onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, qty: Number(e.target.value) } : it
+                                      ))}
+                                    />
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <Input
+                                      className="h-6 text-xs bg-background border-border min-w-[160px]"
+                                      value={Array.isArray(item.serialNumbers) ? item.serialNumbers.join(", ") : ""}
+                                      onChange={e => {
+                                        const vals = e.target.value.split(",").map((s: string) => s.trim());
+                                        setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                          idx === i ? { ...it, serialNumbers: vals } : it
+                                        ));
+                                      }}
+                                      placeholder="SN001, SN002…"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <Input
+                                      type="date"
+                                      className="h-6 text-xs bg-background border-border w-32"
+                                      value={item.attachDate ?? ""}
+                                      onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, attachDate: e.target.value } : it
+                                      ))}
+                                    />
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <Input
+                                      type="date"
+                                      className="h-6 text-xs bg-background border-border w-32"
+                                      value={item.warrantyExpiry ?? ""}
+                                      onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, warrantyExpiry: e.target.value } : it
+                                      ))}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Normal view/edit mode
+                  if (setItems.length > 0) {
+                    return (
+                      <div className="border-t border-border">
+                        <div className="px-4 py-2 bg-muted/10 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Tag className="w-3.5 h-3.5 text-[#e60000]" />
+                            <span className="text-xs font-semibold text-foreground">Items in this Set ({setItems.length})</span>
+                          </div>
+                          {rec.leaseSubAssetId && (
+                            editingItems ? (
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
+                                  onClick={() => setEditingItems(false)}>
+                                  <XIcon className="w-3 h-3" /> Cancel
+                                </Button>
+                                <Button size="sm" className="h-6 text-[10px] gap-1 px-2 bg-[#e60000] hover:bg-[#cc0000] text-white"
+                                  onClick={saveEditItems}
+                                  disabled={updateTagsMutation.isPending}>
+                                  <Save className="w-3 h-3" />
+                                  {updateTagsMutation.isPending ? "Saving…" : "Save"}
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 px-2"
+                                onClick={startEditItems}>
+                                <Pencil className="w-3 h-3" /> Edit Items
+                              </Button>
+                            )
+                          )}
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-border bg-muted/5">
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Code</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Name</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Category</th>
+                                <th className="text-center py-2 px-4 font-medium text-muted-foreground">Qty</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Serial Numbers</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Attach Date</th>
+                                <th className="text-left py-2 px-4 font-medium text-muted-foreground">Warranty Expiry</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(editingItems ? editItems : setItems).map((item: any, i: number) => (
+                                <tr key={i} className="border-b border-border/50 hover:bg-muted/10">
+                                  <td className="py-2 px-4 font-mono text-[#e60000]">{item.code ?? "—"}</td>
+                                  <td className="py-2 px-4">{item.name ?? "—"}</td>
+                                  <td className="py-2 px-4 text-muted-foreground">{item.category ?? "—"}</td>
+                                  <td className="py-2 px-4 text-center">
+                                    {editingItems ? (
+                                      <Input
+                                        type="number" min={1}
+                                        className="h-6 text-xs bg-background border-border w-16 text-center"
+                                        value={item.qty ?? 1}
+                                        onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
+                                          idx === i ? { ...it, qty: Number(e.target.value) } : it
+                                        ))}
+                                      />
+                                    ) : (item.qty ?? "—")}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {editingItems ? (
+                                      <Input
+                                        className="h-6 text-xs bg-background border-border min-w-[160px]"
+                                        value={Array.isArray(item.serialNumbers) ? item.serialNumbers.join(", ") : ""}
+                                        onChange={e => {
+                                          const vals = e.target.value.split(",").map((s: string) => s.trim());
+                                          setEditItems(prev => prev.map((it: any, idx: number) =>
+                                            idx === i ? { ...it, serialNumbers: vals } : it
+                                          ));
+                                        }}
+                                        placeholder="Serial 1, Serial 2…"
+                                      />
+                                    ) : (
+                                      Array.isArray(item.serialNumbers) && item.serialNumbers.filter(Boolean).length > 0
+                                        ? item.serialNumbers.filter(Boolean).join(", ")
+                                        : <span className="text-muted-foreground italic">None</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {editingItems ? (
+                                      <Input
+                                        type="date"
+                                        className="h-6 text-xs bg-background border-border w-32"
+                                        value={item.attachDate ?? ""}
+                                        onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
+                                          idx === i ? { ...it, attachDate: e.target.value } : it
+                                        ))}
+                                      />
+                                    ) : (
+                                      item.attachDate ?? item.leaseDate ?? "—"
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {editingItems ? (
+                                      <Input
+                                        type="date"
+                                        className="h-6 text-xs bg-background border-border w-32"
+                                        value={item.warrantyExpiry ?? ""}
+                                        onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
+                                          idx === i ? { ...it, warrantyExpiry: e.target.value } : it
+                                        ))}
+                                      />
+                                    ) : (
+                                      item.warrantyExpiry
+                                        ? <span className={new Date(item.warrantyExpiry) < new Date() ? "text-red-400 font-semibold" : "text-green-400"}>{item.warrantyExpiry}</span>
+                                        : <span className="text-muted-foreground italic">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground italic flex items-center gap-2">
+                      <Package className="w-3.5 h-3.5" />
+                      No item details stored for this set.
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-border bg-muted/5">
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Code</th>
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Name</th>
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Category</th>
-                            <th className="text-center py-2 px-4 font-medium text-muted-foreground">Qty</th>
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Serial Numbers</th>
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Attach Date</th>
-                            <th className="text-left py-2 px-4 font-medium text-muted-foreground">Warranty Expiry</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(editingItems ? editItems : setItems).map((item: any, i: number) => (
-                            <tr key={i} className="border-b border-border/50 hover:bg-muted/10">
-                              <td className="py-2 px-4 font-mono text-[#e60000]">{item.code ?? "—"}</td>
-                              <td className="py-2 px-4">{item.name ?? "—"}</td>
-                              <td className="py-2 px-4 text-muted-foreground">{item.category ?? "—"}</td>
-                              <td className="py-2 px-4 text-center">
-                                {editingItems ? (
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    className="h-6 text-xs bg-background border-border w-16 text-center"
-                                    value={item.qty ?? 1}
-                                    onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
-                                      idx === i ? { ...it, qty: Number(e.target.value) } : it
-                                    ))}
-                                  />
-                                ) : (item.qty ?? "—")}
-                              </td>
-                              <td className="py-2 px-4">
-                                {editingItems ? (
-                                  <Input
-                                    className="h-6 text-xs bg-background border-border min-w-[160px]"
-                                    value={Array.isArray(item.serialNumbers) ? item.serialNumbers.join(", ") : ""}
-                                    onChange={e => {
-                                      const vals = e.target.value.split(",").map((s: string) => s.trim());
-                                      setEditItems(prev => prev.map((it: any, idx: number) =>
-                                        idx === i ? { ...it, serialNumbers: vals } : it
-                                      ));
-                                    }}
-                                    placeholder="Serial 1, Serial 2…"
-                                  />
-                                ) : (
-                                  Array.isArray(item.serialNumbers) && item.serialNumbers.filter(Boolean).length > 0
-                                    ? item.serialNumbers.filter(Boolean).join(", ")
-                                    : <span className="text-muted-foreground italic">None</span>
-                                )}
-                              </td>
-                              <td className="py-2 px-4">
-                                {editingItems ? (
-                                  <Input
-                                    type="date"
-                                    className="h-6 text-xs bg-background border-border w-32"
-                                    value={item.attachDate ?? ""}
-                                    onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
-                                      idx === i ? { ...it, attachDate: e.target.value } : it
-                                    ))}
-                                  />
-                                ) : (
-                                  item.attachDate ?? item.leaseDate ?? "—"
-                                )}
-                              </td>
-                              <td className="py-2 px-4">
-                                {editingItems ? (
-                                  <Input
-                                    type="date"
-                                    className="h-6 text-xs bg-background border-border w-32"
-                                    value={item.warrantyExpiry ?? ""}
-                                    onChange={e => setEditItems(prev => prev.map((it: any, idx: number) =>
-                                      idx === i ? { ...it, warrantyExpiry: e.target.value } : it
-                                    ))}
-                                  />
-                                ) : (
-                                  item.warrantyExpiry
-                                    ? <span className={new Date(item.warrantyExpiry) < new Date() ? "text-red-400 font-semibold" : "text-green-400"}>{item.warrantyExpiry}</span>
-                                    : <span className="text-muted-foreground italic">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground italic flex items-center gap-2">
-                    <Package className="w-3.5 h-3.5" />
-                    No item details stored for this set.
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })()}
@@ -845,8 +945,10 @@ export default function SubAssetTransactionLog() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shrink-0"
                   onClick={() => {
                     resetAttachDialog();
-                    if (selectedAssetId !== "none") onPickAttachSet(selectedAssetId);
-                    setAttachOpen(true);
+                    if (selectedAssetId !== "none") {
+                      onPickAttachSet(selectedAssetId);
+                      setAttachingInline(true);
+                    }
                   }}
                 >
                   <Link2 className="w-4 h-4" />
