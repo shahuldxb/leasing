@@ -52,11 +52,7 @@ const menuItems: NavItem[] = [
       { label: "Sub-Asset Registry",  path: "/sub-asset-registry" },
       { label: "Sub-Asset Txn Log",   path: "/sub-asset-registry/transactions" },
       { label: "Amortisation",        path: "/leases/amortisation" },
-      { label: "Renewal Engine",     path: "/leases/renewal-engine" },
-      { label: "Lease Renewals",    path: "/leases/renewals" },
       { label: "Transaction Centre", path: "/leases/transaction-centre" },
-      { label: "Modifications",     path: "/leases/modifications" },
-      { label: "Terminations",      path: "/leases/terminations" },
     ],
   },
   {
