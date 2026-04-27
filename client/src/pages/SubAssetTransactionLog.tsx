@@ -978,26 +978,16 @@ export default function SubAssetTransactionLog() {
           )}
 
           </div>{/* end left panel */}
-
-          {/* ── Right: context-aware action panel ──────────────── */}
+          {/* ── Right: context-aware action panel (only when set is attached) ── */}
+          {isAlreadyAttached && (
           <div className="w-72 shrink-0 border-l border-border overflow-y-auto p-4 flex flex-col gap-4 bg-card/50">
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <Plus className="w-4 h-4 text-[#e60000]" />
               <span className="text-sm font-semibold text-foreground">Actions</span>
             </div>
 
-            {/* State 1: No lease selected */}
-            {!leaseSelected && (
-              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-                <Hash className="w-10 h-10 text-muted-foreground/30" />
-                <p className="text-xs text-muted-foreground font-medium">Select a lease to get started</p>
-                <p className="text-[11px] text-muted-foreground/60">Choose a lease from the dropdown on the left</p>
-              </div>
-            )}
-
-            {/* State 2: Lease selected but no set selected */}
-            {leaseSelected && !setSelected && (
-              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+            {/* State 2 (unused now but kept): Lease selected but no set selected */}
+            {leaseSelected && !setSelected && (              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
                 <Package className="w-10 h-10 text-muted-foreground/30" />
                 <p className="text-xs text-muted-foreground font-medium">Select a sub-asset set</p>
                 <p className="text-[11px] text-muted-foreground/60">
@@ -1067,7 +1057,8 @@ export default function SubAssetTransactionLog() {
                 </div>
               );
             })()}
-          </div>{/* end right panel */}
+          </div>
+          )}{/* end isAlreadyAttached — end right panel */}
 
         </div>{/* end horizontal split */}
       </div>
