@@ -708,6 +708,7 @@ export const leaseRouter = router({
    */
   checkAndNotifyRenewalDue: protectedProcedure
     .mutation(async ({ ctx }) => {
+      try {
       type RenewalDueLease = {
         contract_id: number;
         contract_ref: string;
@@ -754,6 +755,11 @@ export const leaseRouter = router({
       }
 
       return { notified: leases.length };
+      } catch (err: any) {
+        // Never surface renewal-check errors to the frontend — log and return gracefully
+        try { await writeErrorLog({ severity: 'Warning', module: 'Lease', screenId: 'RENEWAL_BADGE', message: err.message ?? String(err) }); } catch (_) {}
+        return { notified: 0 };
+      }
     }),
 
   // ── LEASE TRANSACTION CENTRE ─────────────────────────────────────────────

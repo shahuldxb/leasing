@@ -1205,10 +1205,9 @@ export const bouncePenaltyRouter = router({
   listEvents: protectedProcedure.query(async () => {
     const pool = await getPool();
     const r = await pool.request().query(`
-      SELECT e.*, cr.cheque_number, cr.amount as cheque_amount, l.lessor_name
+      SELECT e.*, cr.cheque_number, cr.amount as cheque_amount
       FROM cheque.bounce_events e
-      JOIN cheque.cheque_register cr ON e.cheque_id = cr.cheque_id
-      LEFT JOIN lessor.lessors l ON cr.payee_lessor_id = l.lessor_id
+      LEFT JOIN cheque.cheque_register cr ON e.original_cheque_id = cr.cheque_id
       ORDER BY e.bounce_date DESC`);
     return r.recordset;
   }),
