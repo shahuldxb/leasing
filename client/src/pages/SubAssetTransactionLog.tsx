@@ -28,7 +28,7 @@ import {
   RotateCcw, ShieldOff, Repeat2, Skull,
   Package, Calendar, User, Hash, Tag, FileText, AlertTriangle,
   CheckCircle2, XCircle, Clock, ArrowUpDown, Plus,
-  Pencil, Save, X as XIcon, Link2,
+  Pencil, Save, X as XIcon, Link2, Trash2,
 } from "lucide-react";
 
 // ── Status badge colours ─────────────────────────────────────
@@ -736,14 +736,42 @@ export default function SubAssetTransactionLog() {
                                 <th className="text-left py-2 px-4 font-medium text-muted-foreground">Serial Numbers</th>
                                 <th className="text-left py-2 px-4 font-medium text-muted-foreground">Attach Date</th>
                                 <th className="text-left py-2 px-4 font-medium text-muted-foreground">Warranty Expiry</th>
+                                <th className="w-8"></th>
                               </tr>
                             </thead>
                             <tbody>
                               {attachItems.map((item: any, i: number) => (
                                 <tr key={i} className="border-b border-border/50 bg-emerald-500/5">
-                                  <td className="py-2 px-4 font-mono text-[#e60000]">{item.code ?? "—"}</td>
-                                  <td className="py-2 px-4">{item.name ?? "—"}</td>
-                                  <td className="py-2 px-4 text-muted-foreground">{item.category ?? "—"}</td>
+                                  <td className="py-2 px-4">
+                                    <Input
+                                      className="h-6 text-xs bg-background border-border w-24 font-mono text-[#e60000]"
+                                      value={item.code ?? ""}
+                                      onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, code: e.target.value } : it
+                                      ))}
+                                      placeholder="Code"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <Input
+                                      className="h-6 text-xs bg-background border-border min-w-[120px]"
+                                      value={item.name ?? ""}
+                                      onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, name: e.target.value } : it
+                                      ))}
+                                      placeholder="Item name"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <Input
+                                      className="h-6 text-xs bg-background border-border min-w-[100px] text-muted-foreground"
+                                      value={item.category ?? ""}
+                                      onChange={e => setAttachItems(prev => prev.map((it: any, idx: number) =>
+                                        idx === i ? { ...it, category: e.target.value } : it
+                                      ))}
+                                      placeholder="Category"
+                                    />
+                                  </td>
                                   <td className="py-2 px-4 text-center">
                                     <Input
                                       type="number" min={1}
@@ -787,10 +815,37 @@ export default function SubAssetTransactionLog() {
                                       ))}
                                     />
                                   </td>
+                                  <td className="py-2 px-2">
+                                    <Button
+                                      size="sm" variant="ghost"
+                                      className="h-6 w-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                      onClick={() => setAttachItems(prev => prev.filter((_: any, idx: number) => idx !== i))}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
+                          {/* Add new row button */}
+                          <div className="px-4 py-2 border-t border-emerald-500/20">
+                            <Button
+                              size="sm" variant="outline"
+                              className="h-7 text-xs gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                              onClick={() => setAttachItems(prev => [...prev, {
+                                code: "",
+                                name: "",
+                                category: "",
+                                qty: 1,
+                                serialNumbers: [""],
+                                attachDate: new Date().toISOString().slice(0, 10),
+                                warrantyExpiry: "",
+                              }])}
+                            >
+                              <Plus className="w-3 h-3" /> Add Item
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     );
