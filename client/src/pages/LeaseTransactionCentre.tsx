@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -125,18 +127,67 @@ function SchedulePreview({ rows }: { rows: Array<Record<string, unknown>> }) {
   );
 }
 
+// ── Sub-Asset Status Colour ────────────────────────────────────────────────
+const SA_STATUS_CLS: Record<string, string> = {
+  Active:     'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Cancelled:  'bg-red-500/15 text-red-400 border-red-500/30',
+  Returned:   'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  BackIn:     'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+  Replaced:   'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  WriteOff:   'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+  Condemned:  'bg-orange-500/15 text-orange-400 border-orange-500/30',
+};
+
 // ── Lease Details Panel ─────────────────────────────────────────────────────
 function LeaseDetailsPanel({ contractId }: { contractId: number }) {
+  const utils = trpc.useUtils();
   const { data: lease, isLoading: leaseLoading } = trpc.lease.getLeaseById.useQuery({ contractId });
   const { data: lessee, isLoading: lesseeLoading } = trpc.lease.getLesseeDetails.useQuery({ contractId });
   const { data: subAssets = [], isLoading: subLoading } = trpc.lease.getSubAssetsByContractId.useQuery({ contractId });
+  const { data: assetGroups = [], isLoading: groupsLoading } = trpc.asset.getSubAssetGroups.useQuery();
 
-  if (leaseLoading || lesseeLoading) {
+  // Attach modal state
+  const [attachOpen, setAttachOpen] = React.useState(false);
+  const [groupSearch, setGroupSearch] = React.useState('');
+  const [selectedGroup, setSelectedGroup] = React.useState<{ assetId: number; assetCode: string; setName: string } | null>(null);
+  const [attachNotes, setAttachNotes] = React.useState('');
+
+  // Status change modal state
+  const [statusOpen, setStatusOpen] = React.useState(false);
+  const [statusTarget, setStatusTarget] = React.useState<{ id: number; code: string; current: string } | null>(null);
+  const [newStatus, setNewStatus] = React.useState<'Active'|'Cancelled'|'Returned'|'BackIn'|'Replaced'|'WriteOff'|'Condemned'>('Active');
+  const [statusReason, setStatusReason] = React.useState('');
+  const [statusNotes, setStatusNotes] = React.useState('');
+
+  const attachMut = trpc.asset.attachSubAssetToLease.useMutation({
+    onSuccess: () => {
+      toast.success('Sub-asset attached successfully');
+      utils.lease.getSubAssetsByContractId.invalidate({ contractId });
+      setAttachOpen(false);
+      setSelectedGroup(null);
+      setAttachNotes('');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const statusMut = trpc.asset.updateSubAssetStatus.useMutation({
+    onSuccess: () => {
+      toast.success('Sub-asset status updated');
+      utils.lease.getSubAssetsByContractId.invalidate({ contractId });
+      setStatusOpen(false);
+      setStatusTarget(null);
+      setStatusReason('');
+      setStatusNotes('');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+   if (leaseLoading || lesseeLoading) {
     return <div className="flex items-center justify-center h-48 text-muted-foreground text-sm animate-pulse">Loading lease details…</div>;
   }
   if (!lease) return <div className="text-muted-foreground text-sm p-6">No lease data found.</div>;
-
   const d = lease as Record<string, any>;
+  const leaseRef = d.contract_ref as string | undefined;
   let contact = { name: '', email: '', phone: '' };
   try { const c = JSON.parse(d.contact_json || '{}'); contact = { name: c.name || '', email: c.email || '', phone: c.phone || '' }; } catch { /* ignore */ }
   let loc = { address: '', city: '', country: 'QA' };
@@ -223,47 +274,65 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
         </div>
 
         {/* Sub-Assets Grid */}
-        <div className="mt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sub-Assets</p>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{subAssets.length}</Badge>
+        <Separator className="my-5" />
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <p className="text-sm font-semibold">Sub-Assets</p>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{subAssets.length}</Badge>
+            </div>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setAttachOpen(true)}>
+              <Hash className="w-3 h-3" /> Attach Sub-Asset
+            </Button>
           </div>
+
           {subLoading ? (
             <p className="text-xs text-muted-foreground animate-pulse">Loading sub-assets…</p>
           ) : subAssets.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No sub-assets attached to this lease.</p>
+            <div className="flex flex-col items-center justify-center py-10 rounded-lg border border-dashed border-border gap-3">
+              <Layers className="w-8 h-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No sub-assets attached to this lease yet.</p>
+              <Button size="sm" onClick={() => setAttachOpen(true)} className="gap-1.5">
+                <Hash className="w-3.5 h-3.5" /> Attach Sub-Asset
+              </Button>
+            </div>
           ) : (
             <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-xs">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Asset Code</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Set Name</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Tags / Serials</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Status</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Status Date</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Owner</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Notes</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Asset Code</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Set Name</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Tags / Serials</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Status</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Status Date</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Owner</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Notes</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {subAssets.map((sa) => (
-                    <tr key={sa.leaseSubAssetId} className="border-t border-border hover:bg-muted/20">
-                      <td className="px-3 py-2 font-mono text-primary">{sa.assetCode}</td>
-                      <td className="px-3 py-2">{sa.setName}</td>
-                      <td className="px-3 py-2 text-muted-foreground max-w-[180px] truncate">{sa.tagsWithSerials || '—'}</td>
-                      <td className="px-3 py-2">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
-                          sa.status === 'Active' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
-                          sa.status === 'Cancelled' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
-                          sa.status === 'Returned' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' :
-                          'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                        }`}>{sa.status}</Badge>
+                    <tr key={sa.leaseSubAssetId} className="border-t border-border hover:bg-muted/20 transition-colors">
+                      <td className="px-3 py-2.5 font-mono text-primary font-medium">{sa.assetCode}</td>
+                      <td className="px-3 py-2.5 font-medium">{sa.setName}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground max-w-[160px] truncate" title={sa.tagsWithSerials || ''}>{sa.tagsWithSerials || '—'}</td>
+                      <td className="px-3 py-2.5">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${SA_STATUS_CLS[sa.status] ?? 'bg-muted text-muted-foreground'}`}>{sa.status}</Badge>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">{sa.statusDate ? fmtDate(sa.statusDate) : '—'}</td>
-                      <td className="px-3 py-2">{sa.owner || '—'}</td>
-                      <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{sa.notes || '—'}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{sa.statusDate ? fmtDate(sa.statusDate) : '—'}</td>
+                      <td className="px-3 py-2.5">{sa.owner || '—'}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground max-w-[180px] truncate" title={sa.notes || ''}>{sa.notes || '—'}</td>
+                      <td className="px-3 py-2.5">
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => {
+                          setStatusTarget({ id: sa.leaseSubAssetId, code: sa.assetCode, current: sa.status });
+                          setNewStatus(sa.status as typeof newStatus);
+                          setStatusReason('');
+                          setStatusNotes('');
+                          setStatusOpen(true);
+                        }}>Change Status</Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -272,6 +341,141 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
           )}
         </div>
       </div>
+
+      {/* ── ATTACH SUB-ASSET MODAL ── */}
+      <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-400" /> Attach Sub-Asset to Lease
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs mb-1.5 block">Search Sub-Asset Groups</Label>
+              <Input placeholder="Search by code or name…" value={groupSearch} onChange={e => setGroupSearch(e.target.value)} className="h-8 text-sm" />
+            </div>
+            <div className="rounded-lg border border-border overflow-hidden max-h-64 overflow-y-auto">
+              {groupsLoading ? (
+                <p className="text-xs text-muted-foreground p-4 animate-pulse">Loading asset groups…</p>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Select</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Code</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Set Name</th>
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assetGroups
+                      .filter(g => !groupSearch || g.assetCode.toLowerCase().includes(groupSearch.toLowerCase()) || g.setName.toLowerCase().includes(groupSearch.toLowerCase()))
+                      .map(g => (
+                        <tr key={g.assetId} className={`border-t border-border cursor-pointer transition-colors ${
+                          selectedGroup?.assetId === g.assetId ? 'bg-primary/10' : 'hover:bg-muted/20'
+                        }`} onClick={() => setSelectedGroup({ assetId: g.assetId, assetCode: g.assetCode, setName: g.setName })}>
+                          <td className="px-3 py-2">
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                              selectedGroup?.assetId === g.assetId ? 'border-primary bg-primary' : 'border-muted-foreground'
+                            }`}>
+                              {selectedGroup?.assetId === g.assetId && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 font-mono text-primary">{g.assetCode}</td>
+                          <td className="px-3 py-2 font-medium">{g.setName}</td>
+                          <td className="px-3 py-2 text-muted-foreground truncate max-w-[200px]">{g.description || '—'}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            {selectedGroup && (
+              <div className="rounded-lg bg-primary/5 border border-primary/20 px-4 py-3 text-xs">
+                <span className="text-muted-foreground">Selected: </span>
+                <span className="font-mono text-primary font-semibold">{selectedGroup.assetCode}</span>
+                <span className="text-muted-foreground ml-2">{selectedGroup.setName}</span>
+              </div>
+            )}
+            <div>
+              <Label className="text-xs mb-1.5 block">Notes (optional)</Label>
+              <Input placeholder="Attach notes…" value={attachNotes} onChange={e => setAttachNotes(e.target.value)} className="h-8 text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAttachOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!selectedGroup || !leaseRef || attachMut.isPending}
+              onClick={() => {
+                if (!selectedGroup || !leaseRef) return;
+                attachMut.mutate({
+                  leaseId: leaseRef,
+                  leaseRef: leaseRef,
+                  assetId: selectedGroup.assetId,
+                  assetCode: selectedGroup.assetCode,
+                  setName: selectedGroup.setName,
+                });
+              }}
+            >
+              {attachMut.isPending ? 'Attaching…' : 'Attach Sub-Asset'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── STATUS CHANGE MODAL ── */}
+      <Dialog open={statusOpen} onOpenChange={setStatusOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-amber-400" />
+              Change Status — <span className="font-mono text-primary">{statusTarget?.code}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs mb-1.5 block">New Status *</Label>
+              <Select value={newStatus} onValueChange={v => setNewStatus(v as typeof newStatus)}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(['Active','Cancelled','Returned','BackIn','Replaced','WriteOff','Condemned'] as const).map(s => (
+                    <SelectItem key={s} value={s}>
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 mr-2 ${SA_STATUS_CLS[s] ?? ''}`}>{s}</Badge>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Reason</Label>
+              <Input placeholder="Reason for status change…" value={statusReason} onChange={e => setStatusReason(e.target.value)} className="h-8 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs mb-1.5 block">Notes</Label>
+              <Input placeholder="Additional notes…" value={statusNotes} onChange={e => setStatusNotes(e.target.value)} className="h-8 text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!statusTarget || statusMut.isPending}
+              onClick={() => {
+                if (!statusTarget) return;
+                statusMut.mutate({
+                  leaseSubAssetId: statusTarget.id,
+                  newStatus,
+                  statusDate: new Date().toISOString().slice(0, 10),
+                  reason: statusReason || undefined,
+                  notes: statusNotes || undefined,
+                });
+              }}
+            >
+              {statusMut.isPending ? 'Saving…' : 'Update Status'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── FINANCIAL TERMS SECTION ── */}
       <div className="rounded-xl border border-border bg-card p-6">
