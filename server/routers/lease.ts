@@ -1170,4 +1170,70 @@ export const leaseRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message });
       }
     }),
+
+  // ── Sub-Assets for Lease Detail Asset Tab ──────────────────────────────────
+  getSubAssetsByContractId: protectedProcedure
+    .input(z.object({ contractId: z.number().int() }))
+    .query(async ({ input }) => {
+      try {
+        // Resolve contract_ref (leaseId string) from contractId
+        const leaseRows = await execSPP('sp_GetLeaseById', [
+          { name: 'ContractId', type: sql.Int, value: input.contractId },
+        ]);
+        const leaseId = (leaseRows[0] as any)?.contract_ref as string | null;
+        if (!leaseId) return [];
+        const rows = await execSPP('asset.sp_GetLeaseSubAssets', [
+          { name: 'lease_id', type: sql.NVarChar(50), value: leaseId },
+        ]);
+        return rows.map((r: any) => ({
+          leaseSubAssetId:   r.lease_sub_asset_id   as number,
+          leaseId:           r.lease_id             as string,
+          assetId:           r.asset_id             as number,
+          assetCode:         r.asset_code           as string,
+          setName:           r.set_name             as string,
+          status:            r.status               as string,
+          statusDate:        r.status_date          as string | null,
+          reason:            r.reason               as string | null,
+          replacedByCode:    r.replaced_by_code     as string | null,
+          notes:             r.notes                as string | null,
+          tagsWithSerials:   r.tags_with_serials    as string | null,
+          owner:             r.owner                as string | null,
+          createdBy:         r.created_by           as string,
+          createdAt:         r.created_at           as string,
+          updatedAt:         r.updated_at           as string | null,
+        }));
+      } catch (err: unknown) {
+        const e = err as Error;
+        await writeErrorLog({ severity: 'Error', module: 'Lease', message: e.message, stackTrace: e.stack, screenId: 'VFLLSEDET0001P001' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message });
+      }
+    }),
+
+  logSubAssetDeviation: protectedProcedure
+    .input(z.object({
+      action:     z.string(),
+      entityId:   z.number().int(),
+      entityCode: z.string().optional(),
+      entityName: z.string().optional(),
+      beforeJson: z.string().optional(),
+      afterJson:  z.string().optional(),
+      screenId:   z.string().optional(),
+      sessionRef: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const changedBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? 'system';
+      await execSPP('sp_LogSubAssetTransaction', [
+        { name: 'Action',      type: sql.NVarChar(50),          value: input.action },
+        { name: 'EntityType',  type: sql.NVarChar(50),          value: 'LEASE_SUB_ASSET' },
+        { name: 'EntityId',    type: sql.Int,                   value: input.entityId },
+        { name: 'EntityCode',  type: sql.NVarChar(100),         value: input.entityCode ?? null },
+        { name: 'EntityName',  type: sql.NVarChar(255),         value: input.entityName ?? null },
+        { name: 'BeforeJson',  type: sql.NVarChar(sql.MAX),     value: input.beforeJson ?? null },
+        { name: 'AfterJson',   type: sql.NVarChar(sql.MAX),     value: input.afterJson ?? null },
+        { name: 'ChangedBy',   type: sql.NVarChar(100),         value: changedBy },
+        { name: 'ScreenId',    type: sql.NVarChar(50),          value: input.screenId ?? 'VFLLSEDET0001P001' },
+        { name: 'SessionRef',  type: sql.NVarChar(100),         value: input.sessionRef ?? null },
+      ]).catch(() => {/* non-blocking */});
+      return { ok: true };
+    }),
 });

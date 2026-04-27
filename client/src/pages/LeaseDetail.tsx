@@ -26,8 +26,228 @@ import {
 import {
   Building2, DollarSign, FileText, User, Package, History,
   ArrowLeft, RefreshCw, BarChart2, Info, Save, Calculator,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle,
 } from 'lucide-react';
+
+// ── Sub-Assets Grid ───────────────────────────────────────────────────────────
+type SubAssetRow = {
+  leaseSubAssetId: number;
+  leaseId: string;
+  assetId: number;
+  assetCode: string;
+  setName: string;
+  status: string;
+  statusDate: string | null;
+  reason: string | null;
+  replacedByCode: string | null;
+  notes: string | null;
+  tagsWithSerials: string | null;
+  owner: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+};
+
+const SUB_STATUS_BADGE: Record<string, string> = {
+  Active:    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+  Cancelled: 'bg-red-500/15 text-red-400 border border-red-500/30',
+  Returned:  'bg-amber-500/15 text-amber-400 border border-amber-500/30',
+  BackIn:    'bg-blue-500/15 text-blue-400 border border-blue-500/30',
+  Replaced:  'bg-purple-500/15 text-purple-400 border border-purple-500/30',
+  WriteOff:  'bg-slate-500/15 text-slate-400 border border-slate-500/30',
+  Condemned: 'bg-orange-500/15 text-orange-400 border border-orange-500/30',
+};
+
+function SubAssetsGrid({ contractId }: { contractId: number }) {
+  const utils = trpc.useUtils();
+  const { data: rows = [], isLoading } = trpc.lease.getSubAssetsByContractId.useQuery({ contractId });
+  const logDev = trpc.lease.logSubAssetDeviation.useMutation();
+  const updateStatus = trpc.asset.updateSubAssetStatus.useMutation({
+    onSuccess: () => utils.lease.getSubAssetsByContractId.invalidate({ contractId }),
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
+  const updateTags = trpc.asset.updateLeaseSubAssetTags.useMutation({
+    onSuccess: () => utils.lease.getSubAssetsByContractId.invalidate({ contractId }),
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
+
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editRow, setEditRow] = useState<{ notes: string; tagsWithSerials: string }>({ notes: '', tagsWithSerials: '' });
+  const [statusModal, setStatusModal] = useState<SubAssetRow | null>(null);
+  const [newStatus, setNewStatus] = useState('Cancelled');
+  const [statusReason, setStatusReason] = useState('');
+  const [statusNotes, setStatusNotes] = useState('');
+  const [devLog, setDevLog] = useState<{ action: string; code: string; name: string; ts: string }[]>([]);
+
+  const startEdit = (row: SubAssetRow) => {
+    setEditId(row.leaseSubAssetId);
+    setEditRow({ notes: row.notes ?? '', tagsWithSerials: row.tagsWithSerials ?? '' });
+  };
+  const cancelEdit = () => { setEditId(null); setEditRow({ notes: '', tagsWithSerials: '' }); };
+
+  const saveEdit = (row: SubAssetRow) => {
+    const before = JSON.stringify({ notes: row.notes, tagsWithSerials: row.tagsWithSerials });
+    const after  = JSON.stringify(editRow);
+    updateTags.mutate({ leaseSubAssetId: row.leaseSubAssetId, tagsWithSerials: editRow.tagsWithSerials }, {
+      onSuccess: () => {
+        logDev.mutate({ action: 'EDIT', entityId: row.leaseSubAssetId, entityCode: row.assetCode, entityName: row.setName, beforeJson: before, afterJson: after });
+        setDevLog(l => [{ action: 'EDIT', code: row.assetCode, name: row.setName, ts: new Date().toLocaleTimeString() }, ...l]);
+        toast.success('Sub-asset updated');
+        cancelEdit();
+      },
+    });
+  };
+
+  const applyStatus = () => {
+    if (!statusModal) return;
+    const row = statusModal;
+    const before = JSON.stringify({ status: row.status });
+    updateStatus.mutate({ leaseSubAssetId: row.leaseSubAssetId, newStatus: newStatus as any, statusDate: new Date().toISOString().split('T')[0], reason: statusReason, notes: statusNotes }, {
+      onSuccess: () => {
+        logDev.mutate({ action: newStatus.toUpperCase(), entityId: row.leaseSubAssetId, entityCode: row.assetCode, entityName: row.setName, beforeJson: before, afterJson: JSON.stringify({ status: newStatus, reason: statusReason }) });
+        setDevLog(l => [{ action: newStatus.toUpperCase(), code: row.assetCode, name: row.setName, ts: new Date().toLocaleTimeString() }, ...l]);
+        toast.success(`Status changed to ${newStatus}`);
+        setStatusModal(null);
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold flex items-center gap-2"><Package className="w-4 h-4 text-amber-400" /> Sub-Assets <span className="text-xs font-normal text-muted-foreground">({rows.length})</span></h4>
+      </div>
+      {isLoading ? (
+        <p className="text-xs text-muted-foreground animate-pulse py-4 text-center">Loading sub-assets…</p>
+      ) : rows.length === 0 ? (
+        <div className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border rounded-lg">No sub-assets attached to this lease.</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/40 border-b border-border">
+              <tr>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Asset Code</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Set Name</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Status</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Owner</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Tags / Serials</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Notes</th>
+                <th className="text-left px-3 py-2 text-muted-foreground font-medium">Updated</th>
+                <th className="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {(rows as SubAssetRow[]).map((row) => (
+                <tr key={row.leaseSubAssetId} className="border-b border-border last:border-0 hover:bg-muted/10 transition-colors">
+                  <td className="px-3 py-2 font-mono text-primary">{row.assetCode}</td>
+                  <td className="px-3 py-2">{row.setName}</td>
+                  <td className="px-3 py-2">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${SUB_STATUS_BADGE[row.status] ?? 'bg-muted text-muted-foreground'}`}>{row.status}</span>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{row.owner ?? '—'}</td>
+                  <td className="px-3 py-2 max-w-[150px]">
+                    {editId === row.leaseSubAssetId ? (
+                      <Input className="h-6 text-xs px-1.5 py-0 bg-muted/30" value={editRow.tagsWithSerials}
+                        onChange={e => setEditRow(r => ({ ...r, tagsWithSerials: e.target.value }))} placeholder="Tags / serials…" />
+                    ) : <span className="truncate block text-muted-foreground">{row.tagsWithSerials ?? '—'}</span>}
+                  </td>
+                  <td className="px-3 py-2 max-w-[130px]">
+                    {editId === row.leaseSubAssetId ? (
+                      <Input className="h-6 text-xs px-1.5 py-0 bg-muted/30" value={editRow.notes}
+                        onChange={e => setEditRow(r => ({ ...r, notes: e.target.value }))} placeholder="Notes…" />
+                    ) : <span className="truncate block text-muted-foreground">{row.notes ?? '—'}</span>}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{row.updatedAt ? fmtDate(row.updatedAt) : fmtDate(row.createdAt)}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1">
+                      {editId === row.leaseSubAssetId ? (
+                        <>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-400" onClick={() => saveEdit(row)} disabled={updateTags.isPending}>
+                            <CheckCircle className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground" onClick={cancelEdit}>
+                            <XCircle className="h-3.5 w-3.5" /></Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => startEdit(row)} title="Edit tags / notes">
+                            <Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-amber-400" onClick={() => { setStatusModal(row); setNewStatus('Cancelled'); setStatusReason(''); setStatusNotes(''); }} title="Change status">
+                            <AlertTriangle className="h-3.5 w-3.5" /></Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Session Deviation Log */}
+      {devLog.length > 0 && (
+        <div>
+          <h5 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5"><History className="w-3 h-3" /> Session Deviation Log</h5>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/30"><tr>
+                <th className="text-left px-3 py-1.5 text-muted-foreground">Action</th>
+                <th className="text-left px-3 py-1.5 text-muted-foreground">Asset Code</th>
+                <th className="text-left px-3 py-1.5 text-muted-foreground">Set Name</th>
+                <th className="text-left px-3 py-1.5 text-muted-foreground">Time</th>
+              </tr></thead>
+              <tbody>
+                {devLog.map((d, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="px-3 py-1.5"><span className="font-mono text-amber-400">{d.action}</span></td>
+                    <td className="px-3 py-1.5 font-mono text-primary">{d.code}</td>
+                    <td className="px-3 py-1.5">{d.name}</td>
+                    <td className="px-3 py-1.5 text-muted-foreground">{d.ts}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Modal */}
+      {statusModal && (
+        <Dialog open onOpenChange={() => setStatusModal(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Change Sub-Asset Status</DialogTitle>
+              <DialogDescription>Asset: <span className="font-mono text-primary">{statusModal.assetCode}</span> — {statusModal.setName}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">New Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>{['Cancelled','Returned','BackIn','Replaced','WriteOff','Condemned'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Reason</Label>
+                <Input className="h-8 text-xs" value={statusReason} onChange={e => setStatusReason(e.target.value)} placeholder="Reason for change…" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Notes</Label>
+                <Textarea className="text-xs min-h-[60px]" value={statusNotes} onChange={e => setStatusNotes(e.target.value)} placeholder="Additional notes…" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setStatusModal(null)}>Cancel</Button>
+              <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={applyStatus} disabled={updateStatus.isPending}>
+                {updateStatus.isPending ? 'Saving…' : 'Apply Status'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
 
 // ── constants ─────────────────────────────────────────────────────────────────
 const ASSET_TYPES = ['Villa','Apartment','Vehicle','Heavy Vehicle','Tower Site','Data Centre','Retail Outlet','Office','Warehouse','Fleet Vehicle','Network Equipment','Generator Site','Other'];
@@ -639,6 +859,10 @@ export default function LeaseDetail() {
                   </Select>
                 </div>
               </div>
+
+              {/* Sub-Assets Grid */}
+              <Separator />
+              <SubAssetsGrid contractId={contractId} />
             </TabsContent>
 
             {/* ── FINANCIAL TERMS ── */}
