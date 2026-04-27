@@ -91,10 +91,10 @@ const menuItems: NavItem[] = [
     icon: BookOpen, label: "Cheque Inventory",
     children: [
       { label: "Cheque Register",   path: "/cheques" },
-      { label: "Cheque Books",      path: "/cheques" },
+      { label: "Cheque Books",      path: "/cheques/books" },
       { label: "Bounce Management", path: "/cheques/bounce" },
-      { label: "Stale Alerts",      path: "/cheques" },
-      { label: "Signatories",       path: "/cheques" },
+      { label: "Stale Alerts",      path: "/cheques/stale" },
+      { label: "Signatories",       path: "/cheques/signatories" },
     ],
   },
   {
@@ -184,7 +184,7 @@ const menuItems: NavItem[] = [
     icon: MapPin, label: "Space & Projects",
     children: [
       { label: "Space Management",   path: "/ops/space" },
-      { label: "Capital Projects",   path: "/ops/space" },
+      { label: "Capital Projects",   path: "/ops/capital-projects" },
       { label: "ESG & Carbon",       path: "/ops/esg-carbon" },
     ],
   },
@@ -199,7 +199,7 @@ const menuItems: NavItem[] = [
     icon: RefreshCw, label: "Multi-Entity & FX",
     children: [
       { label: "Entity Structure",   path: "/admin/multi-entity" },
-      { label: "FX Translations",    path: "/admin/multi-entity" },
+      { label: "FX Translations",    path: "/admin/fx-translations" },
       { label: "Lessor Credit Score",path: "/admin/lessor-credit" },
     ],
   },
@@ -207,7 +207,7 @@ const menuItems: NavItem[] = [
     icon: Bell, label: "Alerts & Reports",
     children: [
       { label: "Alert Rules",        path: "/admin/alerts-reports" },
-      { label: "Scheduled Reports",  path: "/admin/alerts-reports" },
+      { label: "Scheduled Reports",  path: "/admin/scheduled-reports" },
       { label: "Alert Centre",       path: "/alerts" },
     ],
   },
@@ -462,7 +462,7 @@ function DashboardLayoutContent({
                           <div className="ml-6 mt-0.5 mb-1 border-l border-sidebar-border pl-2 flex flex-col gap-0.5">
                             {item.children.map(child => (
                               <button
-                                key={child.path}
+                                key={child.label}
                                 onClick={() => setLocation(child.path)}
                                 className={`text-left text-sm px-2 py-1.5 rounded-md transition-colors w-full flex items-center justify-between ${
                                   location === child.path
