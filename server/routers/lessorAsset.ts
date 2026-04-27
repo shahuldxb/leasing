@@ -746,9 +746,7 @@ export const assetRouter = router({
       const createdBy = (ctx.user as any)?.name ?? (ctx.user as any)?.email ?? "system";
       const params: SPPParam[] = [
         { name: "lease_id",          type: "NVarChar", value: input.leaseId },
-        { name: "lease_ref",         type: "NVarChar", value: input.leaseRef ?? input.leaseId },
         { name: "asset_id",          type: "Int",      value: input.assetId },
-        { name: "asset_code",        type: "NVarChar", value: input.assetCode },
         { name: "set_name",          type: "NVarChar", value: input.setName },
         { name: "created_by",        type: "NVarChar", value: createdBy },
         { name: "tags_with_serials", type: "NVarChar", value: input.tagsWithSerials ?? null },
