@@ -115,6 +115,20 @@ export const complianceRouter = router({
       const totalCount = rows.length > 0 ? (rows[0] as any).total_count ?? rows.length : 0;
       return { rows, totalCount };
     }),
+
+  resolveError: protectedProcedure
+    .input(z.object({
+      errorId: z.number().int(),
+      note:    z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await execSPP('sp_ResolveError', [
+        { name: 'ErrorId',    type: sql.Int,           value: input.errorId },
+        { name: 'Note',       type: sql.NVarChar(500), value: input.note || null },
+        { name: 'ResolvedBy', type: sql.NVarChar(100), value: (ctx.user as any)?.name || null },
+      ]);
+      return { success: true };
+    }),
 });
 
 export const misRouter = router({

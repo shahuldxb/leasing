@@ -170,8 +170,16 @@ function AuditLogDrawer({ screenId }: { screenId: string }) {
 // ── ErrorLogDrawer ────────────────────────────────────────────────────────────
 
 function ErrorLogDrawer({ screenId }: { screenId: string }) {
-  const entries = mockErrorEntries(screenId);
-  const unresolvedCount = entries.filter(e => !e.resolved).length;
+  const utils = trpc.useUtils();
+  const { data, isLoading } = trpc.compliance.getErrorLog.useQuery(
+    { screenId, pageSize: 50 },
+    { refetchOnWindowFocus: false }
+  );
+  const resolveMutation = trpc.compliance.resolveError.useMutation({
+    onSuccess: () => utils.compliance.getErrorLog.invalidate({ screenId }),
+  });
+  const entries: any[] = data?.rows ?? [];
+  const unresolvedCount = entries.filter((e: any) => e.resolution_status !== 'Resolved').length;
 
   return (
     <Sheet>
@@ -207,41 +215,66 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
         </SheetHeader>
         <ScrollArea className="flex-1">
           <div className="px-5 py-4 space-y-3">
-            {entries.map((e, i) => (
-              <div key={e.id}>
-                <div className="flex items-start gap-2.5">
-                  {e.resolved
-                    ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                    : <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                  }
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={`text-sm font-medium ${e.resolved ? "text-muted-foreground" : "text-foreground"}`}>
-                        {e.message}
-                      </span>
-                      <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />{relativeTime(e.timestamp)}
-                      </span>
-                    </div>
-                    {e.code && (
-                      <span className="text-xs font-mono text-amber-400">{e.code}</span>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{e.user}</span>
-                      <Badge
-                        className={`text-[10px] h-4 px-1.5 border-0 ${
-                          e.resolved ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {e.resolved ? "Resolved" : "Open"}
-                      </Badge>
+            {isLoading && (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading error log...
+              </div>
+            )}
+            {!isLoading && entries.length === 0 && (
+              <div className="text-center text-muted-foreground text-sm py-8">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                No errors recorded for this screen
+              </div>
+            )}
+            {entries.map((e: any, i: number) => {
+              const resolved = e.resolution_status === 'Resolved';
+              const userCtx = e.user_context ? (() => { try { return JSON.parse(e.user_context); } catch { return {}; } })() : {};
+              return (
+                <div key={e.error_id}>
+                  <div className="flex items-start gap-2.5">
+                    {resolved
+                      ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      : <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                    }
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className={`text-sm font-medium ${resolved ? "text-muted-foreground" : "text-foreground"}`}>
+                          {e.message}
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />{relativeTime(e.timestamp_utc)}
+                        </span>
+                      </div>
+                      {e.error_code && (
+                        <span className="text-xs font-mono text-amber-400">{e.error_code}</span>
+                      )}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <User className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{userCtx.user || e.module}</span>
+                        <Badge
+                          className={`text-[10px] h-4 px-1.5 border-0 ${
+                            resolved ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+                          }`}
+                        >
+                          {resolved ? "Resolved" : "Open"}
+                        </Badge>
+                        {!resolved && (
+                          <button
+                            onClick={() => resolveMutation.mutate({ errorId: e.error_id })}
+                            disabled={resolveMutation.isPending}
+                            className="text-[10px] text-emerald-400 hover:text-emerald-300 underline ml-1 disabled:opacity-50"
+                          >
+                            {resolveMutation.isPending ? 'Resolving...' : 'Mark resolved'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  {i < entries.length - 1 && <Separator className="mt-3 bg-border/50" />}
                 </div>
-                {i < entries.length - 1 && <Separator className="mt-3 bg-border/50" />}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </SheetContent>
