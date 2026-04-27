@@ -1008,39 +1008,6 @@ export default function SubAssetTransactionLog() {
               </div>
             )}
 
-            {/* State 3: Set selected but NOT attached — show Attach CTA */}
-            {setSelected && !isAlreadyAttached && (() => {
-              const rec = selectedSetRecord as any;
-              return (
-                <div className="flex flex-col gap-3">
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-amber-400 mb-1 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5" /> Not Attached
-                    </p>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      <span className="font-mono text-[#e60000]">{rec.assetCode}</span>
-                      {" "}{rec.setName ?? rec.currentSetName} is not yet linked to this lease.
-                      Attach it to start recording transactions.
-                    </p>
-                  </div>
-                  <Button
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-                    onClick={() => {
-                      resetAttachDialog();
-                      if (selectedAssetId !== "none") onPickAttachSet(selectedAssetId);
-                      setAttachOpen(true);
-                    }}
-                  >
-                    <Link2 className="w-4 h-4" />
-                    Attach to Lease
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground text-center">
-                    This will create an ATTACH transaction log entry
-                  </p>
-                </div>
-              );
-            })()}
-
             {/* State 4: Set IS attached — show 7 action buttons */}
             {setSelected && isAlreadyAttached && (() => {
               const rec = selectedSetRecord as any;
