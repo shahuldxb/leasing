@@ -160,6 +160,9 @@ import MaturityLadder            from "./pages/MaturityLadder";
 import MultiStandardComparison   from "./pages/MultiStandardComparison";
 import LeaseModificationWizard   from "./pages/LeaseModificationWizard";
 
+// Accounting Standards Paper
+import AccountingStandardsPaper  from "./pages/AccountingStandardsPaper";
+
 function Router() {
   return (
     <Switch>
@@ -331,6 +334,8 @@ function Router() {
       {/* Phase 8: Features 15, 17 */}
       <Route path="/accounting/multi-standard"    component={MultiStandardComparison} />
       <Route path="/leases/modification-wizard"   component={LeaseModificationWizard} />
+      {/* Accounting Standards Reference Paper */}
+      <Route path="/compliance/standards-paper"   component={AccountingStandardsPaper} />
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />
       <Route                                 component={NotFound} />

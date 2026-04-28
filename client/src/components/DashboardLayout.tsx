@@ -126,6 +126,7 @@ const menuItems: NavItem[] = [
     icon: Shield, label: "Compliance",
     children: [
       { label: "IFRS 16 Disclosures",path: "/compliance/ifrs16" },
+      { label: "Accounting Standards Paper", path: "/compliance/standards-paper" },
     ],
   },
   {
