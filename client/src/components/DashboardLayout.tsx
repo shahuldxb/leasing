@@ -145,6 +145,8 @@ const menuItems: NavItem[] = [
       { label: "Multi-Standard (IFRS/ASC/IPSAS)", path: "/accounting/multi-standard" },
       { label: "ERP Export",            path: "/accounting/erp-export" },
       { label: "Bulk Operations",       path: "/accounting/bulk" },
+      { label: "Consolidation",          path: "/accounting/consolidation" },
+      { label: "Hedge Accounting",       path: "/accounting/hedge" },
     ],
   },
   {
@@ -189,14 +191,7 @@ const menuItems: NavItem[] = [
   },
 
 
-  {
-    icon: Calculator, label: "Advanced Accounting",
-    children: [
-      { label: "Lessor Finance Lease", path: "/accounting/lessor-finance" },
-      { label: "Consolidation",        path: "/accounting/consolidation" },
-      { label: "Hedge Accounting",     path: "/accounting/hedge" },
-    ],
-  },
+
   {
     icon: TrendingUp, label: "Budgeting & ESG",
     children: [

@@ -1254,17 +1254,17 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] TypeScript: 0 errors confirmed
 
 ## Contract DMS Full Rebuild (Apr 29)
-- [ ] Read existing contracts schema, router, and pages
-- [ ] Add DB tables: contract_metadata_templates, contract_metadata_fields, contract_documents, contract_milestones, contract_metadata_values
-- [ ] Add tRPC procedures: metadataTemplates CRUD, contractDocuments CRUD (upload/list/delete), contractMilestones CRUD, contract metadata value upsert
-- [ ] Build Metadata Templates admin page (define field schemas per contract type)
-- [ ] Rebuild Contract Register as full DMS: multi-doc upload, metadata value entry, version history tab, milestones timeline tab, Create Lease button
-- [ ] Update sidebar: add Metadata Templates under Contracts
-- [ ] Wire Create Lease button to pre-fill /leases/new with contract metadata values
-- [ ] Save checkpoint and deliver
+- [x] Read existing contracts schema, router, and pages
+- [x] Add DB tables: contract_metadata_templates, contract_metadata_fields, contract_documents, contract_milestones, contract_metadata_values
+- [x] Add tRPC procedures: metadataTemplates CRUD, contractDocuments CRUD (upload/list/delete), contractMilestones CRUD, contract metadata value upsert
+- [x] Build Metadata Templates admin page (define field schemas per contract type)
+- [x] Rebuild Contract Register as full DMS: multi-doc upload, metadata value entry, version history tab, milestones timeline tab, Create Lease button
+- [x] Update sidebar: add Metadata Templates under Contracts
+- [x] Wire Create Lease button to pre-fill /leases/new with contract metadata values
+- [x] Save checkpoint and deliver
 
 ## Contract DMS Enhancements (Apr 29 - Session 2)
-- [ ] AI contract extraction: backend tRPC procedure reads uploaded PDF via LLM and returns field values
-- [ ] Extract with AI button in ContractRegister Documents tab auto-fills Metadata fields
-- [ ] Milestone alerts integration: wire contract milestones into Alert Rules engine (email notifications)
-- [ ] Remove redundant sidebar items: Version History, Document Vault, Milestones under Contracts
+- [x] AI contract extraction: backend tRPC procedure reads uploaded PDF via LLM and returns field values
+- [x] Extract with AI button in ContractRegister Documents tab auto-fills Metadata fields
+- [x] Milestone alerts integration: wire contract milestones into Alert Rules engine (email notifications)
+- [x] Remove redundant sidebar items: Version History, Document Vault, Milestones under Contracts
