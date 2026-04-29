@@ -62,6 +62,10 @@ const menuItems: NavItem[] = [
       { label: "Contract Register",    path: "/contracts" },
       { label: "Metadata Templates",    path: "/contracts/metadata-templates" },
       { label: "Master Contracts",      path: "/contracts/msc" },
+      { label: "Documents",             path: "/contracts/documents" },
+      { label: "Milestones",            path: "/contracts/milestones" },
+      { label: "Modifications",         path: "/contracts/modifications" },
+      { label: "History",               path: "/contracts/history" },
     ],
   },
   {

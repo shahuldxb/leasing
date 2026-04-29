@@ -159,8 +159,11 @@ export default function ContractRegister() {
     if (!docDraft.fileBase64) { toast.error("Please select a file"); return; }
     if (!docDraft.docName.trim()) { toast.error("Document name is required"); return; }
     uploadDoc.mutate({
-      leaseId: selected.lease_id,
-      ...docDraft,
+      contractId: selected.lease_id ?? selected.contract_id,
+      documentType: docDraft.docType,
+      documentName: docDraft.docName,
+      fileBase64: docDraft.fileBase64,
+      mimeType: docDraft.mimeType,
       versionNotes: docDraft.versionNotes || undefined,
       signatoryName: docDraft.signatoryName || undefined,
       signedDate: docDraft.signedDate || undefined,
@@ -209,8 +212,8 @@ export default function ContractRegister() {
 
   // ── Milestones ──────────────────────────────────────────────────────────
   const { data: milestones, refetch: refetchMilestones } = trpc.contractDms.listMilestones.useQuery(
-    { leaseId: selected?.lease_id },
-    { enabled: !!selected?.lease_id }
+    { contractId: selected?.lease_id ?? selected?.contract_id },
+    { enabled: !!(selected?.lease_id ?? selected?.contract_id) }
   );
   const [msDialog, setMsDialog] = useState(false);
   const [msDraft, setMsDraft] = useState({
@@ -284,9 +287,8 @@ export default function ContractRegister() {
     const firstDoc = docs[0];
     setAiExtracting(true);
     extractMeta.mutate({
-      leaseId: selected.lease_id,
+      contractId: selected.lease_id ?? selected.contract_id,
       fileUrl: firstDoc.file_url,
-      templateId: selectedTemplateId ?? undefined,
     });
   }
 
@@ -909,7 +911,7 @@ export default function ContractRegister() {
             <Button variant="outline" onClick={() => setMsDialog(false)}>Cancel</Button>
             <Button onClick={() => {
               if (!msDraft.title.trim() || !msDraft.dueDate) { toast.error("Title and due date are required"); return; }
-              upsertMs.mutate({ ...msDraft, leaseId: selected.lease_id });
+              upsertMs.mutate({ milestoneId: msDraft.milestoneId, milestoneType: msDraft.milestoneType, milestoneDate: msDraft.dueDate, description: msDraft.description, contractId: selected.lease_id ?? selected.contract_id });
             }} disabled={upsertMs.isPending}>Save Milestone</Button>
           </DialogFooter>
         </DialogContent>
@@ -925,7 +927,7 @@ export default function ContractRegister() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteDoc.mutate({ docId: deleteDocId! })}>Delete</AlertDialogAction>
+              onClick={() => deleteDoc.mutate({ documentId: deleteDocId! })}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

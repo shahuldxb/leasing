@@ -21,9 +21,10 @@ import BouncePenalty       from "./pages/BouncePenalty";
 // Contract Management
 import ContractRegister            from "./pages/ContractRegister";
 import ContractMetadataTemplates   from "./pages/ContractMetadataTemplates";
-import ContractHistory    from "./pages/ContractHistory";
-import ContractDocuments  from "./pages/ContractDocuments";
-import ContractMilestones from "./pages/ContractMilestones";
+import ContractHistory       from "./pages/ContractHistory";
+import ContractDocuments     from "./pages/ContractDocuments";
+import ContractMilestones    from "./pages/ContractMilestones";
+import ContractModifications from "./pages/ContractModifications";
 
 // Payables
 import PayablesQueue      from "./pages/PayablesQueue";
@@ -187,9 +188,10 @@ function Router() {
       {/* Contract Management */}
       <Route path="/contracts"                          component={ContractRegister} />
       <Route path="/contracts/metadata-templates"        component={ContractMetadataTemplates} />
-      <Route path="/contracts/history"                   component={ContractHistory} />
-      <Route path="/contracts/documents"     component={ContractDocuments} />
-      <Route path="/contracts/milestones"    component={ContractMilestones} />
+      <Route path="/contracts/history"        component={ContractHistory} />
+      <Route path="/contracts/documents"      component={ContractDocuments} />
+      <Route path="/contracts/milestones"     component={ContractMilestones} />
+      <Route path="/contracts/modifications"  component={ContractModifications} />
 
       {/* Payables */}
       <Route path="/payables"                component={PayablesQueue} />

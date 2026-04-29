@@ -1298,3 +1298,14 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [ ] HandoverChecklist.tsx — replace checklist item dialog → inline right-panel form
 - [ ] LeaseExemptions.tsx — replace Update Exemption Status dialog → inline right-panel form
 - [ ] BudgetVsActual.tsx — replace Add/Update Budget Line dialog → inline right-panel form
+
+## DMS Full Implementation (Apr 2026)
+- [x] Fix all TypeScript errors in contractDms.ts (null→undefined, changedByName)
+- [x] Fix ContractDocuments.tsx — correct listDocuments/extractMetadata input params
+- [x] Fix ContractRegister.tsx — correct field names (contractId, documentId, milestoneDate)
+- [x] ContractMilestones.tsx — full rebuild with real tRPC (listMilestones, upsertMilestone, completeMilestone, dismissMilestone, deleteMilestone, syncMilestoneToAlert)
+- [x] ContractHistory.tsx — full rebuild with real tRPC (getContractHistory), timeline view, CSV export, date range filter
+- [x] ContractModifications.tsx — full rebuild with real tRPC (createModification, submitModification, approveModification, rejectModification, applyModification), maker-checker workflow
+- [x] App.tsx — add /contracts/modifications route
+- [x] DashboardLayout.tsx — add Documents, Milestones, Modifications, History to Contracts nav
+- [x] Zero TypeScript errors confirmed
