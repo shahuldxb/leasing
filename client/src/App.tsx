@@ -284,6 +284,7 @@ function Router() {
 
       {/* Alerts & Scheduled Reports */}
       <Route path="/admin/alerts-reports"    component={AlertsReports} />
+      <Route path="/admin/scheduled-reports"  component={AlertsReports} />
 
       {/* New P2/P3/P4 Features */}
       <Route path="/accounting/lessor-finance" component={LessorFinanceLease} />
