@@ -25,7 +25,7 @@ import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark,
   FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, MapPin,
-  Sparkles, Calculator, Calendar, ArrowRightLeft, LineChart
+  Sparkles, Calculator, Calendar, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -186,13 +186,7 @@ const menuItems: NavItem[] = [
       { label: "ESG & Carbon",       path: "/ops/esg-carbon" },
     ],
   },
-  {
-    icon: ArrowRightLeft, label: "Lease Origination",
-    children: [
-      { label: "New Origination",    path: "/leases/origination" },
-      { label: "Options & Breaks",   path: "/leases/options-breaks" },
-    ],
-  },
+
 
   {
     icon: Bell, label: "Alerts & Reports",

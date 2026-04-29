@@ -26,6 +26,7 @@ import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
   ChevronDown, Search, X, User, Layers, MapPin, Phone, Mail, CreditCard, Hash,
+  GitBranch, Scissors, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Zap,
 } from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ const fmtDate = (d: unknown) =>
   d ? new Date(d as string).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const today = () => new Date().toISOString().slice(0, 10);
 
-type TxnType = 'Details' | 'Modification' | 'Termination' | 'Renewal';
+type TxnType = 'Details' | 'Modification' | 'Termination' | 'Renewal' | 'OptionsBreaks';
 
 const LIFECYCLE_COLORS: Record<string, string> = {
   Active:   'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -857,11 +858,436 @@ function LeaseDropdown({
   );
 }
 
+// ── Options & Breaks Panel ───────────────────────────────────────────────────
+const OPTION_TYPE_META: Record<string, { color: string; label: string; ifrs: string; action: string; targetTab: TxnType }> = {
+  RENEWAL:     { color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30', label: 'Renewal',     ifrs: 'IFRS 16 §19 — extends lease term; increases liability & ROU if reasonably certain', action: 'Exercise → Renewal (JE-7)',     targetTab: 'Renewal' },
+  PURCHASE:    { color: 'text-blue-400 bg-blue-500/10 border-blue-500/30',         label: 'Purchase',    ifrs: 'IFRS 16 §26 — if reasonably certain, include purchase price in lease payments; likely finance lease', action: 'Exercise → Modification (JE-4)', targetTab: 'Modification' },
+  TERMINATION: { color: 'text-red-400 bg-red-500/10 border-red-500/30',            label: 'Termination', ifrs: 'IFRS 16 §19 — shortens lease term; reduces liability & ROU if reasonably certain', action: 'Exercise → Termination (JE-5)', targetTab: 'Termination' },
+  EXTENSION:   { color: 'text-amber-400 bg-amber-500/10 border-amber-500/30',      label: 'Extension',   ifrs: 'IFRS 16 §45 — treated as lease modification; remeasure liability at new IBR',           action: 'Exercise → Modification (JE-4)', targetTab: 'Modification' },
+};
+const BREAK_STATUS_CLS: Record<string, string> = {
+  ACTIVE:    'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  EXERCISED: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  LAPSED:    'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+  WAIVED:    'bg-purple-500/15 text-purple-400 border-purple-500/30',
+};
+
+function OptionsBreaksPanel({
+  contractId,
+  onExerciseOption,
+  onExerciseBreak,
+}: {
+  contractId: number;
+  onExerciseOption: (tab: TxnType, prefill: Record<string, unknown>) => void;
+  onExerciseBreak: (prefill: Record<string, unknown>) => void;
+}) {
+  const utils = trpc.useUtils();
+  const [optOpen, setOptOpen] = React.useState(false);
+  const [brkOpen, setBrkOpen] = React.useState(false);
+  const [editOpt, setEditOpt] = React.useState<Record<string, unknown> | null>(null);
+  const [editBrk, setEditBrk] = React.useState<Record<string, unknown> | null>(null);
+  const INIT_OPT: { contract_id: number; option_type: 'RENEWAL' | 'PURCHASE' | 'TERMINATION' | 'EXTENSION'; exercise_deadline: string; notice_period_days: number; new_term_months: number; new_rent: number; purchase_price: number; reasonably_certain: boolean; notes: string } = { contract_id: contractId, option_type: 'RENEWAL', exercise_deadline: '', notice_period_days: 90, new_term_months: 0, new_rent: 0, purchase_price: 0, reasonably_certain: false, notes: '' };
+  const INIT_BRK: { contract_id: number; break_date: string; notice_deadline: string; penalty_amount: number; conditions: string; status: 'ACTIVE' | 'EXERCISED' | 'LAPSED' | 'WAIVED' } = { contract_id: contractId, break_date: '', notice_deadline: '', penalty_amount: 0, conditions: '', status: 'ACTIVE' };
+  const [optForm, setOptForm] = React.useState({ ...INIT_OPT });
+  const [brkForm, setBrkForm] = React.useState({ ...INIT_BRK });
+
+  const { data: options = [], refetch: refetchOpts } = trpc.leaseOptions.list.useQuery({ contractId });
+  const { data: breaks = [], refetch: refetchBrks } = trpc.breakClause.list.useQuery();
+  const contractBreaks = (breaks as Record<string, unknown>[]).filter((b) => (b as Record<string, unknown>).contract_id === contractId);
+
+  const upsertOpt = trpc.leaseOptions.upsert.useMutation({
+    onSuccess: () => { refetchOpts(); setOptOpen(false); toast.success('Option saved'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const exerciseOpt = trpc.leaseOptions.exercise.useMutation({
+    onSuccess: () => { refetchOpts(); toast.success('Option marked as exercised'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const upsertBrk = trpc.breakClause.upsert.useMutation({
+    onSuccess: () => { refetchBrks(); setBrkOpen(false); toast.success('Break clause saved'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const toggleRC = trpc.leaseOptions.upsert.useMutation({
+    onSuccess: () => { refetchOpts(); toast.success('Reasonably certain updated'); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  function openEditOpt(o: Record<string, unknown>) {
+    setEditOpt(o);
+    setOptForm({
+      contract_id: contractId,
+      option_type: (o.option_type as 'RENEWAL' | 'PURCHASE' | 'TERMINATION' | 'EXTENSION') ?? 'RENEWAL',
+      exercise_deadline: o.exercise_deadline ? String(o.exercise_deadline).slice(0, 10) : '',
+      notice_period_days: Number(o.notice_period_days ?? 90),
+      new_term_months: Number(o.new_term_months ?? 0),
+      new_rent: Number(o.new_rent ?? 0),
+      purchase_price: Number(o.purchase_price ?? 0),
+      reasonably_certain: Boolean(o.reasonably_certain),
+      notes: String(o.notes ?? ''),
+    });
+    setOptOpen(true);
+  }
+  function openEditBrk(b: Record<string, unknown>) {
+    setEditBrk(b);
+    setBrkForm({
+      contract_id: contractId,
+      break_date: b.break_date ? String(b.break_date).slice(0, 10) : '',
+      notice_deadline: b.notice_deadline ? String(b.notice_deadline).slice(0, 10) : '',
+      penalty_amount: Number(b.penalty_amount ?? 0),
+      conditions: String(b.conditions ?? ''),
+      status: (b.status as 'ACTIVE' | 'EXERCISED' | 'LAPSED' | 'WAIVED') ?? 'ACTIVE',
+    });
+    setBrkOpen(true);
+  }
+
+  const daysUntil = (d: string) => Math.floor((new Date(d).getTime() - Date.now()) / 86400000);
+  const urgencyCls = (d: string) => { const days = daysUntil(d); return days < 0 ? 'text-red-500 font-bold' : days < 30 ? 'text-red-400 font-semibold' : days < 90 ? 'text-amber-400 font-semibold' : 'text-muted-foreground'; };
+
+  return (
+    <div className="space-y-6">
+      {/* ── LEASE OPTIONS ── */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-base font-semibold">Lease Options</h3>
+            <span className="text-xs text-muted-foreground ml-1">(IFRS 16 §19 — Reasonably Certain Assessment)</span>
+          </div>
+          <Button size="sm" onClick={() => { setEditOpt(null); setOptForm({ ...INIT_OPT }); setOptOpen(true); }}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Option
+          </Button>
+        </div>
+
+        {/* Accounting impact reference */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          {Object.entries(OPTION_TYPE_META).map(([type, meta]) => (
+            <div key={type} className={`rounded-lg border p-3 ${meta.color}`}>
+              <p className="text-xs font-bold mb-1">{meta.label}</p>
+              <p className="text-[10px] leading-relaxed opacity-80">{meta.ifrs}</p>
+              <p className="text-[10px] mt-1.5 font-semibold opacity-90">{meta.action}</p>
+            </div>
+          ))}
+        </div>
+
+        {(options as Record<string, unknown>[]).length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground italic p-4 border border-dashed border-border rounded-lg">
+            <Info className="w-4 h-4" /> No lease options recorded for this lease.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  {['Type','Exercise Deadline','Days Left','Notice (Days)','New Term (Mo)','New Rent','Purchase Price','Reasonably Certain','Status','Notes','Actions'].map(h => (
+                    <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(options as Record<string, unknown>[]).map((o, i) => {
+                  const meta = OPTION_TYPE_META[String(o.option_type)] ?? OPTION_TYPE_META.RENEWAL;
+                  const dl = o.exercise_deadline ? String(o.exercise_deadline) : '';
+                  const days = dl ? daysUntil(dl) : null;
+                  const isExercised = String(o.status) === 'EXERCISED';
+                  return (
+                    <tr key={i} className="border-t border-border hover:bg-muted/20">
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold border ${meta.color}`}>{meta.label}</span>
+                      </td>
+                      <td className={`px-3 py-2.5 font-mono text-xs ${dl ? urgencyCls(dl) : 'text-muted-foreground'}`}>
+                        {dl ? new Date(dl).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </td>
+                      <td className={`px-3 py-2.5 text-xs ${days !== null ? urgencyCls(dl) : 'text-muted-foreground'}`}>
+                        {days !== null ? (days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`) : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{String(o.notice_period_days ?? '—')}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{o.new_term_months ? String(o.new_term_months) : '—'}</td>
+                      <td className="px-3 py-2.5 font-mono text-xs">{o.new_rent ? Number(o.new_rent).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'}</td>
+                      <td className="px-3 py-2.5 font-mono text-xs">{o.purchase_price ? Number(o.purchase_price).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'}</td>
+                      <td className="px-3 py-2.5">
+                        <button
+                          onClick={() => {
+                            if (isExercised) return;
+                            toggleRC.mutate({
+                              option_id: Number(o.option_id),
+                              contract_id: contractId,
+                              option_type: o.option_type as 'RENEWAL' | 'PURCHASE' | 'TERMINATION' | 'EXTENSION',
+                              exercise_deadline: dl,
+                              notice_period_days: Number(o.notice_period_days ?? 90),
+                              new_term_months: Number(o.new_term_months ?? 0),
+                              new_rent: Number(o.new_rent ?? 0),
+                              purchase_price: Number(o.purchase_price ?? 0),
+                              reasonably_certain: !Boolean(o.reasonably_certain),
+                              notes: String(o.notes ?? ''),
+                            });
+                          }}
+                          disabled={isExercised}
+                          className="flex items-center gap-1 disabled:opacity-40"
+                          title={isExercised ? 'Already exercised' : 'Toggle reasonably certain'}
+                        >
+                          {Boolean(o.reasonably_certain)
+                            ? <ToggleRight className="w-5 h-5 text-emerald-400" />
+                            : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}
+                          <span className={`text-xs ${Boolean(o.reasonably_certain) ? 'text-emerald-400 font-semibold' : 'text-muted-foreground'}`}>
+                            {Boolean(o.reasonably_certain) ? 'Yes' : 'No'}
+                          </span>
+                        </button>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                          isExercised ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        }`}>{String(o.status ?? 'ACTIVE')}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs max-w-[140px] truncate" title={String(o.notes ?? '')}>{String(o.notes ?? '—')}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEditOpt(o)} disabled={isExercised}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          {!isExercised && (
+                            <Button
+                              size="sm"
+                              className="h-7 px-2.5 text-xs bg-primary hover:bg-primary/90"
+                              onClick={() => {
+                                exerciseOpt.mutate({ option_id: Number(o.option_id), exercise_date: today() });
+                                onExerciseOption(meta.targetTab, {
+                                  payment: o.new_rent ? String(o.new_rent) : '',
+                                  newTermMonths: o.new_term_months ? String(o.new_term_months) : '',
+                                  purchasePrice: o.purchase_price ? String(o.purchase_price) : '',
+                                  notes: `Exercised ${meta.label} option (Option ID: ${o.option_id})`,
+                                });
+                              }}
+                            >
+                              <Zap className="w-3 h-3 mr-1" /> Exercise
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── BREAK CLAUSES ── */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Scissors className="w-4 h-4 text-red-400" />
+            <h3 className="text-base font-semibold">Break Clauses</h3>
+            <span className="text-xs text-muted-foreground ml-1">(IFRS 16 §19 — Termination option; shortens lease term)</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => { setEditBrk(null); setBrkForm({ ...INIT_BRK }); setBrkOpen(true); }}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Break Clause
+          </Button>
+        </div>
+
+        {contractBreaks.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground italic p-4 border border-dashed border-border rounded-lg">
+            <Info className="w-4 h-4" /> No break clauses recorded for this lease.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  {['Break Date','Notice Deadline','Days to Notice','Penalty Amount','Conditions','Status','Actions'].map(h => (
+                    <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {contractBreaks.map((b, i) => {
+                  const nd = b.notice_deadline ? String(b.notice_deadline) : '';
+                  const days = nd ? daysUntil(nd) : null;
+                  const isActive = String(b.status) === 'ACTIVE';
+                  return (
+                    <tr key={i} className="border-t border-border hover:bg-muted/20">
+                      <td className="px-3 py-2.5 font-mono text-xs">{b.break_date ? new Date(String(b.break_date)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
+                      <td className={`px-3 py-2.5 font-mono text-xs ${nd ? urgencyCls(nd) : 'text-muted-foreground'}`}>
+                        {nd ? new Date(nd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </td>
+                      <td className={`px-3 py-2.5 text-xs ${days !== null ? urgencyCls(nd) : 'text-muted-foreground'}`}>
+                        {days !== null ? (days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`) : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs">{b.penalty_amount ? Number(b.penalty_amount).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs max-w-[180px] truncate" title={String(b.conditions ?? '')}>{String(b.conditions ?? '—')}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${BREAK_STATUS_CLS[String(b.status)] ?? ''}`}>{String(b.status ?? '—')}</span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEditBrk(b)} disabled={!isActive}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          {isActive && (
+                            <Button
+                              size="sm"
+                              className="h-7 px-2.5 text-xs bg-red-600 hover:bg-red-700 text-white"
+                              onClick={() => {
+                                upsertBrk.mutate({ ...brkForm, break_id: Number(b.break_id), contract_id: contractId, break_date: String(b.break_date ?? '').slice(0, 10), notice_deadline: nd.slice(0, 10), penalty_amount: Number(b.penalty_amount ?? 0), conditions: String(b.conditions ?? ''), status: 'EXERCISED' });
+                                onExerciseBreak({
+                                  date: b.break_date ? String(b.break_date).slice(0, 10) : today(),
+                                  notes: `Break clause exercised — penalty: ${b.penalty_amount ?? 0}. Conditions: ${b.conditions ?? ''}`,
+                                });
+                              }}
+                            >
+                              <Zap className="w-3 h-3 mr-1" /> Exercise Break
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── OPTION FORM DIALOG ── */}
+      <Dialog open={optOpen} onOpenChange={setOptOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitBranch className="w-4 h-4 text-emerald-400" />
+              {editOpt ? 'Edit Lease Option' : 'New Lease Option'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Option Type *</label>
+                <Select value={optForm.option_type} onValueChange={v => setOptForm(f => ({ ...f, option_type: v as typeof f.option_type }))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['RENEWAL','PURCHASE','TERMINATION','EXTENSION'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Exercise Deadline *</label>
+                <Input type="date" value={optForm.exercise_deadline} onChange={e => setOptForm(f => ({ ...f, exercise_deadline: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Notice Period (Days)</label>
+                <Input type="number" value={optForm.notice_period_days} onChange={e => setOptForm(f => ({ ...f, notice_period_days: Number(e.target.value) }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">New Term (Months)</label>
+                <Input type="number" value={optForm.new_term_months} onChange={e => setOptForm(f => ({ ...f, new_term_months: Number(e.target.value) }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">New Rent</label>
+                <Input type="number" value={optForm.new_rent} onChange={e => setOptForm(f => ({ ...f, new_rent: Number(e.target.value) }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Purchase Price</label>
+                <Input type="number" value={optForm.purchase_price} onChange={e => setOptForm(f => ({ ...f, purchase_price: Number(e.target.value) }))} className="h-8 text-sm" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setOptForm(f => ({ ...f, reasonably_certain: !f.reasonably_certain }))} className="flex items-center gap-2">
+                {optForm.reasonably_certain ? <ToggleRight className="w-6 h-6 text-emerald-400" /> : <ToggleLeft className="w-6 h-6 text-muted-foreground" />}
+                <span className={`text-sm ${optForm.reasonably_certain ? 'text-emerald-400 font-semibold' : 'text-muted-foreground'}`}>Reasonably Certain</span>
+              </button>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Notes</label>
+              <Input value={optForm.notes} onChange={e => setOptForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes…" className="h-8 text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOptOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!optForm.exercise_deadline || upsertOpt.isPending}
+              onClick={() => upsertOpt.mutate({ ...optForm, option_id: editOpt ? Number(editOpt.option_id) : undefined })}
+            >
+              {upsertOpt.isPending ? 'Saving…' : 'Save Option'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── BREAK CLAUSE FORM DIALOG ── */}
+      <Dialog open={brkOpen} onOpenChange={setBrkOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scissors className="w-4 h-4 text-red-400" />
+              {editBrk ? 'Edit Break Clause' : 'New Break Clause'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Break Date *</label>
+                <Input type="date" value={brkForm.break_date} onChange={e => setBrkForm(f => ({ ...f, break_date: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Notice Deadline *</label>
+                <Input type="date" value={brkForm.notice_deadline} onChange={e => setBrkForm(f => ({ ...f, notice_deadline: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Penalty Amount</label>
+                <Input type="number" value={brkForm.penalty_amount} onChange={e => setBrkForm(f => ({ ...f, penalty_amount: Number(e.target.value) }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Status</label>
+                <Select value={brkForm.status} onValueChange={v => setBrkForm(f => ({ ...f, status: v as typeof f.status }))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['ACTIVE','EXERCISED','LAPSED','WAIVED'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Conditions</label>
+              <Input value={brkForm.conditions} onChange={e => setBrkForm(f => ({ ...f, conditions: e.target.value }))} placeholder="Conditions for exercising break…" className="h-8 text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBrkOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!brkForm.break_date || !brkForm.notice_deadline || upsertBrk.isPending}
+              onClick={() => upsertBrk.mutate({ ...brkForm, break_id: editBrk ? Number(editBrk.break_id) : undefined })}
+            >
+              {upsertBrk.isPending ? 'Saving…' : 'Save Break Clause'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function LeaseTransactionCentre() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [txnType, setTxnType] = useState<TxnType>('Details');
+  const handleExerciseOption = (tab: TxnType, prefill: Record<string, unknown>) => {
+    if (tab === 'Renewal') {
+      if (prefill.payment) setRenPayment(String(prefill.payment));
+      if (prefill.notes) setRenNotes(String(prefill.notes));
+    } else if (tab === 'Modification') {
+      if (prefill.payment) setModPayment(String(prefill.payment));
+      if (prefill.notes) setModNotes(String(prefill.notes));
+    }
+    setTxnType(tab);
+    toast.info(`Switched to ${tab} tab — fields pre-filled from option`);
+  };
+  const handleExerciseBreak = (prefill: Record<string, unknown>) => {
+    if (prefill.date) setTrmDate(String(prefill.date));
+    if (prefill.notes) setTrmNotes(String(prefill.notes));
+    setTxnType('Termination');
+    toast.info('Switched to Termination tab — fields pre-filled from break clause');
+  };
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [posted, setPosted] = useState<{ je_ref: string; je_label: string } | null>(null);
 
@@ -1032,7 +1458,7 @@ export default function LeaseTransactionCentre() {
             >
               {/* Tab bar */}
               <div className="flex-shrink-0 px-6 pt-4 border-b border-border">
-                <TabsList className="grid grid-cols-5 w-full">
+                <TabsList className="grid grid-cols-6 w-full">
                   <TabsTrigger value="Details" className="flex items-center gap-2 text-sm py-2.5">
                     <FileText className="w-4 h-4" /> Lease Details
                   </TabsTrigger>
@@ -1044,6 +1470,9 @@ export default function LeaseTransactionCentre() {
                   </TabsTrigger>
                   <TabsTrigger value="Renewal" className="flex items-center gap-2 text-sm py-2.5">
                     <ChevronRight className="w-4 h-4" /> Renewal (JE-7)
+                  </TabsTrigger>
+                  <TabsTrigger value="OptionsBreaks" className="flex items-center gap-2 text-sm py-2.5">
+                    <GitBranch className="w-4 h-4" /> Options & Breaks
                   </TabsTrigger>
                   <TabsTrigger value="History" className="flex items-center gap-2 text-sm py-2.5">
                     <History className="w-4 h-4" /> Txn History & GL
@@ -1368,6 +1797,15 @@ export default function LeaseTransactionCentre() {
                     </Button>
                   </div>
                 )}
+              </TabsContent>
+
+              {/* ── OPTIONS & BREAKS TAB ── */}
+              <TabsContent value="OptionsBreaks" className="flex-1 overflow-y-auto px-6 py-6">
+                <OptionsBreaksPanel
+                  contractId={selected.contract_id}
+                  onExerciseOption={handleExerciseOption}
+                  onExerciseBreak={handleExerciseBreak}
+                />
               </TabsContent>
 
               {/* ── TRANSACTION HISTORY & GL LEDGER TAB ── */}
