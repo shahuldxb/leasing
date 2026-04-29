@@ -9,10 +9,10 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config = {
-  server: process.env.SQLSERVER_HOST || '203.101.44.46',
+  server: process.env.SQLSERVER_HOST || 'SQL_SERVER_HOST_REDACTED',
   database: process.env.SQLSERVER_DB || 'leasing',
-  user: process.env.SQLSERVER_USER || 'shahul',
-  password: process.env.SQLSERVER_PASSWORD || 'Apple123!@#',
+  user: process.env.SQLSERVER_USER || 'SQL_USER_REDACTED',
+  password: process.env.SQLSERVER_PASSWORD || 'SQL_PASSWORD_REDACTED',
   options: {
     trustServerCertificate: true,
     encrypt: false,

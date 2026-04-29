@@ -6,10 +6,11 @@
 import sql from 'mssql';
 
 const config: sql.config = {
-  server: process.env.SQLSERVER_HOST || '203.101.44.46',
-  database: process.env.SQLSERVER_DB || 'leasing',
-  user: process.env.SQLSERVER_USER || 'shahul',
-  password: process.env.SQLSERVER_PASSWORD || 'Apple123!@#',
+  server: process.env.MSSQL_HOST || process.env.SQLSERVER_HOST || '',
+  port: parseInt(process.env.MSSQL_PORT || '1433', 10),
+  database: process.env.MSSQL_DATABASE || process.env.SQLSERVER_DB || 'leasing',
+  user: process.env.MSSQL_USER || process.env.SQLSERVER_USER || '',
+  password: process.env.MSSQL_PASSWORD || process.env.SQLSERVER_PASSWORD || '',
   options: {
     trustServerCertificate: true,
     encrypt: false,

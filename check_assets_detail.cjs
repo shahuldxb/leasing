@@ -1,5 +1,5 @@
 const sql = require('mssql');
-const config = { server: '203.101.44.46', database: 'leasing', user: 'shahul', password: 'Apple123!@#', options: { trustServerCertificate: true, encrypt: false } };
+const config = { server: 'SQL_SERVER_HOST_REDACTED', database: 'leasing', user: 'SQL_USER_REDACTED', password: 'SQL_PASSWORD_REDACTED', options: { trustServerCertificate: true, encrypt: false } };
 async function main() {
   const pool = await sql.connect(config);
   const cols = await pool.request().query(`SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'assets' ORDER BY ORDINAL_POSITION`);

@@ -8,9 +8,9 @@ import sql from "mssql";
 describe("SQL Server credentials", () => {
   it("connects to the leasing database and returns a result", async () => {
     const config: sql.config = {
-      server:   process.env.MSSQL_HOST   ?? "203.101.44.46",
+      server:   process.env.MSSQL_HOST   ?? "SQL_SERVER_HOST_REDACTED",
       port:     Number(process.env.MSSQL_PORT ?? 1433),
-      user:     process.env.MSSQL_USER   ?? "shahul",
+      user:     process.env.MSSQL_USER   ?? "SQL_USER_REDACTED",
       password: process.env.MSSQL_PASSWORD ?? "",
       database: process.env.MSSQL_DATABASE ?? "leasing",
       options: {

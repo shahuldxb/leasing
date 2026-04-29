@@ -2,8 +2,8 @@ import sql from 'mssql';
 import { readFileSync } from 'fs';
 
 const config = {
-  server: '203.101.44.46', port: 1433, user: 'shahul',
-  password: 'Apple123!@#', database: 'leasing',
+  server: 'SQL_SERVER_HOST_REDACTED', port: 1433, user: 'SQL_USER_REDACTED',
+  password: 'SQL_PASSWORD_REDACTED', database: 'leasing',
   options: { encrypt: true, trustServerCertificate: true },
   connectionTimeout: 30000, requestTimeout: 60000
 };
