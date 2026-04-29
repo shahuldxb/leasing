@@ -24,7 +24,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, Package, MapPin,
+  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, MapPin,
   Sparkles, Calculator, Calendar, ArrowRightLeft, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -241,17 +241,7 @@ const menuItems: NavItem[] = [
       { label: "AI Lease Analytics",   path: "/ai-analytics" },
     ],
   },
-  {
-    icon: Package, label: "Field & Tenant",
-    children: [
-      { label: "Mobile Field App",     path: "/mobile-field" },
-      { label: "Tenant Portal",        path: "/tenant-portal" },
-      { label: "Broker Management",    path: "/leases/brokers" },
-      { label: "LOI Tracking",         path: "/leases/loi" },
-      { label: "Lease Comparison",     path: "/leases/compare" },
-      { label: "TI Allowance",         path: "/leases/ti-allowance" },
-    ],
-  },
+
   {
     icon: Settings, label: "System Settings",
     children: [
