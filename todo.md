@@ -1252,3 +1252,13 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] NewLease.tsx: ScreenHeader title shows 'Modify Lease' in edit mode
 - [x] NewLease.tsx: Submit button shows 'Update Lease' in edit mode
 - [x] TypeScript: 0 errors confirmed
+
+## Contract DMS Full Rebuild (Apr 29)
+- [ ] Read existing contracts schema, router, and pages
+- [ ] Add DB tables: contract_metadata_templates, contract_metadata_fields, contract_documents, contract_milestones, contract_metadata_values
+- [ ] Add tRPC procedures: metadataTemplates CRUD, contractDocuments CRUD (upload/list/delete), contractMilestones CRUD, contract metadata value upsert
+- [ ] Build Metadata Templates admin page (define field schemas per contract type)
+- [ ] Rebuild Contract Register as full DMS: multi-doc upload, metadata value entry, version history tab, milestones timeline tab, Create Lease button
+- [ ] Update sidebar: add Metadata Templates under Contracts
+- [ ] Wire Create Lease button to pre-fill /leases/new with contract metadata values
+- [ ] Save checkpoint and deliver

@@ -16,6 +16,7 @@ import { accountingRouter } from "./routers/accounting";
 import { furnishedAssetsRouter, assetDepositRouter, handoverChecklistRouter } from "./routers/furnishedAssets";
 import { masterContractsRouter } from "./routers/masterContracts";
 import { aiFillRouter }         from "./routers/aiFill";
+import { contractDmsRouter }    from "./routers/contractDms";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
 import { getPool }              from "./db-sqlserver";
@@ -91,6 +92,7 @@ export const appRouter = router({
   handoverChecklist: handoverChecklistRouter,
   masterContracts: masterContractsRouter,
   aiFill:          aiFillRouter,
+  contractDms:     contractDmsRouter,
   furnitureCollections: furnitureCollectionsRouter,
   vendor:       vendorRouter,
   broker:       brokerRouter,

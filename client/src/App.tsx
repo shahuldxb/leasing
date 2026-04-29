@@ -19,7 +19,8 @@ import LeaseTerminations  from "./pages/LeaseTerminations";
 import BouncePenalty       from "./pages/BouncePenalty";
 
 // Contract Management
-import ContractRegister   from "./pages/ContractRegister";
+import ContractRegister            from "./pages/ContractRegister";
+import ContractMetadataTemplates   from "./pages/ContractMetadataTemplates";
 import ContractHistory    from "./pages/ContractHistory";
 import ContractDocuments  from "./pages/ContractDocuments";
 import ContractMilestones from "./pages/ContractMilestones";
@@ -184,8 +185,9 @@ function Router() {
       <Route path="/cheques/bounce"           component={BouncePenalty} />
 
       {/* Contract Management */}
-      <Route path="/contracts"               component={ContractRegister} />
-      <Route path="/contracts/history"       component={ContractHistory} />
+      <Route path="/contracts"                          component={ContractRegister} />
+      <Route path="/contracts/metadata-templates"        component={ContractMetadataTemplates} />
+      <Route path="/contracts/history"                   component={ContractHistory} />
       <Route path="/contracts/documents"     component={ContractDocuments} />
       <Route path="/contracts/milestones"    component={ContractMilestones} />
 
