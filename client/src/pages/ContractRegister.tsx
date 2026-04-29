@@ -38,7 +38,7 @@ import {
   Plus, Search, FileText, Pencil, Trash2, Upload, Download,
   Calendar, CheckCircle2, Clock, AlertTriangle, ExternalLink,
   FolderOpen, Tag, GitBranch, Milestone, ArrowRight, Eye,
-  MoreHorizontal, RefreshCw,
+  MoreHorizontal, RefreshCw, Sparkles, Bell,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -256,6 +256,52 @@ export default function ContractRegister() {
     setMsDialog(true);
   }
 
+  // ── AI Extraction ────────────────────────────────────────────────────────
+  const [aiExtracting, setAiExtracting] = useState(false);
+  const extractMeta = trpc.contractDms.extractMetadata.useMutation({
+    onSuccess: (result) => {
+      setAiExtracting(false);
+      const extracted = result.extracted as Record<string, string>;
+      // Auto-fill metaDraft: match extracted keys to field labels
+      if (templateDetail?.fields) {
+        const newDraft = { ...metaDraft };
+        for (const field of templateDetail.fields as any[]) {
+          const label = field.field_label?.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          for (const [key, val] of Object.entries(extracted)) {
+            const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            if (normKey === label || normKey.includes(label) || label.includes(normKey)) {
+              newDraft[field.field_id] = String(val ?? '');
+              break;
+            }
+          }
+        }
+        setMetaDraft(newDraft);
+      }
+      // Switch to metadata tab
+      setDrawerTab('metadata');
+      toast.success(`AI extracted ${Object.keys(extracted).length} fields${result.source === 'generated' ? ' (demo data)' : ''}. Review and save.`);
+    },
+    onError: (e) => { setAiExtracting(false); toast.error(e.message); },
+  });
+
+  function handleExtractWithAI() {
+    const docs = (documents as any[]) ?? [];
+    if (!docs.length) { toast.error('Upload a document first'); return; }
+    const firstDoc = docs[0];
+    setAiExtracting(true);
+    extractMeta.mutate({
+      leaseId: selected.lease_id,
+      fileUrl: firstDoc.file_url,
+      templateId: selectedTemplateId ?? undefined,
+    });
+  }
+
+  // ── Sync Milestone to Alert ──────────────────────────────────────────────
+  const syncAlert = trpc.contractDms.syncMilestoneToAlert.useMutation({
+    onSuccess: () => toast.success('Milestone synced to Alert Rules'),
+    onError: (e) => toast.error(e.message),
+  });
+
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
@@ -405,9 +451,15 @@ export default function ContractRegister() {
                 <TabsContent value="documents" className="px-6 py-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Contract Documents</span>
-                    <Button size="sm" onClick={() => setDocDialog(true)}>
-                      <Upload className="h-4 w-4 mr-1.5" /> Upload Document
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={handleExtractWithAI} disabled={aiExtracting}>
+                        {aiExtracting ? <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1.5" />}
+                        {aiExtracting ? 'Extracting...' : 'Extract with AI'}
+                      </Button>
+                      <Button size="sm" onClick={() => setDocDialog(true)}>
+                        <Upload className="h-4 w-4 mr-1.5" /> Upload Document
+                      </Button>
+                    </div>
                   </div>
                   {loadingDocs ? (
                     <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
@@ -621,6 +673,15 @@ export default function ContractRegister() {
                                     <Eye className="h-3.5 w-3.5" />
                                   </Button>
                                 </>
+                              )}
+                              {m.status === "Pending" && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-400 hover:text-blue-300"
+                                  title="Sync to Alert Rules"
+                                  onClick={() => syncAlert.mutate({
+                                    milestoneId: m.milestone_id,
+                                  })}>
+                                  <Bell className="h-3.5 w-3.5" />
+                                </Button>
                               )}
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
                                 onClick={() => setDeleteMsId(m.milestone_id)}>

@@ -1262,3 +1262,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [ ] Update sidebar: add Metadata Templates under Contracts
 - [ ] Wire Create Lease button to pre-fill /leases/new with contract metadata values
 - [ ] Save checkpoint and deliver
+
+## Contract DMS Enhancements (Apr 29 - Session 2)
+- [ ] AI contract extraction: backend tRPC procedure reads uploaded PDF via LLM and returns field values
+- [ ] Extract with AI button in ContractRegister Documents tab auto-fills Metadata fields
+- [ ] Milestone alerts integration: wire contract milestones into Alert Rules engine (email notifications)
+- [ ] Remove redundant sidebar items: Version History, Document Vault, Milestones under Contracts
