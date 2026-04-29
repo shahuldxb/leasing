@@ -214,12 +214,7 @@ const menuItems: NavItem[] = [
       { label: "Furniture Collections", path: "/assets/furniture" },
     ],
   },
-  {
-    icon: Shield, label: "Data Quality",
-    children: [
-      { label: "Lease Data Quality",   path: "/leases/data-quality" },
-    ],
-  },
+
   {
     icon: Calculator, label: "Advanced Accounting",
     children: [
