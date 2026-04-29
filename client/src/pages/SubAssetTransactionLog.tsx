@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   RefreshCw, ChevronDown, ChevronRight,
@@ -30,6 +29,7 @@ import {
   CheckCircle2, XCircle, Clock, ArrowUpDown, Plus,
   Pencil, Save, X as XIcon, Link2, Trash2, Sparkles,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // ── Status badge colours ─────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {

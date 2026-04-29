@@ -9,9 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Pencil, Trash2, Boxes, CheckCircle2, Loader2, X } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,6 +16,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

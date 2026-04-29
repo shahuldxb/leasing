@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { RefreshCw, TrendingUp, TrendingDown, DollarSign, Globe, Plus, Play, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -90,7 +89,8 @@ export default function FXRevaluation() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="flex gap-0 h-full">
+      <div className="flex-1 p-6 space-y-6 min-w-0">
         <ScreenHeader
           screenId="VFACC-FXREVAL-001"
           title="Multi-Currency FX Revaluation"
@@ -326,13 +326,16 @@ export default function FXRevaluation() {
         </Card>
       </div>
 
-      {/* Add FX Rate Dialog */}
-      <Dialog open={showAddRate} onOpenChange={setShowAddRate}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add / Update FX Rate</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      {/* ── Right Panel: Add / Update FX Rate ─────────────────────────────── */}
+      {showAddRate && (
+        <div className="w-96 border-l bg-card flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b">
+            <h2 className="font-semibold text-sm">Add / Update FX Rate</h2>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAddRate(false)}>
+              <span className="text-lg leading-none">×</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Currency</Label>
@@ -350,13 +353,7 @@ export default function FXRevaluation() {
             </div>
             <div>
               <Label>Closing Rate (QAR per 1 {newCurrency})</Label>
-              <Input
-                type="number"
-                step="0.000001"
-                placeholder="e.g. 3.641000"
-                value={newRate}
-                onChange={e => setNewRate(e.target.value)}
-              />
+              <Input type="number" step="0.000001" placeholder="e.g. 3.641000" value={newRate} onChange={e => setNewRate(e.target.value)} />
             </div>
             <div>
               <Label>Source</Label>
@@ -366,36 +363,33 @@ export default function FXRevaluation() {
               <strong>IAS 21:</strong> Use the closing rate (spot rate at period end) for monetary items such as lease liabilities.
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddRate(false)}>Cancel</Button>
-            <Button
-              onClick={() => upsertMut.mutate({
-                currency: newCurrency,
-                rateDate: newDate,
-                closingRate: parseFloat(newRate),
-                source: newSource,
-              })}
-              disabled={!newRate || isNaN(parseFloat(newRate)) || upsertMut.isPending}
-            >
+          <div className="px-5 py-4 border-t flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setShowAddRate(false)}>Cancel</Button>
+            <Button size="sm"
+              onClick={() => upsertMut.mutate({ currency: newCurrency, rateDate: newDate, closingRate: parseFloat(newRate), source: newSource })}
+              disabled={!newRate || isNaN(parseFloat(newRate)) || upsertMut.isPending}>
               {upsertMut.isPending ? <RefreshCw className="w-4 h-4 animate-spin mr-1" /> : null}
               Save Rate
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      {/* Run Revaluation Confirm Dialog */}
-      <Dialog open={showRunConfirm} onOpenChange={setShowRunConfirm}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Run FX Revaluation</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
+      {/* ── Right Panel: Run Revaluation Confirm ──────────────────────────── */}
+      {showRunConfirm && (
+        <div className="w-96 border-l bg-card flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 border-b">
+            <h2 className="font-semibold text-sm">Run FX Revaluation</h2>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRunConfirm(false)}>
+              <span className="text-lg leading-none">×</span>
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             <p className="text-sm text-muted-foreground">
               This will revalue all non-QAR lease liabilities for{' '}
               <strong>{MONTHS[selectedMonth - 1]} {selectedYear}</strong> using the latest available closing rates.
             </p>
-            <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
+            <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
               <li>JE-8 entries will be posted to the GL for each revalued lease</li>
               <li>FX gain/loss will be recorded to account 4500 / 2100</li>
               <li>Re-running for the same period will overwrite previous results</li>
@@ -404,19 +398,16 @@ export default function FXRevaluation() {
               <strong>IAS 21.23:</strong> At the end of each reporting period, monetary items denominated in a foreign currency shall be translated using the closing rate.
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRunConfirm(false)}>Cancel</Button>
-            <Button
-              onClick={() => runMut.mutate({ year: selectedYear, month: selectedMonth })}
-              disabled={runMut.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
+          <div className="px-5 py-4 border-t flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setShowRunConfirm(false)}>Cancel</Button>
+            <Button size="sm" onClick={() => runMut.mutate({ year: selectedYear, month: selectedMonth })} disabled={runMut.isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
               {runMut.isPending ? <RefreshCw className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
               Run Revaluation
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
+      </div>
     </DashboardLayout>
   );
 }

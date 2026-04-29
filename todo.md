@@ -1280,3 +1280,21 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] AuditLog: clicking Screen ID badge auto-filters by that screen
 - [x] Applied ScreenHeader to all 11 remaining pages: AccountingStandardsPaper, ContractMetadataTemplates, DisclosureNotes, FXRevaluation, FinancialStatements, IAS17Comparison, LeaseExemptions, LeaseSubAssets, PeriodClose, RenewalEngine, TrialBalance
 - [x] TypeScript clean — 0 errors after all changes
+
+## No-Modal Policy: Convert All Dialogs to Full UI Screens (Apr 29, 2026)
+- [ ] AlertsReports.tsx — replace Add/Edit Alert Rule dialog + Add/Edit Scheduled Report dialog + 2 delete confirm dialogs → inline right-panel forms
+- [ ] LeaseTransactionCentre.tsx — replace all 5+ transaction dialogs (Modification, Termination, Renewal, etc.) → inline right-panel forms
+- [ ] ContractMetadataTemplates.tsx — replace New/Edit Template dialog + Add/Edit Field dialog + 2 delete confirm dialogs → inline right-panel forms
+- [ ] ContractRegister.tsx — replace Upload Document dialog + Add/Edit Milestone dialog + 2 delete confirm dialogs → inline right-panel forms
+- [ ] Amortisation.tsx — replace Guide dialog + GL Explain dialog + Calculation dialog → inline expandable panels
+- [ ] SubAssetTransactionLog.tsx — replace 3 dialogs → inline right-panel forms
+- [ ] RenewalEngine.tsx — replace Initiate Renewal dialog + Renewal Preview dialog → inline right-panel forms
+- [ ] PeriodClose.tsx — replace 2 period-close dialogs → inline right-panel forms
+- [ ] LeaseSubAssets.tsx — replace 2 dialogs → inline right-panel forms
+- [ ] LeaseDetail.tsx — replace Change Sub-Asset Status dialog + Period Calculation dialog → inline panels
+- [ ] FXRevaluation.tsx — replace Add/Update FX Rate dialog + Run Revaluation dialog → inline right-panel forms
+- [ ] PayablesApprovals.tsx — replace Reject Invoice dialog + Invoice Detail dialog → inline right-panel forms
+- [ ] LeaseRegister.tsx — replace delete confirm dialog → inline confirmation row
+- [ ] HandoverChecklist.tsx — replace checklist item dialog → inline right-panel form
+- [ ] LeaseExemptions.tsx — replace Update Exemption Status dialog → inline right-panel form
+- [ ] BudgetVsActual.tsx — replace Add/Update Budget Line dialog → inline right-panel form

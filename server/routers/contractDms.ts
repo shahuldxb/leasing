@@ -2,56 +2,81 @@
  * Contract DMS Router
  * Handles: metadata templates, metadata fields, contract documents,
  *          contract milestones, metadata values, file upload/delete
+ *
+ * NOTE: Uses SQL Server (mssql) — all queries use named @param placeholders.
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getPool } from "../db-sqlserver";
+import { getPool, sql } from "../db-sqlserver";
 import { storagePut } from "../storage";
 import { invokeLLM } from "../_core/llm";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-async function q(sql: string, params: unknown[] = []) {
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+/**
+ * Run a parameterised SELECT and return all rows.
+ * params: array of { name, type, value } — name WITHOUT the leading @
+ */
+async function q<T = Record<string, any>>(
+  sqlText: string,
+  params: Array<{ name: string; type?: any; value: any }> = []
+): Promise<T[]> {
   const pool = await getPool();
-  const [rows] = await (pool as any).execute(sql, params);
-  return rows as any[];
+  const req = pool.request();
+  for (const p of params) {
+    req.input(p.name, p.type ?? sql.NVarChar, p.value ?? null);
+  }
+  const result = await req.query(sqlText);
+  return (result.recordset ?? []) as T[];
 }
 
-async function exec(sql: string, params: unknown[] = []) {
+/**
+ * Run a parameterised INSERT/UPDATE/DELETE.
+ * Returns { rowsAffected, insertId } where insertId comes from OUTPUT INSERTED.
+ */
+async function exec(
+  sqlText: string,
+  params: Array<{ name: string; type?: any; value: any }> = []
+): Promise<{ rowsAffected: number; insertId?: number }> {
   const pool = await getPool();
-  const [result] = await (pool as any).execute(sql, params);
-  return result as any;
+  const req = pool.request();
+  for (const p of params) {
+    req.input(p.name, p.type ?? sql.NVarChar, p.value ?? null);
+  }
+  const result = await req.query(sqlText);
+  const inserted = result.recordset?.[0];
+  return {
+    rowsAffected: Array.isArray(result.rowsAffected) ? result.rowsAffected[0] : 0,
+    insertId: inserted?.id ?? inserted?.template_id ?? inserted?.field_id
+      ?? inserted?.doc_id ?? inserted?.milestone_id ?? inserted?.value_id
+      ?? inserted?.config_id ?? undefined,
+  };
 }
 
-// ─── Router ─────────────────────────────────────────────────────────────────
-
+// ─── Router ──────────────────────────────────────────────────────────────────
 export const contractDmsRouter = router({
-
-  // ── Metadata Templates ──────────────────────────────────────────────────
-
+  // ── Metadata Templates ───────────────────────────────────────────────────
   listTemplates: protectedProcedure.query(async () => {
-    const rows = await q(`
+    return q(`
       SELECT t.*,
         (SELECT COUNT(*) FROM contract_metadata_fields f WHERE f.template_id = t.template_id) AS field_count
       FROM contract_metadata_templates t
       ORDER BY t.contract_type, t.template_name
     `);
-    return rows;
   }),
 
   getTemplate: protectedProcedure
     .input(z.object({ templateId: z.number() }))
     .query(async ({ input }) => {
-      const [tmpl] = await q(
-        `SELECT * FROM contract_metadata_templates WHERE template_id = ?`,
-        [input.templateId]
+      const rows = await q(
+        `SELECT * FROM contract_metadata_templates WHERE template_id = @templateId`,
+        [{ name: "templateId", type: sql.Int, value: input.templateId }]
       );
-      if (!tmpl) throw new Error("Template not found");
+      if (!rows[0]) throw new Error("Template not found");
       const fields = await q(
-        `SELECT * FROM contract_metadata_fields WHERE template_id = ? ORDER BY display_order, field_id`,
-        [input.templateId]
+        `SELECT * FROM contract_metadata_fields WHERE template_id = @templateId ORDER BY display_order, field_id`,
+        [{ name: "templateId", type: sql.Int, value: input.templateId }]
       );
-      return { ...tmpl, fields };
+      return { ...rows[0], fields };
     }),
 
   createTemplate: protectedProcedure
@@ -63,8 +88,14 @@ export const contractDmsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const r = await exec(
         `INSERT INTO contract_metadata_templates (template_name, contract_type, description, created_by)
-         VALUES (?, ?, ?, ?)`,
-        [input.templateName, input.contractType, input.description ?? null, ctx.user.id]
+         OUTPUT INSERTED.template_id AS id
+         VALUES (@templateName, @contractType, @description, @createdBy)`,
+        [
+          { name: "templateName", value: input.templateName },
+          { name: "contractType", value: input.contractType },
+          { name: "description",  value: input.description ?? null },
+          { name: "createdBy",    type: sql.Int, value: ctx.user.id },
+        ]
       );
       return { templateId: r.insertId };
     }),
@@ -80,10 +111,16 @@ export const contractDmsRouter = router({
     .mutation(async ({ input }) => {
       await exec(
         `UPDATE contract_metadata_templates
-         SET template_name=?, contract_type=?, description=?, is_active=?
-         WHERE template_id=?`,
-        [input.templateName, input.contractType, input.description ?? null,
-         input.isActive !== false ? 1 : 0, input.templateId]
+         SET template_name=@templateName, contract_type=@contractType,
+             description=@description, is_active=@isActive
+         WHERE template_id=@templateId`,
+        [
+          { name: "templateName", value: input.templateName },
+          { name: "contractType", value: input.contractType },
+          { name: "description",  value: input.description ?? null },
+          { name: "isActive",     type: sql.Bit, value: input.isActive !== false ? 1 : 0 },
+          { name: "templateId",   type: sql.Int, value: input.templateId },
+        ]
       );
       return { ok: true };
     }),
@@ -91,36 +128,47 @@ export const contractDmsRouter = router({
   deleteTemplate: protectedProcedure
     .input(z.object({ templateId: z.number() }))
     .mutation(async ({ input }) => {
-      await exec(`DELETE FROM contract_metadata_templates WHERE template_id=?`, [input.templateId]);
+      await exec(
+        `DELETE FROM contract_metadata_templates WHERE template_id=@templateId`,
+        [{ name: "templateId", type: sql.Int, value: input.templateId }]
+      );
       return { ok: true };
     }),
 
-  // ── Metadata Fields ─────────────────────────────────────────────────────
-
+  // ── Metadata Fields ──────────────────────────────────────────────────────
   upsertField: protectedProcedure
     .input(z.object({
       fieldId:         z.number().optional(),
       templateId:      z.number(),
       fieldName:       z.string().min(1),
       fieldLabel:      z.string().min(1),
-      fieldType:       z.enum(["text","number","currency","date","boolean","dropdown","textarea"]),
-      dropdownOptions: z.array(z.string()).optional(),
+      fieldType:       z.string().default("text"),
+      dropdownOptions: z.string().optional(),
       isRequired:      z.boolean().default(false),
       displayOrder:    z.number().default(0),
       placeholder:     z.string().optional(),
       helpText:        z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const opts = input.dropdownOptions ? JSON.stringify(input.dropdownOptions) : null;
+      const opts = input.dropdownOptions ?? null;
       if (input.fieldId) {
         await exec(
           `UPDATE contract_metadata_fields
-           SET field_name=?, field_label=?, field_type=?, dropdown_options=?,
-               is_required=?, display_order=?, placeholder=?, help_text=?
-           WHERE field_id=?`,
-          [input.fieldName, input.fieldLabel, input.fieldType, opts,
-           input.isRequired ? 1 : 0, input.displayOrder,
-           input.placeholder ?? null, input.helpText ?? null, input.fieldId]
+           SET field_name=@fieldName, field_label=@fieldLabel, field_type=@fieldType,
+               dropdown_options=@dropdownOptions, is_required=@isRequired,
+               display_order=@displayOrder, placeholder=@placeholder, help_text=@helpText
+           WHERE field_id=@fieldId`,
+          [
+            { name: "fieldName",       value: input.fieldName },
+            { name: "fieldLabel",      value: input.fieldLabel },
+            { name: "fieldType",       value: input.fieldType },
+            { name: "dropdownOptions", value: opts },
+            { name: "isRequired",      type: sql.Bit, value: input.isRequired ? 1 : 0 },
+            { name: "displayOrder",    type: sql.Int, value: input.displayOrder },
+            { name: "placeholder",     value: input.placeholder ?? null },
+            { name: "helpText",        value: input.helpText ?? null },
+            { name: "fieldId",         type: sql.Int, value: input.fieldId },
+          ]
         );
         return { fieldId: input.fieldId };
       } else {
@@ -128,10 +176,20 @@ export const contractDmsRouter = router({
           `INSERT INTO contract_metadata_fields
              (template_id, field_name, field_label, field_type, dropdown_options,
               is_required, display_order, placeholder, help_text)
-           VALUES (?,?,?,?,?,?,?,?,?)`,
-          [input.templateId, input.fieldName, input.fieldLabel, input.fieldType, opts,
-           input.isRequired ? 1 : 0, input.displayOrder,
-           input.placeholder ?? null, input.helpText ?? null]
+           OUTPUT INSERTED.field_id AS id
+           VALUES (@templateId, @fieldName, @fieldLabel, @fieldType, @dropdownOptions,
+                   @isRequired, @displayOrder, @placeholder, @helpText)`,
+          [
+            { name: "templateId",      type: sql.Int, value: input.templateId },
+            { name: "fieldName",       value: input.fieldName },
+            { name: "fieldLabel",      value: input.fieldLabel },
+            { name: "fieldType",       value: input.fieldType },
+            { name: "dropdownOptions", value: opts },
+            { name: "isRequired",      type: sql.Bit, value: input.isRequired ? 1 : 0 },
+            { name: "displayOrder",    type: sql.Int, value: input.displayOrder },
+            { name: "placeholder",     value: input.placeholder ?? null },
+            { name: "helpText",        value: input.helpText ?? null },
+          ]
         );
         return { fieldId: r.insertId };
       }
@@ -140,7 +198,10 @@ export const contractDmsRouter = router({
   deleteField: protectedProcedure
     .input(z.object({ fieldId: z.number() }))
     .mutation(async ({ input }) => {
-      await exec(`DELETE FROM contract_metadata_fields WHERE field_id=?`, [input.fieldId]);
+      await exec(
+        `DELETE FROM contract_metadata_fields WHERE field_id=@fieldId`,
+        [{ name: "fieldId", type: sql.Int, value: input.fieldId }]
+      );
       return { ok: true };
     }),
 
@@ -150,29 +211,32 @@ export const contractDmsRouter = router({
     }))
     .mutation(async ({ input }) => {
       for (const f of input.fields) {
-        await exec(`UPDATE contract_metadata_fields SET display_order=? WHERE field_id=?`,
-          [f.displayOrder, f.fieldId]);
+        await exec(
+          `UPDATE contract_metadata_fields SET display_order=@displayOrder WHERE field_id=@fieldId`,
+          [
+            { name: "displayOrder", type: sql.Int, value: f.displayOrder },
+            { name: "fieldId",      type: sql.Int, value: f.fieldId },
+          ]
+        );
       }
       return { ok: true };
     }),
 
-  // ── Metadata Values ─────────────────────────────────────────────────────
-
+  // ── Metadata Values ──────────────────────────────────────────────────────
   getMetadataValues: protectedProcedure
     .input(z.object({ leaseId: z.number() }))
     .query(async ({ input }) => {
-      const rows = await q(
+      return q(
         `SELECT mv.*, f.field_name, f.field_label, f.field_type, f.dropdown_options,
                 f.is_required, f.display_order, f.placeholder, f.help_text,
                 t.template_name, t.contract_type, t.template_id
          FROM contract_metadata_values mv
          JOIN contract_metadata_fields f ON f.field_id = mv.field_id
          JOIN contract_metadata_templates t ON t.template_id = mv.template_id
-         WHERE mv.lease_id = ?
+         WHERE mv.lease_id = @leaseId
          ORDER BY t.template_name, f.display_order`,
-        [input.leaseId]
+        [{ name: "leaseId", type: sql.Int, value: input.leaseId }]
       );
-      return rows;
     }),
 
   upsertMetadataValues: protectedProcedure
@@ -187,29 +251,36 @@ export const contractDmsRouter = router({
     .mutation(async ({ input, ctx }) => {
       for (const v of input.values) {
         await exec(
-          `INSERT INTO contract_metadata_values (lease_id, template_id, field_id, field_value, updated_by)
-           VALUES (?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE field_value=VALUES(field_value), updated_by=VALUES(updated_by)`,
-          [input.leaseId, input.templateId, v.fieldId, v.fieldValue, ctx.user.id]
+          `MERGE contract_metadata_values AS target
+           USING (SELECT @leaseId AS lease_id, @templateId AS template_id, @fieldId AS field_id) AS src
+           ON target.lease_id = src.lease_id AND target.template_id = src.template_id AND target.field_id = src.field_id
+           WHEN MATCHED THEN UPDATE SET field_value=@fieldValue, updated_by=@updatedBy
+           WHEN NOT MATCHED THEN INSERT (lease_id, template_id, field_id, field_value, updated_by)
+             VALUES (@leaseId, @templateId, @fieldId, @fieldValue, @updatedBy);`,
+          [
+            { name: "leaseId",    type: sql.Int, value: input.leaseId },
+            { name: "templateId", type: sql.Int, value: input.templateId },
+            { name: "fieldId",    type: sql.Int, value: v.fieldId },
+            { name: "fieldValue", value: v.fieldValue },
+            { name: "updatedBy",  type: sql.Int, value: ctx.user.id },
+          ]
         );
       }
       return { ok: true };
     }),
 
-  // ── Contract Documents ───────────────────────────────────────────────────
-
+  // ── Contract Documents ────────────────────────────────────────────────────
   listDocuments: protectedProcedure
     .input(z.object({ leaseId: z.number() }))
     .query(async ({ input }) => {
-      const rows = await q(
+      return q(
         `SELECT cd.*, u.name AS uploaded_by_name
          FROM contract_documents cd
          LEFT JOIN users u ON u.id = cd.uploaded_by
-         WHERE cd.lease_id = ?
+         WHERE cd.lease_id = @leaseId
          ORDER BY cd.doc_type, cd.version_number DESC, cd.uploaded_at DESC`,
-        [input.leaseId]
+        [{ name: "leaseId", type: sql.Int, value: input.leaseId }]
       );
-      return rows;
     }),
 
   uploadDocument: protectedProcedure
@@ -217,7 +288,7 @@ export const contractDmsRouter = router({
       leaseId:       z.number(),
       docType:       z.string().default("Other"),
       docName:       z.string().min(1),
-      fileBase64:    z.string(),          // base64 encoded file content
+      fileBase64:    z.string(),
       mimeType:      z.string().default("application/octet-stream"),
       fileSize:      z.number().optional(),
       versionNumber: z.number().default(1),
@@ -227,24 +298,32 @@ export const contractDmsRouter = router({
       expiryDate:    z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Decode base64 and upload to S3
       const buffer = Buffer.from(input.fileBase64, "base64");
       const fileKey = `contract-docs/${input.leaseId}/${Date.now()}-${input.docName.replace(/\s+/g, "_")}`;
       const { key, url } = await storagePut(fileKey, buffer, input.mimeType);
-
       const r = await exec(
         `INSERT INTO contract_documents
            (lease_id, doc_type, doc_name, file_key, file_url, file_size, mime_type,
             version_number, version_notes, signatory_name, signed_date, expiry_date,
             is_current, uploaded_by)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?)`,
-        [input.leaseId, input.docType, input.docName, key, url,
-         input.fileSize ?? buffer.length, input.mimeType,
-         input.versionNumber, input.versionNotes ?? null,
-         input.signatoryName ?? null,
-         input.signedDate ?? null,
-         input.expiryDate ?? null,
-         ctx.user.id]
+         OUTPUT INSERTED.doc_id AS id
+         VALUES (@leaseId, @docType, @docName, @fileKey, @fileUrl, @fileSize, @mimeType,
+                 @versionNumber, @versionNotes, @signatoryName, @signedDate, @expiryDate, 1, @uploadedBy)`,
+        [
+          { name: "leaseId",       type: sql.Int,    value: input.leaseId },
+          { name: "docType",       value: input.docType },
+          { name: "docName",       value: input.docName },
+          { name: "fileKey",       value: key },
+          { name: "fileUrl",       value: url },
+          { name: "fileSize",      type: sql.Int,    value: input.fileSize ?? buffer.length },
+          { name: "mimeType",      value: input.mimeType },
+          { name: "versionNumber", type: sql.Int,    value: input.versionNumber },
+          { name: "versionNotes",  value: input.versionNotes ?? null },
+          { name: "signatoryName", value: input.signatoryName ?? null },
+          { name: "signedDate",    value: input.signedDate ?? null },
+          { name: "expiryDate",    value: input.expiryDate ?? null },
+          { name: "uploadedBy",    type: sql.Int,    value: ctx.user.id },
+        ]
       );
       return { docId: r.insertId, fileKey: key, fileUrl: url };
     }),
@@ -262,15 +341,22 @@ export const contractDmsRouter = router({
     .mutation(async ({ input }) => {
       await exec(
         `UPDATE contract_documents
-         SET doc_type=COALESCE(?,doc_type), doc_name=COALESCE(?,doc_name),
-             version_notes=COALESCE(?,version_notes),
-             signatory_name=COALESCE(?,signatory_name),
-             signed_date=COALESCE(?,signed_date),
-             expiry_date=COALESCE(?,expiry_date)
-         WHERE doc_id=?`,
-        [input.docType ?? null, input.docName ?? null, input.versionNotes ?? null,
-         input.signatoryName ?? null, input.signedDate ?? null,
-         input.expiryDate ?? null, input.docId]
+         SET doc_type=COALESCE(@docType, doc_type),
+             doc_name=COALESCE(@docName, doc_name),
+             version_notes=COALESCE(@versionNotes, version_notes),
+             signatory_name=COALESCE(@signatoryName, signatory_name),
+             signed_date=COALESCE(@signedDate, signed_date),
+             expiry_date=COALESCE(@expiryDate, expiry_date)
+         WHERE doc_id=@docId`,
+        [
+          { name: "docType",       value: input.docType ?? null },
+          { name: "docName",       value: input.docName ?? null },
+          { name: "versionNotes",  value: input.versionNotes ?? null },
+          { name: "signatoryName", value: input.signatoryName ?? null },
+          { name: "signedDate",    value: input.signedDate ?? null },
+          { name: "expiryDate",    value: input.expiryDate ?? null },
+          { name: "docId",         type: sql.Int, value: input.docId },
+        ]
       );
       return { ok: true };
     }),
@@ -278,24 +364,25 @@ export const contractDmsRouter = router({
   deleteDocument: protectedProcedure
     .input(z.object({ docId: z.number() }))
     .mutation(async ({ input }) => {
-      await exec(`DELETE FROM contract_documents WHERE doc_id=?`, [input.docId]);
+      await exec(
+        `DELETE FROM contract_documents WHERE doc_id=@docId`,
+        [{ name: "docId", type: sql.Int, value: input.docId }]
+      );
       return { ok: true };
     }),
 
-  // ── Contract Milestones ──────────────────────────────────────────────────
-
+  // ── Contract Milestones ───────────────────────────────────────────────────
   listMilestones: protectedProcedure
     .input(z.object({ leaseId: z.number() }))
     .query(async ({ input }) => {
-      const rows = await q(
+      return q(
         `SELECT cm.*, u.name AS completed_by_name
          FROM contract_milestones cm
          LEFT JOIN users u ON u.id = cm.completed_by
-         WHERE cm.lease_id = ?
+         WHERE cm.lease_id = @leaseId
          ORDER BY cm.due_date ASC`,
-        [input.leaseId]
+        [{ name: "leaseId", type: sql.Int, value: input.leaseId }]
       );
-      return rows;
     }),
 
   upsertMilestone: protectedProcedure
@@ -312,19 +399,34 @@ export const contractDmsRouter = router({
       if (input.milestoneId) {
         await exec(
           `UPDATE contract_milestones
-           SET milestone_type=?, title=?, due_date=?, description=?, alert_days_before=?
-           WHERE milestone_id=?`,
-          [input.milestoneType, input.title, input.dueDate,
-           input.description ?? null, input.alertDaysBefore, input.milestoneId]
+           SET milestone_type=@milestoneType, title=@title, due_date=@dueDate,
+               description=@description, alert_days_before=@alertDaysBefore
+           WHERE milestone_id=@milestoneId`,
+          [
+            { name: "milestoneType",   value: input.milestoneType },
+            { name: "title",           value: input.title },
+            { name: "dueDate",         value: input.dueDate },
+            { name: "description",     value: input.description ?? null },
+            { name: "alertDaysBefore", type: sql.Int, value: input.alertDaysBefore },
+            { name: "milestoneId",     type: sql.Int, value: input.milestoneId },
+          ]
         );
         return { milestoneId: input.milestoneId };
       } else {
         const r = await exec(
           `INSERT INTO contract_milestones
              (lease_id, milestone_type, title, due_date, description, alert_days_before, created_by)
-           VALUES (?,?,?,?,?,?,?)`,
-          [input.leaseId, input.milestoneType, input.title, input.dueDate,
-           input.description ?? null, input.alertDaysBefore, ctx.user.id]
+           OUTPUT INSERTED.milestone_id AS id
+           VALUES (@leaseId, @milestoneType, @title, @dueDate, @description, @alertDaysBefore, @createdBy)`,
+          [
+            { name: "leaseId",         type: sql.Int, value: input.leaseId },
+            { name: "milestoneType",   value: input.milestoneType },
+            { name: "title",           value: input.title },
+            { name: "dueDate",         value: input.dueDate },
+            { name: "description",     value: input.description ?? null },
+            { name: "alertDaysBefore", type: sql.Int, value: input.alertDaysBefore },
+            { name: "createdBy",       type: sql.Int, value: ctx.user.id },
+          ]
         );
         return { milestoneId: r.insertId };
       }
@@ -339,9 +441,13 @@ export const contractDmsRouter = router({
       const today = input.completedDate ?? new Date().toISOString().slice(0, 10);
       await exec(
         `UPDATE contract_milestones
-         SET status='Completed', completed_date=?, completed_by=?
-         WHERE milestone_id=?`,
-        [today, ctx.user.id, input.milestoneId]
+         SET status='Completed', completed_date=@completedDate, completed_by=@completedBy
+         WHERE milestone_id=@milestoneId`,
+        [
+          { name: "completedDate", value: today },
+          { name: "completedBy",   type: sql.Int, value: ctx.user.id },
+          { name: "milestoneId",   type: sql.Int, value: input.milestoneId },
+        ]
       );
       return { ok: true };
     }),
@@ -350,8 +456,8 @@ export const contractDmsRouter = router({
     .input(z.object({ milestoneId: z.number() }))
     .mutation(async ({ input }) => {
       await exec(
-        `UPDATE contract_milestones SET status='Dismissed' WHERE milestone_id=?`,
-        [input.milestoneId]
+        `UPDATE contract_milestones SET status='Dismissed' WHERE milestone_id=@milestoneId`,
+        [{ name: "milestoneId", type: sql.Int, value: input.milestoneId }]
       );
       return { ok: true };
     }),
@@ -359,50 +465,42 @@ export const contractDmsRouter = router({
   deleteMilestone: protectedProcedure
     .input(z.object({ milestoneId: z.number() }))
     .mutation(async ({ input }) => {
-      await exec(`DELETE FROM contract_milestones WHERE milestone_id=?`, [input.milestoneId]);
+      await exec(
+        `DELETE FROM contract_milestones WHERE milestone_id=@milestoneId`,
+        [{ name: "milestoneId", type: sql.Int, value: input.milestoneId }]
+      );
       return { ok: true };
     }),
 
-  // ── Upcoming Milestones (for dashboard alerts) ───────────────────────────
-
+  // ── Upcoming Milestones (for dashboard alerts) ────────────────────────────
   upcomingMilestones: protectedProcedure
     .input(z.object({ daysAhead: z.number().default(90) }))
     .query(async ({ input }) => {
-      const rows = await q(
-        `SELECT cm.*, lc.contract_ref, lc.asset_name
+      return q(
+        `SELECT TOP 50 cm.*, lc.contract_ref, lc.asset_name
          FROM contract_milestones cm
          LEFT JOIN (
            SELECT lease_id, contract_ref, asset_name FROM lease.contracts
          ) lc ON lc.lease_id = cm.lease_id
          WHERE cm.status = 'Pending'
-           AND cm.due_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
-           AND cm.due_date >= CURDATE()
-         ORDER BY cm.due_date ASC
-         LIMIT 50`,
-        [input.daysAhead]
+           AND cm.due_date <= DATEADD(DAY, @daysAhead, CAST(GETDATE() AS DATE))
+           AND cm.due_date >= CAST(GETDATE() AS DATE)
+         ORDER BY cm.due_date ASC`,
+        [{ name: "daysAhead", type: sql.Int, value: input.daysAhead }]
       );
-      return rows;
     }),
 
-  // ── AI Contract Extraction ───────────────────────────────────────────────
-  /**
-   * Reads a contract document (by storage URL) and uses the LLM to extract
-   * structured metadata fields.  Returns a map of fieldLabel -> extractedValue
-   * that the frontend can use to auto-fill the Metadata tab.
-   */
+  // ── AI Contract Extraction ────────────────────────────────────────────────
   extractMetadata: protectedProcedure
     .input(z.object({
       leaseId:    z.number(),
-      fileUrl:    z.string(),   // /manus-storage/... URL
+      fileUrl:    z.string(),
       templateId: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
-      // Fetch the document text via the storage URL
-      let docText = "";
       try {
         const baseUrl = process.env.BUILT_IN_FORGE_API_URL ?? "";
         const key = process.env.BUILT_IN_FORGE_API_KEY ?? "";
-        // Resolve the presigned redirect URL for the file
         const storageUrl = `${baseUrl}${input.fileUrl}`;
         const resp = await fetch(storageUrl, {
           headers: { Authorization: `Bearer ${key}` },
@@ -410,23 +508,21 @@ export const contractDmsRouter = router({
         });
         if (resp.ok) {
           const buf = await resp.arrayBuffer();
-          // Convert to base64 for LLM vision (PDF/image)
           const b64 = Buffer.from(buf).toString("base64");
           const mimeType = input.fileUrl.toLowerCase().endsWith(".pdf")
             ? "application/pdf"
             : "image/jpeg";
-          // Use LLM with file_url content type
           const llmResp = await invokeLLM({
             messages: [
               {
                 role: "system",
-                content: `You are a lease contract data extraction specialist. 
+                content: `You are a lease contract data extraction specialist.
 Extract all key lease terms from the provided document and return them as a JSON object.
-Include fields such as: lessor_name, lessee_name, property_address, asset_type, 
-commencement_date (YYYY-MM-DD), expiry_date (YYYY-MM-DD), lease_term_months, 
-monthly_rent, annual_rent, currency, security_deposit, governing_law, 
+Include fields such as: lessor_name, lessee_name, property_address, asset_type,
+commencement_date (YYYY-MM-DD), expiry_date (YYYY-MM-DD), lease_term_months,
+monthly_rent, annual_rent, currency, security_deposit, governing_law,
 contract_reference, stamp_duty_amount, notarisation_date, renewal_option (yes/no),
-break_clause (yes/no), rent_review_frequency, rent_free_months, 
+break_clause (yes/no), rent_review_frequency, rent_free_months,
 total_contract_value, payment_frequency, escalation_rate_percent.
 Return ONLY valid JSON, no markdown, no explanation.`,
               },
@@ -447,23 +543,21 @@ Return ONLY valid JSON, no markdown, no explanation.`,
             response_format: { type: "json_object" },
           });
           const raw = (llmResp?.choices?.[0]?.message?.content ?? "{}") as string;
-          const extracted = JSON.parse(raw);
-          return { extracted, source: "document" };
+          return { extracted: JSON.parse(raw), source: "document" };
         }
       } catch (_) {
-        // Fall through to text-only extraction
+        // Fall through to generated fallback
       }
-      // Fallback: ask LLM to generate plausible demo data for the lease
       const fallback = await invokeLLM({
         messages: [
           {
             role: "system" as const,
             content: `You are a lease contract data extraction specialist.
 Generate realistic sample lease metadata for a commercial lease in Qatar.
-Return ONLY valid JSON with fields: lessor_name, lessee_name, property_address, 
-asset_type, commencement_date (YYYY-MM-DD), expiry_date (YYYY-MM-DD), 
-lease_term_months, monthly_rent, annual_rent, currency, security_deposit, 
-governing_law, contract_reference, stamp_duty_amount, renewal_option, 
+Return ONLY valid JSON with fields: lessor_name, lessee_name, property_address,
+asset_type, commencement_date (YYYY-MM-DD), expiry_date (YYYY-MM-DD),
+lease_term_months, monthly_rent, annual_rent, currency, security_deposit,
+governing_law, contract_reference, stamp_duty_amount, renewal_option,
 break_clause, rent_review_frequency, rent_free_months, total_contract_value,
 payment_frequency, escalation_rate_percent.`,
           },
@@ -475,43 +569,41 @@ payment_frequency, escalation_rate_percent.`,
       return { extracted: JSON.parse(raw), source: "generated" };
     }),
 
-  // ── Sync Milestone to Alert Rules ────────────────────────────────────────
-  /**
-   * Creates or updates an alert_config row in lease.alert_configs for a
-   * given contract milestone so it fires an email N days before the due date.
-   */
+  // ── Sync Milestone to Alert Rules ─────────────────────────────────────────
   syncMilestoneToAlert: protectedProcedure
     .input(z.object({
       milestoneId:     z.number(),
       recipientRoles:  z.string().default("admin,user"),
     }))
     .mutation(async ({ input }) => {
-      const [ms] = await q(
-        `SELECT * FROM contract_milestones WHERE milestone_id = ?`,
-        [input.milestoneId]
+      const rows = await q(
+        `SELECT * FROM contract_milestones WHERE milestone_id = @milestoneId`,
+        [{ name: "milestoneId", type: sql.Int, value: input.milestoneId }]
       );
+      const ms = rows[0];
       if (!ms) throw new Error("Milestone not found");
-      // Build a unique event_type key for this milestone
-      const eventType = `MILESTONE_${ms.milestone_id}_${ms.milestone_type.toUpperCase().replace(/\s+/g, "_")}`;
+      const eventType = `MILESTONE_${ms.milestone_id}_${String(ms.milestone_type).toUpperCase().replace(/\s+/g, "_")}`;
       const template = `Dear {{recipient}},
-
 This is a reminder that the contract milestone "${ms.title}" is due on ${ms.due_date}.
-
 Please take the necessary action.
-
 VodaLease Enterprise`;
-      // Upsert into the MySQL alert_configs table (used by the DMS)
       await exec(
-        `INSERT INTO lease_alert_configs (event_type, days_before, recipient_roles, email_template, is_active, milestone_id)
-         VALUES (?, ?, ?, ?, 1, ?)
-         ON DUPLICATE KEY UPDATE
-           days_before=VALUES(days_before),
-           recipient_roles=VALUES(recipient_roles),
-           email_template=VALUES(email_template),
-           is_active=1`,
-        [eventType, ms.alert_days_before, input.recipientRoles, template, ms.milestone_id]
+        `MERGE lease_alert_configs AS target
+         USING (SELECT @eventType AS event_type) AS src ON target.event_type = src.event_type
+         WHEN MATCHED THEN UPDATE SET
+           days_before=@daysBefore, recipient_roles=@recipientRoles,
+           email_template=@emailTemplate, is_active=1
+         WHEN NOT MATCHED THEN INSERT
+           (event_type, days_before, recipient_roles, email_template, is_active, milestone_id)
+           VALUES (@eventType, @daysBefore, @recipientRoles, @emailTemplate, 1, @milestoneId);`,
+        [
+          { name: "eventType",       value: eventType },
+          { name: "daysBefore",      type: sql.Int, value: ms.alert_days_before ?? 30 },
+          { name: "recipientRoles",  value: input.recipientRoles },
+          { name: "emailTemplate",   value: template },
+          { name: "milestoneId",     type: sql.Int, value: input.milestoneId },
+        ]
       );
       return { ok: true, eventType };
     }),
-
 });

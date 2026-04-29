@@ -14,9 +14,7 @@ import { Calculator, Download, ChevronDown, ChevronRight,
   Zap, CheckCircle2, Lock, Play, Edit3, XCircle, Receipt,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // ── Column header with tooltip helper ─────────────────────────────────────────
 function ColHead({ label, tip }: { label: string; tip: string }) {

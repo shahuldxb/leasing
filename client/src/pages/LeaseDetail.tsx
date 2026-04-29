@@ -21,13 +21,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from '@/components/ui/dialog';
-import {
   Building2, DollarSign, FileText, User, Package, History,
   ArrowLeft, RefreshCw, BarChart2, Info, Save, Calculator,
   ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // ── Sub-Assets Grid ───────────────────────────────────────────────────────────
 type SubAssetRow = {

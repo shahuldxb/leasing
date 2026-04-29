@@ -13,9 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Search, Download, RefreshCw, Eye, Edit, MoreHorizontal, FileText, Trash2, User,
   BarChart2, RefreshCcw,
 } from "lucide-react";
@@ -273,45 +270,31 @@ export default function LeaseRegister() {
         </Card>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-400">
-              <Trash2 className="h-5 w-5" />
-              Delete Lease
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete lease{" "}
-              <span className="font-mono font-semibold text-foreground">{deleteTarget?.contractRef}</span>?
-              <br />
-              <span className="text-xs text-muted-foreground mt-1 block">
-                This is a soft delete — the lease will be marked as Deleted and excluded from all views and reports. This action cannot be undone from the UI.
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleteMut.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (deleteTarget) {
-                  deleteMut.mutate({ contractId: deleteTarget.contractId });
-                }
-              }}
-              disabled={deleteMut.isPending}
-            >
-              {deleteMut.isPending ? "Deleting…" : "Delete Lease"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Inline Delete Confirmation Banner */}
+      {deleteTarget && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+          <div className="bg-card border border-destructive/40 rounded-xl px-5 py-4 flex items-start gap-4 shadow-2xl">
+            <div className="mt-0.5 p-2 rounded-lg bg-destructive/10">
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Confirm Delete Lease</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Soft-delete <span className="font-mono font-semibold text-foreground">{deleteTarget.contractRef}</span>?
+                The lease will be marked as Deleted and excluded from all views and reports. This cannot be undone from the UI.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0 mt-0.5">
+              <Button variant="outline" size="sm" onClick={() => setDeleteTarget(null)} disabled={deleteMut.isPending}>Cancel</Button>
+              <Button variant="destructive" size="sm"
+                onClick={() => { if (deleteTarget) deleteMut.mutate({ contractId: deleteTarget.contractId }); }}
+                disabled={deleteMut.isPending}>
+                {deleteMut.isPending ? "Deleting…" : "Confirm Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
