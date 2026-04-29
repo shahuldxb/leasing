@@ -23,7 +23,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
-  BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
+  BarChart3, Building2, Shield, Settings, Bell, Landmark,
   FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, MapPin,
   Sparkles, Calculator, Calendar, ArrowRightLeft, LineChart
 } from "lucide-react";
@@ -202,18 +202,7 @@ const menuItems: NavItem[] = [
       { label: "Alert Centre",       path: "/alerts" },
     ],
   },
-  {
-    icon: Wrench, label: "Facilities & Vendors",
-    children: [
-      { label: "Desk Booking",        path: "/ops/desk-booking" },
-      { label: "Work Orders",          path: "/ops/work-orders" },
-      { label: "Vendor Management",    path: "/ops/vendors" },
-      { label: "Furnished Assets",     path: "/ops/furnished-assets" },
-      { label: "Asset Deposits",       path: "/ops/asset-deposits" },
-      { label: "Handover Checklist",   path: "/ops/handover-checklist" },
-      { label: "Furniture Collections", path: "/assets/furniture" },
-    ],
-  },
+
 
   {
     icon: Calculator, label: "Advanced Accounting",
