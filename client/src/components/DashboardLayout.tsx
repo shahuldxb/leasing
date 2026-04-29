@@ -25,7 +25,7 @@ import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark, Wrench,
   FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, Package, MapPin,
-  Sparkles, Calculator, Calendar, ArrowRightLeft, RefreshCw, LineChart
+  Sparkles, Calculator, Calendar, ArrowRightLeft, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -193,14 +193,7 @@ const menuItems: NavItem[] = [
       { label: "Options & Breaks",   path: "/leases/options-breaks" },
     ],
   },
-  {
-    icon: RefreshCw, label: "Multi-Entity & FX",
-    children: [
-      { label: "Entity Structure",   path: "/admin/multi-entity" },
-      { label: "FX Translations",    path: "/admin/fx-translations" },
-      { label: "Lessor Credit Score",path: "/admin/lessor-credit" },
-    ],
-  },
+
   {
     icon: Bell, label: "Alerts & Reports",
     children: [
