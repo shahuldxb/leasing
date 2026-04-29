@@ -165,7 +165,7 @@ export default function ContractMetadataTemplates() {
       fieldName: d.fieldName,
       fieldLabel: d.fieldLabel,
       fieldType: d.fieldType as any,
-      dropdownOptions: d.dropdownOptions,
+      dropdownOptions: Array.isArray(d.dropdownOptions) ? JSON.stringify(d.dropdownOptions) : (d.dropdownOptions as string | undefined),
       isRequired: d.isRequired,
       displayOrder: d.displayOrder,
       placeholder: d.placeholder || undefined,

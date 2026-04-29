@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
 import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
@@ -1405,30 +1406,35 @@ export default function LeaseTransactionCentre() {
 
           {/* Selected lease KPI strip */}
           {selected && (
-            <div className="flex items-center gap-3 ml-2 flex-wrap">
-              <div className="h-8 w-px bg-border" />
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Payment</span>
-                <span className="text-sm font-mono font-bold">{selected.currency} {fmt(selected.monthly_payment)}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Expiry</span>
-                <span className="text-sm font-semibold">{fmtDate(selected.expiry_date)}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">IBR</span>
-                <span className="text-sm font-mono">{selected.ibr ? `${(Number(selected.ibr) * 100).toFixed(4)}%` : '—'}</span>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-blue-400 uppercase tracking-wide">Liability</span>
-                <span className="text-sm font-mono font-bold text-blue-300">{fmt(selected.current_liability)}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-emerald-400 uppercase tracking-wide">ROU NBV</span>
-                <span className="text-sm font-mono font-bold text-emerald-300">{fmt(selected.current_rou_nbv)}</span>
-              </div>
-            </div>
+            <LeaseStatStrip className="ml-2">
+              <LeaseStatDivider />
+              <LeaseStatPill
+                label="Payment"
+                badge={selected.currency}
+                value={fmt(selected.monthly_payment)}
+              />
+              <LeaseStatPill
+                label="Expiry"
+                value={fmtDate(selected.expiry_date)}
+                mono={false}
+              />
+              <LeaseStatPill
+                label="IBR"
+                value={selected.ibr ? `${(Number(selected.ibr) * 100).toFixed(4)}%` : '—'}
+                color="amber"
+              />
+              <LeaseStatDivider />
+              <LeaseStatPill
+                label="Liability"
+                value={fmt(selected.current_liability)}
+                color="blue"
+              />
+              <LeaseStatPill
+                label="ROU NBV"
+                value={fmt(selected.current_rou_nbv)}
+                color="emerald"
+              />
+            </LeaseStatStrip>
           )}
         </div>
 

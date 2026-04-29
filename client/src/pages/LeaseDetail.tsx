@@ -26,6 +26,7 @@ import {
   ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
 
 // ── Sub-Assets Grid ───────────────────────────────────────────────────────────
 type SubAssetRow = {
@@ -357,19 +358,13 @@ function AmortisationTab({ contractId }: { contractId: number }) {
 
       {/* Summary KPIs */}
       {header && (
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: 'Initial Liability', value: `${header.currency ?? ''} ${fmt(header.initial_liability)}` },
-            { label: 'Current Liability', value: `${header.currency ?? ''} ${fmt(header.current_liability)}`, hi: true },
-            { label: 'Initial ROU',       value: `${header.currency ?? ''} ${fmt(header.initial_rou)}` },
-            { label: 'Current ROU NBV',   value: `${header.currency ?? ''} ${fmt(header.current_rou_nbv)}`, hi: true },
-          ].map((k, i) => (
-            <div key={i} className={`p-3 rounded-lg border ${k.hi ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/20'}`}>
-              <p className="text-[10px] text-muted-foreground">{k.label}</p>
-              <p className={`text-sm font-mono font-semibold ${k.hi ? 'text-amber-400' : ''}`}>{k.value}</p>
-            </div>
-          ))}
-        </div>
+        <LeaseStatStrip>
+          <LeaseStatPill label="Initial Liability" value={fmt(header.initial_liability)} badge={header.currency ? String(header.currency) : undefined} mono />
+          <LeaseStatPill label="Current Liability" value={fmt(header.current_liability)} badge={header.currency ? String(header.currency) : undefined} mono color="amber" />
+          <LeaseStatDivider />
+          <LeaseStatPill label="Initial ROU" value={fmt(header.initial_rou)} badge={header.currency ? String(header.currency) : undefined} mono />
+          <LeaseStatPill label="Current ROU NBV" value={fmt(header.current_rou_nbv)} badge={header.currency ? String(header.currency) : undefined} mono color="emerald" />
+        </LeaseStatStrip>
       )}
 
       {/* View toggle */}
@@ -701,30 +696,18 @@ export default function LeaseDetail() {
             </div>
           </div>
 
-          {/* Summary bar */}
-          <div className="grid grid-cols-6 gap-3 p-2.5 rounded-lg bg-muted/30 border border-border">
-            <div><p className="text-[10px] text-muted-foreground">Contract Ref</p><p className="text-sm font-mono font-bold text-[#e60000]">{d.contract_ref ?? '—'}</p></div>
-            <div className="col-span-2"><p className="text-[10px] text-muted-foreground">Asset</p><p className="text-sm font-medium truncate">{d.asset_description ?? '—'}</p></div>
-            <div><p className="text-[10px] text-muted-foreground">Lessor</p><p className="text-sm truncate">{d.lessor_name ?? '—'}</p></div>
-            <div><p className="text-[10px] text-muted-foreground">Expiry</p><p className="text-sm">{fmtDate(d.expiry_date)}</p></div>
-            <div><p className="text-[10px] text-muted-foreground">Monthly Payment</p><p className="text-sm font-mono font-bold">{d.currency} {fmt(d.monthly_payment)}</p></div>
-          </div>
-
-          {/* KPI strip */}
-          <div className="grid grid-cols-5 gap-2">
-            {[
-              { label: 'Lease Liability', value: `${d.currency ?? ''} ${fmt(d.current_liability)}`, hi: true },
-              { label: 'ROU Asset NBV',   value: `${d.currency ?? ''} ${fmt(d.current_rou_nbv)}`, hi: true },
-              { label: 'IBR',             value: fmtPct(d.ibr) },
-              { label: 'Term (months)',   value: String(d.term_months ?? '—') },
-              { label: 'Commencement',    value: fmtDate(d.commencement_date) },
-            ].map((k, i) => (
-              <div key={i} className={`p-2 rounded-lg border ${k.hi ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/20'}`}>
-                <p className="text-[10px] text-muted-foreground">{k.label}</p>
-                <p className={`text-xs font-mono font-semibold ${k.hi ? 'text-amber-400' : ''}`}>{k.value}</p>
-              </div>
-            ))}
-          </div>
+          {/* Summary bar + KPI strip */}
+          <LeaseStatStrip>
+            <LeaseStatPill label="Contract Ref" value={d.contract_ref ?? '—'} mono color="red" />
+            <LeaseStatPill label="Monthly Payment" value={fmt(d.monthly_payment)} badge={d.currency ?? undefined} mono />
+            <LeaseStatPill label="Expiry" value={fmtDate(d.expiry_date)} />
+            <LeaseStatDivider />
+            <LeaseStatPill label="Lease Liability" value={fmt(d.current_liability)} badge={d.currency ?? undefined} mono color="amber" />
+            <LeaseStatPill label="ROU Asset NBV" value={fmt(d.current_rou_nbv)} badge={d.currency ?? undefined} mono color="emerald" />
+            <LeaseStatPill label="IBR" value={fmtPct(d.ibr)} color="amber" />
+            <LeaseStatPill label="Term" value={`${d.term_months ?? '—'} mo`} />
+            <LeaseStatPill label="Commencement" value={fmtDate(d.commencement_date)} />
+          </LeaseStatStrip>
         </div>
 
         {/* ── Tabs ── */}
