@@ -8,24 +8,14 @@ import {
 } from "@/components/ui/sheet";
 import {
   ClipboardList, AlertCircle, Clock, User, Monitor, CheckCircle2,
-  XCircle, Info, Sparkles, Loader2,
+  XCircle, Info, Sparkles, Loader2, Timer,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { ScreenMetaOverlay } from "@/components/ScreenMetaOverlay";
 import { toast } from "sonner";
+import { useScreenAudit } from "@/hooks/useScreenAudit";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-interface AuditEntry {
-  id: number;
-  action: string;
-  entity: string;
-  entityId?: string;
-  user: string;
-  timestamp: string;
-  details?: string;
-  status: "success" | "info" | "warning";
-}
 
 interface ErrorEntry {
   id: number;
@@ -49,44 +39,17 @@ interface ScreenHeaderProps {
   /** Optional extra actions to show in the header toolbar */
   actions?: ReactNode;
   /**
-   * Screen type key for the AI data generator (e.g. "lease_register").
-   * When provided, a "Gen AI" button appears that populates the screen with
-   * realistic sample data via the aiFill.generateScreenData tRPC mutation.
-   */
-  /**
    * FORM FILL MODE — for wizard/form pages.
    * Provide formType + onAIFormFill.
-   * Gen AI calls fillForm and passes a single Record<string,string> to the callback.
    */
   formType?: string;
   onAIFormFill?: (data: Record<string, string>) => void;
   /**
    * LIST/SCREEN MODE — for table/list pages.
    * Provide screenType + onAIData.
-   * Gen AI calls generateScreenData and passes rows[] to the callback.
    */
   screenType?: string;
   onAIData?: (rows: Record<string, unknown>[]) => void;
-}
-
-// ── Mock data generators (replaced by live tRPC once DB is seeded) ────────────
-
-function mockAuditEntries(screenId: string): AuditEntry[] {
-  return [
-    { id: 1, action: "Viewed screen", entity: screenId, user: "Ahmed Al Rashidi", timestamp: new Date(Date.now() - 120_000).toISOString(), status: "info" },
-    { id: 2, action: "Created record", entity: "Lease", entityId: "VF-2025-001", user: "Sara Mohammed", timestamp: new Date(Date.now() - 3_600_000).toISOString(), details: "New lease origination submitted for approval", status: "success" },
-    { id: 3, action: "Updated record", entity: "Lease", entityId: "VF-2024-089", user: "Ahmed Al Rashidi", timestamp: new Date(Date.now() - 86_400_000).toISOString(), details: "Rent amount updated from AED 12,000 to AED 13,500", status: "success" },
-    { id: 4, action: "Approved record", entity: "Invoice", entityId: "INV-2025-0042", user: "Director Finance", timestamp: new Date(Date.now() - 172_800_000).toISOString(), details: "Invoice approved and queued for payment", status: "success" },
-    { id: 5, action: "Deleted record", entity: "Draft", entityId: "DRAFT-007", user: "Sara Mohammed", timestamp: new Date(Date.now() - 259_200_000).toISOString(), details: "Draft lease discarded", status: "warning" },
-  ];
-}
-
-function mockErrorEntries(_screenId: string): ErrorEntry[] {
-  return [
-    { id: 1, message: "Database connection timeout on lease query", code: "MSSQL_TIMEOUT", user: "System", timestamp: new Date(Date.now() - 7_200_000).toISOString(), resolved: true },
-    { id: 2, message: "IFRS 16 computation failed: IBR rate missing", code: "IFRS16_MISSING_IBR", user: "Ahmed Al Rashidi", timestamp: new Date(Date.now() - 14_400_000).toISOString(), resolved: false },
-    { id: 3, message: "PDF export failed: document too large", code: "EXPORT_SIZE_LIMIT", user: "Sara Mohammed", timestamp: new Date(Date.now() - 86_400_000).toISOString(), resolved: true },
-  ];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -99,16 +62,27 @@ function relativeTime(iso: string): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
-const STATUS_ICON: Record<string, ReactNode> = {
-  success: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
-  info:    <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />,
-  warning: <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />,
+function formatElapsed(ms: number): string {
+  if (ms < 1_000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1_000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60_000)}m ${Math.floor((ms % 60_000) / 1_000)}s`;
+}
+
+const ACTION_ICON: Record<string, ReactNode> = {
+  SCREEN_ENTER: <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />,
+  SCREEN_EXIT:  <Timer className="w-3.5 h-3.5 text-violet-400 shrink-0" />,
+  default:      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />,
 };
 
-// ── AuditLogDrawer ────────────────────────────────────────────────────────────
+// ── AuditLogDrawer — wired to real tRPC ───────────────────────────────────────
 
 function AuditLogDrawer({ screenId }: { screenId: string }) {
-  const entries = mockAuditEntries(screenId);
+  const { data, isLoading } = trpc.compliance.getAuditLog.useQuery(
+    { screenId, pageSize: 50 },
+    { refetchOnWindowFocus: false }
+  );
+  const rows: any[] = data?.rows ?? [];
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -122,44 +96,102 @@ function AuditLogDrawer({ screenId }: { screenId: string }) {
           Audit Log
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[420px] bg-[#111] border-l border-border p-0 flex flex-col">
+      <SheetContent side="right" className="w-[440px] bg-[#111] border-l border-border p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border bg-[#161616] shrink-0">
           <SheetTitle className="flex items-center gap-2 text-base">
             <ClipboardList className="w-4 h-4 text-[#e60000]" />
             Audit Log — {screenId}
           </SheetTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">All user actions on this screen, newest first</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            All user actions on this screen, newest first
+          </p>
         </SheetHeader>
         <ScrollArea className="flex-1">
           <div className="px-5 py-4 space-y-3">
-            {entries.map((e, i) => (
-              <div key={e.id}>
-                <div className="flex items-start gap-2.5">
-                  {STATUS_ICON[e.status]}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-foreground truncate">{e.action}</span>
-                      <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />{relativeTime(e.timestamp)}
-                      </span>
-                    </div>
-                    {e.entityId && (
-                      <span className="text-xs text-[#e60000] font-mono">{e.entity} · {e.entityId}</span>
-                    )}
-                    {e.details && (
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{e.details}</p>
-                    )}
-                    <div className="flex items-center gap-1 mt-1">
-                      <User className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{e.user}</span>
-                      <span className="text-xs text-muted-foreground">·</span>
-                      <span className="text-xs text-muted-foreground">{new Date(e.timestamp).toLocaleString()}</span>
+            {isLoading && (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading audit log…
+              </div>
+            )}
+            {!isLoading && rows.length === 0 && (
+              <div className="text-center text-muted-foreground text-sm py-8">
+                <ClipboardList className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                No audit entries recorded for this screen yet
+              </div>
+            )}
+            {rows.map((row: any, i: number) => {
+              // Compute elapsed time from process_start_time / process_end_time or after_state
+              let elapsedLabel: string | null = null;
+              if (row.process_start_time && row.process_end_time) {
+                const ms = new Date(row.process_end_time).getTime() - new Date(row.process_start_time).getTime();
+                if (ms >= 0) elapsedLabel = formatElapsed(ms);
+              } else if (row.after_state) {
+                try {
+                  const parsed = typeof row.after_state === 'string' ? JSON.parse(row.after_state) : row.after_state;
+                  if (parsed?.elapsedMs != null) elapsedLabel = formatElapsed(parsed.elapsedMs);
+                } catch { /* ignore */ }
+              }
+
+              const actionType: string = row.action_type ?? 'default';
+              const icon = ACTION_ICON[actionType] ?? ACTION_ICON['default'];
+              const ts = row.created_at ?? row.timestamp_utc ?? '';
+
+              return (
+                <div key={row.audit_id ?? i}>
+                  <div className="flex items-start gap-2.5">
+                    {icon}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-foreground truncate">
+                          {actionType === 'SCREEN_ENTER' ? 'Screen entered'
+                            : actionType === 'SCREEN_EXIT' ? 'Screen exited'
+                            : (row.action_type ?? 'Action')}
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {ts ? relativeTime(ts) : '—'}
+                        </span>
+                      </div>
+
+                      {/* Record reference */}
+                      {row.record_id && row.record_table && (
+                        <span className="text-xs text-[#e60000] font-mono">
+                          {row.record_table} · {row.record_id}
+                        </span>
+                      )}
+
+                      {/* Elapsed time badge */}
+                      {elapsedLabel && (
+                        <span className="inline-flex items-center gap-1 text-xs text-violet-400 mt-0.5">
+                          <Timer className="w-3 h-3" />
+                          {elapsedLabel}
+                        </span>
+                      )}
+
+                      {/* Outcome */}
+                      {row.outcome && row.outcome !== 'Success' && (
+                        <p className="text-xs text-amber-400 mt-0.5">{row.outcome}</p>
+                      )}
+
+                      <div className="flex items-center gap-1 mt-1">
+                        <User className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{row.username ?? '—'}</span>
+                        {ts && (
+                          <>
+                            <span className="text-xs text-muted-foreground">·</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(ts).toLocaleString()}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  {i < rows.length - 1 && <Separator className="mt-3 bg-border/50" />}
                 </div>
-                {i < entries.length - 1 && <Separator className="mt-3 bg-border/50" />}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </SheetContent>
@@ -231,7 +263,7 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
               const resolved = e.resolution_status === 'Resolved';
               const userCtx = e.user_context ? (() => { try { return JSON.parse(e.user_context); } catch { return {}; } })() : {};
               return (
-                <div key={e.error_id}>
+                <div key={e.error_id ?? i}>
                   <div className="flex items-start gap-2.5">
                     {resolved
                       ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
@@ -251,7 +283,7 @@ function ErrorLogDrawer({ screenId }: { screenId: string }) {
                       )}
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <User className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{userCtx.user || e.module}</span>
+                        <span className="text-xs text-muted-foreground">{userCtx.username || userCtx.user || e.module}</span>
                         <Badge
                           className={`text-[10px] h-4 px-1.5 border-0 ${
                             resolved ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
@@ -360,9 +392,10 @@ function GenAIButton({
  * - Screen ID badge (e.g. VFLSENEWLS0001P001)
  * - Page title + optional icon and subtitle
  * - **Gen AI button** — generates realistic temporary sample data for the screen
- * - Audit Log drawer (who did what and when)
+ * - Audit Log drawer (real tRPC data, with elapsed time per visit)
  * - Error Log drawer (API/form errors with unresolved count badge)
  * - Optional extra action buttons
+ * - Automatic screen visit logging via useScreenAudit hook
  *
  * Usage:
  *   <ScreenHeader
@@ -386,6 +419,9 @@ export function ScreenHeader({
   screenType,
   onAIData,
 }: ScreenHeaderProps) {
+  // Automatic visit logging — ENTER on mount, EXIT with elapsed ms on unmount
+  useScreenAudit(screenId, title);
+
   return (
     <div className="flex items-start justify-between gap-4 mb-6">
       {/* Left: title block */}

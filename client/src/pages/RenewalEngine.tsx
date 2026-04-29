@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,34 +91,30 @@ export default function RenewalEngine() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10">
-              <CalendarClock className="h-6 w-6 text-emerald-400" />
+        <ScreenHeader
+          screenId="VFLSE-RENEWAL-001"
+          title="Renewal Engine"
+          subtitle="IFRS 16 Para 45 — manage lease extensions with maker/checker approval"
+          icon={<CalendarClock className="h-6 w-6 text-emerald-400" />}
+          actions={
+            <div className="flex items-center gap-3">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={() => setShowInitiate(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <Plus className="h-4 w-4" /> Initiate Renewal
+              </Button>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Renewal Engine</h1>
-              <p className="text-sm text-muted-foreground">IFRS 16 Para 45 — manage lease extensions with maker/checker approval</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setShowInitiate(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="h-4 w-4" /> Initiate Renewal
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* KPI cards */}
         <div className="grid grid-cols-3 gap-4">

@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,34 +62,30 @@ export default function IAS17Comparison() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-sky-500/10">
-              <Scale className="h-6 w-6 text-sky-400" />
+        <ScreenHeader
+          screenId="VFCMP-IAS17-001"
+          title="IAS 17 vs IFRS 16 Comparison"
+          subtitle="P&L and balance sheet impact of IFRS 16 adoption"
+          icon={<Scale className="h-6 w-6 text-sky-400" />}
+          actions={
+            <div className="flex items-center gap-3">
+              <Select value={String(year)} onValueChange={v => setYear(Number(v))}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map(y => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => refetch()}>Refresh</Button>
+              <Button onClick={handleCopy} className="gap-2">
+                <Download className="h-4 w-4" /> Copy
+              </Button>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">IAS 17 vs IFRS 16 Comparison</h1>
-              <p className="text-sm text-muted-foreground">P&amp;L and balance sheet impact of IFRS 16 adoption</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={String(year)} onValueChange={v => setYear(Number(v))}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map(y => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={() => refetch()}>Refresh</Button>
-            <Button onClick={handleCopy} className="gap-2">
-              <Download className="h-4 w-4" /> Copy
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Summary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">

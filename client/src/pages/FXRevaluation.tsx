@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,23 +91,22 @@ export default function FXRevaluation() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Multi-Currency FX Revaluation</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              IAS 21 — Monthly revaluation of non-QAR lease liabilities to closing exchange rates
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowAddRate(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Add FX Rate
-            </Button>
-            <Button size="sm" onClick={() => setShowRunConfirm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              <Play className="w-4 h-4 mr-1" /> Run Revaluation
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+          screenId="VFACC-FXREVAL-001"
+          title="Multi-Currency FX Revaluation"
+          subtitle="IAS 21 — Monthly revaluation of non-QAR lease liabilities to closing exchange rates"
+          icon={<Globe className="h-6 w-6 text-indigo-400" />}
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowAddRate(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Add FX Rate
+              </Button>
+              <Button size="sm" onClick={() => setShowRunConfirm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Play className="w-4 h-4 mr-1" /> Run Revaluation
+              </Button>
+            </div>
+          }
+        />
 
         {/* Period Selector */}
         <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border">

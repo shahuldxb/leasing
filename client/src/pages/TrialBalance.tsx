@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, RefreshCw, AlertCircle, Search, FileText } from 'lucide-react';
+import { Download, RefreshCw, AlertCircle, Search, FileText, Scale } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SCREEN_ID = 'VFLACCTBAL0001P001';
@@ -71,43 +72,38 @@ export default function TrialBalance() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className="text-xs font-mono text-muted-foreground">{SCREEN_ID}</Badge>
-              <Badge variant="secondary" className="text-xs">GL Trial Balance</Badge>
+        <ScreenHeader
+          screenId="VFACC-TRIAL-001"
+          title="Trial Balance"
+          subtitle="Period-end GL account balances from all posted lease journal entries"
+          icon={<Scale className="h-6 w-6 text-blue-400" />}
+          actions={
+            <div className="flex items-center gap-3">
+              <Select value={month} onValueChange={setMonth}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map(m => <SelectItem key={m.v} value={m.v}>{m.l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button onClick={() => setSubmitted({ year, month })} disabled={tbQuery.isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-1 ${tbQuery.isLoading ? 'animate-spin' : ''}`} /> Run
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => toast.info('Export to Excel — coming soon')}>
+                <Download className="h-4 w-4 mr-1" /> Export
+              </Button>
             </div>
-            <h1 className="text-2xl font-bold">Trial Balance</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Period-end GL account balances from all posted lease journal entries
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map(m => <SelectItem key={m.v} value={m.v}>{m.l}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setSubmitted({ year, month })} disabled={tbQuery.isLoading}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${tbQuery.isLoading ? 'animate-spin' : ''}`} /> Run
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => toast.info('Export to Excel — coming soon')}>
-              <Download className="h-4 w-4 mr-1" /> Export
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Balance check banner */}
         {rows.length > 0 && (

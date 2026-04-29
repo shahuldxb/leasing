@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -74,34 +75,30 @@ export default function DisclosureNotes() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <FileText className="h-6 w-6 text-blue-400" />
+        <ScreenHeader
+          screenId="VFACC-DISCNOTES-001"
+          title="IFRS 16 Disclosure Notes"
+          subtitle="Auto-generated note for the financial statements"
+          icon={<FileText className="h-6 w-6 text-blue-400" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <Select value={String(year)} onValueChange={v => setYear(Number(v))}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => refetch()}>Refresh</Button>
+              <Button onClick={handleCopy} className="gap-2">
+                <Download className="h-4 w-4" /> Copy to Clipboard
+              </Button>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">IFRS 16 Disclosure Notes</h1>
-              <p className="text-sm text-muted-foreground">Auto-generated note for the financial statements</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={String(year)} onValueChange={v => setYear(Number(v))}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[currentYear - 1, currentYear, currentYear + 1].map(y => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={() => refetch()}>Refresh</Button>
-            <Button onClick={handleCopy} className="gap-2">
-              <Download className="h-4 w-4" /> Copy to Clipboard
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {isLoading ? (
           <div className="text-center py-16 text-muted-foreground">Loading disclosure data for {year}…</div>

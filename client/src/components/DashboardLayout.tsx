@@ -33,6 +33,7 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { trpc } from "@/lib/trpc";
+import { ScreenErrorBoundary } from "@/components/ScreenErrorBoundary";
 
 type NavItem = {
   icon: React.ElementType;
@@ -503,7 +504,11 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">{children}</main>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <ScreenErrorBoundary username={(user as any)?.name ?? (user as any)?.email}>
+            {children}
+          </ScreenErrorBoundary>
+        </main>
       </SidebarInset>
     </>
   );

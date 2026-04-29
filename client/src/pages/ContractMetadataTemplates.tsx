@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,15 +182,17 @@ export default function ContractMetadataTemplates() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold">Contract Metadata Templates</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Define reusable field schemas for each contract type. Fields are filled in when a contract is created.</p>
-          </div>
-          <Button size="sm" onClick={openCreateTemplate}>
-            <Plus className="h-4 w-4 mr-1.5" /> New Template
-          </Button>
-        </div>
+        <ScreenHeader
+          screenId="VFCTR-METATEMPL-001"
+          title="Contract Metadata Templates"
+          subtitle="Define reusable field schemas for each contract type"
+          icon={<Settings2 className="h-6 w-6 text-blue-400" />}
+          actions={
+            <Button size="sm" onClick={openCreateTemplate}>
+              <Plus className="h-4 w-4 mr-1.5" /> New Template
+            </Button>
+          }
+        />
 
         {isLoading ? (
           <div className="space-y-3">

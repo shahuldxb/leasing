@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useLocation } from "wouter";
 import {
   BookOpen, Download, ChevronRight, ExternalLink, FileText,
@@ -835,30 +837,27 @@ export default function AccountingStandardsPaper() {
   const [selectedStandard, setSelectedStandard] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="border-b px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Scale className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Leasing Accounting Standards</h1>
-            <p className="text-xs text-muted-foreground">Reference paper, IBR calculator &amp; journal entry generator — IFRS 16, ASC 842, GASB 87 &amp; more</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs gap-1">
-            <Globe className="w-3 h-3" /> 10 Standards Covered
-          </Badge>
-          <a href={PDF_URL} target="_blank" rel="noopener noreferrer" download="Leasing_Accounting_Standards_Paper.pdf">
-            <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-              <Download className="w-4 h-4" />
-              Download PDF
-            </Button>
-          </a>
-        </div>
-      </div>
+    <DashboardLayout>
+      <div className="flex flex-col h-full bg-background">
+        <ScreenHeader
+          screenId="VFCMP-STDPAPER-001"
+          title="Leasing Accounting Standards"
+          subtitle="Reference paper, IBR calculator & journal entry generator — IFRS 16, ASC 842, GASB 87 & more"
+          icon={<Scale className="w-6 h-6 text-blue-400" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs gap-1">
+                <Globe className="w-3 h-3" /> 10 Standards Covered
+              </Badge>
+              <a href={PDF_URL} target="_blank" rel="noopener noreferrer" download="Leasing_Accounting_Standards_Paper.pdf">
+                <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </Button>
+              </a>
+            </div>
+          }
+        />
 
       <Tabs defaultValue="overview" className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b px-6 shrink-0">
@@ -1242,6 +1241,7 @@ export default function AccountingStandardsPaper() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

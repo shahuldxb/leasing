@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,27 +65,25 @@ export default function LeaseExemptions() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className="text-xs font-mono text-muted-foreground">{SCREEN_ID}</Badge>
-              <Badge variant="secondary" className="text-xs">IFRS 16 Para 5</Badge>
+        <ScreenHeader
+          screenId="VFLSE-EXEMPT-001"
+          title="Exemption Register"
+          subtitle="Short-term and low-value lease exemptions — straight-line expense recognition"
+          icon={<Clock className="h-6 w-6 text-blue-400" />}
+          actions={
+            <div className="flex items-center gap-3">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="Filter by type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Leases</SelectItem>
+                  <SelectItem value="ShortTerm">Short-term only</SelectItem>
+                  <SelectItem value="LowValue">Low-value only</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}><Download className="h-4 w-4 mr-1" /> Export</Button>
             </div>
-            <h1 className="text-2xl font-bold">Exemption Register</h1>
-            <p className="text-muted-foreground text-sm mt-1">Short-term and low-value lease exemptions — straight-line expense recognition</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Filter by type" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Leases</SelectItem>
-                <SelectItem value="ShortTerm">Short-term only</SelectItem>
-                <SelectItem value="LowValue">Low-value only</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}><Download className="h-4 w-4 mr-1" /> Export</Button>
-          </div>
-        </div>
+          }
+        />
         <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-300">
           <strong>IFRS 16 Para 5:</strong> Short-term leases (term &le;12 months) and low-value leases (asset &lt; USD 5,000) may be exempted from capitalisation. Payments recognised straight-line over the lease term.
         </div>

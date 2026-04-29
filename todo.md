@@ -1268,3 +1268,15 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Extract with AI button in ContractRegister Documents tab auto-fills Metadata fields
 - [x] Milestone alerts integration: wire contract milestones into Alert Rules engine (email notifications)
 - [x] Remove redundant sidebar items: Version History, Document Vault, Milestones under Contracts
+
+## Screen ID + Audit Log + Error Key Framework (Apr 29, 2026)
+- [x] Every screen has a unique Screen ID (format: VFXXX-YYYYY-NNN) displayed in ScreenHeader
+- [x] useScreenAudit hook — fires SCREEN_ENTER on mount, SCREEN_EXIT with elapsed ms on unmount
+- [x] ScreenHeader auto-logs screen visits via useScreenAudit (no per-page changes needed)
+- [x] Elapsed time tracked and stored in audit log (process_start_time → process_end_time or after_state.elapsedMs)
+- [x] Error key format: username + screen_id stored in error log via ScreenErrorBoundary
+- [x] ScreenErrorBoundary wraps children in DashboardLayout — catches React render errors
+- [x] AuditLog page enhanced: Screen ID filter, Username filter, KPI cards (Total/Screen Visits/Data Actions/Slow), elapsed time with color coding
+- [x] AuditLog: clicking Screen ID badge auto-filters by that screen
+- [x] Applied ScreenHeader to all 11 remaining pages: AccountingStandardsPaper, ContractMetadataTemplates, DisclosureNotes, FXRevaluation, FinancialStatements, IAS17Comparison, LeaseExemptions, LeaseSubAssets, PeriodClose, RenewalEngine, TrialBalance
+- [x] TypeScript clean — 0 errors after all changes

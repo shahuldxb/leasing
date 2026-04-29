@@ -7,6 +7,7 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -129,34 +130,29 @@ export default function FinancialStatements() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className="text-xs font-mono text-muted-foreground">{SCREEN_ID}</Badge>
-              <Badge variant="secondary" className="text-xs">IAS 1</Badge>
+        <ScreenHeader
+          screenId="VFACC-FINSTAT-001"
+          title="Financial Statements"
+          subtitle="Live statements generated from posted GL entries — Balance Sheet, P&L, Cash Flow"
+          icon={<Building2 className="h-6 w-6 text-blue-400" />}
+          actions={
+            <div className="flex items-center gap-3">
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={() => handleExport(activeTab)}>
+                <Download className="h-4 w-4 mr-1" /> Export
+              </Button>
             </div>
-            <h1 className="text-2xl font-bold">Financial Statements</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Live statements generated from posted GL entries — Balance Sheet, P&amp;L, Cash Flow
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(y => (
-                  <SelectItem key={y} value={y}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={() => handleExport(activeTab)}>
-              <Download className="h-4 w-4 mr-1" /> Export
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* KPI Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

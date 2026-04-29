@@ -68,18 +68,65 @@ export const workflowRouter = router({
 });
 
 export const complianceRouter = router({
+  // ── Screen visit + elapsed time logging ─────────────────────────────────────
+  logScreenVisit: protectedProcedure
+    .input(z.object({
+      screenId:    z.string(),
+      screenTitle: z.string().optional(),
+      elapsedMs:   z.number().int().nonnegative().optional(),
+      action:      z.enum(['ENTER', 'EXIT']).default('ENTER'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const t0 = new Date(Date.now() - (input.elapsedMs ?? 0));
+      await writeAuditLog({
+        userId:           ctx.user!.id,
+        username:         ctx.user!.name ?? ctx.user!.email ?? 'unknown',
+        userRole:         ctx.user!.role ?? 'user',
+        module:           'Screen Navigation',
+        subModule:        input.screenTitle || input.screenId,
+        actionType:       input.action === 'EXIT' ? 'SCREEN_EXIT' : 'SCREEN_ENTER',
+        screenId:         input.screenId,
+        outcome:          'Success',
+        processStartTime: t0,
+        afterState:       input.elapsedMs != null ? { elapsedMs: input.elapsedMs } : null,
+      });
+      return { ok: true };
+    }),
+
+  // ── Client-side error reporting ──────────────────────────────────────────────
+  logScreenError: protectedProcedure
+    .input(z.object({
+      screenId:   z.string(),
+      errorCode:  z.string().optional(),
+      message:    z.string(),
+      stackTrace: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await writeErrorLog({
+        severity:    'Error',
+        module:      'Frontend',
+        errorCode:   input.errorCode,
+        message:     input.message,
+        stackTrace:  input.stackTrace,
+        screenId:    input.screenId,
+        userContext: { userId: ctx.user!.id, username: ctx.user!.name ?? ctx.user!.email ?? 'unknown', role: ctx.user!.role },
+      });
+      return { ok: true };
+    }),
+
   getAuditLog: protectedProcedure
     .input(z.object({
-      module: z.string().optional(),
+      screenId:   z.string().optional(),
+      module:     z.string().optional(),
       actionType: z.string().optional(),
-      fromDate: z.string().optional(),
-      toDate: z.string().optional(),
-      page: z.number().default(1),
-      pageSize: z.number().default(100),
+      fromDate:   z.string().optional(),
+      toDate:     z.string().optional(),
+      page:       z.number().default(1),
+      pageSize:   z.number().default(100),
     }))
     .query(async ({ input }) => {
       const rows = await execSPP('sp_GetAuditLog', [
-        { name: 'ScreenId',   type: sql.VarChar(50),  value: null },
+        { name: 'ScreenId',   type: sql.VarChar(50),  value: input.screenId || null },
         { name: 'Module',     type: sql.VarChar(50),  value: input.module || null },
         { name: 'UserId',     type: sql.Int,           value: null },
         { name: 'ActionType', type: sql.VarChar(50),  value: input.actionType || null },

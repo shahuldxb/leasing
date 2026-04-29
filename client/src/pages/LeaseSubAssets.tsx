@@ -43,6 +43,7 @@ import {
   AlertCircle, Loader2, FileDown, ShieldAlert,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ScreenHeader } from "@/components/ScreenHeader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -386,45 +387,39 @@ export default function LeaseSubAssets() {
     <DashboardLayout>
       <div className="flex flex-col h-full bg-[#0a0c14] text-white">
 
-        {/* ── Header ─────────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0f1117] shrink-0">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white"
-              onClick={() => setLocation("/leases")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                <Boxes className="h-5 w-5 text-amber-400" />
-                Lease Sub-Asset Registry
-              </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Attach, track and manage furniture &amp; appliance sets per lease
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {selectedLeaseId && (
-              <>
-                <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
-                  onClick={() => { resetAttachDialog(); setAttachOpen(true); }}>
-                  <Plus className="h-4 w-4" /> Attach Set
-                </Button>
-                {attachedSets.length > 0 && (
-                  <Button size="sm" variant="outline"
-                    className="gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                    onClick={exportInventoryPDF}>
-                    <FileDown className="h-3.5 w-3.5" /> Export PDF
+        <ScreenHeader
+          screenId="VFLSE-SUBASSET-001"
+          title="Lease Sub-Asset Registry"
+          subtitle="Attach, track and manage furniture & appliance sets per lease"
+          icon={<Boxes className="h-6 w-6 text-amber-400" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="h-8 w-8"
+                onClick={() => setLocation("/leases")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              {selectedLeaseId && (
+                <>
+                  <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
+                    onClick={() => { resetAttachDialog(); setAttachOpen(true); }}>
+                    <Plus className="h-4 w-4" /> Attach Set
                   </Button>
-                )}
-              </>
-            )}
-            <Button size="sm" variant="outline" className="gap-1.5 border-white/10 text-gray-300"
-              onClick={() => refetchSets()}>
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </Button>
-          </div>
-        </div>
+                  {attachedSets.length > 0 && (
+                    <Button size="sm" variant="outline"
+                      className="gap-1.5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                      onClick={exportInventoryPDF}>
+                      <FileDown className="h-3.5 w-3.5" /> Export PDF
+                    </Button>
+                  )}
+                </>
+              )}
+              <Button size="sm" variant="outline" className="gap-1.5"
+                onClick={() => refetchSets()}>
+                <RefreshCw className="h-3.5 w-3.5" /> Refresh
+              </Button>
+            </div>
+          }
+        />
 
         {/* ── Lessee + Lease Selector ──────────────────────────────────────────── */}
         <div className="px-6 py-4 border-b border-white/5 bg-[#0d0f1a] shrink-0">
