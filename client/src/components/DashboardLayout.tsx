@@ -24,7 +24,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
   BarChart3, Building2, Shield, Settings, Bell, Landmark,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen, MapPin,
+  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen,
   Sparkles, Calculator, Calendar, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -178,14 +178,7 @@ const menuItems: NavItem[] = [
       { label: "ASC 842",            path: "/accounting/asc842" },
     ],
   },
-  {
-    icon: MapPin, label: "Space & Projects",
-    children: [
-      { label: "Space Management",   path: "/ops/space" },
-      { label: "Capital Projects",   path: "/ops/capital-projects" },
-      { label: "ESG & Carbon",       path: "/ops/esg-carbon" },
-    ],
-  },
+
 
 
   {
