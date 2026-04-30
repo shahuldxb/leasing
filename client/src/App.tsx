@@ -71,6 +71,8 @@ import AuditLog           from "./pages/AuditLog";
 import ComplianceErrors   from "./pages/ComplianceErrors";
 
 // Accounting Engine (P1 features)
+import JournalVoucher     from "./pages/JournalVoucher";
+import AccountingSettings from "./pages/AccountingSettings";
 import IBRLibrary         from "./pages/IBRLibrary";
 import LeaseClassification from "./pages/LeaseClassification";
 import RemeasurementEngine from "./pages/RemeasurementEngine";
@@ -332,6 +334,8 @@ function Router() {
       <Route path="/accounting/disclosure-notes"  component={DisclosureNotes} />
       <Route path="/leases/renewal-engine"        component={RenewalEngine} />
       <Route path="/accounting/period-close"      component={PeriodClose} />
+      <Route path="/accounting/journal-voucher"    component={JournalVoucher} />
+      <Route path="/accounting/settings"           component={AccountingSettings} />
       <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
       <Route path="/accounting/fx-revaluation"    component={FXRevaluation} />
       {/* Phase 7: Features 12, 13, 14 */}

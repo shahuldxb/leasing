@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Lock, Unlock, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
+import { Lock, Unlock, CheckCircle, AlertTriangle, Calendar, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
@@ -57,6 +57,10 @@ export default function PeriodClose() {
     onError: (e) => toast.error(e.message),
   });
 
+  const sendToJvMut = trpc.journalVoucher.generatePeriodClose.useMutation({
+    onSuccess: (r: any) => toast.success(`JV ${r?.jv_number} created — open Journal Voucher Register to review and post`),
+    onError: (e: any) => toast.error(`JV generation failed: ${e.message}`),
+  });
   const reopenMut = trpc.lease.reopenPeriod.useMutation({
     onSuccess: () => {
       toast.success(`Period reopened — Locked rows restored to Posted`);
@@ -175,6 +179,17 @@ export default function PeriodClose() {
                         </div>
                       )}
 
+                      <div className="flex gap-2 mb-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 h-7 text-xs border-purple-700 text-purple-400 hover:bg-purple-900/30"
+                          onClick={() => sendToJvMut.mutate({ period_year: row.period_year, period_month: row.period_month })}
+                          disabled={sendToJvMut.isPending}
+                        >
+                          <BookOpen className="h-3 w-3 mr-1" /> Send to JV
+                        </Button>
+                      </div>
                       <div className="flex gap-2">
                         {!isClosed ? (
                           <Button

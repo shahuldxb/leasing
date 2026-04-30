@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, BookOpen } from "lucide-react";
+import { useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -32,6 +33,8 @@ export default function RemeasurementEngine() {
   const contracts = (contractsData as any)?.rows ?? [];
   const create = trpc.accounting.remeasurement.create.useMutation({ onSuccess: () => { refetch(); setShowForm(false); toast.success("Remeasurement event created"); }, onError: (e: any) => toast.error(e.message) });
   const post = trpc.accounting.remeasurement.post.useMutation({ onSuccess: () => { refetch(); toast.success("Remeasurement posted to GL"); }, onError: (e: any) => toast.error(e.message) });
+  const sendToJvMut = trpc.journalVoucher.generateRemeasurement.useMutation({ onSuccess: (r: any) => { toast.success(`JV ${r?.jv_number} created — open Journal Voucher Register to review and post`); }, onError: (e: any) => toast.error(`JV generation failed: ${e.message}`) });
+  const [, navigate] = useLocation();
 
   if (showForm) {
     return (
@@ -124,6 +127,11 @@ export default function RemeasurementEngine() {
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {e.status === "Calculated" && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => post.mutate({ remeasurement_id: e.remeasurement_id || e.event_id })}>Post to GL</Button>}
+                      {(e.status === "Calculated" || e.status === "Posted") && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs border-purple-700 text-purple-400 hover:bg-purple-900/30" onClick={() => sendToJvMut.mutate({ remeasurement_id: e.remeasurement_id || e.event_id })} disabled={sendToJvMut.isPending}>
+                          <BookOpen className="w-3 h-3 mr-1" />Send to JV
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-blue-400" onClick={() => { setForm({ contractId: String(e.contract_id), triggerType: e.trigger_type, remeasurementDate: e.remeasurement_date?.slice(0,10) ?? "", newIbr: e.new_ibr ?? "", notes: "" }); setShowForm(true); }}><Pencil className="w-3.5 h-3.5" /></Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-gray-400 hover:text-red-400" onClick={() => toast("Remove this event?", { action: { label: "Remove", onClick: () => toast.success("Event removed") } })}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>

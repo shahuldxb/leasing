@@ -18,6 +18,7 @@ import { masterContractsRouter } from "./routers/masterContracts";
 import { aiFillRouter }         from "./routers/aiFill";
 import { contractDmsRouter }    from "./routers/contractDms";
 import { lesseeRouter }         from "./routers/lessee";
+import { journalVoucherRouter } from "./routers/journalVoucher";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
 import { getPool }              from "./db-sqlserver";
@@ -95,6 +96,7 @@ export const appRouter = router({
   aiFill:          aiFillRouter,
   contractDms:     contractDmsRouter,
   lessee:          lesseeRouter,
+  journalVoucher:  journalVoucherRouter,
   furnitureCollections: furnitureCollectionsRouter,
   vendor:       vendorRouter,
   broker:       brokerRouter,
