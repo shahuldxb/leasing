@@ -50,6 +50,7 @@ const menuItems: NavItem[] = [
       { label: "Lease Register",    path: "/leases" },
       { label: "New Lease",         path: "/leases/new" },
       { label: "Lessor Master",      path: "/lessor-master" },
+      { label: "Lessee Master",      path: "/lessee-master" },
       { label: "Sub-Asset Registry",  path: "/sub-asset-registry" },
       { label: "Sub-Asset Txn Log",   path: "/sub-asset-registry/transactions" },
       { label: "Amortisation",        path: "/leases/amortisation" },

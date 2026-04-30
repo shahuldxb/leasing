@@ -25,6 +25,7 @@ import ContractHistory       from "./pages/ContractHistory";
 import ContractDocuments     from "./pages/ContractDocuments";
 import ContractMilestones    from "./pages/ContractMilestones";
 import ContractModifications from "./pages/ContractModifications";
+import LesseeMaster          from "./pages/LesseeMaster";
 
 // Payables
 import PayablesQueue      from "./pages/PayablesQueue";
@@ -192,6 +193,7 @@ function Router() {
       <Route path="/contracts/documents"      component={ContractDocuments} />
       <Route path="/contracts/milestones"     component={ContractMilestones} />
       <Route path="/contracts/modifications"  component={ContractModifications} />
+      <Route path="/lessee-master"             component={LesseeMaster} />
 
       {/* Payables */}
       <Route path="/payables"                component={PayablesQueue} />

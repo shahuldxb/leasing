@@ -1309,3 +1309,20 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] App.tsx — add /contracts/modifications route
 - [x] DashboardLayout.tsx — add Documents, Milestones, Modifications, History to Contracts nav
 - [x] Zero TypeScript errors confirmed
+
+## Lessee Master Module (Apr 2026)
+- [ ] Create lessee schema tables: lessee.lessees, lessee.lessee_bank_accounts, lessee.lessee_signatories
+- [ ] Create stored procedures: sp_GetLessees, sp_GetLesseeById, sp_UpsertLessee, sp_DeleteLessee, sp_GetLesseeBankAccounts, sp_UpsertLesseeBankAccount, sp_GetLesseeSignatories, sp_UpsertLesseeSignatory
+- [ ] Seed 30 lessee rows (Vodafone variants + GCC corporates)
+- [ ] Add lessee_id FK to lease.leases table
+- [ ] Build server/routers/lessee.ts tRPC router
+- [ ] Wire lesseeRouter into server/routers.ts
+- [ ] Build client/src/pages/LesseeMaster.tsx — full CRUD screen
+- [ ] Add /lessee-master route to App.tsx
+- [ ] Add Lessee Master to sidebar nav under Contracts
+
+## Lessee Master — Audit/Error Log Fix (Apr 30 2026)
+- [x] Add lessee_master screenType to aiFill.ts SCREEN_PROMPTS (with username/user_role in rowSchema)
+- [x] Fix LesseeMaster.tsx ScreenHeader: wire onAIData to aiRows state (was no-op)
+- [x] Route /lessee-master confirmed in App.tsx
+- [x] Lessee Master nav item added to DashboardLayout sidebar (under Lease Management, after Lessor Master)

@@ -1165,6 +1165,31 @@ const SCREEN_PROMPTS: Record<string, { description: string; count: number; rowSc
       status: "One of: ACTIVE, PAUSED, ERROR",
     },
   },
+  lessee_master: {
+    description: "Lessee master records for Vodafone Qatar group entities — the companies that take leases",
+    count: 5,
+    rowSchema: {
+      id: "Sequential number",
+      lessee_code: "Like VF-QA-001, VF-QA-002, VF-INT-001, VF-QA-003, VF-QA-004",
+      lessee_name: "Vodafone Qatar subsidiary or group entity legal name e.g. Vodafone Qatar P.Q.S.C., Vodafone Qatar Business Solutions W.L.L., Vodafone Qatar Retail LLC, Vodafone International Holdings B.V., Vodafone Qatar Infrastructure Services W.L.L.",
+      trade_name: "Short brand name e.g. VF Qatar, VF Business, VF Retail, VF International, VF Infrastructure",
+      entity_type: "One of: Company, Subsidiary, Branch, JV, Individual",
+      parent_company: "e.g. Vodafone Group Plc or Vodafone Qatar P.Q.S.C.",
+      registration_no: "Qatar CR number like CR-00034567",
+      tax_vat_no: "Qatar VAT number like VAT-10023456789",
+      industry_sector: "One of: Telecommunications, Digital Services, Retail, Infrastructure, Finance",
+      credit_rating: "One of: AAA, AA+, AA, A+, A, BBB+, BBB",
+      country: "Qatar",
+      city: "Doha",
+      address: "Qatar business address e.g. West Bay, Al Sadd, Lusail, Education City, The Pearl",
+      contact_person: "Arabic or Western full name",
+      contact_email: "Professional email at vodafone.qa domain",
+      contact_phone: "+974 XXXX XXXX format",
+      status: "One of: Active, Inactive, Suspended — mostly Active",
+      username: "The name of the user who created this record (for audit trail)",
+      user_role: "Role of the user who created this record e.g. admin, user",
+    },
+  },
 };
 
 export const aiFillRouter = router({

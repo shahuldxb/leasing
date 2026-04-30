@@ -116,8 +116,8 @@ export default function ContractRegister() {
   // ── Documents ──────────────────────────────────────────────────────────
   const { data: documents, isLoading: loadingDocs, refetch: refetchDocs } =
     trpc.contractDms.listDocuments.useQuery(
-      { leaseId: selected?.lease_id },
-      { enabled: !!selected?.lease_id }
+      { leaseId: selected?.contract_id ?? selected?.lease_id },
+      { enabled: !!(selected?.contract_id ?? selected?.lease_id) }
     );
 
   const [docDialog, setDocDialog] = useState(false);
@@ -159,7 +159,7 @@ export default function ContractRegister() {
     if (!docDraft.fileBase64) { toast.error("Please select a file"); return; }
     if (!docDraft.docName.trim()) { toast.error("Document name is required"); return; }
     uploadDoc.mutate({
-      contractId: selected.lease_id ?? selected.contract_id,
+      contractId: selected.contract_id ?? selected.lease_id,
       documentType: docDraft.docType,
       documentName: docDraft.docName,
       fileBase64: docDraft.fileBase64,
@@ -179,8 +179,8 @@ export default function ContractRegister() {
     { enabled: selectedTemplateId !== null }
   );
   const { data: metaValues, refetch: refetchMeta } = trpc.contractDms.getMetadataValues.useQuery(
-    { leaseId: selected?.lease_id },
-    { enabled: !!selected?.lease_id }
+    { leaseId: selected?.contract_id ?? selected?.lease_id },
+    { enabled: !!(selected?.contract_id ?? selected?.lease_id) }
   );
   const [metaDraft, setMetaDraft] = useState<Record<number, string>>({});
   const [metaSaving, setMetaSaving] = useState(false);
@@ -212,8 +212,8 @@ export default function ContractRegister() {
 
   // ── Milestones ──────────────────────────────────────────────────────────
   const { data: milestones, refetch: refetchMilestones } = trpc.contractDms.listMilestones.useQuery(
-    { contractId: selected?.lease_id ?? selected?.contract_id },
-    { enabled: !!(selected?.lease_id ?? selected?.contract_id) }
+    { contractId: selected?.contract_id ?? selected?.lease_id },
+    { enabled: !!(selected?.contract_id ?? selected?.lease_id) }
   );
   const [msDialog, setMsDialog] = useState(false);
   const [msDraft, setMsDraft] = useState({
@@ -287,7 +287,7 @@ export default function ContractRegister() {
     const firstDoc = docs[0];
     setAiExtracting(true);
     extractMeta.mutate({
-      contractId: selected.lease_id ?? selected.contract_id,
+      contractId: selected.contract_id ?? selected.lease_id,
       fileUrl: firstDoc.file_url,
     });
   }
@@ -364,8 +364,8 @@ export default function ContractRegister() {
                       </td>
                     </tr>
                   ) : (
-                    (contracts as any[]).map((c: any) => (
-                      <tr key={c.lease_id} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer"
+                    (contracts as any[]).map((c: any, idx: number) => (
+                      <tr key={c.contract_id ?? c.lease_id ?? idx} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer"
                         onClick={() => { setSelected(c); setDrawerTab("documents"); }}>
                         <td className="px-4 py-3 font-mono text-xs font-medium text-primary">{c.contract_ref}</td>
                         <td className="px-4 py-3 truncate max-w-36">{c.lessor_name}</td>
@@ -911,7 +911,7 @@ export default function ContractRegister() {
             <Button variant="outline" onClick={() => setMsDialog(false)}>Cancel</Button>
             <Button onClick={() => {
               if (!msDraft.title.trim() || !msDraft.dueDate) { toast.error("Title and due date are required"); return; }
-              upsertMs.mutate({ milestoneId: msDraft.milestoneId, milestoneType: msDraft.milestoneType, milestoneDate: msDraft.dueDate, description: msDraft.description, contractId: selected.lease_id ?? selected.contract_id });
+              upsertMs.mutate({ milestoneId: msDraft.milestoneId, milestoneType: msDraft.milestoneType, milestoneDate: msDraft.dueDate, description: msDraft.description, contractId: selected.contract_id ?? selected.lease_id });
             }} disabled={upsertMs.isPending}>Save Milestone</Button>
           </DialogFooter>
         </DialogContent>
