@@ -6,10 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CheckCircle2, XCircle, MoreHorizontal, Eye, Search, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, MoreHorizontal, Eye, Search, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const SAMPLE_QATAR: Record<string, unknown> = {
   invoice_ref: "INV-2025-00142",
@@ -184,54 +183,54 @@ export default function PayablesApprovals() {
           </div>
         </div>
 
-        <Dialog open={rejectDialog.open} onOpenChange={o => setRejectDialog(d => ({ ...d, open: o }))}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Reject Invoice {rejectDialog.invoice?.invoice_ref}</DialogTitle></DialogHeader>
-            <div className="space-y-3 py-2">
-              <p className="text-sm text-muted-foreground">Please provide a reason for rejection.</p>
-              <Input placeholder="Rejection reason…" value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+        {rejectDialog.open && rejectDialog.invoice && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/5 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-red-400">Reject Invoice {rejectDialog.invoice.invoice_ref}</h4>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setRejectDialog({ open: false, invoice: null })}><X className="w-3.5 h-3.5" /></Button>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setRejectDialog({ open: false, invoice: null })}>Cancel</Button>
-              <Button variant="destructive" onClick={() => {
+            <p className="text-sm text-muted-foreground">Please provide a reason for rejection.</p>
+            <Input placeholder="Rejection reason…" value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" onClick={() => setRejectDialog({ open: false, invoice: null })}>Cancel</Button>
+              <Button size="sm" variant="destructive" onClick={() => {
                 if (!rejectReason.trim()) { toast.error("Please enter a rejection reason"); return; }
-                rejectMutation.mutate({ invoiceId: rejectDialog.invoice.invoice_id, outcome: "Rejected", reason: rejectReason });
+                rejectMutation.mutate({ invoiceId: rejectDialog.invoice!.invoice_id, outcome: "Rejected", reason: rejectReason });
               }}>Confirm Reject</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          </div>
+        )}
 
-        <Dialog open={detailDialog.open} onOpenChange={o => setDetailDialog(d => ({ ...d, open: o }))}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Invoice Detail — {detailDialog.invoice?.invoice_ref}</DialogTitle></DialogHeader>
-            {detailDialog.invoice && (
-              <div className="grid grid-cols-2 gap-3 text-sm py-2">
-                {[
-                  ["Lease Ref", detailDialog.invoice.lease_ref],
-                  ["Lessor", detailDialog.invoice.lessor_name],
-                  ["Invoice Date", detailDialog.invoice.invoice_date ? new Date(detailDialog.invoice.invoice_date).toLocaleDateString() : "—"],
-                  ["Due Date", detailDialog.invoice.due_date ? new Date(detailDialog.invoice.due_date).toLocaleDateString() : "—"],
-                  ["Rent Amount", fmt(detailDialog.invoice.rent_amount ?? 0)],
-                  ["Service Charge", fmt(detailDialog.invoice.service_charge ?? 0)],
-                  ["VAT", fmt(detailDialog.invoice.vat_amount ?? 0)],
-                  ["Total", fmt(detailDialog.invoice.total_amount ?? 0)],
-                  ["Currency", detailDialog.invoice.currency ?? "QAR"],
-                  ["GL Account", detailDialog.invoice.gl_account ?? "—"],
-                  ["Cost Centre", detailDialog.invoice.cost_centre ?? "—"],
-                  ["Status", detailDialog.invoice.status],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="font-medium">{value}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDetailDialog({ open: false, invoice: null })}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {detailDialog.open && detailDialog.invoice && (
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Invoice Detail — {detailDialog.invoice.invoice_ref}</h4>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDetailDialog({ open: false, invoice: null })}><X className="w-3.5 h-3.5" /></Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                ["Lease Ref", detailDialog.invoice.lease_ref],
+                ["Lessor", detailDialog.invoice.lessor_name],
+                ["Invoice Date", detailDialog.invoice.invoice_date ? new Date(detailDialog.invoice.invoice_date).toLocaleDateString() : "—"],
+                ["Due Date", detailDialog.invoice.due_date ? new Date(detailDialog.invoice.due_date).toLocaleDateString() : "—"],
+                ["Rent Amount", fmt(detailDialog.invoice.rent_amount ?? 0)],
+                ["Service Charge", fmt(detailDialog.invoice.service_charge ?? 0)],
+                ["VAT", fmt(detailDialog.invoice.vat_amount ?? 0)],
+                ["Total", fmt(detailDialog.invoice.total_amount ?? 0)],
+                ["Currency", detailDialog.invoice.currency ?? "QAR"],
+                ["GL Account", detailDialog.invoice.gl_account ?? "—"],
+                ["Cost Centre", detailDialog.invoice.cost_centre ?? "—"],
+                ["Status", detailDialog.invoice.status],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="font-medium">{value}</p>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setDetailDialog({ open: false, invoice: null })}>Close</Button>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

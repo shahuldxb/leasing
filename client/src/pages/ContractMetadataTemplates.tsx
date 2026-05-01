@@ -16,14 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Plus, Pencil, Trash2, ChevronDown, ChevronRight,
-  GripVertical, Settings2, Tag, ToggleLeft, Hash,
-  Calendar, AlignLeft, List, DollarSign,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, GripVertical, Settings2, Tag, ToggleLeft, Hash, Calendar, AlignLeft, List, DollarSign, X } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const CONTRACT_TYPES = [
   "Commercial Lease", "Residential Lease", "Equipment Lease",
@@ -286,11 +280,13 @@ export default function ContractMetadataTemplates() {
       </div>
 
       {/* ── Template Dialog ── */}
-      <Dialog open={tmplDialog.open} onOpenChange={o => setTmplDialog(d => ({ ...d, open: o }))}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{tmplDialog.mode === "create" ? "New Metadata Template" : "Edit Template"}</DialogTitle>
-          </DialogHeader>
+      {tmplDialog.open && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">{tmplDialog.mode === "create" ? "New Metadata Template" : "Edit Template"}</h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setTmplDialog(d => ({ ...d, open: false }))}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Template Name <span className="text-red-400">*</span></Label>
@@ -312,21 +308,23 @@ export default function ContractMetadataTemplates() {
                 value={tmplDialog.desc} onChange={e => setTmplDialog(d => ({ ...d, desc: e.target.value }))} />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setTmplDialog(d => ({ ...d, open: false }))}>Cancel</Button>
             <Button onClick={saveTmpl} disabled={createTmpl.isPending || updateTmpl.isPending}>
               {tmplDialog.mode === "create" ? "Create Template" : "Save Changes"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ── Field Dialog ── */}
-      <Dialog open={fieldDialog.open} onOpenChange={o => setFieldDialog(d => ({ ...d, open: o }))}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{fieldDialog.draft.fieldId ? "Edit Field" : "Add Field"}</DialogTitle>
-          </DialogHeader>
+      {fieldDialog.open && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">{fieldDialog.draft.fieldId ? "Edit Field" : "Add Field"}</h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setFieldDialog(d => ({ ...d, open: false }))}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -404,48 +402,52 @@ export default function ContractMetadataTemplates() {
               <Label htmlFor="required" className="cursor-pointer">Required field (must be filled before creating a lease)</Label>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setFieldDialog(d => ({ ...d, open: false }))}>Cancel</Button>
             <Button onClick={saveField} disabled={upsertField.isPending}>
               {fieldDialog.draft.fieldId ? "Save Changes" : "Add Field"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Template Confirm ── */}
-      <AlertDialog open={deleteTmplId !== null} onOpenChange={o => !o && setDeleteTmplId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the template and all its field definitions. Existing metadata values on contracts will not be affected.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      {deleteTmplId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Delete Template?</h4>
+            <p className="text-xs text-muted-foreground">This will permanently delete the template and all its field definitions. Existing metadata values on contracts will not be affected.</p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteTmplId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteTmpl.mutate({ templateId: deleteTmplId! })}>
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Field Confirm ── */}
-      <AlertDialog open={deleteFieldId !== null} onOpenChange={o => !o && setDeleteFieldId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Field?</AlertDialogTitle>
-            <AlertDialogDescription>This will remove the field definition and all stored values for this field across all contracts.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      {deleteFieldId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Delete Field?</h4>
+            <p className="text-xs text-muted-foreground">This will remove the field definition and all stored values for this field across all contracts.</p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteFieldId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteField.mutate({ fieldId: deleteFieldId! })}>
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

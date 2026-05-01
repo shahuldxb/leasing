@@ -7,15 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import React from "react";
-import {
-  CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator,
-  FileText, Download, Search, Filter, Calendar, TrendingUp,
-  BookOpen, Layers, AlertTriangle, Info
-} from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator, FileText, Download, Search, Filter, Calendar, TrendingUp, BookOpen, Layers, AlertTriangle, Info, X } from "lucide-react";
 
 const SCREEN_ID = "VFACCJVUIX0001P001";
 
@@ -62,22 +57,24 @@ function CalcExplanation({ explanation }: { explanation: string | null }) {
         <Calculator className="w-3 h-3" />
         Calc
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg bg-gray-900 border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-400">
+      {open && (
+        <div className="rounded-xl border border-amber-500/30 bg-gray-900/50 p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Calculator className="w-4 h-4" />
               Calculation Explanation
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="bg-gray-800 rounded-lg p-4 font-mono text-sm text-gray-200 whitespace-pre-wrap leading-relaxed border border-gray-700">
             {explanation}
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -459,14 +456,16 @@ export default function JournalVoucher() {
         </div>
 
         {/* ── Generate Monthly Dialog ── */}
-        <Dialog open={genMonthlyDialog} onOpenChange={setGenMonthlyDialog}>
-          <DialogContent className="max-w-md bg-gray-900 border-gray-700">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-purple-400">
+        {genMonthlyDialog && (
+        <div className="rounded-xl border border-purple-500/30 bg-gray-900/50 p-5 space-y-4">
+          
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
                 <RefreshCw className="w-4 h-4" />
                 Generate Monthly IFRS 16 JVs
-              </DialogTitle>
-            </DialogHeader>
+              </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setGenMonthlyDialog(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="space-y-4 py-2">
               <div className="bg-blue-900/20 border border-blue-800/40 rounded px-3 py-2 text-xs text-blue-300 flex items-start gap-2">
                 <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -501,7 +500,7 @@ export default function JournalVoucher() {
                 System accounting period: <strong className="text-gray-300">{accountingPeriodDate}</strong>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => setGenMonthlyDialog(false)} className="border-gray-700">Cancel</Button>
               <Button
                 size="sm"
@@ -511,19 +510,21 @@ export default function JournalVoucher() {
               >
                 {genMonthlyMut.isPending ? "Generating..." : "Generate JVs"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* ── Reject Dialog ── */}
-        <Dialog open={rejectDialog.open} onOpenChange={open => setRejectDialog(d => ({ ...d, open }))}>
-          <DialogContent className="max-w-md bg-gray-900 border-gray-700">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-red-400">
+        {rejectDialog.open && (
+          <div className="rounded-xl border border-red-500/30 bg-gray-900/50 p-5 space-y-4">
+          
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
                 <XCircle className="w-4 h-4" />
                 Reject Journal Voucher
-              </DialogTitle>
-            </DialogHeader>
+              </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setRejectDialog({ open: false, jv_id: null, reason: "" })}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="space-y-3 py-2">
               <label className="text-xs text-gray-400">Rejection Reason <span className="text-red-400">*</span></label>
               <Textarea
@@ -534,7 +535,7 @@ export default function JournalVoucher() {
                 onChange={e => setRejectDialog(d => ({ ...d, reason: e.target.value }))}
               />
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => setRejectDialog({ open: false, jv_id: null, reason: "" })} className="border-gray-700">Cancel</Button>
               <Button
                 size="sm"
@@ -544,9 +545,9 @@ export default function JournalVoucher() {
               >
                 {rejectMut.isPending ? "Rejecting..." : "Reject JV"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
       </div>
     </DashboardLayout>
   );

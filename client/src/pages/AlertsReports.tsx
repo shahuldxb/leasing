@@ -11,11 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Bell, FileText, Plus, Pencil, Trash2, Send, CheckCircle2, AlertTriangle, Clock, Info, Zap } from "lucide-react";
+import { Bell, FileText, Plus, Pencil, Trash2, Send, CheckCircle2, AlertTriangle, Clock, Info, Zap, X, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // ── Alert event type catalogue ────────────────────────────────────────────────
 type AlertTemplate = {
@@ -104,38 +102,31 @@ type ReportForm = {
 };
 const INIT_REPORT: ReportForm = { report_name: "", report_type: "LEASE_SUMMARY", cron_expression: "0 8 1 * *", recipients: "", output_format: "PDF", is_active: true, parameters: "" };
 
+type PanelMode = "none" | "alert" | "report";
+
 export default function AlertsReports() {
   const [activeTab, setActiveTab] = useState("alerts");
   const [filterCat, setFilterCat] = useState("All");
   const [searchQ, setSearchQ] = useState("");
 
-  // Alert CRUD state
-  const [alertDialog, setAlertDialog] = useState(false);
+  // Inline panel state
+  const [panelMode, setPanelMode] = useState<PanelMode>("none");
   const [alertForm, setAlertForm] = useState<AlertForm>({ ...INIT_ALERT });
-  const [deleteAlertId, setDeleteAlertId] = useState<number | null>(null);
-  const [testAlertId, setTestAlertId] = useState<number | null>(null);
-
-  // Report CRUD state
-  const [reportDialog, setReportDialog] = useState(false);
   const [reportForm, setReportForm] = useState<ReportForm>({ ...INIT_REPORT });
-  const [deleteReportId, setDeleteReportId] = useState<number | null>(null);
-
-  // Template panel state
-  const [templateTab, setTemplateTab] = useState("library");
 
   const { data: alerts = [], refetch: refetchAlerts } = trpc.emailAlerts.list.useQuery();
   const { data: reports = [], refetch: refetchReports } = trpc.scheduledReports.list.useQuery();
 
   const saveAlert = trpc.emailAlerts.upsert.useMutation({
-    onSuccess: () => { refetchAlerts(); setAlertDialog(false); toast.success("Alert rule saved"); },
+    onSuccess: () => { refetchAlerts(); setPanelMode("none"); toast.success("Alert rule saved"); },
     onError: (e) => toast.error(e.message),
   });
   const sendTest = trpc.emailAlerts.sendTest.useMutation({
-    onSuccess: (d) => { toast.success(d.message); setTestAlertId(null); },
+    onSuccess: (d) => { toast.success(d.message); },
     onError: (e) => toast.error(e.message),
   });
   const saveReport = trpc.scheduledReports.upsert.useMutation({
-    onSuccess: () => { refetchReports(); setReportDialog(false); toast.success("Scheduled report saved"); },
+    onSuccess: () => { refetchReports(); setPanelMode("none"); toast.success("Scheduled report saved"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -143,7 +134,7 @@ export default function AlertsReports() {
     setAlertForm(template
       ? { event_type: template.event_type, days_before: template.days_before, recipient_roles: "", email_template: `[${template.label}] — ${template.description}`, is_active: true }
       : { ...INIT_ALERT });
-    setAlertDialog(true);
+    setPanelMode("alert");
   }
   function openEditAlert(a: Record<string, unknown>) {
     setAlertForm({
@@ -154,9 +145,9 @@ export default function AlertsReports() {
       email_template: String(a.email_template ?? ""),
       is_active: Boolean(a.is_active ?? true),
     });
-    setAlertDialog(true);
+    setPanelMode("alert");
   }
-  function openNewReport() { setReportForm({ ...INIT_REPORT }); setReportDialog(true); }
+  function openNewReport() { setReportForm({ ...INIT_REPORT }); setPanelMode("report"); }
   function openEditReport(r: Record<string, unknown>) {
     setReportForm({
       schedule_id: Number(r.schedule_id),
@@ -168,7 +159,15 @@ export default function AlertsReports() {
       is_active: Boolean(r.is_active ?? true),
       parameters: String(r.parameters ?? ""),
     });
-    setReportDialog(true);
+    setPanelMode("report");
+  }
+  function deleteAlert(id: number) {
+    saveAlert.mutate({ config_id: id, event_type: "LEASE_EXPIRY", days_before: 0, recipient_roles: "", is_active: false });
+    toast.success("Alert rule deleted");
+  }
+  function deleteReport(id: number) {
+    saveReport.mutate({ schedule_id: id, report_name: "", report_type: "LEASE_SUMMARY", cron_expression: "0 8 1 * *", recipients: "", output_format: "PDF", is_active: false });
+    toast.success("Scheduled report deleted");
   }
 
   const filteredTemplates = ALERT_TEMPLATES.filter(t => {
@@ -179,6 +178,159 @@ export default function AlertsReports() {
 
   const configuredTypes = new Set((alerts as Record<string, unknown>[]).map(a => String(a.event_type)));
 
+  // ── Inline form panels ────────────────────────────────────────────────────
+  if (panelMode === "alert") {
+    return (
+      <DashboardLayout>
+        <div className="p-6 max-w-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Button variant="ghost" size="sm" onClick={() => setPanelMode("none")}>
+              <ChevronLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Bell className="w-5 h-5 text-primary" />
+              {alertForm.config_id ? "Edit Alert Rule" : "New Alert Rule"}
+            </h2>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Event Type *</Label>
+              <Select value={alertForm.event_type} onValueChange={v => {
+                const tmpl = ALERT_TEMPLATES.find(t => t.event_type === v);
+                setAlertForm(f => ({
+                  ...f,
+                  event_type: v,
+                  days_before: tmpl?.days_before ?? f.days_before,
+                  email_template: tmpl ? `[${tmpl.label}] ${tmpl.description}` : f.email_template,
+                }));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-64">
+                  {ALERT_TEMPLATES.map(t => (
+                    <SelectItem key={t.event_type} value={t.event_type}>
+                      <span className="flex items-center gap-2">
+                        {SEVERITY_ICON[t.severity]}
+                        <span>{t.label}</span>
+                        <span className="text-[10px] text-muted-foreground">({t.category})</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(() => {
+                const tmpl = ALERT_TEMPLATES.find(t => t.event_type === alertForm.event_type);
+                return tmpl ? (
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    {tmpl.ifrs_ref} — {tmpl.description}
+                  </p>
+                ) : null;
+              })()}
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Days Before Event *</Label>
+              <Input type="number" min={0} value={alertForm.days_before}
+                onChange={e => setAlertForm(f => ({ ...f, days_before: Number(e.target.value) }))} />
+              <p className="text-xs text-muted-foreground mt-1">Set 0 to trigger on the event date itself.</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Recipient Roles / Emails</Label>
+              <Input value={alertForm.recipient_roles}
+                onChange={e => setAlertForm(f => ({ ...f, recipient_roles: e.target.value }))}
+                placeholder="e.g. lease_manager, finance_team, user@company.com" />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Email Template / Message</Label>
+              <Textarea value={alertForm.email_template}
+                onChange={e => setAlertForm(f => ({ ...f, email_template: e.target.value }))}
+                placeholder="Email subject or body template…"
+                className="min-h-[100px]" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={alertForm.is_active} onCheckedChange={v => setAlertForm(f => ({ ...f, is_active: v }))} />
+              <Label className="text-sm">{alertForm.is_active ? "Active" : "Inactive"}</Label>
+            </div>
+            <div className="flex gap-3 pt-2 border-t border-border">
+              <Button variant="outline" onClick={() => setPanelMode("none")}>Cancel</Button>
+              <Button
+                disabled={!alertForm.event_type || saveAlert.isPending}
+                onClick={() => saveAlert.mutate(alertForm as Parameters<typeof saveAlert.mutate>[0])}
+              >
+                {saveAlert.isPending ? "Saving…" : "Save Alert Rule"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (panelMode === "report") {
+    return (
+      <DashboardLayout>
+        <div className="p-6 max-w-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Button variant="ghost" size="sm" onClick={() => setPanelMode("none")}>
+              <ChevronLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              {reportForm.schedule_id ? "Edit Scheduled Report" : "New Scheduled Report"}
+            </h2>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Report Name *</Label>
+              <Input value={reportForm.report_name} onChange={e => setReportForm(f => ({ ...f, report_name: e.target.value }))} placeholder="e.g. Monthly IFRS 16 Disclosure Pack" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Report Type</Label>
+                <Select value={reportForm.report_type} onValueChange={v => setReportForm(f => ({ ...f, report_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["LEASE_SUMMARY","AMORTISATION","DISCLOSURE","CASH_FLOW","MATURITY","AUDIT_LOG","PORTFOLIO_HEALTH"].map(t => (
+                      <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Output Format</Label>
+                <Select value={reportForm.output_format} onValueChange={v => setReportForm(f => ({ ...f, output_format: v as "PDF" | "EXCEL" | "CSV" }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{FORMATS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Cron Schedule</Label>
+              <Input value={reportForm.cron_expression} onChange={e => setReportForm(f => ({ ...f, cron_expression: e.target.value }))} className="font-mono" placeholder="0 8 1 * * (1st of month at 8am)" />
+              <p className="text-xs text-muted-foreground mt-1">Standard 5-field cron expression. Examples: <code className="font-mono">0 8 1 * *</code> (monthly), <code className="font-mono">0 8 * * 1</code> (weekly Monday).</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Recipients</Label>
+              <Input value={reportForm.recipients} onChange={e => setReportForm(f => ({ ...f, recipients: e.target.value }))} placeholder="email1@company.com, email2@company.com" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={reportForm.is_active} onCheckedChange={v => setReportForm(f => ({ ...f, is_active: v }))} />
+              <Label className="text-sm">{reportForm.is_active ? "Active" : "Inactive"}</Label>
+            </div>
+            <div className="flex gap-3 pt-2 border-t border-border">
+              <Button variant="outline" onClick={() => setPanelMode("none")}>Cancel</Button>
+              <Button
+                disabled={!reportForm.report_name || saveReport.isPending}
+                onClick={() => saveReport.mutate(reportForm as Parameters<typeof saveReport.mutate>[0])}
+              >
+                {saveReport.isPending ? "Saving…" : "Save Report"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // ── List view ─────────────────────────────────────────────────────────────
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -260,14 +412,14 @@ export default function AlertsReports() {
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <Button size="sm" variant="ghost" className="h-7 px-2" title="Send test alert"
-                                onClick={() => setTestAlertId(Number(a.config_id))}>
+                                onClick={() => sendTest.mutate({ config_id: Number(a.config_id) })}>
                                 <Send className="w-3.5 h-3.5" />
                               </Button>
                               <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEditAlert(a)}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                               <Button size="sm" variant="ghost" className="h-7 px-2 text-red-400 hover:text-red-300"
-                                onClick={() => setDeleteAlertId(Number(a.config_id))}>
+                                onClick={() => deleteAlert(Number(a.config_id))}>
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
@@ -398,7 +550,7 @@ export default function AlertsReports() {
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-red-400 hover:text-red-300"
-                              onClick={() => setDeleteReportId(Number(r.schedule_id))}>
+                              onClick={() => deleteReport(Number(r.schedule_id))}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
@@ -422,208 +574,6 @@ export default function AlertsReports() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* ── ALERT RULE DIALOG ── */}
-      <Dialog open={alertDialog} onOpenChange={setAlertDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-primary" />
-              {alertForm.config_id ? "Edit Alert Rule" : "New Alert Rule"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Event Type *</Label>
-              <Select value={alertForm.event_type} onValueChange={v => {
-                const tmpl = ALERT_TEMPLATES.find(t => t.event_type === v);
-                setAlertForm(f => ({
-                  ...f,
-                  event_type: v,
-                  days_before: tmpl?.days_before ?? f.days_before,
-                  email_template: tmpl ? `[${tmpl.label}] ${tmpl.description}` : f.email_template,
-                }));
-              }}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent className="max-h-64">
-                  {ALERT_TEMPLATES.map(t => (
-                    <SelectItem key={t.event_type} value={t.event_type}>
-                      <span className="flex items-center gap-2">
-                        {SEVERITY_ICON[t.severity]}
-                        <span>{t.label}</span>
-                        <span className="text-[10px] text-muted-foreground">({t.category})</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(() => {
-                const tmpl = ALERT_TEMPLATES.find(t => t.event_type === alertForm.event_type);
-                return tmpl ? (
-                  <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-                    {tmpl.ifrs_ref} — {tmpl.description}
-                  </p>
-                ) : null;
-              })()}
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Days Before Event *</Label>
-              <Input type="number" min={0} value={alertForm.days_before}
-                onChange={e => setAlertForm(f => ({ ...f, days_before: Number(e.target.value) }))}
-                className="h-9 text-sm" />
-              <p className="text-[11px] text-muted-foreground mt-1">Set 0 to trigger on the event date itself.</p>
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Recipient Roles / Emails</Label>
-              <Input value={alertForm.recipient_roles}
-                onChange={e => setAlertForm(f => ({ ...f, recipient_roles: e.target.value }))}
-                placeholder="e.g. lease_manager, finance_team, user@company.com"
-                className="h-9 text-sm" />
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Email Template / Message</Label>
-              <Textarea value={alertForm.email_template}
-                onChange={e => setAlertForm(f => ({ ...f, email_template: e.target.value }))}
-                placeholder="Email subject or body template…"
-                className="text-sm min-h-[80px]" />
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={alertForm.is_active} onCheckedChange={v => setAlertForm(f => ({ ...f, is_active: v }))} />
-              <Label className="text-sm">{alertForm.is_active ? "Active" : "Inactive"}</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAlertDialog(false)}>Cancel</Button>
-            <Button
-              disabled={!alertForm.event_type || saveAlert.isPending}
-              onClick={() => saveAlert.mutate(alertForm as Parameters<typeof saveAlert.mutate>[0])}
-            >
-              {saveAlert.isPending ? "Saving…" : "Save Alert Rule"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── SCHEDULED REPORT DIALOG ── */}
-      <Dialog open={reportDialog} onOpenChange={setReportDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              {reportForm.schedule_id ? "Edit Scheduled Report" : "New Scheduled Report"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Report Name *</Label>
-              <Input value={reportForm.report_name} onChange={e => setReportForm(f => ({ ...f, report_name: e.target.value }))} className="h-9 text-sm" placeholder="e.g. Monthly IFRS 16 Disclosure Pack" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-medium mb-1 block">Report Type</Label>
-                <Select value={reportForm.report_type} onValueChange={v => setReportForm(f => ({ ...f, report_type: v }))}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["LEASE_SUMMARY","AMORTISATION","DISCLOSURE","CASH_FLOW","MATURITY","AUDIT_LOG","PORTFOLIO_HEALTH"].map(t => (
-                      <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs font-medium mb-1 block">Output Format</Label>
-                <Select value={reportForm.output_format} onValueChange={v => setReportForm(f => ({ ...f, output_format: v as "PDF" | "EXCEL" | "CSV" }))}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>{FORMATS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Cron Schedule</Label>
-              <Input value={reportForm.cron_expression} onChange={e => setReportForm(f => ({ ...f, cron_expression: e.target.value }))} className="h-9 text-sm font-mono" placeholder="0 8 1 * * (1st of month at 8am)" />
-              <p className="text-[11px] text-muted-foreground mt-1">Standard 5-field cron expression. Examples: <code className="font-mono">0 8 1 * *</code> (monthly), <code className="font-mono">0 8 * * 1</code> (weekly Monday).</p>
-            </div>
-            <div>
-              <Label className="text-xs font-medium mb-1 block">Recipients</Label>
-              <Input value={reportForm.recipients} onChange={e => setReportForm(f => ({ ...f, recipients: e.target.value }))} className="h-9 text-sm" placeholder="email1@company.com, email2@company.com" />
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={reportForm.is_active} onCheckedChange={v => setReportForm(f => ({ ...f, is_active: v }))} />
-              <Label className="text-sm">{reportForm.is_active ? "Active" : "Inactive"}</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReportDialog(false)}>Cancel</Button>
-            <Button
-              disabled={!reportForm.report_name || saveReport.isPending}
-              onClick={() => saveReport.mutate(reportForm as Parameters<typeof saveReport.mutate>[0])}
-            >
-              {saveReport.isPending ? "Saving…" : "Save Report"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── DELETE ALERT CONFIRM ── */}
-      <AlertDialog open={deleteAlertId !== null} onOpenChange={() => setDeleteAlertId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Alert Rule</AlertDialogTitle>
-            <AlertDialogDescription>This alert rule will be permanently deleted. Are you sure?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                // Soft-delete by setting inactive — backend upsert with is_active=false
-                if (deleteAlertId !== null) {
-                  saveAlert.mutate({ config_id: deleteAlertId, event_type: "LEASE_EXPIRY", days_before: 0, recipient_roles: "", is_active: false });
-                  setDeleteAlertId(null);
-                }
-              }}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── DELETE REPORT CONFIRM ── */}
-      <AlertDialog open={deleteReportId !== null} onOpenChange={() => setDeleteReportId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Scheduled Report</AlertDialogTitle>
-            <AlertDialogDescription>This scheduled report will be permanently deleted. Are you sure?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                if (deleteReportId !== null) {
-                  saveReport.mutate({ schedule_id: deleteReportId, report_name: "", report_type: "LEASE_SUMMARY", cron_expression: "0 8 1 * *", recipients: "", output_format: "PDF", is_active: false });
-                  setDeleteReportId(null);
-                }
-              }}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* ── TEST ALERT CONFIRM ── */}
-      <AlertDialog open={testAlertId !== null} onOpenChange={() => setTestAlertId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send Test Alert</AlertDialogTitle>
-            <AlertDialogDescription>A test alert email will be sent to your account email address. Continue?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (testAlertId !== null) sendTest.mutate({ config_id: testAlertId }); }}>
-              Send Test
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardLayout>
   );
 }

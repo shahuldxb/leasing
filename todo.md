@@ -1282,22 +1282,26 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] TypeScript clean — 0 errors after all changes
 
 ## No-Modal Policy: Convert All Dialogs to Full UI Screens (Apr 29, 2026)
-- [ ] AlertsReports.tsx — replace Add/Edit Alert Rule dialog + Add/Edit Scheduled Report dialog + 2 delete confirm dialogs → inline right-panel forms
-- [ ] LeaseTransactionCentre.tsx — replace all 5+ transaction dialogs (Modification, Termination, Renewal, etc.) → inline right-panel forms
-- [ ] ContractMetadataTemplates.tsx — replace New/Edit Template dialog + Add/Edit Field dialog + 2 delete confirm dialogs → inline right-panel forms
-- [ ] ContractRegister.tsx — replace Upload Document dialog + Add/Edit Milestone dialog + 2 delete confirm dialogs → inline right-panel forms
-- [ ] Amortisation.tsx — replace Guide dialog + GL Explain dialog + Calculation dialog → inline expandable panels
-- [ ] SubAssetTransactionLog.tsx — replace 3 dialogs → inline right-panel forms
-- [ ] RenewalEngine.tsx — replace Initiate Renewal dialog + Renewal Preview dialog → inline right-panel forms
-- [ ] PeriodClose.tsx — replace 2 period-close dialogs → inline right-panel forms
-- [ ] LeaseSubAssets.tsx — replace 2 dialogs → inline right-panel forms
-- [ ] LeaseDetail.tsx — replace Change Sub-Asset Status dialog + Period Calculation dialog → inline panels
-- [ ] FXRevaluation.tsx — replace Add/Update FX Rate dialog + Run Revaluation dialog → inline right-panel forms
-- [ ] PayablesApprovals.tsx — replace Reject Invoice dialog + Invoice Detail dialog → inline right-panel forms
-- [ ] LeaseRegister.tsx — replace delete confirm dialog → inline confirmation row
-- [ ] HandoverChecklist.tsx — replace checklist item dialog → inline right-panel form
-- [ ] LeaseExemptions.tsx — replace Update Exemption Status dialog → inline right-panel form
-- [ ] BudgetVsActual.tsx — replace Add/Update Budget Line dialog → inline right-panel form
+- [x] AlertsReports.tsx — replace Add/Edit Alert Rule dialog + Add/Edit Scheduled Report dialog + 2 delete confirm dialogs → inline right-panel forms
+- [x] LeaseTransactionCentre.tsx — replace all 5+ transaction dialogs (Modification, Termination, Renewal, etc.) → inline right-panel forms
+- [x] ContractMetadataTemplates.tsx — replace New/Edit Template dialog + Add/Edit Field dialog + 2 delete confirm dialogs → inline right-panel forms
+- [x] ContractRegister.tsx — replace Upload Document dialog + Add/Edit Milestone dialog + 2 delete confirm dialogs → inline right-panel forms
+- [x] Amortisation.tsx — replace Guide dialog + GL Explain dialog + Calculation dialog → inline expandable panels
+- [x] SubAssetTransactionLog.tsx — replace 3 dialogs → inline right-panel forms
+- [x] RenewalEngine.tsx — replace Initiate Renewal dialog + Renewal Preview dialog → inline right-panel forms
+- [x] PeriodClose.tsx — replace 2 period-close dialogs → inline right-panel forms
+- [x] LeaseSubAssets.tsx — replace 2 dialogs → inline right-panel forms
+- [x] LeaseDetail.tsx — replace Change Sub-Asset Status dialog + Period Calculation dialog → inline panels
+- [x] FXRevaluation.tsx — no dialogs found (already inline)
+- [x] PayablesApprovals.tsx — replace Reject Invoice dialog + Invoice Detail dialog → inline right-panel forms
+- [x] LeaseRegister.tsx — no dialogs found (already inline)
+- [x] HandoverChecklist.tsx — replace checklist item dialog → inline right-panel form
+- [x] LeaseExemptions.tsx — no dialogs found (already inline)
+- [x] BudgetVsActual.tsx — no dialogs found (already inline)
+- [x] ContractMilestones.tsx — replace 4 dialogs → inline right-panel forms
+- [x] ContractModifications.tsx — replace 6 dialogs → inline right-panel forms
+- [x] LesseeMaster.tsx — replace 6 dialogs → inline right-panel forms
+- [x] JournalVoucher.tsx — replace 3 dialogs → inline right-panel forms
 
 ## DMS Full Implementation (Apr 2026)
 - [x] Fix all TypeScript errors in contractDms.ts (null→undefined, changedByName)
@@ -1311,15 +1315,15 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Zero TypeScript errors confirmed
 
 ## Lessee Master Module (Apr 2026)
-- [ ] Create lessee schema tables: lessee.lessees, lessee.lessee_bank_accounts, lessee.lessee_signatories
-- [ ] Create stored procedures: sp_GetLessees, sp_GetLesseeById, sp_UpsertLessee, sp_DeleteLessee, sp_GetLesseeBankAccounts, sp_UpsertLesseeBankAccount, sp_GetLesseeSignatories, sp_UpsertLesseeSignatory
-- [ ] Seed 30 lessee rows (Vodafone variants + GCC corporates)
-- [ ] Add lessee_id FK to lease.leases table
-- [ ] Build server/routers/lessee.ts tRPC router
-- [ ] Wire lesseeRouter into server/routers.ts
-- [ ] Build client/src/pages/LesseeMaster.tsx — full CRUD screen
-- [ ] Add /lessee-master route to App.tsx
-- [ ] Add Lessee Master to sidebar nav under Contracts
+- [x] Create lessee schema tables: lessee.lessees, lessee.lessee_bank_accounts, lessee.lessee_signatories
+- [x] Create stored procedures: sp_GetLessees, sp_GetLesseeById, sp_UpsertLessee, sp_DeleteLessee, sp_GetLesseeBankAccounts, sp_UpsertLesseeBankAccount, sp_GetLesseeSignatories, sp_UpsertLesseeSignatory
+- [x] Seed 5 lessee rows (real estate + car fleet companies)
+- [x] Add lessee_id FK to lease.leases table
+- [x] Build server/routers/lessee.ts tRPC router
+- [x] Wire lesseeRouter into server/routers.ts
+- [x] Build client/src/pages/LesseeMaster.tsx — full CRUD screen
+- [x] Add /lessee-master route to App.tsx
+- [x] Add Lessee Master to sidebar nav under Lease Management
 
 ## Lessee Master — Audit/Error Log Fix (Apr 30 2026)
 - [x] Add lessee_master screenType to aiFill.ts SCREEN_PROMPTS (with username/user_role in rowSchema)

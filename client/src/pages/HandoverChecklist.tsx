@@ -16,7 +16,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { GenAIFillButton } from "@/components/GenAIFillButton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -365,69 +365,62 @@ export default function HandoverChecklist() {
           </div>
         </div>
 
-        {/* ── Import from Sub-Asset Registry dialog ─────────────────────────── */}
-        <Dialog open={importOpen} onOpenChange={setImportOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Boxes className="h-5 w-5 text-amber-500" />
-                Import Items from Sub-Asset Registry
-              </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                These are all active sub-asset sets attached to this lease. All items will be imported
-                with their serial numbers pre-filled. You can edit condition and notes after import.
-              </p>
-            </DialogHeader>
-
+        {/* ── Import from Sub-Asset Registry — inline panel ── */}
+        {importOpen && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Boxes className="h-4 w-4 text-amber-500" /> Import Items from Sub-Asset Registry
+              </h4>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setImportOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Active sub-asset sets attached to this lease. Items will be imported with serial numbers pre-filled.
+            </p>
             {loadingInventory ? (
-              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+              <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" /> Loading sub-asset inventory…
               </div>
             ) : subAssetItems.length === 0 ? (
-              <div className="py-10 text-center text-sm text-muted-foreground">
+              <div className="py-8 text-center text-sm text-muted-foreground">
                 <Boxes className="h-8 w-8 mx-auto mb-2 opacity-20" />
                 No active sub-asset sets found for this lease.
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Brand / Model</TableHead>
-                    <TableHead>Serial Number</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subAssetItems.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
-                      <TableCell className="text-xs font-medium">{item.name}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{item.category}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {item.brand ?? "—"} {item.model ?? ""}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-sky-600">
-                        {item.serialNumber || <span className="text-muted-foreground">—</span>}
-                      </TableCell>
+              <div className="rounded-lg border border-border overflow-hidden max-h-64 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Brand / Model</TableHead>
+                      <TableHead>Serial Number</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {subAssetItems.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                        <TableCell className="text-xs font-medium">{item.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{item.category}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{item.brand ?? "—"} {item.model ?? ""}</TableCell>
+                        <TableCell className="text-xs font-mono text-sky-600">{item.serialNumber || <span className="text-muted-foreground">—</span>}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
-
-            <DialogFooter className="gap-2 pt-2">
-              <Button variant="outline" onClick={() => setImportOpen(false)}>Cancel</Button>
-              <Button
-                className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
-                disabled={subAssetItems.length === 0}
-                onClick={importFromSubAssets}>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(false)}>Cancel</Button>
+              <Button size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold gap-1.5"
+                disabled={subAssetItems.length === 0} onClick={importFromSubAssets}>
                 <CheckCircle2 className="h-4 w-4" /> Import {subAssetItems.length} Item(s)
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          </div>
+        )}
       </DashboardLayout>
     );
   }

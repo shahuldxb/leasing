@@ -16,13 +16,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import {
-  FileEdit, PlusCircle, CheckCircle2, XCircle, Send, Zap,
-  Search, RefreshCw, ChevronDown, ChevronRight, Clock, AlertTriangle
-} from "lucide-react";
+import { FileEdit, PlusCircle, CheckCircle2, XCircle, Send, Zap, Search, RefreshCw, ChevronDown, ChevronRight, Clock, AlertTriangle, X } from "lucide-react";
 
 const SCREEN_ID = "VFCMPMOD0001P001";
 
@@ -344,9 +340,11 @@ export default function ContractModifications() {
         </div>
 
         {/* Create Modification Dialog */}
-        <Dialog open={showCreate} onOpenChange={o => { if (!o) { setShowCreate(false); setDraft(EMPTY_DRAFT); } }}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>New Contract Modification</DialogTitle></DialogHeader>
+      {showCreate && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">New Contract Modification</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowCreate(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <Tabs defaultValue="basic">
               <TabsList className="mb-3">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -416,28 +414,30 @@ export default function ContractModifications() {
                 </div>
               </TabsContent>
             </Tabs>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => { setShowCreate(false); setDraft(EMPTY_DRAFT); }}>Cancel</Button>
               <Button size="sm" onClick={handleCreate} disabled={createMod.isPending}>
                 {createMod.isPending ? "Creating..." : "Create Modification"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Detail Dialog */}
-        <Dialog open={showDetail} onOpenChange={o => !o && setShowDetail(false)}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+        {showDetail && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
                 <span>{selectedMod?.mod_ref}</span>
                 {selectedMod && (
                   <Badge variant="outline" className={`text-xs ${STATUS_COLORS[selectedMod.status] ?? ""}`}>
                     {STATUS_ICONS[selectedMod.status]}{selectedMod.status}
                   </Badge>
                 )}
-              </DialogTitle>
-            </DialogHeader>
+              </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowDetail(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             {modDetail && (modDetail as any) && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
@@ -508,80 +508,88 @@ export default function ContractModifications() {
                 </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+        </div>
+      )}
 
         {/* Submit Dialog */}
-        <Dialog open={showSubmit} onOpenChange={o => !o && setShowSubmit(false)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Submit for Approval</DialogTitle></DialogHeader>
+        {showSubmit && (
+        <div className="rounded-xl border border-blue-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Submit for Approval</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowSubmit(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="py-2">
               <p className="text-xs text-muted-foreground mb-2">Submit <span className="font-mono text-primary">{selectedMod?.mod_ref}</span> for checker approval.</p>
               <Label className="text-xs">Notes (optional)</Label>
               <Textarea value={submitNotes} onChange={e => setSubmitNotes(e.target.value)} className="text-xs mt-1 resize-none" rows={3} placeholder="Add submission notes..." />
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => setShowSubmit(false)}>Cancel</Button>
               <Button size="sm" onClick={() => submitMod.mutate({ modificationId: selectedMod!.modification_id, notes: submitNotes || undefined })} disabled={submitMod.isPending}>
                 {submitMod.isPending ? "Submitting..." : "Submit"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Approve Dialog */}
-        <Dialog open={showApprove} onOpenChange={o => !o && setShowApprove(false)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Approve Modification</DialogTitle></DialogHeader>
+        {showApprove && (
+        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Approve Modification</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowApprove(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="py-2">
               <p className="text-xs text-muted-foreground mb-2">Approve <span className="font-mono text-primary">{selectedMod?.mod_ref}</span>?</p>
               <Label className="text-xs">Approval Notes (optional)</Label>
               <Textarea value={approveNotes} onChange={e => setApproveNotes(e.target.value)} className="text-xs mt-1 resize-none" rows={3} placeholder="Add approval notes..." />
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => setShowApprove(false)}>Cancel</Button>
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => approveMod.mutate({ modificationId: selectedMod!.modification_id, notes: approveNotes || undefined })} disabled={approveMod.isPending}>
                 {approveMod.isPending ? "Approving..." : "Approve"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Reject Dialog */}
-        <Dialog open={showReject} onOpenChange={o => !o && setShowReject(false)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Reject Modification</DialogTitle></DialogHeader>
+        {showReject && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Reject Modification</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowReject(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="py-2">
               <p className="text-xs text-muted-foreground mb-2">Reject <span className="font-mono text-primary">{selectedMod?.mod_ref}</span>?</p>
               <Label className="text-xs">Rejection Reason *</Label>
               <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="text-xs mt-1 resize-none" rows={3} placeholder="Reason for rejection (required)..." />
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => setShowReject(false)}>Cancel</Button>
               <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-500/10" onClick={() => { if (!rejectReason.trim()) { toast.error("Rejection reason is required"); return; } rejectMod.mutate({ modificationId: selectedMod!.modification_id, reason: rejectReason }); }} disabled={rejectMod.isPending}>
                 {rejectMod.isPending ? "Rejecting..." : "Reject"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Apply Dialog */}
-        <Dialog open={showApply} onOpenChange={o => !o && setShowApply(false)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Apply Modification to Lease</DialogTitle></DialogHeader>
+        {showApply && (
+        <div className="rounded-xl border border-purple-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Apply Modification to Lease</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowApply(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="py-2">
               <p className="text-xs text-muted-foreground mb-2">Apply <span className="font-mono text-primary">{selectedMod?.mod_ref}</span> to the lease. This will update the lease liability and ROU asset.</p>
               <Label className="text-xs">GL Journal ID (optional)</Label>
               <Input value={glJournalId} onChange={e => setGlJournalId(e.target.value)} className="h-8 text-xs mt-1" placeholder="e.g. JNL-2025-0042" />
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={() => setShowApply(false)}>Cancel</Button>
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => applyMod.mutate({ modificationId: selectedMod!.modification_id, glJournalId: glJournalId || undefined })} disabled={applyMod.isPending}>
                 {applyMod.isPending ? "Applying..." : "Apply to Lease"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
       </div>
     </DashboardLayout>
   );

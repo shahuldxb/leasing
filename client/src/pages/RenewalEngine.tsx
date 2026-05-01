@@ -13,9 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { RefreshCw, Plus, CheckCircle, XCircle, Clock, AlertTriangle, CalendarClock } from 'lucide-react';
+import { RefreshCw, Plus, CheckCircle, XCircle, Clock, AlertTriangle, CalendarClock, X } from "lucide-react";
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const fmt = (n: unknown, dec = 2) =>
   typeof n === 'number' ? n.toLocaleString('en-ZA', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : '—';
@@ -204,54 +203,52 @@ export default function RenewalEngine() {
         </Card>
       </div>
 
-      {/* Initiate Renewal Dialog */}
-      <Dialog open={showInitiate} onOpenChange={setShowInitiate}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Initiate Lease Renewal</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label>Contract ID <span className="text-red-400">*</span></Label>
-                <Input type="number" placeholder="e.g. 42" value={form.contractId}
-                  onChange={e => setForm(f => ({ ...f, contractId: e.target.value }))} />
-                <p className="text-xs text-muted-foreground mt-1">Must be an Active or Modified lease</p>
-              </div>
-              <div>
-                <Label>New Expiry Date <span className="text-red-400">*</span></Label>
-                <Input type="date" value={form.newExpiryDate}
-                  onChange={e => setForm(f => ({ ...f, newExpiryDate: e.target.value }))} />
-              </div>
-              <div>
-                <Label>New Term (months) <span className="text-red-400">*</span></Label>
-                <Input type="number" placeholder="e.g. 36" value={form.newTermMonths}
-                  onChange={e => setForm(f => ({ ...f, newTermMonths: e.target.value }))} />
-              </div>
-              <div>
-                <Label>New Monthly Payment <span className="text-red-400">*</span></Label>
-                <Input type="number" placeholder="e.g. 15000" value={form.newMonthlyPayment}
-                  onChange={e => setForm(f => ({ ...f, newMonthlyPayment: e.target.value }))} />
-              </div>
-              <div>
-                <Label>New IBR (decimal) <span className="text-red-400">*</span></Label>
-                <Input type="number" step="0.001" placeholder="e.g. 0.085" value={form.newIBR}
-                  onChange={e => setForm(f => ({ ...f, newIBR: e.target.value }))} />
-              </div>
-              <div className="col-span-2">
-                <Label>Notes</Label>
-                <Textarea placeholder="Renewal rationale, negotiation notes, board approval reference…"
-                  value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} />
-              </div>
+      {/* Initiate Renewal — inline panel */}
+      {showInitiate && (
+        <div className="mx-6 mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Initiate Lease Renewal</h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowInitiate(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label className="text-xs mb-1 block">Contract ID <span className="text-red-400">*</span></Label>
+              <Input type="number" placeholder="e.g. 42" value={form.contractId}
+                onChange={e => setForm(f => ({ ...f, contractId: e.target.value }))} />
+              <p className="text-xs text-muted-foreground mt-1">Must be an Active or Modified lease</p>
             </div>
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300">
-              <strong>IFRS 16 Para 45:</strong> On approval, the system will remeasure the lease liability at the revised present value of remaining payments discounted at the new IBR, and regenerate all Projected amortisation periods.
+            <div>
+              <Label className="text-xs mb-1 block">New Expiry Date <span className="text-red-400">*</span></Label>
+              <Input type="date" value={form.newExpiryDate}
+                onChange={e => setForm(f => ({ ...f, newExpiryDate: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">New Term (months) <span className="text-red-400">*</span></Label>
+              <Input type="number" placeholder="e.g. 36" value={form.newTermMonths}
+                onChange={e => setForm(f => ({ ...f, newTermMonths: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">New Monthly Payment <span className="text-red-400">*</span></Label>
+              <Input type="number" placeholder="e.g. 15000" value={form.newMonthlyPayment}
+                onChange={e => setForm(f => ({ ...f, newMonthlyPayment: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block">New IBR (decimal) <span className="text-red-400">*</span></Label>
+              <Input type="number" step="0.001" placeholder="e.g. 0.085" value={form.newIBR}
+                onChange={e => setForm(f => ({ ...f, newIBR: e.target.value }))} />
+            </div>
+            <div className="col-span-2">
+              <Label className="text-xs mb-1 block">Notes</Label>
+              <Textarea placeholder="Renewal rationale, negotiation notes, board approval reference…"
+                value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInitiate(false)}>Cancel</Button>
-            <Button
-              disabled={initiateMut.isPending}
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300">
+            <strong>IFRS 16 Para 45:</strong> On approval, the system will remeasure the lease liability at the revised present value of remaining payments discounted at the new IBR, and regenerate all Projected amortisation periods.
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => setShowInitiate(false)}>Cancel</Button>
+            <Button size="sm" disabled={initiateMut.isPending}
               onClick={() => {
                 if (!form.contractId || !form.newExpiryDate || !form.newMonthlyPayment || !form.newTermMonths || !form.newIBR) {
                   toast.error('Please fill all required fields');
@@ -268,53 +265,50 @@ export default function RenewalEngine() {
               }}>
               {initiateMut.isPending ? 'Submitting…' : 'Submit for Approval'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      {/* Confirm Approve/Reject Dialog */}
+      {/* Confirm Approve/Reject — inline panel */}
       {confirmRow && (
-        <Dialog open onOpenChange={() => setConfirmRow(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {confirmRow.action === 'approve'
-                  ? <><CheckCircle className="h-5 w-5 text-emerald-400" /> Approve Renewal</>
-                  : <><XCircle className="h-5 w-5 text-red-400" /> Reject Renewal</>}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-2 space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {confirmRow.action === 'approve'
-                  ? `Approving will regenerate the amortisation schedule for contract ${confirmRow.renewal.contract_ref} with the new terms. All future Projected periods will be replaced. This action cannot be undone.`
-                  : `Rejecting will mark this renewal as rejected. The original lease terms remain unchanged.`}
-              </p>
-              {confirmRow.action === 'approve' && (
-                <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-3">
-                  <span className="text-muted-foreground">New expiry:</span>
-                  <span className="text-foreground">{confirmRow.renewal.new_expiry_date ? new Date(confirmRow.renewal.new_expiry_date as string).toLocaleDateString('en-ZA') : '—'}</span>
-                  <span className="text-muted-foreground">New payment:</span>
-                  <span className="text-foreground">{fmt(confirmRow.renewal.new_monthly_payment)}</span>
-                  <span className="text-muted-foreground">New IBR:</span>
-                  <span className="text-foreground">{typeof confirmRow.renewal.new_ibr === 'number' ? `${(confirmRow.renewal.new_ibr * 100).toFixed(2)}%` : '—'}</span>
-                </div>
-              )}
+        <div className={`mx-6 mb-4 rounded-xl border p-5 space-y-3 ${confirmRow.action === 'approve' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-red-500/40 bg-red-500/5'}`}>
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              {confirmRow.action === 'approve'
+                ? <><CheckCircle className="h-4 w-4 text-emerald-400" /> Approve Renewal</>
+                : <><XCircle className="h-4 w-4 text-red-400" /> Reject Renewal</>}
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setConfirmRow(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {confirmRow.action === 'approve'
+              ? `Approving will regenerate the amortisation schedule for contract ${confirmRow.renewal.contract_ref} with the new terms. All future Projected periods will be replaced. This action cannot be undone.`
+              : `Rejecting will mark this renewal as rejected. The original lease terms remain unchanged.`}
+          </p>
+          {confirmRow.action === 'approve' && (
+            <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-3">
+              <span className="text-muted-foreground">New expiry:</span>
+              <span className="text-foreground">{confirmRow.renewal.new_expiry_date ? new Date(confirmRow.renewal.new_expiry_date as string).toLocaleDateString('en-ZA') : '—'}</span>
+              <span className="text-muted-foreground">New payment:</span>
+              <span className="text-foreground">{fmt(confirmRow.renewal.new_monthly_payment)}</span>
+              <span className="text-muted-foreground">New IBR:</span>
+              <span className="text-foreground">{typeof confirmRow.renewal.new_ibr === 'number' ? `${(confirmRow.renewal.new_ibr * 100).toFixed(2)}%` : '—'}</span>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmRow(null)}>Cancel</Button>
-              <Button
-                className={confirmRow.action === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}
-                disabled={approveMut.isPending || rejectMut.isPending}
-                onClick={() => {
-                  const id = Number(confirmRow.renewal.renewal_id);
-                  if (confirmRow.action === 'approve') approveMut.mutate({ renewalId: id });
-                  else rejectMut.mutate({ renewalId: id });
-                }}>
-                {confirmRow.action === 'approve' ? 'Approve & Regenerate' : 'Reject'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          )}
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => setConfirmRow(null)}>Cancel</Button>
+            <Button size="sm"
+              className={confirmRow.action === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}
+              disabled={approveMut.isPending || rejectMut.isPending}
+              onClick={() => {
+                const id = Number(confirmRow.renewal.renewal_id);
+                if (confirmRow.action === 'approve') approveMut.mutate({ renewalId: id });
+                else rejectMut.mutate({ renewalId: id });
+              }}>
+              {confirmRow.action === 'approve' ? 'Approve & Regenerate' : 'Reject'}
+            </Button>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

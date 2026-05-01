@@ -22,14 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  RefreshCw, ChevronDown, ChevronRight,
-  RotateCcw, ShieldOff, Repeat2, Skull,
-  Package, Calendar, User, Hash, Tag, FileText, AlertTriangle,
-  CheckCircle2, XCircle, Clock, ArrowUpDown, Plus,
-  Pencil, Save, X as XIcon, Link2, Trash2, Sparkles,
-} from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { RefreshCw, ChevronDown, ChevronRight, RotateCcw, ShieldOff, Repeat2, Skull, Package, Calendar, User, Hash, Tag, FileText, AlertTriangle, CheckCircle2, XCircle, Clock, ArrowUpDown, Plus, Pencil, Save, X as XIcon, Link2, Trash2, Sparkles } from "lucide-react";
 
 // ── Status badge colours ─────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -1167,13 +1160,15 @@ export default function SubAssetTransactionLog() {
       </div>
 
       {/* ── Attach Dialog ─────────────────────────────────────────────────────── */}
-      <Dialog open={attachOpen} onOpenChange={open => { if (!open) { setAttachOpen(false); resetAttachDialog(); } }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {attachOpen && (
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Link2 className="w-4 h-4 text-emerald-400" /> Attach Sub-Asset Set to Lease
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { setAttachOpen(false); resetAttachDialog(); }}><XIcon className="w-3.5 h-3.5" /></Button>
+          </div>
 
           {attachStep === "select" ? (
             <div className="space-y-3 py-1">
@@ -1257,7 +1252,7 @@ export default function SubAssetTransactionLog() {
             </div>
           )}
 
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" size="sm" onClick={() => { setAttachOpen(false); resetAttachDialog(); }}>Cancel</Button>
             {attachStep === "serials" && (
               <Button variant="outline" size="sm" onClick={() => setAttachStep("select")}>Back</Button>
@@ -1270,19 +1265,22 @@ export default function SubAssetTransactionLog() {
             >
               {attachMutation.isPending ? "Attaching…" : attachStep === "select" ? "Next: Fill Details" : "Confirm Attach"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        
+        </div>
+      )}
 
       {/* ── Add Item Dialog ───────────────────────────────────────────────────── */}
-      <Dialog open={addItemOpen} onOpenChange={open => !open && setAddItemOpen(false)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {addItemOpen && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Plus className="w-4 h-4 text-emerald-400" />
               Add New Item to Set
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setAddItemOpen(false)}><XIcon className="w-3.5 h-3.5" /></Button>
+          </div>
 
           {selectedSetRecord && (() => {
             const rec = selectedSetRecord as any;
@@ -1457,7 +1455,7 @@ export default function SubAssetTransactionLog() {
             )}
           </div>
 
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" size="sm" onClick={() => setAddItemOpen(false)}>Cancel</Button>
             <Button
               size="sm"
@@ -1467,23 +1465,26 @@ export default function SubAssetTransactionLog() {
             >
               {addItemMutation.isPending ? "Adding…" : "Add Item to Set"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        
+        </div>
+      )}
 
       {/* ── Action Dialog ─────────────────────────────────────────────────────── */}
-      <Dialog open={actionDialog.open} onOpenChange={open => !open && closeActionDialog()}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {actionDialog.open && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               {(() => {
                 const a = ACTIONS.find(x => x.id === actionDialog.actionId);
                 if (!a) return null;
                 const Icon = a.icon;
                 return <><Icon className={`w-4 h-4 ${a.color}`} /> {a.label} Sub-Asset</>;
               })()}
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => closeActionDialog()}><XIcon className="w-3.5 h-3.5" /></Button>
+          </div>
 
           {selectedSetRecord && (() => {
             const rec = selectedSetRecord as any;
@@ -1536,7 +1537,7 @@ export default function SubAssetTransactionLog() {
             </div>
           </div>
 
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" size="sm" onClick={closeActionDialog}>Cancel</Button>
             <Button
               size="sm"
@@ -1546,9 +1547,10 @@ export default function SubAssetTransactionLog() {
             >
               {statusMutation.isPending ? "Saving…" : `Confirm ${actionDialog.label}`}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        
+        </div>
+      )}
     </DashboardLayout>
   );
 }

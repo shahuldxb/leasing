@@ -8,13 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { toast } from "sonner";
-import { Calculator, Download, ChevronDown, ChevronRight,
-  TrendingDown, Banknote, BookOpen, Building2,
-  ArrowDownRight, BarChart3, HelpCircle, Info, X,
-  Zap, CheckCircle2, Lock, Play, Edit3, XCircle, Receipt,
-} from "lucide-react";
+import { Calculator, Download, ChevronDown, ChevronRight, TrendingDown, Banknote, BookOpen, Building2, ArrowDownRight, BarChart3, HelpCircle, Info, X, Zap, CheckCircle2, Lock, Play, Edit3, XCircle, Receipt } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // ── Column header with tooltip helper ─────────────────────────────────────────
 function ColHead({ label, tip }: { label: string; tip: string }) {
@@ -940,17 +935,19 @@ export default function Amortisation() {
         </div>
       </div>
             {/* ── How is this calculated? Guide Modal ─────────────────────────── */}
-      <Dialog open={showGuide} onOpenChange={setShowGuide}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
+      {showGuide && (
+        <div className="rounded-xl border border-blue-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Info className="h-5 w-5 text-[#e60000]" />
               How is the Amortisation Schedule Calculated?
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
+            </h4>
+            <p className="text-xs text-muted-foreground">
               IFRS 16 Effective Interest Method — plain-English guide with a worked example
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowGuide(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
 
           <div className="space-y-6 text-sm">
 
@@ -1074,8 +1071,8 @@ export default function Amortisation() {
             </div>
 
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* ── Blackboard Calculation Modal ──────────────────────────── */}
       {blackboardRow && (() => {
@@ -1263,14 +1260,16 @@ export default function Amortisation() {
       })()}
 
       {/* ── GL Entries Explain Modal ─────────────────────────────────── */}
-      <Dialog open={showGLExplain} onOpenChange={setShowGLExplain}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
+      {showGLExplain && (
+        <div className="rounded-xl border border-amber-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-indigo-400" />
               How are GL Entries generated?
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowGLExplain(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 text-sm">
             <p className="text-muted-foreground">Under IFRS 16, every lease payment creates <strong>4 paired journal entries</strong> each month. Each pair has one Debit (Dr) and one Credit (Cr) of equal value — so total Dr always equals total Cr.</p>
 
@@ -1326,21 +1325,23 @@ export default function Amortisation() {
               <strong>Key rule:</strong> Every journal entry must balance — total Debits = total Credits for each period. Blue rows are Debits (assets increase / liabilities decrease). Green rows are Credits (assets decrease / liabilities increase).
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
       {/* ── Modify Lease Dialog ─────────────────────────────────────────── */}
-      <Dialog open={modifyDialogId !== null} onOpenChange={open => !open && setModifyDialogId(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {modifyDialogId !== null && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Edit3 className="w-4 h-4 text-amber-400" />
               Modify Lease — Remeasure Liability
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            </h4>
+            <p className="text-xs text-muted-foreground">
               IFRS 16 Para 45: When monthly rent changes, the lease liability is remeasured at the new PV of remaining payments.
               A remeasurement journal entry (JE-4) is posted to adjust the ROU asset and liability.
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setModifyDialogId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">New Monthly Payment (QAR)</label>
@@ -1384,22 +1385,24 @@ export default function Amortisation() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* ── Close Lease Dialog ───────────────────────────────────────────── */}
-      <Dialog open={closeDialogId !== null} onOpenChange={open => !open && setCloseDialogId(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {closeDialogId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <XCircle className="w-4 h-4 text-red-400" />
               Close Lease — Derecognise Assets & Liabilities
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            </h4>
+            <p className="text-xs text-muted-foreground">
               IFRS 16 Para 46: On lease termination, the ROU asset and lease liability are derecognised.
               Any difference between the carrying amounts is recognised as a gain or loss in P&amp;L (JE-5).
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setCloseDialogId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Closure / Termination Date</label>
@@ -1430,8 +1433,8 @@ export default function Amortisation() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

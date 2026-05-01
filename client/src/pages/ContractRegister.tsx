@@ -26,20 +26,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Plus, Search, FileText, Pencil, Trash2, Upload, Download,
-  Calendar, CheckCircle2, Clock, AlertTriangle, ExternalLink,
-  FolderOpen, Tag, GitBranch, Milestone, ArrowRight, Eye,
-  MoreHorizontal, RefreshCw, Sparkles, Bell,
-} from "lucide-react";
+import { Plus, Search, FileText, Pencil, Trash2, Upload, Download, Calendar, CheckCircle2, Clock, AlertTriangle, ExternalLink, FolderOpen, Tag, GitBranch, Milestone, ArrowRight, Eye, MoreHorizontal, RefreshCw, Sparkles, Bell, X } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -796,9 +789,11 @@ export default function ContractRegister() {
       </Sheet>
 
       {/* ── Upload Document Dialog ── */}
-      <Dialog open={docDialog} onOpenChange={o => { setDocDialog(o); if (!o) setDocDraft({ docType: "Original Contract", docName: "", versionNumber: 1, versionNotes: "", signatoryName: "", signedDate: "", expiryDate: "", fileBase64: "", mimeType: "application/pdf", fileSize: 0 }); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Upload Document</DialogTitle></DialogHeader>
+      {docDialog && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Upload Document</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDocDialog(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             {/* File picker */}
             <div
@@ -863,20 +858,22 @@ export default function ContractRegister() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setDocDialog(false)}>Cancel</Button>
             <Button onClick={submitDoc} disabled={uploadDoc.isPending}>
               {uploadDoc.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               Upload
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ── Add/Edit Milestone Dialog ── */}
-      <Dialog open={msDialog} onOpenChange={o => setMsDialog(o)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{msDraft.milestoneId ? "Edit Milestone" : "Add Milestone"}</DialogTitle></DialogHeader>
+      {msDialog && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">{msDraft.milestoneId ? "Edit Milestone" : "Add Milestone"}</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setMsDialog(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -907,45 +904,49 @@ export default function ContractRegister() {
                 onChange={e => setMsDraft(d => ({ ...d, alertDaysBefore: +e.target.value }))} />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setMsDialog(false)}>Cancel</Button>
             <Button onClick={() => {
               if (!msDraft.title.trim() || !msDraft.dueDate) { toast.error("Title and due date are required"); return; }
               upsertMs.mutate({ milestoneId: msDraft.milestoneId, milestoneType: msDraft.milestoneType, milestoneDate: msDraft.dueDate, description: msDraft.description, contractId: selected.contract_id ?? selected.lease_id });
             }} disabled={upsertMs.isPending}>Save Milestone</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Document Confirm ── */}
-      <AlertDialog open={deleteDocId !== null} onOpenChange={o => !o && setDeleteDocId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Document?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently remove the document record. The file in storage will no longer be accessible.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteDoc.mutate({ documentId: deleteDocId! })}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteDocId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Delete Document?</h4>
+            <p className="text-xs text-muted-foreground">This will permanently remove the document record. The file in storage will no longer be accessible.</p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteDocId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteDoc.mutate({ documentId: deleteDocId! })}>Delete</Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Milestone Confirm ── */}
-      <AlertDialog open={deleteMsId !== null} onOpenChange={o => !o && setDeleteMsId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Milestone?</AlertDialogTitle>
-            <AlertDialogDescription>This milestone will be permanently removed.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteMs.mutate({ milestoneId: deleteMsId! })}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteMsId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Delete Milestone?</h4>
+            <p className="text-xs text-muted-foreground">This milestone will be permanently removed.</p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteMsId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteMs.mutate({ milestoneId: deleteMsId! })}>Delete</Button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

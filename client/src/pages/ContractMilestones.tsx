@@ -12,13 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  Milestone, PlusCircle, CheckCircle2, Clock, AlertTriangle,
-  Pencil, Trash2, Bell, Search, RefreshCw, XCircle
-} from "lucide-react";
+import { Milestone, PlusCircle, CheckCircle2, Clock, AlertTriangle, Pencil, Trash2, Bell, Search, RefreshCw, XCircle, X } from "lucide-react";
 
 const SCREEN_ID = "VFCNTMLS0001P001";
 const MILESTONE_TYPES = [
@@ -255,9 +250,11 @@ export default function ContractMilestones() {
         </div>
 
         {/* Add/Edit Dialog */}
-        <Dialog open={showForm} onOpenChange={o=>{if(!o){setShowForm(false);setDraft(EMPTY);}}}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{draft.milestoneId?"Edit Milestone":"Add Milestone"}</DialogTitle></DialogHeader>
+      {showForm && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">{draft.milestoneId?"Edit Milestone":"Add Milestone"}</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowForm(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="grid grid-cols-2 gap-3 py-2">
               <div className="col-span-2">
                 <Label className="text-xs">Contract *</Label>
@@ -292,60 +289,66 @@ export default function ContractMilestones() {
                 <Textarea value={draft.notes} onChange={e=>setField("notes",e.target.value)} className="text-xs mt-1 resize-none" rows={2} placeholder="Optional notes..."/>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={()=>{setShowForm(false);setDraft(EMPTY);}}>Cancel</Button>
               <Button size="sm" onClick={handleSave} disabled={upsertMs.isPending}>{upsertMs.isPending?"Saving...":"Save Milestone"}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Complete Dialog */}
-        <Dialog open={completeId!==null} onOpenChange={o=>!o&&setCompleteId(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Mark as Completed</DialogTitle></DialogHeader>
+        {completeId !== null && (
+        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Mark as Completed</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setCompleteId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="py-2">
               <Label className="text-xs">Completion Notes (optional)</Label>
               <Textarea value={completeNotes} onChange={e=>setCompleteNotes(e.target.value)} className="text-xs mt-1 resize-none" rows={3} placeholder="Add completion notes..."/>
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={()=>setCompleteId(null)}>Cancel</Button>
               <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={()=>completeMs.mutate({milestoneId:completeId!,notes:completeNotes||undefined})} disabled={completeMs.isPending}>
                 {completeMs.isPending?"Saving...":"Mark Complete"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Dismiss Dialog */}
-        <Dialog open={dismissId!==null} onOpenChange={o=>!o&&setDismissId(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Dismiss Milestone</DialogTitle></DialogHeader>
+        {dismissId !== null && (
+        <div className="rounded-xl border border-amber-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Dismiss Milestone</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDismissId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
             <div className="py-2">
               <Label className="text-xs">Reason (optional)</Label>
               <Textarea value={dismissReason} onChange={e=>setDismissReason(e.target.value)} className="text-xs mt-1 resize-none" rows={3} placeholder="Reason for dismissal..."/>
             </div>
-            <DialogFooter>
+            <div className="flex gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={()=>setDismissId(null)}>Cancel</Button>
               <Button size="sm" variant="outline" className="border-amber-500 text-amber-400 hover:bg-amber-500/10" onClick={()=>dismissMs.mutate({milestoneId:dismissId!,reason:dismissReason||undefined})} disabled={dismissMs.isPending}>
                 {dismissMs.isPending?"Saving...":"Dismiss"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+      )}
 
         {/* Delete Confirm */}
-        <AlertDialog open={deleteId!==null} onOpenChange={o=>!o&&setDeleteId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Milestone?</AlertDialogTitle>
-              <AlertDialogDescription>This will permanently remove the milestone. This action cannot be undone.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={()=>deleteMs.mutate({milestoneId:deleteId!})}>Delete</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {deleteId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+          
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold flex items-center gap-2">Delete Milestone?</h4>
+              <p className="text-xs text-muted-foreground">This will permanently remove the milestone. This action cannot be undone.</p>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline">Cancel</Button>
+              <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={()=>deleteMs.mutate({milestoneId:deleteId!})}>Delete</Button>
+            </div>
+        </div>
+      )}
       </div>
     </DashboardLayout>
   );

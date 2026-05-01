@@ -20,12 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Building2, DollarSign, FileText, User, Package, History,
-  ArrowLeft, RefreshCw, BarChart2, Info, Save, Calculator,
-  ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle,
-} from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Building2, DollarSign, FileText, User, Package, History, ArrowLeft, RefreshCw, BarChart2, Info, Save, Calculator, ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle, X } from "lucide-react";
 import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
 
 // ── Sub-Assets Grid ───────────────────────────────────────────────────────────
@@ -210,39 +205,40 @@ function SubAssetsGrid({ contractId }: { contractId: number }) {
         </div>
       )}
 
-      {/* Status Change Modal */}
+      {/* Status Change — inline panel */}
       {statusModal && (
-        <Dialog open onOpenChange={() => setStatusModal(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Change Sub-Asset Status</DialogTitle>
-              <DialogDescription>Asset: <span className="font-mono text-primary">{statusModal.assetCode}</span> — {statusModal.setName}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">New Status</Label>
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>{['Cancelled','Returned','BackIn','Replaced','WriteOff','Condemned'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Reason</Label>
-                <Input className="h-8 text-xs" value={statusReason} onChange={e => setStatusReason(e.target.value)} placeholder="Reason for change…" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Notes</Label>
-                <Textarea className="text-xs min-h-[60px]" value={statusNotes} onChange={e => setStatusNotes(e.target.value)} placeholder="Additional notes…" />
-              </div>
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400" /> Change Sub-Asset Status
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setStatusModal(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Asset: <span className="font-mono text-primary">{statusModal.assetCode}</span> — {statusModal.setName}</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">New Status</Label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>{['Cancelled','Returned','BackIn','Replaced','WriteOff','Condemned'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setStatusModal(null)}>Cancel</Button>
-              <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={applyStatus} disabled={updateStatus.isPending}>
-                {updateStatus.isPending ? 'Saving…' : 'Apply Status'}
-              </Button>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Reason</Label>
+              <Input className="h-8 text-xs" value={statusReason} onChange={e => setStatusReason(e.target.value)} placeholder="Reason for change…" />
             </div>
-          </DialogContent>
-        </Dialog>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Notes</Label>
+              <Input className="h-8 text-xs" value={statusNotes} onChange={e => setStatusNotes(e.target.value)} placeholder="Additional notes…" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setStatusModal(null)}>Cancel</Button>
+            <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={applyStatus} disabled={updateStatus.isPending}>
+              {updateStatus.isPending ? 'Saving…' : 'Apply Status'}
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -283,36 +279,37 @@ function BlackboardDialog({ row, onClose }: { row: Record<string, unknown>; onCl
   const principal = payment - interest;
   const closing = opening - principal;
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Calculator className="w-4 h-4 text-primary" /> Period {String(row.period_no)} Calculation</DialogTitle>
-          <DialogDescription>IFRS 16 effective interest method</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 text-sm font-mono bg-muted/30 rounded-lg p-4">
-          <div className="grid grid-cols-2 gap-2">
-            <span className="text-muted-foreground">Opening Liability</span>
-            <span className="text-right">{fmt(opening)}</span>
-            <span className="text-muted-foreground">IBR (monthly)</span>
-            <span className="text-right">{((ibr / 12) * 100).toFixed(6)}%</span>
-            <Separator className="col-span-2" />
-            <span className="font-semibold">Interest Expense</span>
-            <span className="text-right text-amber-400 font-semibold">{fmt(interest)}</span>
-            <span className="text-muted-foreground text-xs col-span-2">= Opening × (IBR ÷ 12)</span>
-            <Separator className="col-span-2" />
-            <span className="text-muted-foreground">Lease Payment</span>
-            <span className="text-right">{fmt(payment)}</span>
-            <span className="font-semibold">Principal Repaid</span>
-            <span className="text-right text-blue-400 font-semibold">{fmt(principal)}</span>
-            <span className="text-muted-foreground text-xs col-span-2">= Payment − Interest</span>
-            <Separator className="col-span-2" />
-            <span className="font-semibold">Closing Liability</span>
-            <span className="text-right text-emerald-400 font-semibold">{fmt(closing)}</span>
-            <span className="text-muted-foreground text-xs col-span-2">= Opening − Principal</span>
-          </div>
+    <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold flex items-center gap-2">
+          <Calculator className="w-4 h-4 text-primary" /> Period {String(row.period_no)} Calculation
+        </h4>
+        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onClose}><X className="w-3.5 h-3.5" /></Button>
+      </div>
+      <p className="text-xs text-muted-foreground">IFRS 16 effective interest method</p>
+      <div className="text-sm font-mono bg-muted/30 rounded-lg p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <span className="text-muted-foreground">Opening Liability</span>
+          <span className="text-right">{fmt(opening)}</span>
+          <span className="text-muted-foreground">IBR (monthly)</span>
+          <span className="text-right">{((ibr / 12) * 100).toFixed(6)}%</span>
+          <Separator className="col-span-2" />
+          <span className="font-semibold">Interest Expense</span>
+          <span className="text-right text-amber-400 font-semibold">{fmt(interest)}</span>
+          <span className="text-muted-foreground text-xs col-span-2">= Opening × (IBR ÷ 12)</span>
+          <Separator className="col-span-2" />
+          <span className="text-muted-foreground">Lease Payment</span>
+          <span className="text-right">{fmt(payment)}</span>
+          <span className="font-semibold">Principal Repaid</span>
+          <span className="text-right text-blue-400 font-semibold">{fmt(principal)}</span>
+          <span className="text-muted-foreground text-xs col-span-2">= Payment − Interest</span>
+          <Separator className="col-span-2" />
+          <span className="font-semibold">Closing Liability</span>
+          <span className="text-right text-emerald-400 font-semibold">{fmt(closing)}</span>
+          <span className="text-muted-foreground text-xs col-span-2">= Opening − Principal</span>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 

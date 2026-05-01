@@ -33,15 +33,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  ChevronDown, ChevronUp, Plus, RefreshCw, ArrowLeft,
-  Package, Hash, Calendar, User, FileText, Layers,
-  CheckCircle2, XCircle, RotateCcw, ArrowRightLeft, Boxes,
-  AlertCircle, Loader2, FileDown, ShieldAlert,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, RefreshCw, ArrowLeft, Package, Hash, Calendar, User, FileText, Layers, CheckCircle2, XCircle, RotateCcw, ArrowRightLeft, Boxes, AlertCircle, Loader2, FileDown, ShieldAlert, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -724,20 +718,22 @@ export default function LeaseSubAssets() {
       </div>
 
       {/* ── Attach Set Dialog ──────────────────────────────────────────────────── */}
-      <Dialog open={attachOpen} onOpenChange={v => { if (!v) { setAttachOpen(false); resetAttachDialog(); } }}>
-        <DialogContent className="bg-[#0f1117] border-white/10 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {attachOpen && (
+        <div className="rounded-xl border border-amber-500/40 bg-[#0f1117] text-white p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Plus className="h-5 w-5 text-amber-400" />
               Attach Sub-Asset Set to Lease
-            </DialogTitle>
+            </h4>
             {selectedLease && (
               <p className="text-xs text-muted-foreground mt-1">
                 Lease: <span className="text-amber-400 font-mono">{selectedLease.leaseRef ?? selectedLeaseId}</span>
                 {selectedLease.assetName && ` · ${selectedLease.assetName}`}
               </p>
             )}
-          </DialogHeader>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-gray-400" onClick={() => { setAttachOpen(false); resetAttachDialog(); }}><X className="w-3.5 h-3.5" /></Button>
+          </div>
 
           {/* Step 1: Pick a set */}
           {attachStep === "select" && (
@@ -842,7 +838,7 @@ export default function LeaseSubAssets() {
             </div>
           )}
 
-          <DialogFooter className="gap-2 pt-2">
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" className="border-white/10 text-gray-300"
               onClick={() => {
                 if (attachStep === "serials") { setAttachStep("select"); setAttachSetId(""); }
@@ -860,26 +856,23 @@ export default function LeaseSubAssets() {
                   : <><CheckCircle2 className="h-4 w-4" /> Attach &amp; Log Transaction</>}
               </Button>
             )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      {/* ── Status Change Dialog ───────────────────────────────────────────────── */}
-      <Dialog open={statusOpen} onOpenChange={v => { if (!v) setStatusOpen(false); }}>
-        <DialogContent className="bg-[#0f1117] border-white/10 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {statusOpen && statusTarget && (
+        <div className="rounded-xl border border-white/10 bg-[#0f1117] text-white p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               {STATUS_CFG[newStatus]?.icon}
               Change Status to {STATUS_CFG[newStatus]?.label}
-            </DialogTitle>
-            {statusTarget && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Set: <span className="text-amber-400">{statusTarget.assetCode}</span> · {statusTarget.setName}
-              </p>
-            )}
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-gray-400" onClick={() => setStatusOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Set: <span className="text-amber-400">{statusTarget.assetCode}</span> · {statusTarget.setName}
+          </p>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground mb-1.5 block">
                 Status Date <span className="text-red-400">*</span>
@@ -888,17 +881,15 @@ export default function LeaseSubAssets() {
                 onChange={e => setStatusDate(e.target.value)}
                 className="h-9 text-sm bg-[#13161f] border-white/10 text-white" />
             </div>
-
             <div>
               <Label className="text-xs text-muted-foreground mb-1.5 block">Reason / Notes</Label>
-              <Textarea value={statusReason}
+              <Input value={statusReason}
                 onChange={e => setStatusReason(e.target.value)}
                 placeholder="Optional reason for this status change…"
-                className="bg-[#13161f] border-white/10 text-white text-sm resize-none h-20" />
+                className="bg-[#13161f] border-white/10 text-white text-sm h-9" />
             </div>
-
             {newStatus === "Replaced" && (
-              <div>
+              <div className="col-span-2">
                 <Label className="text-xs text-muted-foreground mb-1.5 block">
                   Replacement Set <span className="text-red-400">*</span>
                 </Label>
@@ -920,8 +911,7 @@ export default function LeaseSubAssets() {
               </div>
             )}
           </div>
-
-          <DialogFooter className="gap-2">
+          <div className="flex gap-3">
             <Button variant="outline" className="border-white/10 text-gray-300"
               onClick={() => setStatusOpen(false)}>Cancel</Button>
             <Button
@@ -938,9 +928,9 @@ export default function LeaseSubAssets() {
                 ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
                 : <><CheckCircle2 className="h-4 w-4" /> Confirm &amp; Log</>}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

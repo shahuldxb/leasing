@@ -12,9 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Lock, Unlock, CheckCircle, AlertTriangle, Calendar, BookOpen } from 'lucide-react';
+import { Lock, Unlock, CheckCircle, AlertTriangle, Calendar, BookOpen, X } from "lucide-react";
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 type PeriodRow = {
   period_year: number;
@@ -223,77 +222,70 @@ export default function PeriodClose() {
         </Card>
       </div>
 
-      {/* Confirm Close Dialog */}
+      {/* Confirm Close — inline panel */}
       {confirmClose && (
-        <Dialog open onOpenChange={() => setConfirmClose(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-violet-400" />
-                Close {MONTH_NAMES[confirmClose.period_month]} {year}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-2 space-y-3">
-              <p className="text-sm text-muted-foreground">
-                This will lock all <strong className="text-foreground">{confirmClose.posted_count} Posted</strong> rows for{' '}
-                {MONTH_NAMES[confirmClose.period_month]} {year}. Locked rows cannot be re-posted or modified.
-                This is an audit-integrity action.
-              </p>
-              <div>
-                <Label>Close Notes (optional)</Label>
-                <Textarea
-                  placeholder="e.g. Month-end close approved by Finance Director…"
-                  value={closeNotes}
-                  onChange={e => setCloseNotes(e.target.value)}
-                  rows={2}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmClose(null)}>Cancel</Button>
-              <Button
-                className="bg-violet-600 hover:bg-violet-700"
-                disabled={closeMut.isPending}
-                onClick={() => closeMut.mutate({
-                  year: confirmClose.period_year,
-                  month: confirmClose.period_month,
-                  notes: closeNotes || undefined,
-                })}>
-                {closeMut.isPending ? 'Closing…' : 'Confirm Close'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="mx-6 mb-4 rounded-xl border border-violet-500/40 bg-violet-500/5 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Lock className="h-4 w-4 text-violet-400" />
+              Close {MONTH_NAMES[confirmClose.period_month]} {year}
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setConfirmClose(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            This will lock all <strong className="text-foreground">{confirmClose.posted_count} Posted</strong> rows for{' '}
+            {MONTH_NAMES[confirmClose.period_month]} {year}. Locked rows cannot be re-posted or modified.
+          </p>
+          <div>
+            <Label className="text-xs mb-1.5 block">Close Notes (optional)</Label>
+            <Textarea
+              placeholder="e.g. Month-end close approved by Finance Director…"
+              value={closeNotes}
+              onChange={e => setCloseNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => setConfirmClose(null)}>Cancel</Button>
+            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white"
+              disabled={closeMut.isPending}
+              onClick={() => closeMut.mutate({
+                year: confirmClose.period_year,
+                month: confirmClose.period_month,
+                notes: closeNotes || undefined,
+              })}>
+              {closeMut.isPending ? 'Closing…' : 'Confirm Close'}
+            </Button>
+          </div>
+        </div>
       )}
 
-      {/* Confirm Reopen Dialog */}
+      {/* Confirm Reopen — inline panel */}
       {confirmReopen && (
-        <Dialog open onOpenChange={() => setConfirmReopen(null)}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Unlock className="h-5 w-5 text-amber-400" />
-                Reopen {MONTH_NAMES[confirmReopen.period_month]} {year}
-              </DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground py-2">
-              Reopening will restore all Locked rows to Posted status for{' '}
-              {MONTH_NAMES[confirmReopen.period_month]} {year}. This should only be done with appropriate authorisation.
-            </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmReopen(null)}>Cancel</Button>
-              <Button
-                className="bg-amber-600 hover:bg-amber-700"
-                disabled={reopenMut.isPending}
-                onClick={() => reopenMut.mutate({
-                  year: confirmReopen.period_year,
-                  month: confirmReopen.period_month,
-                })}>
-                {reopenMut.isPending ? 'Reopening…' : 'Confirm Reopen'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="mx-6 mb-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Unlock className="h-4 w-4 text-amber-400" />
+              Reopen {MONTH_NAMES[confirmReopen.period_month]} {year}
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setConfirmReopen(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Reopening will restore all Locked rows to Posted status for{' '}
+            {MONTH_NAMES[confirmReopen.period_month]} {year}. This should only be done with appropriate authorisation.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => setConfirmReopen(null)}>Cancel</Button>
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white"
+              disabled={reopenMut.isPending}
+              onClick={() => reopenMut.mutate({
+                year: confirmReopen.period_year,
+                month: confirmReopen.period_month,
+              })}>
+              {reopenMut.isPending ? 'Reopening…' : 'Confirm Reopen'}
+            </Button>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );

@@ -22,13 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import {
-  Plus, Search, Building2, Pencil, Trash2, CreditCard,
-  Users, Phone, Mail, Globe, MapPin, Sparkles, RefreshCw,
-  ChevronRight, CheckCircle2, XCircle, AlertTriangle, Star,
-} from "lucide-react";
+import { Plus, Search, Building2, Pencil, Trash2, CreditCard, Users, Phone, Mail, Globe, MapPin, Sparkles, RefreshCw, ChevronRight, CheckCircle2, XCircle, AlertTriangle, Star, X } from "lucide-react";
 import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -689,14 +683,16 @@ export default function LesseeMaster() {
       {/* ══════════════════════════════════════════════════════════
           Add / Edit Lessee Dialog
       ══════════════════════════════════════════════════════════ */}
-      <Dialog open={formOpen} onOpenChange={o => setFormOpen(o)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {formOpen && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
               {formDraft.lesseeId ? "Edit Lessee" : "New Lessee"}
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setFormOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
 
           <div className="space-y-5 py-2">
             {/* Gen AI button */}
@@ -838,24 +834,26 @@ export default function LesseeMaster() {
             </div>
           </div>
 
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
             <Button onClick={submitForm} disabled={upsertLessee.isPending}>
               {upsertLessee.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : null}
               {formDraft.lesseeId ? "Save Changes" : "Create Lessee"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           Bank Account Dialog
       ══════════════════════════════════════════════════════════ */}
-      <Dialog open={bankOpen} onOpenChange={o => setBankOpen(o)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{bankDraft.bankAccountId ? "Edit Bank Account" : "Add Bank Account"}</DialogTitle>
-          </DialogHeader>
+      {bankOpen && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">{bankDraft.bankAccountId ? "Edit Bank Account" : "Add Bank Account"}</h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setBankOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5 col-span-2">
@@ -902,24 +900,26 @@ export default function LesseeMaster() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setBankOpen(false)}>Cancel</Button>
             <Button onClick={submitBank} disabled={upsertBank.isPending}>
               {upsertBank.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : null}
               Save Account
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           Signatory Dialog
       ══════════════════════════════════════════════════════════ */}
-      <Dialog open={sigOpen} onOpenChange={o => setSigOpen(o)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{sigDraft.signatoryId ? "Edit Signatory" : "Add Signatory"}</DialogTitle>
-          </DialogHeader>
+      {sigOpen && (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">{sigDraft.signatoryId ? "Edit Signatory" : "Add Signatory"}</h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setSigOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>Full Name <span className="text-red-400">*</span></Label>
@@ -954,68 +954,74 @@ export default function LesseeMaster() {
               <Label htmlFor="isActive" className="cursor-pointer">Active signatory</Label>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setSigOpen(false)}>Cancel</Button>
             <Button onClick={submitSig} disabled={upsertSig.isPending}>
               {upsertSig.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : null}
               Save Signatory
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Lessee Confirm ── */}
-      <AlertDialog open={deleteId !== null} onOpenChange={o => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deactivate Lessee?</AlertDialogTitle>
-            <AlertDialogDescription>
+      {deleteId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Deactivate Lessee?</h4>
+            <p className="text-xs text-muted-foreground">
               This will set the lessee status to Inactive. Existing lease linkages are preserved. You can reactivate by editing the record.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive hover:bg-destructive/90"
+            </p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive hover:bg-destructive/90"
               onClick={() => deleteId && deleteLessee.mutate({ lesseeId: deleteId })}>
               Deactivate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Bank Account Confirm ── */}
-      <AlertDialog open={deleteBankId !== null} onOpenChange={o => !o && setDeleteBankId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Bank Account?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive hover:bg-destructive/90"
+      {deleteBankId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Remove Bank Account?</h4>
+            <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteBankId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive hover:bg-destructive/90"
               onClick={() => deleteBankId && deleteBank.mutate({ bankAccountId: deleteBankId })}>
               Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete Signatory Confirm ── */}
-      <AlertDialog open={deleteSigId !== null} onOpenChange={o => !o && setDeleteSigId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Signatory?</AlertDialogTitle>
-            <AlertDialogDescription>The signatory will be marked inactive.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive hover:bg-destructive/90"
+      {deleteSigId !== null && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">Remove Signatory?</h4>
+            <p className="text-xs text-muted-foreground">The signatory will be marked inactive.</p>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDeleteSigId(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline">Cancel</Button>
+            <Button className="bg-destructive hover:bg-destructive/90"
               onClick={() => deleteSigId && deleteSig.mutate({ signatoryId: deleteSigId })}>
               Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

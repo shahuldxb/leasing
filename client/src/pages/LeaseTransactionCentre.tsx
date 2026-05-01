@@ -16,8 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
 import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
@@ -412,119 +411,86 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
         </div>
       </div>
 
-      {/* ── ATTACH SUB-ASSET MODAL ── */}
-      <Dialog open={attachOpen} onOpenChange={setAttachOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-amber-400" /> Attach Sub-Asset to Lease
-              </DialogTitle>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Show:</span>
-                <button
-                  className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${
-                    !showAllGroups ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted/30'
-                  }`}
-                  onClick={() => setShowAllGroups(false)}
-                >
-                  Lessor Only
-                </button>
-                <button
-                  className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${
-                    showAllGroups ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted/30'
-                  }`}
-                  onClick={() => setShowAllGroups(true)}
-                >
-                  All Assets
-                </button>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs mb-1.5 block">Search Sub-Asset Groups</Label>
-              <Input placeholder="Search by code or name…" value={groupSearch} onChange={e => setGroupSearch(e.target.value)} className="h-8 text-sm" />
-            </div>
-            <div className="rounded-lg border border-border overflow-hidden max-h-64 overflow-y-auto">
-              {groupsLoading ? (
-                <p className="text-xs text-muted-foreground p-4 animate-pulse">Loading asset groups…</p>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/40 sticky top-0">
-                    <tr>
-                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Select</th>
-                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Code</th>
-                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Set Name</th>
-                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assetGroups
-                      .filter(g => !groupSearch || g.assetCode.toLowerCase().includes(groupSearch.toLowerCase()) || g.setName.toLowerCase().includes(groupSearch.toLowerCase()))
-                      .map(g => (
-                        <tr key={g.assetId} className={`border-t border-border cursor-pointer transition-colors ${
-                          selectedGroup?.assetId === g.assetId ? 'bg-primary/10' : 'hover:bg-muted/20'
-                        }`} onClick={() => setSelectedGroup({ assetId: g.assetId, assetCode: g.assetCode, setName: g.setName })}>
-                          <td className="px-3 py-2">
-                            <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
-                              selectedGroup?.assetId === g.assetId ? 'border-primary bg-primary' : 'border-muted-foreground'
-                            }`}>
-                              {selectedGroup?.assetId === g.assetId && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 font-mono text-primary">{g.assetCode}</td>
-                          <td className="px-3 py-2 font-medium">{g.setName}</td>
-                          <td className="px-3 py-2 text-muted-foreground truncate max-w-[200px]">{g.description || '—'}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            {selectedGroup && (
-              <div className="rounded-lg bg-primary/5 border border-primary/20 px-4 py-3 text-xs">
-                <span className="text-muted-foreground">Selected: </span>
-                <span className="font-mono text-primary font-semibold">{selectedGroup.assetCode}</span>
-                <span className="text-muted-foreground ml-2">{selectedGroup.setName}</span>
-              </div>
-            )}
-            <div>
-              <Label className="text-xs mb-1.5 block">Notes (optional)</Label>
-              <Input placeholder="Attach notes…" value={attachNotes} onChange={e => setAttachNotes(e.target.value)} className="h-8 text-sm" />
+      {/* ── ATTACH SUB-ASSET INLINE PANEL ── */}
+      {attachOpen && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-400" /> Attach Sub-Asset to Lease
+            </h4>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Show:</span>
+              <button className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${!showAllGroups ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted/30'}`} onClick={() => setShowAllGroups(false)}>Lessor Only</button>
+              <button className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${showAllGroups ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted/30'}`} onClick={() => setShowAllGroups(true)}>All Assets</button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { setAttachOpen(false); setSelectedGroup(null); setAttachNotes(''); }}><X className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAttachOpen(false)}>Cancel</Button>
-            <Button
-              disabled={!selectedGroup || !leaseRef || attachMut.isPending}
+          <Input placeholder="Search by code or name…" value={groupSearch} onChange={e => setGroupSearch(e.target.value)} className="h-8 text-sm" />
+          <div className="rounded-lg border border-border overflow-hidden max-h-56 overflow-y-auto">
+            {groupsLoading ? (
+              <p className="text-xs text-muted-foreground p-4 animate-pulse">Loading asset groups…</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 sticky top-0">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Select</th>
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Code</th>
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Set Name</th>
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assetGroups
+                    .filter(g => !groupSearch || g.assetCode.toLowerCase().includes(groupSearch.toLowerCase()) || g.setName.toLowerCase().includes(groupSearch.toLowerCase()))
+                    .map(g => (
+                      <tr key={g.assetId} className={`border-t border-border cursor-pointer transition-colors ${selectedGroup?.assetId === g.assetId ? 'bg-primary/10' : 'hover:bg-muted/20'}`}
+                        onClick={() => setSelectedGroup({ assetId: g.assetId, assetCode: g.assetCode, setName: g.setName })}>
+                        <td className="px-3 py-2">
+                          <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${selectedGroup?.assetId === g.assetId ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                            {selectedGroup?.assetId === g.assetId && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 font-mono text-primary">{g.assetCode}</td>
+                        <td className="px-3 py-2 font-medium">{g.setName}</td>
+                        <td className="px-3 py-2 text-muted-foreground truncate max-w-[200px]">{g.description || '—'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {selectedGroup && (
+            <div className="rounded-lg bg-primary/5 border border-primary/20 px-4 py-2 text-xs">
+              <span className="text-muted-foreground">Selected: </span>
+              <span className="font-mono text-primary font-semibold">{selectedGroup.assetCode}</span>
+              <span className="text-muted-foreground ml-2">{selectedGroup.setName}</span>
+            </div>
+          )}
+          <Input placeholder="Notes (optional)…" value={attachNotes} onChange={e => setAttachNotes(e.target.value)} className="h-8 text-sm" />
+          <div className="flex gap-3 pt-1">
+            <Button variant="outline" size="sm" onClick={() => { setAttachOpen(false); setSelectedGroup(null); setAttachNotes(''); }}>Cancel</Button>
+            <Button size="sm" disabled={!selectedGroup || !leaseRef || attachMut.isPending}
               onClick={() => {
                 if (!selectedGroup || !leaseRef) return;
-                attachMut.mutate({
-                  leaseId: leaseRef,
-                  leaseRef: leaseRef,
-                  assetId: selectedGroup.assetId,
-                  assetCode: selectedGroup.assetCode,
-                  setName: selectedGroup.setName,
-                });
-              }}
-            >
+                attachMut.mutate({ leaseId: leaseRef, leaseRef: leaseRef, assetId: selectedGroup.assetId, assetCode: selectedGroup.assetCode, setName: selectedGroup.setName });
+              }}>
               {attachMut.isPending ? 'Attaching…' : 'Attach Sub-Asset'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      {/* ── STATUS CHANGE MODAL ── */}
-      <Dialog open={statusOpen} onOpenChange={setStatusOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ── STATUS CHANGE INLINE PANEL ── */}
+      {statusOpen && statusTarget && (
+        <div className="rounded-xl border border-blue-500/40 bg-blue-500/5 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Package className="w-4 h-4 text-amber-400" />
-              Change Status — <span className="font-mono text-primary">{statusTarget?.code}</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+              Change Status — <span className="font-mono text-primary">{statusTarget.code}</span>
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { setStatusOpen(false); setStatusTarget(null); }}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label className="text-xs mb-1.5 block">New Status *</Label>
               <Select value={newStatus} onValueChange={v => setNewStatus(v as typeof newStatus)}>
@@ -547,42 +513,35 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
               <Input placeholder="Additional notes…" value={statusNotes} onChange={e => setStatusNotes(e.target.value)} className="h-8 text-sm" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStatusOpen(false)}>Cancel</Button>
-            <Button
-              disabled={!statusTarget || statusMut.isPending}
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => { setStatusOpen(false); setStatusTarget(null); }}>Cancel</Button>
+            <Button size="sm" disabled={!statusTarget || statusMut.isPending}
               onClick={() => {
                 if (!statusTarget) return;
-                statusMut.mutate({
-                  leaseSubAssetId: statusTarget.id,
-                  newStatus,
-                  statusDate: new Date().toISOString().slice(0, 10),
-                  reason: statusReason || undefined,
-                  notes: statusNotes || undefined,
-                });
-              }}
-            >
+                statusMut.mutate({ leaseSubAssetId: statusTarget.id, newStatus, statusDate: new Date().toISOString().slice(0, 10), reason: statusReason || undefined, notes: statusNotes || undefined });
+              }}>
               {statusMut.isPending ? 'Saving…' : 'Update Status'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
-      {/* ── TRANSACTION LOG MODAL ── */}
-      <Dialog open={!!txnLogTarget} onOpenChange={(v) => { if (!v) setTxnLogTarget(null); }}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ── TRANSACTION LOG INLINE PANEL ── */}
+      {txnLogTarget && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Package className="w-4 h-4 text-blue-400" />
-              Sub-Asset History — <span className="font-mono text-primary">{txnLogTarget?.code}</span>
-            </DialogTitle>
-          </DialogHeader>
+              Sub-Asset History — <span className="font-mono text-primary">{txnLogTarget.code}</span>
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setTxnLogTarget(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           {txnLogLoading ? (
-            <p className="text-sm text-muted-foreground animate-pulse py-6 text-center">Loading history…</p>
+            <p className="text-sm text-muted-foreground animate-pulse py-4 text-center">Loading history…</p>
           ) : !txnLog || txnLog.rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No transaction history found for this sub-asset.</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">No transaction history found for this sub-asset.</p>
           ) : (
-            <div className="rounded-lg border border-border overflow-hidden">
+            <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted/40">
                   <tr>
@@ -598,9 +557,7 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
                   {txnLog.rows.map((row, idx: number) => (
                     <tr key={idx} className="border-t border-border hover:bg-muted/10">
                       <td className="px-3 py-2.5 text-muted-foreground">{row.changedAt ? fmtDate(row.changedAt) : '—'}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{row.action}</Badge>
-                      </td>
+                      <td className="px-3 py-2.5"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{row.action}</Badge></td>
                       <td className="px-3 py-2.5 text-muted-foreground max-w-[200px] truncate" title={row.afterJson || ''}>
                         {row.afterJson ? <span className="font-mono text-[10px]">{row.afterJson.slice(0, 60)}{row.afterJson.length > 60 ? '…' : ''}</span> : '—'}
                       </td>
@@ -616,11 +573,8 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
               </table>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTxnLogTarget(null)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
       {/* ── FINANCIAL TERMS SECTION ── */}
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-5">
@@ -1147,14 +1101,16 @@ function OptionsBreaksPanel({
       </div>
 
       {/* ── OPTION FORM DIALOG ── */}
-      <Dialog open={optOpen} onOpenChange={setOptOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {optOpen && (
+        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <GitBranch className="w-4 h-4 text-emerald-400" />
               {editOpt ? 'Edit Lease Option' : 'New Lease Option'}
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setOptOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1198,7 +1154,7 @@ function OptionsBreaksPanel({
               <Input value={optForm.notes} onChange={e => setOptForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes…" className="h-8 text-sm" />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setOptOpen(false)}>Cancel</Button>
             <Button
               disabled={!optForm.exercise_deadline || upsertOpt.isPending}
@@ -1206,19 +1162,21 @@ function OptionsBreaksPanel({
             >
               {upsertOpt.isPending ? 'Saving…' : 'Save Option'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* ── BREAK CLAUSE FORM DIALOG ── */}
-      <Dialog open={brkOpen} onOpenChange={setBrkOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {brkOpen && (
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
               <Scissors className="w-4 h-4 text-red-400" />
               {editBrk ? 'Edit Break Clause' : 'New Break Clause'}
-            </DialogTitle>
-          </DialogHeader>
+            </h4>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setBrkOpen(false)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1248,7 +1206,7 @@ function OptionsBreaksPanel({
               <Input value={brkForm.conditions} onChange={e => setBrkForm(f => ({ ...f, conditions: e.target.value }))} placeholder="Conditions for exercising break…" className="h-8 text-sm" />
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setBrkOpen(false)}>Cancel</Button>
             <Button
               disabled={!brkForm.break_date || !brkForm.notice_deadline || upsertBrk.isPending}
@@ -1256,9 +1214,9 @@ function OptionsBreaksPanel({
             >
               {upsertBrk.isPending ? 'Saving…' : 'Save Break Clause'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1830,28 +1788,29 @@ export default function LeaseTransactionCentre() {
         )}
       </div>
 
-      {/* Confirm Dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm {txnType}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {txnType === 'Termination'
-                ? 'This will permanently derecognise the ROU asset and lease liability and cannot be undone. Are you sure?'
-                : `This will post the ${txnType.toLowerCase()} JE and regenerate the amortisation schedule. Confirm?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handlePost}
-              className={txnType === 'Termination' ? 'bg-red-600 hover:bg-red-700' : txnType === 'Renewal' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'}
-            >
+      {/* Inline Confirm Banner */}
+      {confirmOpen && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-amber-500/40 bg-card px-6 py-4 flex items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-400">Confirm {txnType}</p>
+              <p className="text-xs text-muted-foreground">
+                {txnType === 'Termination'
+                  ? 'This will permanently derecognise the ROU asset and lease liability and cannot be undone.'
+                  : `This will post the ${txnType.toLowerCase()} JE and regenerate the amortisation schedule.`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handlePost}
+              className={txnType === 'Termination' ? 'bg-red-600 hover:bg-red-700 text-white' : txnType === 'Renewal' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}>
               Post Transaction
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
