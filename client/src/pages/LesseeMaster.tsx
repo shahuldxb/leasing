@@ -33,7 +33,7 @@ import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ENTITY_TYPES = ["Company", "Subsidiary", "Branch", "JV", "Individual"] as const;
+const ENTITY_TYPES = ["Real Estate", "Car Fleet", "Company", "Subsidiary", "Branch", "JV", "Individual"] as const;
 const STATUSES     = ["Active", "Inactive", "Suspended"] as const;
 const CURRENCIES   = ["QAR", "USD", "EUR", "GBP", "AED", "SAR"] as const;
 
@@ -44,11 +44,13 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const ENTITY_BADGE: Record<string, string> = {
-  Company:    "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  Subsidiary: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  Branch:     "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  JV:         "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  Individual: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+  "Real Estate": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  "Car Fleet":   "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  Company:       "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  Subsidiary:    "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  Branch:        "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  JV:            "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+  Individual:    "bg-pink-500/15 text-pink-400 border-pink-500/30",
 };
 
 // ─── Blank form state ─────────────────────────────────────────────────────────
@@ -101,25 +103,25 @@ const BLANK_SIG = {
 // ─── AI sample data ───────────────────────────────────────────────────────────
 
 const AI_SAMPLE = {
-  lesseeCode:     "VF-QA-AI-001",
-  lesseeName:     "Vodafone Qatar Digital Services W.L.L.",
-  tradeName:      "VF Digital Qatar",
-  entityType:     "Subsidiary" as typeof ENTITY_TYPES[number],
-  parentCompany:  "Vodafone Qatar P.Q.S.C.",
-  registrationNo: "CR-00199876",
-  taxVatNo:       "VAT-10099887766",
-  industrySector: "Digital Services",
-  creditRating:   "A+",
+  lesseeCode:     "LSE-RE-AI-001",
+  lesseeName:     "Barwa Real Estate Company Q.P.S.C.",
+  tradeName:      "Barwa Real Estate",
+  entityType:     "Real Estate" as typeof ENTITY_TYPES[number],
+  parentCompany:  "Barwa Group",
+  registrationNo: "QA-CR-2007-00234",
+  taxVatNo:       "QA-TAX-BRE-001",
+  industrySector: "Real Estate",
+  creditRating:   "A",
   country:        "Qatar",
   city:           "Doha",
-  address:        "Qatar Science & Technology Park, Tech 3 Building, Education City, Doha",
-  poBox:          "P.O. Box 24450",
-  contactPerson:  "Noor Al-Ansari",
-  contactEmail:   "noor.alansari@vfdigital.qa",
-  contactPhone:   "+974 4444 9900",
-  website:        "https://digital.vodafone.qa",
+  address:        "Barwa Tower, West Bay, Doha, Qatar",
+  poBox:          "P.O. Box 22178",
+  contactPerson:  "Ahmed Al-Sulaiti",
+  contactEmail:   "ahmed.sulaiti@barwa.com.qa",
+  contactPhone:   "+974 4455 6677",
+  website:        "https://www.barwa.com.qa",
   status:         "Active" as typeof STATUSES[number],
-  notes:          "Digital innovation subsidiary focused on IoT, cloud, and fintech solutions.",
+  notes:          "Major real estate developer and property management company in Qatar.",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -342,7 +344,7 @@ export default function LesseeMaster() {
         <ScreenHeader
           screenId="VFLSSMSTR0001P001"
           title="Lessee Master"
-          subtitle="Registry of all lessee entities — profile, bank accounts, authorised signatories"
+          subtitle="Tenants & customers who lease from Vodafone — Real Estate companies and Car Fleet operators (IFRS 16 Lessee)"
           screenType="lessee_master"
           onAIData={(rows) => { setAiRows(rows); setPage(1); }}
         />

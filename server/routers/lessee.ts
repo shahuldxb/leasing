@@ -13,7 +13,7 @@ const LesseeUpsertInput = z.object({
   lesseeCode:     z.string().min(1).max(30),
   lesseeName:     z.string().min(1).max(200),
   tradeName:      z.string().max(200).optional(),
-  entityType:     z.enum(["Company", "Subsidiary", "Branch", "JV", "Individual"]),
+  entityType:     z.enum(["Real Estate", "Car Fleet", "Company", "Subsidiary", "Branch", "JV", "Individual"]),
   parentCompany:  z.string().max(200).optional(),
   registrationNo: z.string().max(100).optional(),
   taxVatNo:       z.string().max(100).optional(),

@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
   Inactive: "bg-gray-500/20 text-gray-400 border-gray-500/30",
   Blacklisted: "bg-red-500/20 text-red-400 border-red-500/30",
 };
-const LESSOR_TYPES = ["Individual", "Company", "Government", "REIT", "Trust"];
+const LESSOR_TYPES = ["Corporate", "Subsidiary", "Parent", "Joint Venture", "Branch"];
 const CONTACT_TYPES = ["Primary", "Finance", "Legal", "Operations", "Emergency"];
 const NOTE_TYPES = ["General", "Legal", "Financial", "Dispute", "Negotiation"];
 const ACCOUNT_TYPES = ["Current", "Savings", "Fixed"];
@@ -1142,7 +1142,7 @@ export default function LessorMaster() {
       <ScreenHeader
         screenId="VFLSLESSOR001"
         title="Lessor Master"
-        subtitle="Manage all lessors and their details"
+        subtitle="Vodafone Qatar & subsidiaries — the entities who own and lease out assets (IFRS 16 Lessor)"
         actions={
           <Button className="bg-red-600 hover:bg-red-700 text-white"
             onClick={() => { setEditingLessor(null); setForm(EMPTY_FORM); setViewMode("form_lessor"); }}>
