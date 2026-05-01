@@ -1335,3 +1335,13 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Staff Master: create staff schema table, stored procedures, seed data, tRPC router, StaffMaster.tsx CRUD page, route, sidebar nav
 - [x] Inline panel transitions: add transition-all duration-200 ease-in-out to all inline conditional panels across all 20 converted pages
 - [x] NewLease wizard: verify Lessor + Staff dropdown auto-fill works, ensure all 5 steps validate correctly before submission
+
+## Transaction Engine (May 2026)
+- [x] DB: create tx_engine.scenarios table + 10 SPs (8 IFRS 16 functions + postJV + getJVLines)
+- [x] DB: journal_vouchers table used for JV storage with jv_number, jv_date, status, scenario linkage
+- [x] tRPC: build transactionEngine router with getContracts, listScenarios, 8 run* mutations, postJV, getJVLines
+- [x] UI: build TransactionEngine.tsx page with 8-function step-through runner, progress bar, scenario history
+- [x] UI: each function shows scenario params, runs test, posts JV entries, displays JV table with calc blackboard
+- [x] UI: "Next Function" button advances to the next IFRS 16 function
+- [x] Wire /accounting/transaction-engine route in App.tsx
+- [x] Add Transaction Engine to sidebar nav under Accounting Engine

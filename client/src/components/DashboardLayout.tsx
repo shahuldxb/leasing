@@ -147,6 +147,7 @@ const menuItems: NavItem[] = [
       { label: "IAS 17 vs IFRS 16",    path: "/accounting/ias17-comparison" },
       { label: "Period-End Close",     path: "/accounting/period-close" },
       { label: "Journal Voucher Register", path: "/accounting/journal-voucher" },
+      { label: "Transaction Engine",       path: "/accounting/transaction-engine" },
       { label: "Accounting Settings",    path: "/accounting/settings" },
       { label: "FX Revaluation",        path: "/accounting/fx-revaluation" },
       { label: "Roll-Forward Report",  path: "/accounting/roll-forward" },

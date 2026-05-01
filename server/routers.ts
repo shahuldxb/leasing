@@ -20,6 +20,7 @@ import { contractDmsRouter }    from "./routers/contractDms";
 import { lesseeRouter }         from "./routers/lessee";
 import { staffRouter }          from "./routers/staff";
 import { journalVoucherRouter } from "./routers/journalVoucher";
+import { transactionEngineRouter } from "./routers/transactionEngine";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
 import { getPool }              from "./db-sqlserver";
@@ -98,6 +99,7 @@ export const appRouter = router({
   contractDms:     contractDmsRouter,
   lessee:          lesseeRouter,
   journalVoucher:  journalVoucherRouter,
+  transactionEngine: transactionEngineRouter,
   furnitureCollections: furnitureCollectionsRouter,
   vendor:       vendorRouter,
   broker:       brokerRouter,

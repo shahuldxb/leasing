@@ -73,6 +73,7 @@ import ComplianceErrors   from "./pages/ComplianceErrors";
 
 // Accounting Engine (P1 features)
 import JournalVoucher     from "./pages/JournalVoucher";
+import TransactionEngine  from "./pages/TransactionEngine";
 import AccountingSettings from "./pages/AccountingSettings";
 import IBRLibrary         from "./pages/IBRLibrary";
 import LeaseClassification from "./pages/LeaseClassification";
@@ -337,6 +338,7 @@ function Router() {
       <Route path="/leases/renewal-engine"        component={RenewalEngine} />
       <Route path="/accounting/period-close"      component={PeriodClose} />
       <Route path="/accounting/journal-voucher"    component={JournalVoucher} />
+      <Route path="/accounting/transaction-engine"  component={TransactionEngine} />
       <Route path="/accounting/settings"           component={AccountingSettings} />
       <Route path="/accounting/ias17-comparison"  component={IAS17Comparison} />
       <Route path="/accounting/fx-revaluation"    component={FXRevaluation} />
