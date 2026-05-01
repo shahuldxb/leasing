@@ -4,6 +4,7 @@
  * all tabs use the entire remaining screen space.
  */
 import React, { useState, useMemo, useRef, useEffect, Fragment } from 'react';
+import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -1224,7 +1225,18 @@ function OptionsBreaksPanel({
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function LeaseTransactionCentre() {
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // Read contractId from URL query param (e.g. navigated from JV Register)
+  const [location] = useLocation();
+  const urlContractId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('contractId');
+    return v ? parseInt(v, 10) : null;
+  }, [location]);
+  const [selectedId, setSelectedId] = useState<number | null>(urlContractId);
+  // Sync when URL param changes (e.g. navigated from another page)
+  useEffect(() => {
+    if (urlContractId !== null) setSelectedId(urlContractId);
+  }, [urlContractId]);
   const [txnType, setTxnType] = useState<TxnType>('Details');
   const handleExerciseOption = (tab: TxnType, prefill: Record<string, unknown>) => {
     if (tab === 'Renewal') {

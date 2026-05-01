@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { trpc } from "@/lib/trpc";
@@ -81,6 +82,7 @@ function CalcExplanation({ explanation }: { explanation: string | null }) {
 
 export default function JournalVoucher() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   // ── Filters ──────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
@@ -338,6 +340,10 @@ export default function JournalVoucher() {
                               isExpanded ? "bg-blue-950/30 border-blue-800/40" : "hover:bg-gray-800/40"
                             }`}
                             onClick={() => setExpandedId(isExpanded ? null : r.jv_id)}
+                            onDoubleClick={() => {
+                              if (r.contract_id) setLocation(`/leases/transaction-centre?contractId=${r.contract_id}`);
+                            }}
+                            title={r.contract_id ? `Double-click to open ${r.contract_ref ?? "lease"} in Transaction Centre` : undefined}
                           >
                             <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                               {r.status !== "Posted" && (
@@ -361,7 +367,19 @@ export default function JournalVoucher() {
                               </span>
                             </td>
                             <td className="px-3 py-2 text-gray-400">{r.period_year}-{String(r.period_month).padStart(2, "00")}</td>
-                            <td className="px-3 py-2 text-gray-400 max-w-[120px] truncate">{r.contract_ref ?? "—"}</td>
+                            <td className="px-3 py-2 max-w-[140px]">
+                              {r.contract_ref ? (
+                                <button
+                                  className="font-mono text-blue-400 hover:text-blue-200 hover:underline truncate block max-w-full text-left transition-colors"
+                                  onClick={e => { e.stopPropagation(); setLocation(`/leases/transaction-centre?contractId=${r.contract_id}`); }}
+                                  title={`Open ${r.contract_ref} in Transaction Centre`}
+                                >
+                                  {r.contract_ref}
+                                </button>
+                              ) : (
+                                <span className="text-gray-600">—</span>
+                              )}
+                            </td>
                             <td className="px-3 py-2 text-right font-mono text-green-400">{fmt(r.total_debit, r.currency)}</td>
                             <td className="px-3 py-2 text-right font-mono text-red-400">{fmt(r.total_credit, r.currency)}</td>
                             <td className="px-3 py-2">

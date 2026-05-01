@@ -1345,3 +1345,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] UI: "Next Function" button advances to the next IFRS 16 function
 - [x] Wire /accounting/transaction-engine route in App.tsx
 - [x] Add Transaction Engine to sidebar nav under Accounting Engine
+
+## JV-to-Lease Navigation (May 2026)
+- [x] Update sp_GetJournalVouchers to include contract_ref and contract_id columns (already present via JOIN)
+- [x] Update journalVoucher tRPC router to return contract_ref and contract_id (already returned)
+- [x] Update JournalVoucher.tsx: show Lease # column with clickable link, double-click row navigates to /leases/transaction-centre?contractId=X
+- [x] Update LeaseTransactionCentre.tsx: read contractId from URL query param on mount and auto-select the lease
