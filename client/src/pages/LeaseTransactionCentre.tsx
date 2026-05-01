@@ -23,7 +23,7 @@ import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
   ChevronDown, Search, X, User, Layers, MapPin, Phone, Mail, CreditCard, Hash,
-  GitBranch, Scissors, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Zap,
+  GitBranch, Scissors, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Zap, ExternalLink,
 } from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -1226,7 +1226,7 @@ function OptionsBreaksPanel({
 export default function LeaseTransactionCentre() {
   const [search, setSearch] = useState('');
   // Read contractId from URL query param (e.g. navigated from JV Register)
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const urlContractId = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     const v = params.get('contractId');
@@ -1788,9 +1788,20 @@ export default function LeaseTransactionCentre() {
                       <History className="w-4 h-4 text-primary" />
                       <h3 className="text-base font-semibold">Transaction History & GL Ledger</h3>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => utils.lease.getLeaseTransactionHistory.invalidate({ contractId: selectedId! })}>
-                      <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setLocation(`/accounting/journal-voucher?contract_id=${selected.contract_id}`)}
+                        className="border-blue-500/40 text-blue-400 hover:bg-blue-500/10 gap-1.5"
+                        title="View all Journal Vouchers for this lease in the JV Register"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> View JVs for this Lease
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => utils.lease.getLeaseTransactionHistory.invalidate({ contractId: selectedId! })}>
+                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh
+                      </Button>
+                    </div>
                   </div>
                   <TransactionHistoryPanel contractId={selected.contract_id} />
                 </div>

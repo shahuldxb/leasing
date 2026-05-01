@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -84,11 +84,24 @@ export default function JournalVoucher() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // ── Filters ──────────────────────────────────────────────────────────────
+  // ── Filters ────────────────────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [contractFilter, setContractFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+
+  // ── Read contract_id from URL query param (navigated from Transaction Centre) ──────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cid = params.get('contract_id');
+    if (cid && !isNaN(Number(cid))) {
+      setContractFilter(cid);
+    }
+  }, []);
+
+  // ── Contracts dropdown for filter ────────────────────────────────────────────────────────────────────────────
+  const { data: contractsData } = trpc.transactionEngine.getContracts.useQuery();
 
   // ── Expanded JV (inline accordion) ────────────────────────────────────────
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -108,14 +121,15 @@ export default function JournalVoucher() {
   const [genYear, setGenYear] = useState(() => new Date().getFullYear());
   const [genMonth, setGenMonth] = useState(() => new Date().getMonth() + 1);
 
-  // ── List Query ────────────────────────────────────────────────────────────
+  // ── List Query ────────────────────────────────────────────────────────────────────────────
   const listInput = useMemo(() => ({
     status: statusFilter === "all" ? undefined : statusFilter,
     jv_type: typeFilter === "all" ? undefined : typeFilter,
+    contract_id: contractFilter === "all" ? undefined : Number(contractFilter),
     search: search || undefined,
     page,
     page_size: 30,
-  }), [statusFilter, typeFilter, search, page]);
+  }), [statusFilter, typeFilter, contractFilter, search, page]);
 
   const { data: listData, isLoading, refetch } = trpc.journalVoucher.list.useQuery(listInput);
   const rows = listData?.rows ?? [];
@@ -231,6 +245,30 @@ export default function JournalVoucher() {
               <SelectItem value="PERIOD_CLOSE">Period-End Close</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Lease filter dropdown */}
+          <Select value={contractFilter} onValueChange={v => { setContractFilter(v); setPage(1); }}>
+            <SelectTrigger className={`w-52 h-8 border-gray-700 text-sm ${contractFilter !== 'all' ? 'bg-blue-900/40 border-blue-500/50 text-blue-300' : 'bg-gray-800'}`}>
+              <SelectValue placeholder="All Leases" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-700 max-h-64">
+              <SelectItem value="all">All Leases</SelectItem>
+              {(contractsData ?? []).map((c: any) => (
+                <SelectItem key={c.contract_id} value={String(c.contract_id)}>
+                  {c.contract_ref} — {c.asset_description ?? c.lessor_name ?? ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {contractFilter !== 'all' && (
+            <button
+              onClick={() => setContractFilter('all')}
+              className="h-8 w-8 flex items-center justify-center rounded border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 transition-colors"
+              title="Clear lease filter"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           <div className="flex items-center gap-1 ml-auto">
             {batchSelected.size > 0 && (

@@ -1351,3 +1351,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Update journalVoucher tRPC router to return contract_ref and contract_id (already returned)
 - [x] Update JournalVoucher.tsx: show Lease # column with clickable link, double-click row navigates to /leases/transaction-centre?contractId=X
 - [x] Update LeaseTransactionCentre.tsx: read contractId from URL query param on mount and auto-select the lease
+
+## Business Proof Panel + Next Steps (May 2026)
+- [ ] Transaction Engine: add Business Proof Panel tab — plain-English story, real-world scenario, expected JV rules, pass/fail verdict for each function
+- [ ] Transaction Centre: add "View JVs for this lease" button in GL Ledger tab linking to JV Register filtered by contract
+- [ ] JV Register: add Lease dropdown filter populated from active contracts
+- [ ] Transaction Engine: make posted JV numbers clickable links to JV Register
