@@ -790,7 +790,7 @@ export default function ContractRegister() {
 
       {/* ── Upload Document Dialog ── */}
       {docDialog && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Upload Document</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDocDialog(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -870,7 +870,7 @@ export default function ContractRegister() {
 
       {/* ── Add/Edit Milestone Dialog ── */}
       {msDialog && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">{msDraft.milestoneId ? "Edit Milestone" : "Add Milestone"}</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setMsDialog(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -916,7 +916,7 @@ export default function ContractRegister() {
 
       {/* ── Delete Document Confirm ── */}
       {deleteDocId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Delete Document?</h4>
@@ -933,7 +933,7 @@ export default function ContractRegister() {
 
       {/* ── Delete Milestone Confirm ── */}
       {deleteMsId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Delete Milestone?</h4>

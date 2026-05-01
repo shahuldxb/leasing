@@ -26,6 +26,7 @@ import ContractDocuments     from "./pages/ContractDocuments";
 import ContractMilestones    from "./pages/ContractMilestones";
 import ContractModifications from "./pages/ContractModifications";
 import LesseeMaster          from "./pages/LesseeMaster";
+import StaffMaster           from "./pages/StaffMaster";
 
 // Payables
 import PayablesQueue      from "./pages/PayablesQueue";
@@ -196,6 +197,7 @@ function Router() {
       <Route path="/contracts/milestones"     component={ContractMilestones} />
       <Route path="/contracts/modifications"  component={ContractModifications} />
       <Route path="/lessee-master"             component={LesseeMaster} />
+      <Route path="/staff-master"              component={StaffMaster} />
 
       {/* Payables */}
       <Route path="/payables"                component={PayablesQueue} />

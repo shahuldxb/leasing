@@ -684,7 +684,7 @@ export default function LesseeMaster() {
           Add / Edit Lessee Dialog
       ══════════════════════════════════════════════════════════ */}
       {formOpen && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -848,7 +848,7 @@ export default function LesseeMaster() {
           Bank Account Dialog
       ══════════════════════════════════════════════════════════ */}
       {bankOpen && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">{bankDraft.bankAccountId ? "Edit Bank Account" : "Add Bank Account"}</h4>
@@ -914,7 +914,7 @@ export default function LesseeMaster() {
           Signatory Dialog
       ══════════════════════════════════════════════════════════ */}
       {sigOpen && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">{sigDraft.signatoryId ? "Edit Signatory" : "Add Signatory"}</h4>
@@ -966,7 +966,7 @@ export default function LesseeMaster() {
 
       {/* ── Delete Lessee Confirm ── */}
       {deleteId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Deactivate Lessee?</h4>
@@ -987,7 +987,7 @@ export default function LesseeMaster() {
 
       {/* ── Delete Bank Account Confirm ── */}
       {deleteBankId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Remove Bank Account?</h4>
@@ -1006,7 +1006,7 @@ export default function LesseeMaster() {
 
       {/* ── Delete Signatory Confirm ── */}
       {deleteSigId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Remove Signatory?</h4>

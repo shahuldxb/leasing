@@ -251,7 +251,7 @@ export default function ContractMilestones() {
 
         {/* Add/Edit Dialog */}
       {showForm && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">{draft.milestoneId?"Edit Milestone":"Add Milestone"}</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowForm(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -298,7 +298,7 @@ export default function ContractMilestones() {
 
         {/* Complete Dialog */}
         {completeId !== null && (
-        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Mark as Completed</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setCompleteId(null)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -317,7 +317,7 @@ export default function ContractMilestones() {
 
         {/* Dismiss Dialog */}
         {dismissId !== null && (
-        <div className="rounded-xl border border-amber-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-amber-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Dismiss Milestone</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setDismissId(null)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -336,7 +336,7 @@ export default function ContractMilestones() {
 
         {/* Delete Confirm */}
         {deleteId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold flex items-center gap-2">Delete Milestone?</h4>

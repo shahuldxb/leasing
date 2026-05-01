@@ -1272,7 +1272,7 @@ export default function SubAssetTransactionLog() {
 
       {/* ── Add Item Dialog ───────────────────────────────────────────────────── */}
       {addItemOpen && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -1472,7 +1472,7 @@ export default function SubAssetTransactionLog() {
 
       {/* ── Action Dialog ─────────────────────────────────────────────────────── */}
       {actionDialog.open && (
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">

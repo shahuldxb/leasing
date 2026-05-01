@@ -341,7 +341,7 @@ export default function ContractModifications() {
 
         {/* Create Modification Dialog */}
       {showCreate && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">New Contract Modification</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowCreate(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -425,7 +425,7 @@ export default function ContractModifications() {
 
         {/* Detail Dialog */}
         {showDetail && (
-        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -513,7 +513,7 @@ export default function ContractModifications() {
 
         {/* Submit Dialog */}
         {showSubmit && (
-        <div className="rounded-xl border border-blue-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-blue-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Submit for Approval</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowSubmit(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -533,7 +533,7 @@ export default function ContractModifications() {
 
         {/* Approve Dialog */}
         {showApprove && (
-        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Approve Modification</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowApprove(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -553,7 +553,7 @@ export default function ContractModifications() {
 
         {/* Reject Dialog */}
         {showReject && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Reject Modification</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowReject(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>
@@ -573,7 +573,7 @@ export default function ContractModifications() {
 
         {/* Apply Dialog */}
         {showApply && (
-        <div className="rounded-xl border border-purple-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-purple-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
           
             <div className="flex items-center justify-between"><h4 className="text-sm font-semibold flex items-center gap-2">Apply Modification to Lease</h4><Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setShowApply(false)}><X className="w-3.5 h-3.5" /></Button>
           </div>

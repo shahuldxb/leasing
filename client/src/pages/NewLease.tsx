@@ -270,6 +270,14 @@ export default function NewLease() {
   const labelCls = "text-sm font-medium text-foreground";
 
   const handleNext = () => {
+    if (step === 1 && !selectedLessorId) {
+      toast.error("Please select a Lessor / Company from the dropdown");
+      return;
+    }
+    if (step === 2 && !lessee.staffId) {
+      toast.error("Please select a Staff member from the Staff Number dropdown");
+      return;
+    }
     if (step === 2 && !lessee.lesseeName) {
       toast.error("Lessee name is required");
       return;

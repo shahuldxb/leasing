@@ -281,7 +281,7 @@ export default function ContractMetadataTemplates() {
 
       {/* ── Template Dialog ── */}
       {tmplDialog.open && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">{tmplDialog.mode === "create" ? "New Metadata Template" : "Edit Template"}</h4>
@@ -319,7 +319,7 @@ export default function ContractMetadataTemplates() {
 
       {/* ── Field Dialog ── */}
       {fieldDialog.open && (
-        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">{fieldDialog.draft.fieldId ? "Edit Field" : "Add Field"}</h4>
@@ -413,7 +413,7 @@ export default function ContractMetadataTemplates() {
 
       {/* ── Delete Template Confirm ── */}
       {deleteTmplId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Delete Template?</h4>
@@ -432,7 +432,7 @@ export default function ContractMetadataTemplates() {
 
       {/* ── Delete Field Confirm ── */}
       {deleteFieldId !== null && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">Delete Field?</h4>

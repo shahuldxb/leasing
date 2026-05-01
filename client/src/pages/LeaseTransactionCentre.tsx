@@ -528,7 +528,7 @@ function LeaseDetailsPanel({ contractId }: { contractId: number }) {
 
       {/* ── TRANSACTION LOG INLINE PANEL ── */}
       {txnLogTarget && (
-        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3 transition-all duration-200 ease-in-out">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Package className="w-4 h-4 text-blue-400" />
@@ -1102,7 +1102,7 @@ function OptionsBreaksPanel({
 
       {/* ── OPTION FORM DIALOG ── */}
       {optOpen && (
-        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-emerald-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -1168,7 +1168,7 @@ function OptionsBreaksPanel({
 
       {/* ── BREAK CLAUSE FORM DIALOG ── */}
       {brkOpen && (
-        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4">
+        <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 transition-all duration-200 ease-in-out">
         
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold flex items-center gap-2">

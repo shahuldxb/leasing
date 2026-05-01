@@ -279,7 +279,7 @@ function BlackboardDialog({ row, onClose }: { row: Record<string, unknown>; onCl
   const principal = payment - interest;
   const closing = opening - principal;
   return (
-    <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-3">
+    <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-3 transition-all duration-200 ease-in-out">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold flex items-center gap-2">
           <Calculator className="w-4 h-4 text-primary" /> Period {String(row.period_no)} Calculation

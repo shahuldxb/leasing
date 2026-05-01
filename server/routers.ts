@@ -18,6 +18,7 @@ import { masterContractsRouter } from "./routers/masterContracts";
 import { aiFillRouter }         from "./routers/aiFill";
 import { contractDmsRouter }    from "./routers/contractDms";
 import { lesseeRouter }         from "./routers/lessee";
+import { staffRouter }          from "./routers/staff";
 import { journalVoucherRouter } from "./routers/journalVoucher";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
@@ -113,6 +114,7 @@ export const appRouter = router({
   leaseComparison: leaseComparisonRouter,
   eSignature:   eSignatureRouter,
   screenMeta:   screenMetaRouter,
+  staff:        staffRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1330,3 +1330,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Fix LesseeMaster.tsx ScreenHeader: wire onAIData to aiRows state (was no-op)
 - [x] Route /lessee-master confirmed in App.tsx
 - [x] Lessee Master nav item added to DashboardLayout sidebar (under Lease Management, after Lessor Master)
+
+## Three Next-Step Items (May 2026)
+- [x] Staff Master: create staff schema table, stored procedures, seed data, tRPC router, StaffMaster.tsx CRUD page, route, sidebar nav
+- [x] Inline panel transitions: add transition-all duration-200 ease-in-out to all inline conditional panels across all 20 converted pages
+- [x] NewLease wizard: verify Lessor + Staff dropdown auto-fill works, ensure all 5 steps validate correctly before submission
