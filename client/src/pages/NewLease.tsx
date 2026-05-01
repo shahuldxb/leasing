@@ -55,6 +55,7 @@ export default function NewLease() {
 
   // Step 1 — Lessor
   const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "", contractPreparedDate: new Date().toISOString().split("T")[0], createdDate: new Date().toISOString().split("T")[0] });
+  const [selectedLessorId, setSelectedLessorId] = useState<number | null>(null);
   // Step 2 — Asset
   const [asset, setAsset] = useState({ assetType: "Villa", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
   // Step 3 — Financial
@@ -70,7 +71,7 @@ export default function NewLease() {
     lesseeType: "Staff" as "Staff" | "Client" | "Other",
     lesseeName: "",
     staffNumber: "",
-    employeeId: "",
+    staffId: null as number | null,
     grade: "",
     position: "",
     department: "",
@@ -174,7 +175,7 @@ export default function NewLease() {
       lesseeType:   (ld.lesseeType  as 'Staff' | 'Client' | 'Other') || 'Staff',
       lesseeName:   ld.lesseeName   || '',
       staffNumber:  ld.staffNumber  || '',
-      employeeId:   ld.employeeId   || '',
+      staffId:      ld.staffId      || null,
       grade:        ld.grade        || '',
       position:     ld.position     || '',
       department:   ld.department   || '',
@@ -185,6 +186,10 @@ export default function NewLease() {
   }, [lesseeEditData]);
 
   const { data: lessors = [] } = trpc.lease.getLessors.useQuery({});
+  // Lessor master dropdown
+  const { data: lessorOptions = [] } = trpc.lessor.getLessorDropdown.useQuery(undefined, { staleTime: 60000 });
+  // Staff master dropdown
+  const { data: staffOptions = [] } = trpc.lessor.getStaffDropdown.useQuery({ searchTerm: undefined }, { staleTime: 60000 });
   const { data: subAssetGroupsRaw = [] } = trpc.asset.getSubAssetGroups.useQuery();
   // Parse sub-asset groups for display
   const subAssetGroups = subAssetGroupsRaw.map(r => {
@@ -239,7 +244,6 @@ export default function NewLease() {
           lesseeType:   lessee.lesseeType,
           lesseeName:   lessee.lesseeName,
           staffNumber:  lessee.staffNumber || undefined,
-          employeeId:   lessee.employeeId  || undefined,
           grade:        lessee.grade       || undefined,
           position:     lessee.position    || undefined,
           department:   lessee.department  || undefined,
@@ -373,7 +377,6 @@ export default function NewLease() {
               lesseeType:   (data.lesseeType as "Staff" | "Client" | "Other") ?? le.lesseeType,
               lesseeName:   data.lesseeName         ?? le.lesseeName,
               staffNumber:  data.staffNumber         ?? le.staffNumber,
-              employeeId:   data.employeeId          ?? le.employeeId,
               grade:        data.grade               ?? le.grade,
               position:     data.lesseePosition      ?? le.position,
               department:   data.lesseeDepartment    ?? le.department,
@@ -415,7 +418,30 @@ export default function NewLease() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <Label className={labelCls}>Lessor / Company Name *</Label>
-                  <Input className={inputCls} placeholder="e.g. Barwa Real Estate Company" value={lessor.name} onChange={e => setLessor(l => ({ ...l, name: e.target.value }))} />
+                  <Select
+                    value={selectedLessorId !== null ? String(selectedLessorId) : ""}
+                    onValueChange={(val) => {
+                      const opt = lessorOptions.find((o: any) => String(o.lessorId) === val);
+                      if (!opt) return;
+                      setSelectedLessorId(opt.lessorId);
+                      setLessor(l => ({
+                        ...l,
+                        name:    opt.lessorName || '',
+                        country: opt.country    || l.country,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className={inputCls}>
+                      <SelectValue placeholder="Select lessor from master..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {lessorOptions.map((o: any) => (
+                        <SelectItem key={o.lessorId} value={String(o.lessorId)}>
+                          {o.lessorCode ? `[${o.lessorCode}] ` : ''}{o.lessorName || o.companyName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className={labelCls}>Contact Person</Label>
@@ -514,19 +540,38 @@ export default function NewLease() {
                   <Briefcase className="w-4 h-4" /><span>Employment Details</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className={labelCls}>Staff Number</Label>
-                    <div className="relative">
-                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input className={`${inputCls} pl-9`} placeholder="e.g. VQ-EMP-00142" value={lessee.staffNumber} onChange={e => setLessee(l => ({ ...l, staffNumber: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className={labelCls}>Employee ID</Label>
-                    <div className="relative">
-                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input className={`${inputCls} pl-9`} placeholder="e.g. EMP-2024-00142" value={lessee.employeeId} onChange={e => setLessee(l => ({ ...l, employeeId: e.target.value }))} />
-                    </div>
+                  <div className="col-span-2">
+                    <Label className={labelCls}>Staff Number *</Label>
+                    <Select
+                      value={lessee.staffId !== null ? String(lessee.staffId) : ""}
+                      onValueChange={(val) => {
+                        const staff = staffOptions.find((s: any) => String(s.staffId) === val);
+                        if (!staff) return;
+                        setLessee(l => ({
+                          ...l,
+                          staffId:      staff.staffId,
+                          staffNumber:  staff.staffNumber,
+                          lesseeName:   staff.fullName,
+                          grade:        staff.grade        || l.grade,
+                          position:     staff.position     || l.position,
+                          department:   staff.department   || l.department,
+                          placeOfWork:  staff.placeOfWork  || l.placeOfWork,
+                          contactEmail: staff.email        || l.contactEmail,
+                          contactPhone: staff.phone        || l.contactPhone,
+                        }));
+                      }}
+                    >
+                      <SelectTrigger className={inputCls}>
+                        <SelectValue placeholder="Select staff member..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {staffOptions.map((s: any) => (
+                          <SelectItem key={s.staffId} value={String(s.staffId)}>
+                            {s.staffNumber} — {s.fullName} ({s.department})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className={labelCls}>Grade / Band</Label>

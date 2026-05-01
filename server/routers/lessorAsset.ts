@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { execSPP, execSPPMulti, SPPParam } from "../db-sqlserver";
+import { execSPP, execSPPMulti, getPool, SPPParam } from "../db-sqlserver";
 import { invokeLLM } from "../_core/llm";
 
 // ─── Lessor Router ────────────────────────────────────────────────────────────
@@ -325,6 +325,49 @@ export const lessorRouter = router({
         position:         (r.position         ?? "") as string,
         department:       (r.department       ?? "") as string,
       };
+    }),
+
+  // ── getLessorDropdown: minimal list for form dropdowns ────────────────────
+  getLessorDropdown: protectedProcedure
+    .query(async () => {
+      const rows = await execSPP("sp_GetLessors", [
+        { name: "SearchTerm", type: "NVarChar", value: null },
+        { name: "Status",     type: "VarChar",  value: "Active" },
+        { name: "LessorType", type: "VarChar",  value: null },
+        { name: "Country",    type: "VarChar",  value: null },
+        { name: "PageNumber", type: "Int",      value: 1 },
+        { name: "PageSize",   type: "Int",      value: 100 },
+      ]);
+      return rows.map((r: any) => ({
+        lessorId:   r.lessor_id   as number,
+        lessorCode: (r.lessor_code ?? "") as string,
+        lessorName: (r.lessor_name ?? r.company_name ?? "") as string,
+        country:    (r.country ?? "") as string,
+      }));
+    }),
+
+  // ── getStaffDropdown: staff list for form dropdowns ───────────────────────
+  getStaffDropdown: protectedProcedure
+    .input(z.object({ searchTerm: z.string().optional() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("SearchTerm", input.searchTerm ?? null);
+      const result = await req.execute("hr.sp_GetStaffDropdown");
+      const rows = (result.recordset ?? []) as any[];
+      return rows.map(r => ({
+        staffId:     r.staff_id     as number,
+        staffNumber: (r.staff_number ?? "") as string,
+        fullName:    (r.full_name   ?? "") as string,
+        designation: (r.designation ?? "") as string,
+        department:  (r.department  ?? "") as string,
+        grade:       (r.grade       ?? "") as string,
+        position:    (r.position    ?? "") as string,
+        placeOfWork: (r.place_of_work ?? "") as string,
+        email:       (r.email       ?? "") as string,
+        phone:       (r.phone       ?? "") as string,
+        entity:      (r.entity      ?? "") as string,
+      }));
     }),
 
 });
