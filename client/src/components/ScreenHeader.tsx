@@ -423,31 +423,31 @@ export function ScreenHeader({
   useScreenAudit(screenId, title);
 
   return (
-    <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="flex items-center justify-between gap-3 mb-2 py-1.5 px-0">
       {/* Left: title block */}
-      <div className="flex items-start gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         {icon && (
-          <div className="mt-0.5 shrink-0">{icon}</div>
+          <div className="shrink-0 text-muted-foreground [&>svg]:w-4 [&>svg]:h-4">{icon}</div>
         )}
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-foreground leading-tight">{title}</h1>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h1 className="text-sm font-semibold text-foreground leading-tight">{title}</h1>
             <Badge
               variant="outline"
-              className="font-mono text-[10px] px-1.5 py-0 h-5 border-border text-muted-foreground bg-muted/30 shrink-0"
+              className="font-mono text-[9px] px-1 py-0 h-4 border-border text-muted-foreground bg-muted/30 shrink-0"
             >
-              <Monitor className="w-2.5 h-2.5 mr-1" />
+              <Monitor className="w-2 h-2 mr-0.5" />
               {screenId}
             </Badge>
           </div>
           {subtitle && (
-            <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+            <p className="text-[11px] text-muted-foreground leading-tight">{subtitle}</p>
           )}
         </div>
       </div>
 
       {/* Right: toolbar */}
-      <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
         {/* Gen AI button — form fill or screen data mode */}
         <GenAIButton
           formType={formType}

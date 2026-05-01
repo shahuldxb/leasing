@@ -27,9 +27,11 @@ export const journalVoucherRouter = router({
       req.input("page", input.page);
       req.input("page_size", input.page_size);
       const result = await req.execute("accounting.sp_ListJournalVouchers");
-      const rows = (result.recordset as any[]) ?? [];
+      const rs = result.recordsets as any[][];
+      const rows = rs?.[0] ?? [];
+      const allLines = rs?.[1] ?? [];
       const total = rows[0]?.total_count ?? 0;
-      return { rows, total };
+      return { rows, allLines, total };
     }),
 
   // ── Get single JV with lines ──────────────────────────────────────────────

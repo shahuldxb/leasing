@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import React from "react";
 import {
   CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator,
   FileText, Download, Search, Filter, Calendar, TrendingUp,
@@ -90,8 +91,10 @@ export default function JournalVoucher() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
 
-  // ── Selected JV ──────────────────────────────────────────────────────────
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // ── Expanded JV (inline accordion) ────────────────────────────────────────
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  // keep selectedId as alias so mutations still work
+  const selectedId = expandedId;
 
   // ── Dialogs ──────────────────────────────────────────────────────────────
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; jv_id: number | null; reason: string }>({ open: false, jv_id: null, reason: "" });
@@ -100,7 +103,9 @@ export default function JournalVoucher() {
 
   // ── System Settings ───────────────────────────────────────────────────────
   const { data: settings } = trpc.journalVoucher.getSettings.useQuery();
-  const accountingPeriodDate = settings?.accounting_period_date ?? new Date().toISOString().slice(0, 10);
+  const accountingPeriodDate = settings?.accounting_period_date
+    ? new Date(settings.accounting_period_date).toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
   const [genYear, setGenYear] = useState(() => new Date().getFullYear());
   const [genMonth, setGenMonth] = useState(() => new Date().getMonth() + 1);
 
@@ -115,13 +120,8 @@ export default function JournalVoucher() {
 
   const { data: listData, isLoading, refetch } = trpc.journalVoucher.list.useQuery(listInput);
   const rows = listData?.rows ?? [];
+  const allLines: any[] = listData?.allLines ?? [];
   const total = listData?.total ?? 0;
-
-  // ── Detail Query ──────────────────────────────────────────────────────────
-  const { data: detail } = trpc.journalVoucher.getById.useQuery(
-    { jv_id: selectedId! },
-    { enabled: !!selectedId }
-  );
 
   const utils = trpc.useUtils();
   const invalidate = () => utils.journalVoucher.list.invalidate();
@@ -161,7 +161,7 @@ export default function JournalVoucher() {
     const csvRows = rows.map((r: any) => [
       r.jv_number, JV_TYPE_LABELS[r.jv_type] ?? r.jv_type,
       `${r.period_year}-${String(r.period_month).padStart(2, "0")}`,
-      r.posting_date?.slice(0, 10) ?? "",
+      (r.posting_date ? new Date(r.posting_date).toISOString().slice(0, 10) : ""),
       `"${(r.description ?? "").replace(/"/g, '""')}"`,
       r.contract_ref ?? "",
       r.currency ?? "QAR",
@@ -177,8 +177,12 @@ export default function JournalVoucher() {
     URL.revokeObjectURL(url);
   }
 
-  const selectedJv = detail?.jv ?? null;
-  const selectedLines = detail?.lines ?? [];
+  // Lines for the currently expanded JV — sourced directly from the list query (no extra DB call)
+  const expandedLines = expandedId ? allLines.filter((l: any) => l.jv_id === expandedId) : [];
+  const expandedJv = expandedId ? (rows.find((r: any) => r.jv_id === expandedId) ?? null) : null;
+
+  const selectedJv = expandedJv;
+  const selectedLines = expandedLines;
 
   return (
     <DashboardLayout>
@@ -278,10 +282,10 @@ export default function JournalVoucher() {
           <span className="text-gray-500">— Used for monthly JV generation. Change in System Settings.</span>
         </div>
 
-        {/* ── Main Content: List + Detail ── */}
+        {/* ── Main Content: Full-width accordion table ── */}
         <div className="flex flex-1 overflow-hidden">
-          {/* ── JV List ── */}
-          <div className="flex flex-col w-[55%] border-r border-gray-800 overflow-hidden">
+          <div className="flex flex-col w-full overflow-hidden">
+            {/* Pagination bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900/50">
               <span className="text-xs text-gray-500">{total} journal vouchers</span>
               <div className="flex items-center gap-2">
@@ -302,9 +306,9 @@ export default function JournalVoucher() {
                 </div>
               ) : (
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-gray-900 border-b border-gray-800">
+                  <thead className="sticky top-0 bg-gray-900 border-b border-gray-800 z-10">
                     <tr>
-                      <th className="w-8 px-3 py-2 text-left">
+                      <th className="w-8 px-3 py-2">
                         <input type="checkbox" className="accent-blue-500"
                           checked={batchSelected.size === rows.filter((r: any) => r.status !== "Posted").length && rows.length > 0}
                           onChange={e => {
@@ -313,209 +317,144 @@ export default function JournalVoucher() {
                           }}
                         />
                       </th>
+                      <th className="w-6 px-2 py-2" />{/* expand chevron */}
                       <th className="px-3 py-2 text-left text-gray-400 font-medium">JV Number</th>
                       <th className="px-3 py-2 text-left text-gray-400 font-medium">Type</th>
                       <th className="px-3 py-2 text-left text-gray-400 font-medium">Period</th>
-                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Debit</th>
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Status</th>
                       <th className="px-3 py-2 text-left text-gray-400 font-medium">Contract</th>
+                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Total Debit</th>
+                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Total Credit</th>
+                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Status</th>
+                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((r: any) => (
-                      <tr
-                        key={r.jv_id}
-                        className={`border-b border-gray-800/50 cursor-pointer transition-colors ${selectedId === r.jv_id ? "bg-blue-900/30" : "hover:bg-gray-800/50"}`}
-                        onClick={() => setSelectedId(r.jv_id)}
-                      >
-                        <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                          {r.status !== "Posted" && (
-                            <input type="checkbox" className="accent-blue-500"
-                              checked={batchSelected.has(r.jv_id)}
-                              onChange={e => {
-                                const s = new Set(batchSelected);
-                                if (e.target.checked) s.add(r.jv_id); else s.delete(r.jv_id);
-                                setBatchSelected(s);
-                              }}
-                            />
+                    {rows.map((r: any) => {
+                      const isExpanded = expandedId === r.jv_id;
+                      const lines: any[] = isExpanded ? expandedLines : [];
+                      return (
+                        <React.Fragment key={r.jv_id}>
+                          {/* ── Parent JV row ── */}
+                          <tr
+                            key={`jv-${r.jv_id}`}
+                            className={`border-b border-gray-800/60 cursor-pointer transition-colors ${
+                              isExpanded ? "bg-blue-950/30 border-blue-800/40" : "hover:bg-gray-800/40"
+                            }`}
+                            onClick={() => setExpandedId(isExpanded ? null : r.jv_id)}
+                          >
+                            <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
+                              {r.status !== "Posted" && (
+                                <input type="checkbox" className="accent-blue-500"
+                                  checked={batchSelected.has(r.jv_id)}
+                                  onChange={e => {
+                                    const s = new Set(batchSelected);
+                                    if (e.target.checked) s.add(r.jv_id); else s.delete(r.jv_id);
+                                    setBatchSelected(s);
+                                  }}
+                                />
+                              )}
+                            </td>
+                            <td className="px-2 py-2 text-gray-500">
+                              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-150 ${isExpanded ? "rotate-90 text-blue-400" : ""}`} />
+                            </td>
+                            <td className="px-3 py-2 font-mono text-blue-300 font-medium">{r.jv_number}</td>
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] border ${JV_TYPE_COLORS[r.jv_type] ?? "bg-gray-700 text-gray-300"}`}>
+                                {JV_TYPE_LABELS[r.jv_type] ?? r.jv_type}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-400">{r.period_year}-{String(r.period_month).padStart(2, "00")}</td>
+                            <td className="px-3 py-2 text-gray-400 max-w-[120px] truncate">{r.contract_ref ?? "—"}</td>
+                            <td className="px-3 py-2 text-right font-mono text-green-400">{fmt(r.total_debit, r.currency)}</td>
+                            <td className="px-3 py-2 text-right font-mono text-red-400">{fmt(r.total_credit, r.currency)}</td>
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] border ${STATUS_COLORS[r.status] ?? "bg-gray-700 text-gray-300"}`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
+                              {(r.status === "Draft" || r.status === "Submitted") && (
+                                <div className="flex items-center gap-1">
+                                  <Button size="sm" className="h-6 px-2 text-[10px] bg-green-700 hover:bg-green-600 text-white"
+                                    onClick={() => postMut.mutate({ jv_id: r.jv_id })} disabled={postMut.isPending}>
+                                    <CheckCircle className="w-3 h-3 mr-0.5" />Post
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-6 px-2 text-[10px] border-red-700/50 text-red-400 hover:bg-red-900/20"
+                                    onClick={() => setRejectDialog({ open: true, jv_id: r.jv_id, reason: "" })}>
+                                    <XCircle className="w-3 h-3 mr-0.5" />Reject
+                                  </Button>
+                                </div>
+                              )}
+                              {r.status === "Posted" && (
+                                <span className="text-[10px] text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Posted</span>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* ── Inline expanded lines ── */}
+                          {isExpanded && (
+                            <tr key={`lines-${r.jv_id}`}>
+                              <td colSpan={10} className="px-0 py-0 bg-gray-900/60 border-b border-blue-800/30">
+                                {!expandedJv ? (
+                                  <div className="flex items-center gap-2 px-12 py-3 text-gray-500 text-xs">
+                                    <RefreshCw className="w-3 h-3 animate-spin" />Loading entries...
+                                  </div>
+                                ) : (
+                                  <table className="w-full text-xs">
+                                    <thead>
+                                      <tr className="bg-gray-800/80 border-b border-gray-700">
+                                        <th className="w-10" />{/* indent */}
+                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-8">#</th>
+                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-20">Dr/Cr</th>
+                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-24">Acct Code</th>
+                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium">Account Name</th>
+                                        <th className="px-3 py-1.5 text-right text-gray-500 font-medium w-36">Amount</th>
+                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium">Description</th>
+                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-16">Calc</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {lines.map((line: any, idx: number) => {
+                                        const isDr = line.dr_cr === "Dr";
+                                        return (
+                                          <tr key={line.line_id ?? idx}
+                                            className={`border-b border-gray-800/30 ${
+                                              isDr ? "bg-green-950/20" : "bg-red-950/20"
+                                            }`}>
+                                            <td className="w-10 pl-10">
+                                              <span className="text-gray-700 text-[10px]">{idx === lines.length - 1 ? "└" : "├"}─</span>
+                                            </td>
+                                            <td className="px-3 py-1.5 text-gray-600 font-mono">{line.line_seq}</td>
+                                            <td className="px-3 py-1.5">
+                                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                isDr ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                                              }`}>{line.dr_cr}</span>
+                                            </td>
+                                            <td className="px-3 py-1.5 font-mono text-blue-300">{line.account_code}</td>
+                                            <td className="px-3 py-1.5 text-gray-200">{line.account_name}</td>
+                                            <td className={`px-3 py-1.5 text-right font-mono font-semibold ${
+                                              isDr ? "text-green-400" : "text-red-400"
+                                            }`}>{fmt(line.amount, line.currency)}</td>
+                                            <td className="px-3 py-1.5 text-gray-400 max-w-[240px] truncate">{line.description}</td>
+                                            <td className="px-3 py-1.5">
+                                              <CalcExplanation explanation={line.calc_explanation} />
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="px-3 py-2 font-mono text-blue-300">{r.jv_number}</td>
-                        <td className="px-3 py-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] border ${JV_TYPE_COLORS[r.jv_type] ?? "bg-gray-700 text-gray-300"}`}>
-                            {JV_TYPE_LABELS[r.jv_type] ?? r.jv_type}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-gray-400">{r.period_year}-{String(r.period_month).padStart(2, "0")}</td>
-                        <td className="px-3 py-2 text-right font-mono text-green-400">{fmt(r.total_debit, r.currency)}</td>
-                        <td className="px-3 py-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] border ${STATUS_COLORS[r.status] ?? "bg-gray-700 text-gray-300"}`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-gray-400 max-w-[100px] truncate">{r.contract_ref ?? "—"}</td>
-                      </tr>
-                    ))}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
             </div>
-          </div>
-
-          {/* ── JV Detail Panel ── */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-gray-950">
-            {!selectedId ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-600 gap-3">
-                <ChevronRight className="w-10 h-10 opacity-20" />
-                <p className="text-sm">Select a journal voucher to view details</p>
-              </div>
-            ) : !selectedJv ? (
-              <div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading...</div>
-            ) : (
-              <div className="flex flex-col h-full overflow-y-auto">
-                {/* Header */}
-                <div className="px-5 py-4 border-b border-gray-800 bg-gray-900">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-lg text-blue-300 font-semibold">{selectedJv.jv_number}</span>
-                        <span className={`px-2 py-0.5 rounded text-xs border ${STATUS_COLORS[selectedJv.status] ?? ""}`}>{selectedJv.status}</span>
-                        <span className={`px-2 py-0.5 rounded text-xs border ${JV_TYPE_COLORS[selectedJv.jv_type] ?? ""}`}>{JV_TYPE_LABELS[selectedJv.jv_type] ?? selectedJv.jv_type}</span>
-                      </div>
-                      <p className="text-sm text-gray-300">{selectedJv.description}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      {(selectedJv.status === "Draft" || selectedJv.status === "Submitted") && (
-                        <>
-                          <Button
-                            size="sm"
-                            className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs"
-                            onClick={() => postMut.mutate({ jv_id: selectedJv.jv_id })}
-                            disabled={postMut.isPending}
-                          >
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Post JV
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 border-red-700 text-red-400 hover:bg-red-900/30 text-xs"
-                            onClick={() => setRejectDialog({ open: true, jv_id: selectedJv.jv_id, reason: "" })}
-                          >
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Meta grid */}
-                  <div className="grid grid-cols-3 gap-3 mt-3 text-xs">
-                    {[
-                      ["Posting Date", selectedJv.posting_date?.slice(0, 10) ?? "—"],
-                      ["Period", `${selectedJv.period_year}-${String(selectedJv.period_month).padStart(2, "0")}`],
-                      ["Currency", selectedJv.currency ?? "QAR"],
-                      ["Contract", selectedJv.contract_ref ?? "—"],
-                      ["Source", selectedJv.source_type ?? "—"],
-                      ["Source Ref", selectedJv.source_ref ?? "—"],
-                      ["Created By", selectedJv.created_by ?? "—"],
-                      ["Created At", selectedJv.created_at ? new Date(selectedJv.created_at).toLocaleString() : "—"],
-                      ["Posted By", selectedJv.posted_by ?? "—"],
-                    ].map(([label, val]) => (
-                      <div key={label} className="bg-gray-800/50 rounded px-3 py-2">
-                        <div className="text-gray-500 text-[10px] uppercase tracking-wide">{label}</div>
-                        <div className="text-gray-200 mt-0.5 truncate">{val}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {selectedJv.rejection_reason && (
-                    <div className="mt-3 flex items-start gap-2 bg-red-900/20 border border-red-800/40 rounded px-3 py-2 text-xs text-red-300">
-                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                      <span><strong>Rejection reason:</strong> {selectedJv.rejection_reason}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Totals */}
-                <div className="flex items-center gap-6 px-5 py-3 border-b border-gray-800 bg-gray-900/50">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-400" />
-                    <span className="text-xs text-gray-500">Total Debit:</span>
-                    <span className="font-mono text-green-400 font-semibold">{fmt(selectedJv.total_debit, selectedJv.currency)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-red-400 rotate-180" />
-                    <span className="text-xs text-gray-500">Total Credit:</span>
-                    <span className="font-mono text-red-400 font-semibold">{fmt(selectedJv.total_credit, selectedJv.currency)}</span>
-                  </div>
-                  {Math.abs((selectedJv.total_debit ?? 0) - (selectedJv.total_credit ?? 0)) < 0.01 ? (
-                    <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Balanced</span>
-                  ) : (
-                    <span className="text-xs text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Unbalanced</span>
-                  )}
-                </div>
-
-                {/* JV Lines */}
-                <div className="flex-1 overflow-y-auto px-5 py-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Layers className="w-4 h-4 text-gray-500" />
-                    <h3 className="text-sm font-semibold text-gray-300">Journal Lines ({selectedLines.length})</h3>
-                    <span className="text-xs text-gray-600">— Debit/Credit pairs grouped by entry</span>
-                  </div>
-
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-900 border-b border-gray-800">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-gray-500 font-medium w-16">Calc</th>
-                        <th className="px-3 py-2 text-left text-gray-500 font-medium w-8">#</th>
-                        <th className="px-3 py-2 text-left text-gray-500 font-medium">Account Code</th>
-                        <th className="px-3 py-2 text-left text-gray-500 font-medium">Account Name</th>
-                        <th className="px-3 py-2 text-left text-gray-500 font-medium w-12">Dr/Cr</th>
-                        <th className="px-3 py-2 text-right text-gray-500 font-medium">Amount</th>
-                        <th className="px-3 py-2 text-left text-gray-500 font-medium">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedLines.map((line: any, idx: number) => {
-                        const isDr = line.dr_cr === "Dr";
-                        // Add separator between pairs (every 2 lines)
-                        const showSep = idx > 0 && idx % 2 === 0;
-                        return (
-                          <>
-                            {showSep && (
-                              <tr key={`sep-${idx}`}>
-                                <td colSpan={7} className="px-3 py-0.5">
-                                  <div className="border-t border-gray-800/50 border-dashed" />
-                                </td>
-                              </tr>
-                            )}
-                            <tr key={line.line_id} className={`border-b border-gray-800/30 ${isDr ? "bg-green-950/10" : "bg-red-950/10"}`}>
-                              <td className="px-3 py-2">
-                                <CalcExplanation explanation={line.calc_explanation} />
-                              </td>
-                              <td className="px-3 py-2 text-gray-600 font-mono">{line.line_seq}</td>
-                              <td className="px-3 py-2 font-mono text-blue-300">{line.account_code}</td>
-                              <td className="px-3 py-2 text-gray-200">{line.account_name}</td>
-                              <td className="px-3 py-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${isDr ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
-                                  {line.dr_cr}
-                                </span>
-                              </td>
-                              <td className={`px-3 py-2 text-right font-mono font-semibold ${isDr ? "text-green-400" : "text-red-400"}`}>
-                                {fmt(line.amount, line.currency)}
-                              </td>
-                              <td className="px-3 py-2 text-gray-400 max-w-[200px] truncate">{line.description}</td>
-                            </tr>
-                          </>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
