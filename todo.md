@@ -1353,7 +1353,16 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Update LeaseTransactionCentre.tsx: read contractId from URL query param on mount and auto-select the lease
 
 ## Business Proof Panel + Next Steps (May 2026)
-- [ ] Transaction Engine: add Business Proof Panel tab — plain-English story, real-world scenario, expected JV rules, pass/fail verdict for each function
-- [ ] Transaction Centre: add "View JVs for this lease" button in GL Ledger tab linking to JV Register filtered by contract
-- [ ] JV Register: add Lease dropdown filter populated from active contracts
-- [ ] Transaction Engine: make posted JV numbers clickable links to JV Register
+- [x] Transaction Engine: add Business Proof Panel tab — plain-English story, real-world scenario, expected JV rules, pass/fail verdict for each function
+- [x] Transaction Centre: add "View JVs for this lease" button in Transaction History tab linking to JV Register filtered by contract
+- [x] JV Register: add Lease dropdown filter populated from active contracts (with URL param auto-selection)
+- [x] Transaction Engine: make posted JV numbers clickable links to JV Register
+
+## Vehicle Asset Type — Conditional Step 3 (May 2026)
+- [x] NewLease Step 3: when Asset Type = Vehicle/Heavy Vehicle/Fleet Vehicle, replace GPS Lat/Long, Location/Address, Sub-Asset Sets with vehicle fields: Make, Model, Year, Plate Number, VIN/Chassis, Engine CC, Colour, Fuel Type
+- [x] NewLease Step 3: when Asset Type = Vehicle, rename "Asset Name / Reference" label to "Vehicle Description"
+- [x] NewLease Step 3: when Asset Type = Vehicle, rename "Asset Code" label to "Fleet Code"
+- [x] NewLease Step 3: when Asset Type = Vehicle, show vehicle-specific Maintenance Responsibility options (Fleet Company / Vodafone / Shared)
+- [x] NewLease Step 3: show "Vehicle Mode" amber badge in header when vehicle type is selected
+- [x] NewLease Step 3: Sub-Asset Sets section hidden for vehicle types (not applicable)
+- [x] Edit mode: vehicle fields restored from asset_json on load

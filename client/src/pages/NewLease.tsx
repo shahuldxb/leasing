@@ -38,6 +38,8 @@ interface ChequeRow {
 }
 
 const ASSET_TYPES = ["Villa","Apartment","Vehicle","Heavy Vehicle","Tower Site","Data Centre","Retail Outlet","Office","Warehouse","Fleet Vehicle","Network Equipment","Generator Site","Other"];
+const VEHICLE_ASSET_TYPES = new Set(["Vehicle","Heavy Vehicle","Fleet Vehicle"]);
+const FUEL_TYPES = ["Petrol","Diesel","Hybrid","Electric","LPG","CNG","Other"];
 const CURRENCIES  = ["QAR","USD","GHS","EUR","GBP","ZAR","KES","NGN","ZMW"];
 const FREQ_OPTIONS = ["Monthly","Quarterly","Semi-Annual","Annual"];
 
@@ -57,7 +59,11 @@ export default function NewLease() {
   const [lessor, setLessor] = useState({ name: "", contactPerson: "", email: "", phone: "", address: "", country: "QA", taxId: "", contractPreparedDate: new Date().toISOString().split("T")[0], createdDate: new Date().toISOString().split("T")[0] });
   const [selectedLessorId, setSelectedLessorId] = useState<number | null>(null);
   // Step 2 — Asset
-  const [asset, setAsset] = useState({ assetType: "Villa", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone" });
+  const [asset, setAsset] = useState({
+    assetType: "Villa", assetName: "", assetCode: "", location: "Doha", country: "QA", gpsLat: "", gpsLng: "", maintenanceBy: "Lessor" as "Lessor"|"Vodafone",
+    // Vehicle-specific fields
+    vehicleMake: "", vehicleModel: "", vehicleYear: "", vehiclePlate: "", vehicleVIN: "", vehicleEngineCC: "", vehicleColour: "", vehicleFuelType: "Petrol",
+  });
   // Step 3 — Financial
   const [financial, setFinancial] = useState({
     commencementDate: "", endDate: "", leaseTerm: "", currency: "QAR",
@@ -131,6 +137,14 @@ export default function NewLease() {
       gpsLat = loc.lat ? String(loc.lat) : '';
       gpsLng = loc.lng ? String(loc.lng) : '';
     } catch { /* ignore */ }
+    // Parse vehicle fields from asset_json if present
+    let vehicleMake = '', vehicleModel = '', vehicleYear = '', vehiclePlate = '', vehicleVIN = '', vehicleEngineCC = '', vehicleColour = '', vehicleFuelType = 'Petrol';
+    try {
+      const vj = JSON.parse(d.asset_json || '{}');
+      vehicleMake = vj.make || ''; vehicleModel = vj.model || ''; vehicleYear = vj.year || '';
+      vehiclePlate = vj.plate || ''; vehicleVIN = vj.vin || ''; vehicleEngineCC = vj.engineCC || '';
+      vehicleColour = vj.colour || ''; vehicleFuelType = vj.fuelType || 'Petrol';
+    } catch { /* ignore */ }
     setAsset({
       assetType: d.asset_type || 'Villa',
       assetName: d.asset_description || '',
@@ -140,6 +154,7 @@ export default function NewLease() {
       gpsLat,
       gpsLng,
       maintenanceBy: (d.maintenance_responsibility === 'Vodafone' ? 'Vodafone' : 'Lessor') as 'Lessor' | 'Vodafone',
+      vehicleMake, vehicleModel, vehicleYear, vehiclePlate, vehicleVIN, vehicleEngineCC, vehicleColour, vehicleFuelType,
     });
     // Step 4 — Financial Terms
     const toDateStr = (v: any) => v ? new Date(v).toISOString().split('T')[0] : '';
@@ -634,8 +649,17 @@ export default function NewLease() {
           {/* (Step 3 Asset Details content follows) */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Step 3 — Asset Details</h2>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">Step 3 — Asset Details</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Screen ID: VFLSNEWLS0003P001</p>
+                </div>
+                {VEHICLE_ASSET_TYPES.has(asset.assetType) && (
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/10 text-amber-400">Vehicle Mode</span>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
+                {/* Asset Type — always shown */}
                 <div>
                   <Label className={labelCls}>Asset Type *</Label>
                   <Select value={asset.assetType} onValueChange={v => setAsset(a => ({ ...a, assetType: v }))}>
@@ -643,39 +667,93 @@ export default function NewLease() {
                     <SelectContent>{ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+                {/* Asset Name / Reference — label changes for vehicles */}
                 <div>
-                  <Label className={labelCls}>Asset Name / Reference *</Label>
-                  <Input className={inputCls} placeholder="e.g. GH-ACC-TOWER-001" value={asset.assetName} onChange={e => setAsset(a => ({ ...a, assetName: e.target.value }))} />
+                  <Label className={labelCls}>{VEHICLE_ASSET_TYPES.has(asset.assetType) ? "Vehicle Description *" : "Asset Name / Reference *"}</Label>
+                  <Input className={inputCls} placeholder={VEHICLE_ASSET_TYPES.has(asset.assetType) ? "e.g. Toyota Land Cruiser GXR" : "e.g. GH-ACC-TOWER-001"} value={asset.assetName} onChange={e => setAsset(a => ({ ...a, assetName: e.target.value }))} />
                 </div>
+                {/* Asset Code / Fleet Code — always shown */}
                 <div>
-                  <Label className={labelCls}>Asset Code</Label>
-                  <Input className={inputCls} placeholder="Internal asset code" value={asset.assetCode} onChange={e => setAsset(a => ({ ...a, assetCode: e.target.value }))} />
+                  <Label className={labelCls}>{VEHICLE_ASSET_TYPES.has(asset.assetType) ? "Fleet Code" : "Asset Code"}</Label>
+                  <Input className={inputCls} placeholder={VEHICLE_ASSET_TYPES.has(asset.assetType) ? "e.g. VQ-FLEET-001" : "Internal asset code"} value={asset.assetCode} onChange={e => setAsset(a => ({ ...a, assetCode: e.target.value }))} />
                 </div>
-                <div>
-                  <Label className={labelCls}>Location / Address</Label>
-                  <Input className={inputCls} placeholder="Physical location" value={asset.location} onChange={e => setAsset(a => ({ ...a, location: e.target.value }))} />
-                </div>
-                <div>
-                  <Label className={labelCls}>GPS Latitude</Label>
-                  <Input className={inputCls} placeholder="5.6037" value={asset.gpsLat} onChange={e => setAsset(a => ({ ...a, gpsLat: e.target.value }))} />
-                </div>
-                <div>
-                  <Label className={labelCls}>GPS Longitude</Label>
-                  <Input className={inputCls} placeholder="-0.1870" value={asset.gpsLng} onChange={e => setAsset(a => ({ ...a, gpsLng: e.target.value }))} />
-                </div>
+
+                {/* ── PROPERTY fields (non-vehicle) ── */}
+                {!VEHICLE_ASSET_TYPES.has(asset.assetType) && (<>
+                  <div>
+                    <Label className={labelCls}>Location / Address</Label>
+                    <Input className={inputCls} placeholder="Physical location" value={asset.location} onChange={e => setAsset(a => ({ ...a, location: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>GPS Latitude</Label>
+                    <Input className={inputCls} placeholder="5.6037" value={asset.gpsLat} onChange={e => setAsset(a => ({ ...a, gpsLat: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>GPS Longitude</Label>
+                    <Input className={inputCls} placeholder="-0.1870" value={asset.gpsLng} onChange={e => setAsset(a => ({ ...a, gpsLng: e.target.value }))} />
+                  </div>
+                </>)}
+
+                {/* ── VEHICLE fields ── */}
+                {VEHICLE_ASSET_TYPES.has(asset.assetType) && (<>
+                  <div>
+                    <Label className={labelCls}>Make / Brand *</Label>
+                    <Input className={inputCls} placeholder="e.g. Toyota, Nissan, BMW" value={asset.vehicleMake} onChange={e => setAsset(a => ({ ...a, vehicleMake: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Model *</Label>
+                    <Input className={inputCls} placeholder="e.g. Land Cruiser GXR, Patrol, X5" value={asset.vehicleModel} onChange={e => setAsset(a => ({ ...a, vehicleModel: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Year of Manufacture</Label>
+                    <Input className={inputCls} type="number" placeholder="e.g. 2023" min="1990" max="2030" value={asset.vehicleYear} onChange={e => setAsset(a => ({ ...a, vehicleYear: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Registration / Plate Number *</Label>
+                    <Input className={inputCls} placeholder="e.g. QA-12345" value={asset.vehiclePlate} onChange={e => setAsset(a => ({ ...a, vehiclePlate: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>VIN / Chassis Number</Label>
+                    <Input className={inputCls} placeholder="17-character VIN" maxLength={17} value={asset.vehicleVIN} onChange={e => setAsset(a => ({ ...a, vehicleVIN: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Engine Capacity (CC)</Label>
+                    <Input className={inputCls} type="number" placeholder="e.g. 4000" value={asset.vehicleEngineCC} onChange={e => setAsset(a => ({ ...a, vehicleEngineCC: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Colour</Label>
+                    <Input className={inputCls} placeholder="e.g. White, Silver, Black" value={asset.vehicleColour} onChange={e => setAsset(a => ({ ...a, vehicleColour: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className={labelCls}>Fuel Type</Label>
+                    <Select value={asset.vehicleFuelType} onValueChange={v => setAsset(a => ({ ...a, vehicleFuelType: v }))}>
+                      <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                      <SelectContent>{FUEL_TYPES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </>)}
+
+                {/* Maintenance Responsibility — always shown, vehicle-aware labels */}
                 <div className="col-span-2">
                   <Label className={labelCls}>Maintenance Responsibility *</Label>
                   <Select value={asset.maintenanceBy} onValueChange={v => setAsset(a => ({ ...a, maintenanceBy: v as any }))}>
                     <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Lessor">Lessor — Lessor is responsible for all maintenance</SelectItem>
-                      <SelectItem value="Vodafone">Vodafone — Vodafone is responsible for maintenance</SelectItem>
-                      <SelectItem value="Shared">Shared — Defined split of responsibilities</SelectItem>
+                      {VEHICLE_ASSET_TYPES.has(asset.assetType) ? (<>
+                        <SelectItem value="Lessor">Lessor — Lessor / Fleet Company handles all servicing</SelectItem>
+                        <SelectItem value="Vodafone">Vodafone — Vodafone arranges and pays for all servicing</SelectItem>
+                        <SelectItem value="Shared">Shared — Routine by Vodafone, major repairs by Lessor</SelectItem>
+                      </>) : (<>
+                        <SelectItem value="Lessor">Lessor — Lessor is responsible for all maintenance</SelectItem>
+                        <SelectItem value="Vodafone">Vodafone — Vodafone is responsible for maintenance</SelectItem>
+                        <SelectItem value="Shared">Shared — Defined split of responsibilities</SelectItem>
+                      </>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Sub-Asset Sets */}
+                {/* Sub-Asset Sets — only for non-vehicle assets */}
+                {!VEHICLE_ASSET_TYPES.has(asset.assetType) && (
                 <div className="col-span-2 border border-border rounded-lg p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-[#e60000]" />
@@ -797,6 +875,7 @@ export default function NewLease() {
                     <p className="text-xs text-muted-foreground">No sets attached. This is optional — leave empty if the property is unfurnished.</p>
                   )}
                 </div>
+                )}
               </div>
             </div>
           )}
