@@ -334,27 +334,40 @@ export default function NewLease() {
     onError: (e) => toast.error("Failed to save lessee details: " + e.message),
   });
   const createLeaseMutation = trpc.lease.createLease.useMutation({
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       // After lease created, save lessee details if provided
       if (result?.contract_id && lessee.lesseeName) {
-        upsertLesseeMutation.mutate({
-          contractId:   result.contract_id,
-          lesseeType:   lessee.lesseeType,
-          lesseeName:   lessee.lesseeName,
-          staffNumber:  lessee.staffNumber || undefined,
-          grade:        lessee.grade       || undefined,
-          position:     lessee.position    || undefined,
-          department:   lessee.department  || undefined,
-          placeOfWork:  lessee.placeOfWork || undefined,
-          contactEmail: lessee.contactEmail || undefined,
-          contactPhone: lessee.contactPhone || undefined,
-        });
+        try {
+          await upsertLesseeMutation.mutateAsync({
+            contractId:   result.contract_id,
+            lesseeType:   lessee.lesseeType,
+            lesseeName:   lessee.lesseeName,
+            staffNumber:  lessee.staffNumber || undefined,
+            grade:        lessee.grade       || undefined,
+            position:     lessee.position    || undefined,
+            department:   lessee.department  || undefined,
+            placeOfWork:  lessee.placeOfWork || undefined,
+            contactEmail: lessee.contactEmail || undefined,
+            contactPhone: lessee.contactPhone || undefined,
+          });
+        } catch (e: any) {
+          toast.error("Failed to save lessee details: " + e.message);
+        }
       }
-      // Auto-post Day-1 Initial Recognition JV
+      // Auto-post Day-1 Initial Recognition JV — MUST await before navigating
       if (result?.contract_id) {
-        postDay1JVMutation.mutate({ contract_id: result.contract_id });
+        try {
+          const jvResult = await postDay1JVMutation.mutateAsync({ contract_id: result.contract_id });
+          if (jvResult?.jv_number) {
+            toast.success(`Day-1 JV posted: ${jvResult.jv_number}`);
+          } else if (jvResult?.result === 'ALREADY_EXISTS') {
+            toast.info(`Day-1 JV already exists: ${jvResult.existing_jv_number}`);
+          }
+        } catch (e: any) {
+          toast.error("Day-1 JV posting failed: " + e.message);
+        }
       }
-      toast.success("Lease created and submitted for approval!");
+      toast.success("Lease created successfully!");
       setLocation("/leases");
     },
     onError: (e) => toast.error(e.message),

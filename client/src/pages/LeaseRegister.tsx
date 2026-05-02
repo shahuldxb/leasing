@@ -69,10 +69,10 @@ export default function LeaseRegister() {
     onError: (e) => toast.error(e.message),
   });
 
-  const deleteMut = trpc.lease.deleteLease.useMutation({
-    onSuccess: () => {
+  const deleteMut = trpc.lease.hardDeleteLease.useMutation({
+    onSuccess: (result) => {
       utils.lease.getLeaseRegister.invalidate();
-      toast.success(`Lease ${deleteTarget?.contractRef} deleted successfully`);
+      toast.success(`Lease ${result?.deleted_contract_ref ?? deleteTarget?.contractRef} and all associated JVs permanently deleted`);
       setDeleteTarget(null);
     },
     onError: (e) => {
@@ -280,8 +280,8 @@ export default function LeaseRegister() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">Confirm Delete Lease</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Soft-delete <span className="font-mono font-semibold text-foreground">{deleteTarget.contractRef}</span>?
-                The lease will be marked as Deleted and excluded from all views and reports. This cannot be undone from the UI.
+                Permanently delete <span className="font-mono font-semibold text-foreground">{deleteTarget.contractRef}</span>?
+                This will remove the lease, all associated Journal Vouchers, amortisation schedules, invoices, and child records. <strong>This action cannot be undone.</strong>
               </p>
             </div>
             <div className="flex gap-2 shrink-0 mt-0.5">

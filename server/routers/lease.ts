@@ -481,6 +481,18 @@ export const leaseRouter = router({
       return { success: true };
     }),
 
+  // ── HARD DELETE (lease + JVs + all child records) ──────────────────────
+  hardDeleteLease: protectedProcedure
+    .input(z.object({ contractId: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = await (await import("../db-sqlserver")).getPool();
+      const req = pool.request();
+      req.input("contract_id", input.contractId);
+      const result = await req.execute("lease.sp_HardDeleteLease");
+      const row = (result.recordset as any[])?.[0] ?? null;
+      return row;
+    }),
+
   // ── CALCULATE AMORTISATION (ALL LEASES) ─────────────────────────────────
   calculateAmortisationAll: protectedProcedure
     .mutation(async ({ ctx }) => {

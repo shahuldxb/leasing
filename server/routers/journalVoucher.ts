@@ -170,11 +170,10 @@ export const journalVoucherRouter = router({
   // ── Day-1 Initial Recognition JV ──────────────────────────────────────────
   postInitialRecognitionJV: protectedProcedure
     .input(z.object({ contract_id: z.number().int() }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const pool = await getPool();
       const req = pool.request();
       req.input("contract_id", input.contract_id);
-      req.input("posted_by", ctx.user.name ?? ctx.user.email);
       const result = await req.execute("accounting.sp_PostInitialRecognitionJV");
       const row = (result.recordset as any[])?.[0] ?? null;
       return row;

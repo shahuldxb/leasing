@@ -1398,3 +1398,25 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Auto-Post Day-1 JV & Dr/Cr Pairs in Calc Modal (May 2026)
 - [x] Day-1 JV should be auto-posted (status = Posted) when lease is created, not left as Draft
 - [x] Calc modal should show entries as Dr/Cr pairs instead of individual lines (numbered pairs with side-by-side layout)
+
+## Delete Lease with JV Cascade (May 2026)
+- [ ] Create tRPC mutation to delete a lease and its associated JV entries (jv_lines + journal_vouchers)
+- [ ] Also cascade delete: amortisation_schedule, gl_postings, contract_documents, etc.
+- [ ] Add Delete button to lease record view with confirmation dialog
+- [ ] Seed 20 lessees and 20 staff — DONE
+
+## Delete Lease with JV Cascade (May 2026)
+- [x] Create sp_HardDeleteLease SP that cascades to all child tables (45 child tables + JVs + workflows)
+- [x] Add hardDeleteLease tRPC mutation in lease router
+- [x] Changed Lease Register Delete from soft-delete to hard-delete with confirmation dialog
+- [x] Confirmation dialog warns about permanent deletion of lease + JVs + amortisation + invoices
+
+## Lessee Master Seed (May 2026)
+- [x] Seed 10 Qatar-based real estate companies (Barwa, Msheireb, Qatari Diar, UDC, Ezdan, Al Asmakh, Lusail, Al Bandary, Katara, Aamal)
+- [x] Seed 5 large car leasing companies (Al Mana, Q-Auto, Europcar, Hertz, National)
+
+## JV Posting Fix (May 2026)
+- [x] Fix createLease onSuccess to await JV posting before navigating (was fire-and-forget causing missed JVs)
+- [x] Remove extra posted_by parameter from postInitialRecognitionJV mutation (SP only accepts contract_id)
+- [x] Fix SP to use correct column names: period_year, period_month, posting_date (not period, jv_date)
+- [x] Fix IBR display formatting in calc_explanation (was showing 0.0550% instead of 5.50%)
