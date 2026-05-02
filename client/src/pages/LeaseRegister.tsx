@@ -221,11 +221,11 @@ export default function LeaseRegister() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               {/* View Details — opens the dedicated read-only detail view */}
-                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}`)}>
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}&mode=view`)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
                               {/* Modify Lease — opens the unified detail page for in-place editing */}
-                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}`)}>
+                              <DropdownMenuItem onClick={() => setLocation(`/leases/detail?id=${lease.contract_id}&mode=edit`)}>
                                 <Edit className="mr-2 h-4 w-4" /> Modify Lease
                               </DropdownMenuItem>
                               {/* View Amortisation — opens the lease detail amortisation tab */}

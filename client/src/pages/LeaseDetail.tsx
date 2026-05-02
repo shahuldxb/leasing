@@ -547,6 +547,11 @@ export default function LeaseDetail() {
     return v ? parseInt(v, 10) : null;
   })();
 
+  const isReadOnly = (() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'view';
+  })();
+
   const utils = trpc.useUtils();
 
   // ── Server data ──────────────────────────────────────────────────────────
@@ -682,8 +687,9 @@ export default function LeaseDetail() {
               <ScreenHeader
                 screenId="VFLSECLSDET0001P001"
                 title={`Lease — ${d.contract_ref ?? ''}`}
-                subtitle="View and edit all lease details in-place"
+                subtitle={isReadOnly ? "Read-only view" : "View and edit all lease details in-place"}
               />
+              {isReadOnly && <Badge variant="outline" className="ml-2 text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">View Only</Badge>}
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={`text-xs ${LIFECYCLE_COLORS[lifecycleStatus] ?? ''}`}>{lifecycleStatus}</Badge>
@@ -708,7 +714,7 @@ export default function LeaseDetail() {
         </div>
 
         {/* ── Tabs ── */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 overflow-y-auto ${isReadOnly ? '[&_input]:pointer-events-none [&_input]:opacity-70 [&_select]:pointer-events-none [&_textarea]:pointer-events-none [&_[role=combobox]]:pointer-events-none [&_[role=checkbox]]:pointer-events-none' : ''}`}>
           <Tabs defaultValue="lessor" className="h-full">
             <div className="px-6 pt-3 border-b border-border">
               <TabsList className="grid grid-cols-7 w-full max-w-4xl">
@@ -754,9 +760,9 @@ export default function LeaseDetail() {
             <TabsContent value="lessee" className="px-6 py-5 space-y-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Lessee Details</h3>
-                <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveLessee} disabled={upsertLesseeMut.isPending}>
+                {!isReadOnly && <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveLessee} disabled={upsertLesseeMut.isPending}>
                   <Save className="w-3.5 h-3.5 mr-1.5" /> {upsertLesseeMut.isPending ? 'Saving…' : 'Save Lessee'}
-                </Button>
+                </Button>}
               </div>
               <Separator />
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
@@ -794,9 +800,9 @@ export default function LeaseDetail() {
             <TabsContent value="asset" className="px-6 py-5 space-y-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> Asset Details</h3>
-                <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveFinancialAndAsset} disabled={updateLeaseMut.isPending}>
+                {!isReadOnly && <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveFinancialAndAsset} disabled={updateLeaseMut.isPending}>
                   <Save className="w-3.5 h-3.5 mr-1.5" /> {updateLeaseMut.isPending ? 'Saving…' : 'Save Asset'}
-                </Button>
+                </Button>}
               </div>
               <Separator />
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
@@ -847,9 +853,9 @@ export default function LeaseDetail() {
             <TabsContent value="financial" className="px-6 py-5 space-y-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold flex items-center gap-2"><DollarSign className="w-4 h-4 text-primary" /> Financial Terms</h3>
-                <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveFinancialAndAsset} disabled={updateLeaseMut.isPending}>
+                {!isReadOnly && <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveFinancialAndAsset} disabled={updateLeaseMut.isPending}>
                   <Save className="w-3.5 h-3.5 mr-1.5" /> {updateLeaseMut.isPending ? 'Saving…' : 'Save Financial Terms'}
-                </Button>
+                </Button>}
               </div>
               <Separator />
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4">
@@ -895,9 +901,9 @@ export default function LeaseDetail() {
             <TabsContent value="lto" className="px-6 py-5 space-y-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Lease-to-Own (LTO) Terms</h3>
-                <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveFinancialAndAsset} disabled={updateLeaseMut.isPending}>
+                {!isReadOnly && <Button size="sm" className="bg-[#e60000] hover:bg-[#cc0000] text-white" onClick={handleSaveFinancialAndAsset} disabled={updateLeaseMut.isPending}>
                   <Save className="w-3.5 h-3.5 mr-1.5" /> {updateLeaseMut.isPending ? 'Saving…' : 'Save LTO'}
-                </Button>
+                </Button>}
               </div>
               <Separator />
               <div className="flex items-center gap-2 mb-4">

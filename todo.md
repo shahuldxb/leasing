@@ -1400,10 +1400,10 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Calc modal should show entries as Dr/Cr pairs instead of individual lines (numbered pairs with side-by-side layout)
 
 ## Delete Lease with JV Cascade (May 2026)
-- [ ] Create tRPC mutation to delete a lease and its associated JV entries (jv_lines + journal_vouchers)
-- [ ] Also cascade delete: amortisation_schedule, gl_postings, contract_documents, etc.
-- [ ] Add Delete button to lease record view with confirmation dialog
-- [ ] Seed 20 lessees and 20 staff — DONE
+- [x] Create tRPC mutation to delete a lease and its associated JV entries (jv_lines + journal_vouchers)
+- [x] Also cascade delete: amortisation_schedule, gl_postings, contract_documents, etc. (sp_HardDeleteLease covers 45 child tables)
+- [x] Add Delete button to lease record view with confirmation dialog (changed soft delete to hard delete in LeaseRegister)
+- [x] Seed 15 lessees (10 real estate + 5 car leasing) and 35 staff
 
 ## Delete Lease with JV Cascade (May 2026)
 - [x] Create sp_HardDeleteLease SP that cascades to all child tables (45 child tables + JVs + workflows)
@@ -1426,4 +1426,20 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Day-1 JV is auto-posted (status = Posted) with no approval required (SP already sets status = Posted)
 
 ## Fix View Details in Lease Management (May 2026)
-- [ ] Fix View Details functionality in Lease Register — incorrectly programmed
+- [x] Fix View Details functionality in Lease Register — View Details now uses mode=view (read-only), Modify Lease uses mode=edit
+- [x] LeaseDetail page respects isReadOnly flag: hides Save buttons, disables all inputs in view mode
+- [x] Added "View Only" badge in header when in read-only mode
+
+## Fix Day-1 JV Posting SP (May 2026)
+- [x] Root cause: sp_PostInitialRecognitionJV INSERT into journal_vouchers was missing NOT NULL 'currency' column
+- [x] SCOPE_IDENTITY() returned NULL because INSERT failed silently, causing jv_lines INSERT to fail
+- [x] Fixed SP to include currency='QAR' in both journal_vouchers and jv_lines INSERT statements
+- [x] Verified: JV-202308-00001 posted successfully with 5 balanced lines (Dr/Cr = 4,650,593.62 QAR)
+
+## Fix sp_GetLeaseById (May 2026)
+- [x] Changed INNER JOIN on lease.lessors to LEFT JOIN — contracts with missing/deleted lessors no longer return "Lease not found"
+- [x] Also changed users JOINs to LEFT JOIN for robustness
+
+## GitHub Push Fix (May 2026)
+- [x] Removed run_cred_test.sh (containing Azure OpenAI key) from git history using git-filter-repo
+- [x] Force-pushed clean history to github.com/shahuldxb/leasing.git
