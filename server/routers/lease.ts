@@ -1341,13 +1341,12 @@ export const leaseRouter = router({
       // Write audit log
       const totalMonthsPosted = results.reduce((s, r) => s + r.monthsPosted, 0);
       await writeAuditLog({
-        action: 'POST_MONTHLY_ENTRIES',
-        entityType: 'JOURNAL_VOUCHER',
-        entityId: input.contractIds[0],
-        entityCode: results[0]?.contractRef ?? '',
-        changedBy: ctx.user.name ?? ctx.user.email ?? 'system',
-        screenId: 'VFLAMORT0001P001',
-        afterJson: JSON.stringify({ contractIds: input.contractIds, monthsToPost: input.monthsToPost, totalMonthsPosted }),
+        userId: ctx.user.id, username: ctx.user.name ?? ctx.user.email ?? 'system', userRole: ctx.user.role ?? 'user',
+        module: 'Accounting Engine', subModule: 'Monthly Posting',
+        actionType: 'POST_MONTHLY_ENTRIES',
+        recordTable: 'accounting.journal_vouchers', recordId: String(input.contractIds[0]),
+        afterState: { contractIds: input.contractIds, monthsToPost: input.monthsToPost, totalMonthsPosted },
+        outcome: 'Success', screenId: 'VFLAMORT0001P001', processStartTime: new Date(),
       }).catch(() => {});
 
       return { results, totalContractsProcessed: results.length, totalMonthsPosted };
