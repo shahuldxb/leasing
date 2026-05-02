@@ -48,7 +48,7 @@ function fmt(n: number | null | undefined, cur = "QAR") {
 // Full-screen modal showing combined calculation explanations for all lines in a JV
 function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: string; lines: any[]; open: boolean; onClose: () => void }) {
   if (!open) return null;
-  const explanations = lines.filter((l: any) => l.calc_explanation).map((l: any) => ({
+  const allLines = lines.filter((l: any) => l.calc_explanation).map((l: any) => ({
     seq: l.line_seq,
     drCr: l.dr_cr,
     code: l.account_code,
@@ -56,7 +56,35 @@ function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: st
     amount: l.amount,
     explanation: l.calc_explanation,
   }));
-  if (explanations.length === 0) return null;
+  if (allLines.length === 0) return null;
+
+  // Group into Dr/Cr pairs
+  const drLines = allLines.filter((l: any) => l.drCr === 'Dr');
+  const crLines = allLines.filter((l: any) => l.drCr === 'Cr');
+  const pairs: { dr: any; cr: any; label: string }[] = [];
+
+  // Pair 1: ROU Asset (Dr) / Lease Liability (Cr)
+  const rouDr = drLines.find((l: any) => l.code.startsWith('101'));
+  const liabCr = crLines.find((l: any) => l.code.startsWith('210'));
+  if (rouDr && liabCr) pairs.push({ dr: rouDr, cr: liabCr, label: 'ROU Asset Recognition & Lease Liability' });
+
+  // Pair 2: ROU includes IDC (Dr already in ROU) / Accrued IDC (Cr)
+  const idcCr = crLines.find((l: any) => l.code === '20020');
+  if (idcCr) pairs.push({ dr: null, cr: idcCr, label: 'Initial Direct Costs (IDC) Accrual' });
+
+  // Pair 3: Lease Incentives (Cr) — reduces ROU
+  const incentCr = crLines.find((l: any) => l.code === '20030');
+  if (incentCr) pairs.push({ dr: null, cr: incentCr, label: 'Lease Incentives Received' });
+
+  // Pair 4: Security Deposit (Dr) / Bank (Cr)
+  const depDr = drLines.find((l: any) => l.code === '12020');
+  const bankCr = crLines.find((l: any) => l.code === '11000');
+  if (depDr && bankCr) pairs.push({ dr: depDr, cr: bankCr, label: 'Security Deposit Payment' });
+
+  // Totals
+  const totalDr = allLines.filter((l: any) => l.drCr === 'Dr').reduce((s: number, l: any) => s + (l.amount || 0), 0);
+  const totalCr = allLines.filter((l: any) => l.drCr === 'Cr').reduce((s: number, l: any) => s + (l.amount || 0), 0);
+
   return (
     <div className="fixed inset-0 z-[9999]" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -72,7 +100,7 @@ function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: st
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">IFRS 16 Calculation Breakdown</h2>
-              <p className="text-xs text-amber-400/70">{jvNumber} — All Journal Entry Lines</p>
+              <p className="text-xs text-amber-400/70">{jvNumber} — Dr / Cr Paired Entries</p>
             </div>
           </div>
           <button
@@ -82,28 +110,96 @@ function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: st
             <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
+
         {/* Body — scrollable */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {explanations.map((e: any, i: number) => (
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {pairs.map((pair, i) => (
             <div key={i} className="bg-gray-900 rounded-xl border border-gray-700/50 overflow-hidden">
-              <div className="flex items-center gap-3 px-5 py-3 bg-gray-800/60 border-b border-gray-700/50">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  e.drCr === "Dr" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                }`}>{e.drCr}</span>
-                <span className="font-mono text-blue-300 text-sm">{e.code}</span>
-                <span className="text-gray-200 text-sm font-medium">{e.name}</span>
-                <span className={`ml-auto font-mono text-sm font-semibold ${
-                  e.drCr === "Dr" ? "text-green-400" : "text-red-400"
-                }`}>{fmt(e.amount)}</span>
+              {/* Pair header */}
+              <div className="px-5 py-3 bg-gray-800/80 border-b border-gray-700/50">
+                <h3 className="text-sm font-semibold text-amber-300 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] font-bold text-amber-400">{i + 1}</span>
+                  {pair.label}
+                </h3>
               </div>
-              <div className="p-5">
-                <div className="font-mono text-sm text-gray-200 whitespace-pre-wrap leading-[1.8] tracking-wide">
-                  {e.explanation}
-                </div>
+
+              {/* Dr / Cr side by side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-700/40">
+                {/* Debit side */}
+                {pair.dr ? (
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">DEBIT</span>
+                      <span className="font-mono text-blue-300 text-sm">{pair.dr.code}</span>
+                      <span className="text-gray-300 text-sm">{pair.dr.name}</span>
+                    </div>
+                    <div className="text-right mb-3">
+                      <span className="font-mono text-lg font-bold text-green-400">{fmt(pair.dr.amount)}</span>
+                    </div>
+                    <div className="bg-gray-950/60 rounded-lg p-4 border border-gray-800">
+                      <div className="font-mono text-xs text-gray-300 whitespace-pre-wrap leading-[1.8] tracking-wide">
+                        {pair.dr.explanation}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 flex items-center justify-center">
+                    <p className="text-xs text-gray-500 italic">Included in ROU Asset (Line 1)</p>
+                  </div>
+                )}
+
+                {/* Credit side */}
+                {pair.cr ? (
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">CREDIT</span>
+                      <span className="font-mono text-blue-300 text-sm">{pair.cr.code}</span>
+                      <span className="text-gray-300 text-sm">{pair.cr.name}</span>
+                    </div>
+                    <div className="text-right mb-3">
+                      <span className="font-mono text-lg font-bold text-red-400">{fmt(pair.cr.amount)}</span>
+                    </div>
+                    <div className="bg-gray-950/60 rounded-lg p-4 border border-gray-800">
+                      <div className="font-mono text-xs text-gray-300 whitespace-pre-wrap leading-[1.8] tracking-wide">
+                        {pair.cr.explanation}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 flex items-center justify-center">
+                    <p className="text-xs text-gray-500 italic">—</p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
+
+          {/* Totals bar */}
+          <div className="bg-gray-900 rounded-xl border border-gray-700/50 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-300">Journal Totals</span>
+              <div className="flex items-center gap-8">
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Debit</p>
+                  <p className="font-mono text-base font-bold text-green-400">{fmt(totalDr)}</p>
+                </div>
+                <div className="text-gray-600">=</div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Credit</p>
+                  <p className="font-mono text-base font-bold text-red-400">{fmt(totalCr)}</p>
+                </div>
+                <div className="ml-4">
+                  {Math.abs(totalDr - totalCr) < 0.01 ? (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">BALANCED</span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">UNBALANCED</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50 rounded-b-2xl">
           <Button variant="outline" className="w-full" onClick={onClose}>

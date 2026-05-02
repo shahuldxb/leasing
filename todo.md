@@ -1394,3 +1394,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add single Calc button at JV header row (next to Post/Reject actions)
 - [x] Modal shows combined calculation explanation for all entries in that JV as full-screen centered modal
 - [x] NewLease Step 7 keeps per-line Calc with right-side slide-in panel (different context — preview before posting)
+
+## Auto-Post Day-1 JV & Dr/Cr Pairs in Calc Modal (May 2026)
+- [x] Day-1 JV should be auto-posted (status = Posted) when lease is created, not left as Draft
+- [x] Calc modal should show entries as Dr/Cr pairs instead of individual lines (numbered pairs with side-by-side layout)
