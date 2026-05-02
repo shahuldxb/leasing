@@ -72,6 +72,7 @@ export default function NewLease() {
     isLTO: false, ltoPrice: "", ltoDeposit: "", ltoInstalments: "", ltoRate: "", ltoBalloon: "",
     maintenanceBy: "Lessor" as "Lessor"|"Vodafone",
     initialDirectCosts: "", leaseIncentives: "",
+    _autoDeposit: "" as string,
   });
   // Step 2 — Lessee Details
   const [lessee, setLessee] = useState({
@@ -928,7 +929,19 @@ export default function NewLease() {
                 </div>
                 <div>
                   <Label className={labelCls}>Rent Amount *</Label>
-                  <Input className={inputCls} type="number" placeholder="0.00" value={financial.rentAmount} onChange={e => setFinancial(f => ({ ...f, rentAmount: e.target.value }))} />
+                  <Input className={inputCls} type="number" placeholder="0.00" value={financial.rentAmount} onChange={e => {
+                    const rent = e.target.value;
+                    setFinancial(f => {
+                      // Auto-set deposit to 1 month rent if user hasn't manually overridden it
+                      const monthlyRent = f.paymentFrequency === 'Monthly' ? Number(rent)
+                        : f.paymentFrequency === 'Quarterly' ? Number(rent) / 3
+                        : f.paymentFrequency === 'Semi-Annual' ? Number(rent) / 6
+                        : Number(rent) / 12;
+                      const autoDeposit = monthlyRent > 0 ? String(Math.round(monthlyRent * 100) / 100) : '';
+                      const depositUnchanged = !f.securityDeposit || f.securityDeposit === '0' || f.securityDeposit === f._autoDeposit;
+                      return { ...f, rentAmount: rent, ...(depositUnchanged ? { securityDeposit: autoDeposit, _autoDeposit: autoDeposit } : {}) };
+                    });
+                  }} />
                 </div>
                 <div>
                   <Label className={labelCls}>Payment Frequency *</Label>
@@ -954,7 +967,8 @@ export default function NewLease() {
                 </div>
                 <div>
                   <Label className={labelCls}>Security Deposit</Label>
-                  <Input className={inputCls} type="number" placeholder="0.00" value={financial.securityDeposit} onChange={e => setFinancial(f => ({ ...f, securityDeposit: e.target.value }))} />
+                  <Input className={inputCls} type="number" placeholder="0.00" value={financial.securityDeposit} onChange={e => setFinancial(f => ({ ...f, securityDeposit: e.target.value, _autoDeposit: f._autoDeposit }))} />
+                  <p className="text-xs text-muted-foreground mt-1">Default: 1 month rent. Adjust if different (e.g. 2 months).</p>
                 </div>
                 <div>
                   <Label className={labelCls}>Notice Period (days)</Label>

@@ -1373,3 +1373,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Wire sp_PostInitialRecognitionJV into createLease mutation (auto-called on lease creation in Step 7)
 - [x] Update NewLease.tsx Step 7 to show Day-1 JV preview (Dr ROU / Cr Lease Liability / IDC / Incentives / Deposit) before posting
 - [x] Show JV number in the success message after lease is posted (toast notification)
+
+## Security Deposit Default Fix (May 2026)
+- [x] Security deposit field in NewLease Step 4 should default to 1 month rent (monthly_payment value) and show hint "Default: 1 month rent"
+- [x] Auto-update deposit when monthly payment changes (unless user has manually overridden it)
