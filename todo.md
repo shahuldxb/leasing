@@ -1443,3 +1443,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## GitHub Push Fix (May 2026)
 - [x] Removed run_cred_test.sh (containing Azure OpenAI key) from git history using git-filter-repo
 - [x] Force-pushed clean history to github.com/shahuldxb/leasing.git
+
+## IBR Library Realistic Data (May 2026)
+- [x] Delete all existing IBR Library rows (11 rows removed)
+- [x] Insert 145 realistic IBR rates based on actual market data: 9 currencies (QAR, USD, AED, SAR, EUR, GBP, BHD, OMR, KWD), 5 tenor bands, historical periods 2022-2026
