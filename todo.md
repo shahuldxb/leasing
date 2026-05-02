@@ -1368,8 +1368,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Edit mode: vehicle fields restored from asset_json on load
 
 ## Day-1 Initial Recognition JV (May 2026)
-- [ ] Insert 6 missing GL codes: 10150 ROU IDC, 20020 Accrued IDC, 12020 Security Deposit, 20030 Lease Incentives, 52040 Depreciation Tower, 51030 Finance Cost Tower
-- [ ] Create sp_PostInitialRecognitionJV stored procedure
-- [ ] Wire sp_PostInitialRecognitionJV into upsertLease mutation (called on lease post in Step 7)
-- [ ] Update NewLease.tsx Step 7 to show Day-1 JV preview (Dr ROU / Cr Lease Liability) before posting
-- [ ] Show JV number in the success message after lease is posted
+- [x] Insert 6 missing GL codes: 10110 ROU Vehicles, 10120 ROU Equipment, 10140 ROU Tower, 21030 Lease Liability Vehicles, 21040 Lease Liability Equipment, 21060 Lease Liability Tower
+- [x] Create sp_PostInitialRecognitionJV stored procedure
+- [x] Wire sp_PostInitialRecognitionJV into createLease mutation (auto-called on lease creation in Step 7)
+- [x] Update NewLease.tsx Step 7 to show Day-1 JV preview (Dr ROU / Cr Lease Liability / IDC / Incentives / Deposit) before posting
+- [x] Show JV number in the success message after lease is posted (toast notification)
