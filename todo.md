@@ -1424,3 +1424,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Remove Maker/Checker from Day-1 JV (May 2026)
 - [x] Remove Maker/Checker warning banner from NewLease Step 7 — replaced with green Auto-Post confirmation
 - [x] Day-1 JV is auto-posted (status = Posted) with no approval required (SP already sets status = Posted)
+
+## Fix View Details in Lease Management (May 2026)
+- [ ] Fix View Details functionality in Lease Register — incorrectly programmed

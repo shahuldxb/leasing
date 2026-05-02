@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { getPool } from "../db-sqlserver";
 
 export const journalVoucherRouter = router({
@@ -171,12 +172,18 @@ export const journalVoucherRouter = router({
   postInitialRecognitionJV: protectedProcedure
     .input(z.object({ contract_id: z.number().int() }))
     .mutation(async ({ input }) => {
-      const pool = await getPool();
-      const req = pool.request();
-      req.input("contract_id", input.contract_id);
-      const result = await req.execute("accounting.sp_PostInitialRecognitionJV");
-      const row = (result.recordset as any[])?.[0] ?? null;
-      return row;
+      try {
+        const pool = await getPool();
+        const req = pool.request();
+        req.input("contract_id", input.contract_id);
+        const result = await req.execute("accounting.sp_PostInitialRecognitionJV");
+        const row = (result.recordset as any[])?.[0] ?? null;
+        if (!row) throw new Error('SP returned no result for contract ' + input.contract_id);
+        return row;
+      } catch (err: any) {
+        console.error('[postInitialRecognitionJV] Error:', err.message, err.stack);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message || 'Failed to post Day-1 JV for contract ' + input.contract_id });
+      }
     }),
 
   // ── Chart of Accounts ─────────────────────────────────────────────────────
