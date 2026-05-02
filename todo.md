@@ -1462,7 +1462,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Lease Detail Data Mismatch Audit (May 2026)
 - [x] Audit: Lease Liability and ROU Asset NBV showing as "—" in header despite valid data in DB
 - [x] Audit: Txn History tab showing "No transactions posted yet" despite Day-1 JV existing
-- [ ] Audit: Compare all tabs (Lessor, Lessee, Asset, Financial, LTO, Amortisation, Txn History) with actual contract data
+- [x] Audit: Compare all tabs (Lessor, Lessee, Asset, Financial, LTO, Amortisation, Txn History) with actual contract data
 - [x] Fix all identified data mapping issues
 
 ## Sidebar Navigation Restructure (May 2026)
