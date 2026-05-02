@@ -17,7 +17,10 @@ const SCREEN_ID = "VFACCJVUIX0001P001";
 
 const JV_TYPE_LABELS: Record<string, string> = {
   INCEPTION: "Day-1 Inception",
+  "Initial Recognition": "Day-1 Inception",
   MONTHLY_AMORT: "Monthly Amortisation",
+  "Monthly Lease Payment": "Lease Payment",
+  "Monthly Depreciation": "Depreciation",
   REMEASUREMENT: "Remeasurement",
   PERIOD_CLOSE: "Period-End Close",
   TERMINATION: "Termination",
@@ -26,7 +29,10 @@ const JV_TYPE_LABELS: Record<string, string> = {
 
 const JV_TYPE_COLORS: Record<string, string> = {
   INCEPTION: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  "Initial Recognition": "bg-blue-500/15 text-blue-400 border-blue-500/30",
   MONTHLY_AMORT: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  "Monthly Lease Payment": "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  "Monthly Depreciation": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
   REMEASUREMENT: "bg-orange-500/15 text-orange-400 border-orange-500/30",
   PERIOD_CLOSE: "bg-teal-500/15 text-teal-400 border-teal-500/30",
   TERMINATION: "bg-red-500/15 text-red-400 border-red-500/30",
@@ -477,173 +483,133 @@ export default function JournalVoucher() {
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-gray-900 border-b border-gray-800 z-10">
                     <tr>
-                      <th className="w-8 px-3 py-2">
-                        <input type="checkbox" className="accent-blue-500"
-                          checked={batchSelected.size === rows.filter((r: any) => r.status !== "Posted").length && rows.length > 0}
-                          onChange={e => {
-                            if (e.target.checked) setBatchSelected(new Set(rows.filter((r: any) => r.status !== "Posted").map((r: any) => r.jv_id)));
-                            else setBatchSelected(new Set());
-                          }}
-                        />
-                      </th>
-                      <th className="w-6 px-2 py-2" />{/* expand chevron */}
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium">JV Number</th>
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Type</th>
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Period</th>
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Contract</th>
-                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Total Debit</th>
-                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Total Credit</th>
+                      <th className="w-6 px-2 py-2" />{/* spacer */}
+                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Dr/Cr</th>
+                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Acct Code</th>
+                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Account Name</th>
+                      <th className="px-3 py-2 text-left text-gray-400 font-medium">Description</th>
+                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Debit</th>
+                      <th className="px-3 py-2 text-right text-gray-400 font-medium">Credit</th>
                       <th className="px-3 py-2 text-left text-gray-400 font-medium">Status</th>
                       <th className="px-3 py-2 text-left text-gray-400 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((r: any) => {
-                      const isExpanded = expandedId === r.jv_id;
-                      const lines: any[] = isExpanded ? expandedLines : [];
-                      return (
-                        <React.Fragment key={r.jv_id}>
-                          {/* ── Parent JV row ── */}
-                          <tr
-                            key={`jv-${r.jv_id}`}
-                            className={`border-b border-gray-800/60 cursor-pointer transition-colors ${
-                              isExpanded ? "bg-blue-950/30 border-blue-800/40" : "hover:bg-gray-800/40"
-                            }`}
-                            onClick={() => setExpandedId(isExpanded ? null : r.jv_id)}
-                            onDoubleClick={() => {
-                              if (r.contract_id) setLocation(`/leases/transaction-centre?contractId=${r.contract_id}`);
-                            }}
-                            title={r.contract_id ? `Double-click to open ${r.contract_ref ?? "lease"} in Transaction Centre` : undefined}
-                          >
-                            <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                              {r.status !== "Posted" && (
-                                <input type="checkbox" className="accent-blue-500"
-                                  checked={batchSelected.has(r.jv_id)}
-                                  onChange={e => {
-                                    const s = new Set(batchSelected);
-                                    if (e.target.checked) s.add(r.jv_id); else s.delete(r.jv_id);
-                                    setBatchSelected(s);
-                                  }}
-                                />
-                              )}
-                            </td>
-                            <td className="px-2 py-2 text-gray-500">
-                              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-150 ${isExpanded ? "rotate-90 text-blue-400" : ""}`} />
-                            </td>
-                            <td className="px-3 py-2 font-mono text-blue-300 font-medium">{r.jv_number}</td>
-                            <td className="px-3 py-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] border ${JV_TYPE_COLORS[r.jv_type] ?? "bg-gray-700 text-gray-300"}`}>
-                                {JV_TYPE_LABELS[r.jv_type] ?? r.jv_type}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-400">{r.period_year}-{String(r.period_month).padStart(2, "00")}</td>
-                            <td className="px-3 py-2 max-w-[140px]">
-                              {r.contract_ref ? (
-                                <button
-                                  className="font-mono text-blue-400 hover:text-blue-200 hover:underline truncate block max-w-full text-left transition-colors"
-                                  onClick={e => { e.stopPropagation(); setLocation(`/leases/transaction-centre?contractId=${r.contract_id}`); }}
-                                  title={`Open ${r.contract_ref} in Transaction Centre`}
-                                >
-                                  {r.contract_ref}
-                                </button>
-                              ) : (
-                                <span className="text-gray-600">—</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-right font-mono text-green-400">{fmt(r.total_debit, r.currency)}</td>
-                            <td className="px-3 py-2 text-right font-mono text-red-400">{fmt(r.total_credit, r.currency)}</td>
-                            <td className="px-3 py-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] border ${STATUS_COLORS[r.status] ?? "bg-gray-700 text-gray-300"}`}>
-                                {r.status}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                              <div className="flex items-center gap-1">
-                                {(r.status === "Draft" || r.status === "Submitted") && (
-                                  <>
-                                    <Button size="sm" className="h-6 px-2 text-[10px] bg-green-700 hover:bg-green-600 text-white"
-                                      onClick={() => postMut.mutate({ jv_id: r.jv_id })} disabled={postMut.isPending}>
-                                      <CheckCircle className="w-3 h-3 mr-0.5" />Post
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="h-6 px-2 text-[10px] border-red-700/50 text-red-400 hover:bg-red-900/20"
-                                      onClick={() => setRejectDialog({ open: true, jv_id: r.jv_id, reason: "" })}>
-                                      <XCircle className="w-3 h-3 mr-0.5" />Reject
-                                    </Button>
-                                  </>
-                                )}
-                                {r.status === "Posted" && (
-                                  <span className="text-[10px] text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Posted</span>
-                                )}
-                                <button
-                                  onClick={() => setCalcModalJv({ jvNumber: r.jv_number, jvId: r.jv_id })}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors ml-1"
-                                  title="View IFRS 16 calculation breakdown"
-                                >
-                                  <Calculator className="w-3 h-3" />
-                                  Calc
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-
-                          {/* ── Inline expanded lines ── */}
-                          {isExpanded && (
-                            <tr key={`lines-${r.jv_id}`}>
-                              <td colSpan={10} className="px-0 py-0 bg-gray-900/60 border-b border-blue-800/30">
-                                {!expandedJv ? (
-                                  <div className="flex items-center gap-2 px-12 py-3 text-gray-500 text-xs">
-                                    <RefreshCw className="w-3 h-3 animate-spin" />Loading entries...
+                    {(() => {
+                      const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                      return rows.map((r: any, rIdx: number) => {
+                        const jvLines = allLines.filter((l: any) => l.jv_id === r.jv_id);
+                        const drLines = jvLines.filter((l: any) => l.dr_cr === 'Dr');
+                        const crLines = jvLines.filter((l: any) => l.dr_cr === 'Cr');
+                        const periodStr = `${monthNames[r.period_month]}-${String(r.period_year).slice(2)}`;
+                        const postingDateStr = r.posting_date ? new Date(r.posting_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+                        const createdDateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+                        return (
+                          <React.Fragment key={r.jv_id}>
+                            {/* ── Spacer row between groups ── */}
+                            {rIdx > 0 && (
+                              <tr><td colSpan={9} className="h-4 bg-gray-950"></td></tr>
+                            )}
+                            {/* ── JV Group Header ── */}
+                            <tr className="bg-gray-800/70 border-b border-gray-700/60">
+                              <td colSpan={9} className="px-4 py-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <FileText className="w-3.5 h-3.5 text-amber-400" />
+                                    <span className="font-mono text-blue-300 font-semibold text-[11px]">{r.jv_number}</span>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] border ${JV_TYPE_COLORS[r.jv_type] ?? 'bg-gray-700 text-gray-300'}`}>
+                                      {JV_TYPE_LABELS[r.jv_type] ?? r.jv_type}
+                                    </span>
+                                    {r.contract_ref && (
+                                      <button
+                                        className="font-mono text-[10px] text-blue-400 hover:text-blue-200 hover:underline transition-colors"
+                                        onClick={() => setLocation(`/leases/transaction-centre?contractId=${r.contract_id}`)}
+                                      >
+                                        {r.contract_ref}
+                                      </button>
+                                    )}
+                                    <span className="text-[10px] text-gray-500">|</span>
+                                    <span className="text-[10px] text-gray-400">Period: <span className="text-amber-300 font-medium">{periodStr}</span></span>
+                                    <span className="text-[10px] text-gray-500">|</span>
+                                    <span className="text-[10px] text-gray-400">Posted: <span className="text-gray-200">{postingDateStr}</span></span>
+                                    <span className="text-[10px] text-gray-500">|</span>
+                                    <span className="text-[10px] text-gray-400">Created: <span className="text-gray-200">{createdDateStr}</span></span>
                                   </div>
-                                ) : (
-                                  <table className="w-full text-xs">
-                                    <thead>
-                                      <tr className="bg-gray-800/80 border-b border-gray-700">
-                                        <th className="w-10" />{/* indent */}
-                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-8">#</th>
-                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-20">Dr/Cr</th>
-                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-24">Acct Code</th>
-                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium">Account Name</th>
-                                        <th className="px-3 py-1.5 text-right text-gray-500 font-medium w-36">Amount</th>
-                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium">Description</th>
-
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {lines.map((line: any, idx: number) => {
-                                        const isDr = line.dr_cr === "Dr";
-                                        return (
-                                          <tr key={line.line_id ?? idx}
-                                            className={`border-b border-gray-800/30 ${
-                                              isDr ? "bg-green-950/20" : "bg-red-950/20"
-                                            }`}>
-                                            <td className="w-10 pl-10">
-                                              <span className="text-gray-700 text-[10px]">{idx === lines.length - 1 ? "└" : "├"}─</span>
-                                            </td>
-                                            <td className="px-3 py-1.5 text-gray-600 font-mono">{line.line_seq}</td>
-                                            <td className="px-3 py-1.5">
-                                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                                isDr ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                                              }`}>{line.dr_cr}</span>
-                                            </td>
-                                            <td className="px-3 py-1.5 font-mono text-blue-300">{line.account_code}</td>
-                                            <td className="px-3 py-1.5 text-gray-200">{line.account_name}</td>
-                                            <td className={`px-3 py-1.5 text-right font-mono font-semibold ${
-                                              isDr ? "text-green-400" : "text-red-400"
-                                            }`}>{fmt(line.amount, line.currency)}</td>
-                                            <td className="px-3 py-1.5 text-gray-400 max-w-[240px] truncate">{line.description}</td>
-
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] border ${STATUS_COLORS[r.status] ?? 'bg-gray-700 text-gray-300'}`}>
+                                      {r.status}
+                                    </span>
+                                    {(r.status === 'Draft' || r.status === 'Submitted') && (
+                                      <>
+                                        <Button size="sm" className="h-5 px-2 text-[9px] bg-green-700 hover:bg-green-600 text-white"
+                                          onClick={() => postMut.mutate({ jv_id: r.jv_id })} disabled={postMut.isPending}>
+                                          <CheckCircle className="w-2.5 h-2.5 mr-0.5" />Post
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-5 px-2 text-[9px] border-red-700/50 text-red-400 hover:bg-red-900/20"
+                                          onClick={() => setRejectDialog({ open: true, jv_id: r.jv_id, reason: '' })}>
+                                          <XCircle className="w-2.5 h-2.5 mr-0.5" />Reject
+                                        </Button>
+                                      </>
+                                    )}
+                                    <button
+                                      onClick={() => setCalcModalJv({ jvNumber: r.jv_number, jvId: r.jv_id })}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                                      title="View IFRS 16 calculation breakdown"
+                                    >
+                                      <Calculator className="w-2.5 h-2.5" />Calc
+                                    </button>
+                                  </div>
+                                </div>
+                                {r.description && (
+                                  <div className="mt-1 text-[10px] text-gray-500 pl-6">{r.description}</div>
                                 )}
                               </td>
                             </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
+                            {/* ── Debit lines ── */}
+                            {drLines.map((line: any, idx: number) => (
+                              <tr key={`dr-${line.line_id ?? idx}`} className="border-b border-gray-800/30 bg-green-950/10 hover:bg-green-950/20">
+                                <td className="px-2 py-1.5"></td>
+                                <td className="px-3 py-1.5">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/40 text-green-400 border border-green-700/40">Dr</span>
+                                </td>
+                                <td className="px-3 py-1.5 font-mono text-blue-300 text-[11px]">{line.account_code}</td>
+                                <td className="px-3 py-1.5 text-gray-200">{line.account_name}</td>
+                                <td className="px-3 py-1.5 text-gray-400 max-w-[200px] truncate">{line.description}</td>
+                                <td className="px-3 py-1.5 text-right font-mono text-green-400 font-semibold">{fmt(line.amount, line.currency)}</td>
+                                <td className="px-3 py-1.5 text-right font-mono text-gray-700">—</td>
+                                <td className="px-3 py-1.5"></td>
+                                <td className="px-3 py-1.5"></td>
+                              </tr>
+                            ))}
+                            {/* ── Credit lines ── */}
+                            {crLines.map((line: any, idx: number) => (
+                              <tr key={`cr-${line.line_id ?? idx}`} className="border-b border-gray-800/30 bg-red-950/10 hover:bg-red-950/20">
+                                <td className="px-2 py-1.5"></td>
+                                <td className="px-3 py-1.5">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-900/40 text-red-400 border border-red-700/40">Cr</span>
+                                </td>
+                                <td className="px-3 py-1.5 font-mono text-blue-300 text-[11px]">{line.account_code}</td>
+                                <td className="px-3 py-1.5 text-gray-200 pl-6">{line.account_name}</td>
+                                <td className="px-3 py-1.5 text-gray-400 max-w-[200px] truncate">{line.description}</td>
+                                <td className="px-3 py-1.5 text-right font-mono text-gray-700">—</td>
+                                <td className="px-3 py-1.5 text-right font-mono text-red-400 font-semibold">{fmt(line.amount, line.currency)}</td>
+                                <td className="px-3 py-1.5"></td>
+                                <td className="px-3 py-1.5"></td>
+                              </tr>
+                            ))}
+                            {/* ── Totals row ── */}
+                            <tr className="border-b border-gray-700/50 bg-gray-800/40">
+                              <td className="px-2 py-1.5"></td>
+                              <td colSpan={4} className="px-3 py-1.5 text-right text-[10px] text-gray-500 font-medium">TOTAL</td>
+                              <td className="px-3 py-1.5 text-right font-mono text-green-300 font-bold border-t border-green-800/40">{fmt(r.total_debit, r.currency)}</td>
+                              <td className="px-3 py-1.5 text-right font-mono text-red-300 font-bold border-t border-red-800/40">{fmt(r.total_credit, r.currency)}</td>
+                              <td className="px-3 py-1.5"></td>
+                              <td className="px-3 py-1.5"></td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               )}

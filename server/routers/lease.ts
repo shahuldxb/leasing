@@ -1248,4 +1248,131 @@ export const leaseRouter = router({
       ]).catch(() => {/* non-blocking */});
       return { ok: true };
     }),
+
+  // ── MONTHLY JV POSTING (DEMO MODE) ──────────────────────────────────────
+  postMonthlyEntries: protectedProcedure
+    .input(z.object({
+      contractIds: z.array(z.number()).min(1),
+      monthsToPost: z.number().min(1).max(120).default(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const results: Array<{
+        contractId: number;
+        contractRef: string;
+        monthsPosted: number;
+        totalInterest: number;
+        totalPrincipal: number;
+        totalDepreciation: number;
+        totalMonthsPosted: number;
+        totalTermMonths: number;
+        currentLiability: number;
+        currentRouNbv: number;
+        details: Array<{
+          month_num: number;
+          period_date: string;
+          jv_payment_number: string;
+          jv_depreciation_number: string;
+          interest_amount: number;
+          principal_amount: number;
+          payment_amount: number;
+          depreciation_amount: number;
+          opening_liability: number;
+          closing_liability: number;
+          rou_nbv: number;
+        }>;
+        error?: string;
+      }> = [];
+
+      for (const contractId of input.contractIds) {
+        try {
+          const recordsets = await execSPPMulti('sp_PostMonthlyEntry', [
+            { name: 'ContractId',  type: sql.Int, value: contractId },
+            { name: 'MonthsToPost', type: sql.Int, value: input.monthsToPost },
+          ]);
+          const details = (recordsets[0] ?? []) as any[];
+          const summary = (recordsets[1]?.[0] ?? {}) as any;
+          
+          // Get contract_ref from details or query
+          const contractRef = details[0]?.contract_ref ?? `Contract-${contractId}`;
+          
+          results.push({
+            contractId,
+            contractRef,
+            monthsPosted: summary.months_posted ?? 0,
+            totalInterest: summary.total_interest ?? 0,
+            totalPrincipal: summary.total_principal ?? 0,
+            totalDepreciation: summary.total_depreciation ?? 0,
+            totalMonthsPosted: summary.total_months_posted ?? 0,
+            totalTermMonths: summary.total_term_months ?? 0,
+            currentLiability: summary.current_liability ?? 0,
+            currentRouNbv: summary.current_rou_nbv ?? 0,
+            details: details.map((d: any) => ({
+              month_num: d.month_num,
+              period_date: d.period_date,
+              jv_payment_number: d.jv_payment_number,
+              jv_depreciation_number: d.jv_depreciation_number,
+              interest_amount: d.interest_amount,
+              principal_amount: d.principal_amount,
+              payment_amount: d.payment_amount,
+              depreciation_amount: d.depreciation_amount,
+              opening_liability: d.opening_liability,
+              closing_liability: d.closing_liability,
+              rou_nbv: d.rou_nbv,
+            })),
+          });
+        } catch (e: any) {
+          results.push({
+            contractId,
+            contractRef: `Contract-${contractId}`,
+            monthsPosted: 0,
+            totalInterest: 0,
+            totalPrincipal: 0,
+            totalDepreciation: 0,
+            totalMonthsPosted: 0,
+            totalTermMonths: 0,
+            currentLiability: 0,
+            currentRouNbv: 0,
+            details: [],
+            error: e.message,
+          });
+        }
+      }
+
+      // Write audit log
+      const totalMonthsPosted = results.reduce((s, r) => s + r.monthsPosted, 0);
+      await writeAuditLog({
+        action: 'POST_MONTHLY_ENTRIES',
+        entityType: 'JOURNAL_VOUCHER',
+        entityId: input.contractIds[0],
+        entityCode: results[0]?.contractRef ?? '',
+        changedBy: ctx.user.name ?? ctx.user.email ?? 'system',
+        screenId: 'VFLAMORT0001P001',
+        afterJson: JSON.stringify({ contractIds: input.contractIds, monthsToPost: input.monthsToPost, totalMonthsPosted }),
+      }).catch(() => {});
+
+      return { results, totalContractsProcessed: results.length, totalMonthsPosted };
+    }),
+
+  // ── GET LEASES FOR MONTHLY POSTING GRID ─────────────────────────────────
+  getLeasesForPosting: protectedProcedure
+    .query(async () => {
+      // Get all active/draft contracts with their posting status
+      const rows = await execSPP('sp_GetLeasesForPosting', []);
+      return rows as Array<{
+        contract_id: number;
+        contract_ref: string;
+        lessee_name: string;
+        asset_type: string;
+        commencement_date: string;
+        term_months: number;
+        monthly_payment: number;
+        ibr: number;
+        currency: string;
+        rou_asset_value: number;
+        lease_liability: number;
+        months_posted: number;
+        last_posted_date: string | null;
+        status: string;
+      }>;
+    }),
 });

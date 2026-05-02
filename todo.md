@@ -1447,3 +1447,20 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## IBR Library Realistic Data (May 2026)
 - [x] Delete all existing IBR Library rows (11 rows removed)
 - [x] Insert 145 realistic IBR rates based on actual market data: 9 currencies (QAR, USD, AED, SAR, EUR, GBP, BHD, OMR, KWD), 5 tenor bands, historical periods 2022-2026
+
+## Monthly JV Posting from Amortisation Screen (May 2026)
+- [x] Create sp_PostMonthlyEntry SP: posts 2 JVs per lease per month (Payment JV + Depreciation JV)
+- [x] Add lease selection grid (with checkboxes) at top of Amortisation Schedule screen
+- [x] Add "Post N Months" action bar with month count selector (1-12)
+- [x] Add tRPC mutation postMonthlyEntries for sequential monthly posting
+- [x] Monthly JVs flow into Journal Voucher Register for export
+- [x] Show posting results summary (interest, depreciation, months posted per contract)
+- [x] JV Register: Add JV type labels for Monthly Lease Payment + Monthly Depreciation
+- [x] JV Register: Group JVs logically by period + contract with amber group headers
+- [x] JV Register: Sort by period DESC, contract, jv_type for logical pairing
+
+## Lease Detail Data Mismatch Audit (May 2026)
+- [ ] Audit: Lease Liability and ROU Asset NBV showing as "—" in header despite valid data in DB
+- [ ] Audit: Txn History tab showing "No transactions posted yet" despite Day-1 JV existing
+- [ ] Audit: Compare all tabs (Lessor, Lessee, Asset, Financial, LTO, Amortisation, Txn History) with actual contract data
+- [ ] Fix all identified data mapping issues

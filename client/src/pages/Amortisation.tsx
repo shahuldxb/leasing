@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -8,8 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { toast } from "sonner";
-import { Calculator, Download, ChevronDown, ChevronRight, TrendingDown, Banknote, BookOpen, Building2, ArrowDownRight, BarChart3, HelpCircle, Info, X, Zap, CheckCircle2, Lock, Play, Edit3, XCircle, Receipt } from "lucide-react";
+import { Calculator, Download, ChevronDown, ChevronRight, TrendingDown, Banknote, BookOpen, Building2, ArrowDownRight, BarChart3, HelpCircle, Info, X, Zap, CheckCircle2, Lock, Play, Edit3, XCircle, Receipt, Send, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 // ── Column header with tooltip helper ─────────────────────────────────────────
 function ColHead({ label, tip }: { label: string; tip: string }) {
@@ -230,8 +233,11 @@ export default function Amortisation() {
   const [closeDialogId, setCloseDialogId]         = useState<number | null>(null);
   const [closeDate, setCloseDate]                 = useState<string>("");
   const [glPostingsContractId, setGlPostingsContractId] = useState<number | null>(null);
-
-  // ── Data queries ──────────────────────────────────────────────────────────
+  // ── Monthly Posting state ─────────────────────────────────────────────────
+  const [selectedLeases, setSelectedLeases] = useState<Set<number>>(new Set());
+  const [monthsToPost, setMonthsToPost] = useState<number>(1);
+  const [postingProgress, setPostingProgress] = useState<{ current: number; total: number } | null>(null);
+  // ── Data queries ───────────────────────────────────────────────────────────
   const { data: rawSchedule, isLoading: loadingSchedule } =
     trpc.lease.getAmortisationScheduleAll.useQuery({ year, viewMode });
 
@@ -246,8 +252,11 @@ export default function Amortisation() {
       { contractId: glPostingsContractId ?? undefined },
       { enabled: glPostingsContractId !== null }
     );
-  const glPostings = Array.isArray(rawGLPostings) ? rawGLPostings as any[] : [];
-
+   const glPostings = Array.isArray(rawGLPostings) ? rawGLPostings as any[] : [];
+  // ── Leases for posting grid ────────────────────────────────────────────────
+  const { data: rawLeasesForPosting, isLoading: loadingLeasesForPosting } =
+    trpc.lease.getLeasesForPosting.useQuery();
+  const leasesForPosting = Array.isArray(rawLeasesForPosting) ? rawLeasesForPosting as any[] : [];
   const grouped    = useMemo(() => groupByContract(scheduleRows), [scheduleRows]);
   const allGLPeriods = useMemo(() => groupGLByPeriod(glEntries), [glEntries]);
   // Available months for the month picker
@@ -322,7 +331,54 @@ export default function Amortisation() {
     },
     onError: (err) => toast.error(`Calculation failed: ${err.message}`),
   });
-  // ── Lifecycle mutations ───────────────────────────────────────────────────
+  // ── Monthly JV Posting mutation ─────────────────────────────────────────────────
+  const postMonthlyMut = trpc.lease.postMonthlyEntries.useMutation({
+    onSuccess: (data) => {
+      const d = data as any;
+      const totalPosted = d.totalMonthsPosted ?? 0;
+      const errors = (d.results ?? []).filter((r: any) => r.error);
+      if (errors.length > 0) {
+        toast.error(`Posted ${totalPosted} months but ${errors.length} contract(s) had errors`);
+      } else {
+        toast.success(`Successfully posted ${totalPosted} monthly entries across ${d.totalContractsProcessed} lease(s)`);
+      }
+      setPostingProgress(null);
+      setSelectedLeases(new Set());
+      utils.lease.getAmortisationScheduleAll.invalidate();
+      utils.lease.getConsolidatedGLEntries.invalidate();
+      utils.lease.getLeasesForPosting.invalidate();
+    },
+    onError: (err) => {
+      toast.error(`Monthly posting failed: ${err.message}`);
+      setPostingProgress(null);
+    },
+  });
+  const handlePostMonthly = useCallback(() => {
+    if (selectedLeases.size === 0) {
+      toast.error('Please select at least one lease');
+      return;
+    }
+    setPostingProgress({ current: 0, total: selectedLeases.size * monthsToPost });
+    postMonthlyMut.mutate({
+      contractIds: Array.from(selectedLeases),
+      monthsToPost,
+    });
+  }, [selectedLeases, monthsToPost, postMonthlyMut]);
+  const toggleLeaseSelection = useCallback((contractId: number) => {
+    setSelectedLeases(prev => {
+      const next = new Set(prev);
+      next.has(contractId) ? next.delete(contractId) : next.add(contractId);
+      return next;
+    });
+  }, []);
+  const toggleAllLeases = useCallback(() => {
+    if (selectedLeases.size === leasesForPosting.length) {
+      setSelectedLeases(new Set());
+    } else {
+      setSelectedLeases(new Set(leasesForPosting.map((l: any) => l.contract_id)));
+    }
+   }, [selectedLeases, leasesForPosting]);
+  // ── Lifecycle mutations ─────────────────────────────────────────────
   const originateMut = trpc.lease.originateLease.useMutation({
     onSuccess: (data) => {
       const d = data as any;
@@ -387,8 +443,178 @@ export default function Amortisation() {
         subtitle="IFRS 16 consolidated amortisation schedule and GL accounting entries"
       />
 
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════
+          LEASE SELECTION GRID — Monthly JV Posting (Demo Mode)
+      ══════════════════════════════════════════════════════════════════ */}
       <div className="px-6 pb-4">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Send className="w-4 h-4 text-[#e60000]" />
+              <span className="text-sm font-semibold">Post Monthly Entries</span>
+              <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-400">Demo Mode</Badge>
+              {selectedLeases.size > 0 && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  {selectedLeases.size} lease{selectedLeases.size > 1 ? 's' : ''} selected
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Months to post selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">Months:</label>
+                <Select value={String(monthsToPost)} onValueChange={v => setMonthsToPost(Number(v))}>
+                  <SelectTrigger className="w-20 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 6, 12, 24, 36, 48].map(m => (
+                      <SelectItem key={m} value={String(m)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Post button */}
+              <Button
+                size="sm"
+                className="bg-[#e60000] hover:bg-[#cc0000] text-white flex items-center gap-1.5"
+                onClick={handlePostMonthly}
+                disabled={selectedLeases.size === 0 || postMonthlyMut.isPending}
+              >
+                {postMonthlyMut.isPending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Posting…</>
+                ) : (
+                  <><Play className="h-4 w-4" /> Post {monthsToPost} Month{monthsToPost > 1 ? 's' : ''}</>
+                )}
+              </Button>
+            </div>
+          </div>
+          {/* Progress bar */}
+          {postMonthlyMut.isPending && postingProgress && (
+            <div className="px-4 py-2 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <Progress value={50} className="flex-1 h-2" />
+                <span className="text-xs text-muted-foreground">Processing…</span>
+              </div>
+            </div>
+          )}
+          {/* Lease grid */}
+          {loadingLeasesForPosting ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              <Loader2 className="w-5 h-5 mx-auto mb-2 animate-spin" />
+              Loading leases…
+            </div>
+          ) : leasesForPosting.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              No active leases found. Create a lease first.
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card">
+                  <TableRow className="bg-muted/10">
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedLeases.size === leasesForPosting.length && leasesForPosting.length > 0}
+                        onCheckedChange={toggleAllLeases}
+                      />
+                    </TableHead>
+                    <TableHead className="text-xs">Contract Ref</TableHead>
+                    <TableHead className="text-xs">Lessee</TableHead>
+                    <TableHead className="text-xs">Asset Type</TableHead>
+                    <TableHead className="text-xs text-right">Monthly Payment</TableHead>
+                    <TableHead className="text-xs text-right">IBR %</TableHead>
+                    <TableHead className="text-xs text-center">Term</TableHead>
+                    <TableHead className="text-xs text-center">Months Posted</TableHead>
+                    <TableHead className="text-xs">Last Posted</TableHead>
+                    <TableHead className="text-xs text-center">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {leasesForPosting.map((lease: any) => {
+                    const isSelected = selectedLeases.has(lease.contract_id);
+                    const progress = lease.term_months > 0 ? Math.round((lease.months_posted / lease.term_months) * 100) : 0;
+                    return (
+                      <TableRow
+                        key={lease.contract_id}
+                        className={`cursor-pointer transition-colors ${isSelected ? 'bg-[#e60000]/5' : 'hover:bg-muted/20'}`}
+                        onClick={() => toggleLeaseSelection(lease.contract_id)}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleLeaseSelection(lease.contract_id)}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs font-mono font-medium text-foreground">{lease.contract_ref}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{lease.lessee_name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{lease.asset_type}</TableCell>
+                        <TableCell className="text-xs text-right font-mono">
+                          {lease.currency} {(lease.monthly_payment ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-xs text-right font-mono">
+                          {((lease.ibr ?? 0) * 100).toFixed(2)}%
+                        </TableCell>
+                        <TableCell className="text-xs text-center">{lease.term_months} mo</TableCell>
+                        <TableCell className="text-xs text-center">
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <span className="font-mono">{lease.months_posted}/{lease.term_months}</span>
+                            <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full bg-[#e60000] rounded-full" style={{ width: `${progress}%` }} />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {lease.last_posted_date ? new Date(lease.last_posted_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </TableCell>
+                        <TableCell className="text-xs text-center">
+                          <Badge variant="outline" className={`text-[10px] ${
+                            lease.months_posted >= lease.term_months
+                              ? 'border-emerald-500/40 text-emerald-400'
+                              : lease.months_posted > 0
+                              ? 'border-blue-500/40 text-blue-400'
+                              : 'border-muted-foreground/40 text-muted-foreground'
+                          }`}>
+                            {lease.months_posted >= lease.term_months ? 'Complete' : lease.months_posted > 0 ? 'In Progress' : 'Not Started'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {/* Posting results summary */}
+          {postMonthlyMut.data && !postMonthlyMut.isPending && (
+            <div className="px-4 py-3 border-t border-border bg-emerald-500/5">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-400">Posting Complete</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                {(postMonthlyMut.data as any).results?.map((r: any) => (
+                  <div key={r.contractId} className="bg-card border border-border rounded-lg p-2">
+                    <div className="font-mono font-medium text-foreground">{r.contractRef}</div>
+                    <div className="text-muted-foreground mt-1">
+                      {r.monthsPosted} month{r.monthsPosted > 1 ? 's' : ''} posted
+                    </div>
+                    <div className="text-muted-foreground">
+                      Interest: {r.totalInterest?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-muted-foreground">
+                      Depreciation: {r.totalDepreciation?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </div>
+                    {r.error && <div className="text-red-400 mt-1">⚠ {r.error}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Filter bar ─────────────────────────────────────────────────────────── */}      <div className="px-6 pb-4">
         <div className="bg-card border border-border rounded-xl p-4 flex flex-wrap items-center gap-4">
           {/* Year selector */}
           <div>
