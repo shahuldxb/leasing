@@ -1366,3 +1366,10 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] NewLease Step 3: show "Vehicle Mode" amber badge in header when vehicle type is selected
 - [x] NewLease Step 3: Sub-Asset Sets section hidden for vehicle types (not applicable)
 - [x] Edit mode: vehicle fields restored from asset_json on load
+
+## Day-1 Initial Recognition JV (May 2026)
+- [ ] Insert 6 missing GL codes: 10150 ROU IDC, 20020 Accrued IDC, 12020 Security Deposit, 20030 Lease Incentives, 52040 Depreciation Tower, 51030 Finance Cost Tower
+- [ ] Create sp_PostInitialRecognitionJV stored procedure
+- [ ] Wire sp_PostInitialRecognitionJV into upsertLease mutation (called on lease post in Step 7)
+- [ ] Update NewLease.tsx Step 7 to show Day-1 JV preview (Dr ROU / Cr Lease Liability) before posting
+- [ ] Show JV number in the success message after lease is posted

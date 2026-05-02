@@ -167,6 +167,19 @@ export const journalVoucherRouter = router({
       return (result.recordset as any[])?.[0] ?? null;
     }),
 
+  // ── Day-1 Initial Recognition JV ──────────────────────────────────────────
+  postInitialRecognitionJV: protectedProcedure
+    .input(z.object({ contract_id: z.number().int() }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", input.contract_id);
+      req.input("posted_by", ctx.user.name ?? ctx.user.email);
+      const result = await req.execute("accounting.sp_PostInitialRecognitionJV");
+      const row = (result.recordset as any[])?.[0] ?? null;
+      return row;
+    }),
+
   // ── Chart of Accounts ─────────────────────────────────────────────────────
   getChartOfAccounts: protectedProcedure
     .input(z.object({ ifrs16_only: z.boolean().default(false) }))

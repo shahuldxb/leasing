@@ -71,6 +71,7 @@ export default function NewLease() {
     discountRate: "", securityDeposit: "", noticePeriod: "90",
     isLTO: false, ltoPrice: "", ltoDeposit: "", ltoInstalments: "", ltoRate: "", ltoBalloon: "",
     maintenanceBy: "Lessor" as "Lessor"|"Vodafone",
+    initialDirectCosts: "", leaseIncentives: "",
   });
   // Step 2 — Lessee Details
   const [lessee, setLessee] = useState({
@@ -95,6 +96,8 @@ export default function NewLease() {
   const [docs, setDocs] = useState<{ name: string; type: string; file?: File }[]>([]);
   // Step 7 — computed preview
   const [ifrs16Result, setIfrs16Result] = useState<any>(null);
+  const [day1JvResult, setDay1JvResult] = useState<{ jv_id: number; jv_number: string; rou_debit: number; liability_credit: number; result: string } | null>(null);
+  const [day1JvError, setDay1JvError] = useState<string | null>(null);
 
   // Fetch existing lease data in edit mode
   const { data: editData } = trpc.lease.getLeaseById.useQuery(
@@ -177,6 +180,8 @@ export default function NewLease() {
       ltoRate: d.lto_finance_charge_rate ? String(Number(d.lto_finance_charge_rate) * 100) : '',
       ltoBalloon: String(d.lto_balloon_amount || ''),
       maintenanceBy: (d.maintenance_responsibility === 'Vodafone' ? 'Vodafone' : 'Lessor') as 'Lessor' | 'Vodafone',
+      initialDirectCosts: String(d.initial_direct_costs || ''),
+      leaseIncentives: String(d.lease_incentives || ''),
     });
     // Pre-set the savedContractId so the wizard updates rather than creates
     setSavedContractId(d.contract_id);
@@ -231,6 +236,21 @@ export default function NewLease() {
     const key = getItemKey(setId, code, unitIdx);
     setSetItemDetails(prev => ({ ...prev, [key]: { ...getItemDetail(setId, code, unitIdx), [field]: value } }));
   }
+  const postDay1JVMutation = trpc.journalVoucher.postInitialRecognitionJV.useMutation({
+    onSuccess: (data) => {
+      if (data?.result === 'ALREADY_EXISTS') {
+        toast.info(`Day-1 JV already exists: ${data.existing_jv_number}`);
+      } else if (data?.jv_number) {
+        setDay1JvResult(data);
+        toast.success(`Day-1 Initial Recognition JV created: ${data.jv_number}`);
+      }
+    },
+    onError: (e) => {
+      setDay1JvError(e.message);
+      toast.error("Day-1 JV creation failed: " + e.message);
+    },
+  });
+
   const computeMutation = trpc.genai.computeIFRS16.useMutation({
     onSuccess: (data) => setIfrs16Result(data),
     onError: (e) => toast.error("IFRS 16 computation failed: " + e.message),
@@ -266,6 +286,10 @@ export default function NewLease() {
           contactEmail: lessee.contactEmail || undefined,
           contactPhone: lessee.contactPhone || undefined,
         });
+      }
+      // Auto-post Day-1 Initial Recognition JV
+      if (result?.contract_id) {
+        postDay1JVMutation.mutate({ contract_id: result.contract_id });
       }
       toast.success("Lease created and submitted for approval!");
       setLocation("/leases");
@@ -327,6 +351,8 @@ export default function NewLease() {
       ibr:               Number(financial.discountRate) / 100,
       escalationRate:    Number(financial.escalationRate) / 100 || 0,
       depositAmount:     Number(financial.securityDeposit) || 0,
+      initialDirectCosts: Number(financial.initialDirectCosts) || 0,
+      leaseIncentives:   Number(financial.leaseIncentives) || 0,
       isLTO:             financial.isLTO,
       ltoPurchasePrice:  financial.isLTO ? Number(financial.ltoPrice) : undefined,
       ltoDeposit:        financial.isLTO ? Number(financial.ltoDeposit) : undefined,
@@ -340,7 +366,7 @@ export default function NewLease() {
       updateLeaseMutation.mutate({ contractId: editContractId, ...sharedPayload });
     } else {
       createLeaseMutation.mutate({
-        lessorId: 1, // Will be replaced by lessor lookup/creation
+        lessorId: selectedLessorId ?? 1,
         ...sharedPayload,
       });
     }
@@ -934,6 +960,16 @@ export default function NewLease() {
                   <Label className={labelCls}>Notice Period (days)</Label>
                   <Input className={inputCls} type="number" placeholder="90" value={financial.noticePeriod} onChange={e => setFinancial(f => ({ ...f, noticePeriod: e.target.value }))} />
                 </div>
+                <div>
+                  <Label className={labelCls}>Initial Direct Costs (IDC)</Label>
+                  <Input className={inputCls} type="number" placeholder="0.00" value={financial.initialDirectCosts} onChange={e => setFinancial(f => ({ ...f, initialDirectCosts: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground mt-1">Legal fees, broker commissions, registration costs capitalised into ROU asset</p>
+                </div>
+                <div>
+                  <Label className={labelCls}>Lease Incentives Received</Label>
+                  <Input className={inputCls} type="number" placeholder="0.00" value={financial.leaseIncentives} onChange={e => setFinancial(f => ({ ...f, leaseIncentives: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground mt-1">Cash or rent-free periods received from lessor — reduces ROU asset value</p>
+                </div>
 
                 {/* LTO Option */}
                 <div className="col-span-2 border border-border rounded-lg p-4 space-y-3">
@@ -1188,6 +1224,93 @@ export default function NewLease() {
                   )}
                 </div>
               </div>
+              {/* Day-1 JV Preview */}
+              <div className="col-span-2 border border-[#e60000]/30 bg-[#e60000]/5 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#e60000]" />
+                  <h3 className="font-semibold text-foreground text-sm">Day-1 IFRS 16 Journal Entry (Auto-Generated on Submit)</h3>
+                  <span className="text-xs bg-[#e60000]/20 text-[#e60000] px-2 py-0.5 rounded-full">Initial Recognition</span>
+                </div>
+                <p className="text-xs text-muted-foreground">The following journal entry will be automatically created in the JV Register when this lease is submitted.</p>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs text-muted-foreground">
+                      <th className="text-left py-1.5 pr-4">Account Code</th>
+                      <th className="text-left py-1.5 pr-4">Account Name</th>
+                      <th className="text-right py-1.5 pr-4">Debit</th>
+                      <th className="text-right py-1.5">Credit</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    {(() => {
+                      const assetType = asset.assetType;
+                      const rouCode = VEHICLE_ASSET_TYPES.has(assetType) ? '10110' : assetType.includes('Tower') ? '10140' : assetType.includes('Equipment') ? '10120' : '10100';
+                      const liabCode = VEHICLE_ASSET_TYPES.has(assetType) ? '21030' : assetType.includes('Tower') ? '21060' : assetType.includes('Equipment') ? '21040' : '21020';
+                      const rouName = VEHICLE_ASSET_TYPES.has(assetType) ? 'ROU Asset — Vehicles & Fleet' : assetType.includes('Tower') ? 'ROU Asset — Tower Sites' : assetType.includes('Equipment') ? 'ROU Asset — Equipment' : 'ROU Asset — Property';
+                      const liabName = VEHICLE_ASSET_TYPES.has(assetType) ? 'Lease Liability — Vehicles' : assetType.includes('Tower') ? 'Lease Liability — Tower Sites' : assetType.includes('Equipment') ? 'Lease Liability — Equipment' : 'Lease Liability — Property';
+                      const idc = Number(financial.initialDirectCosts) || 0;
+                      const incentives = Number(financial.leaseIncentives) || 0;
+                      const deposit = Number(financial.securityDeposit) || 0;
+                      const liability = ifrs16Result?.leaseLiability ?? 0;
+                      const rouDebit = liability + idc - incentives;
+                      const fmt = (n: number) => n > 0 ? `${financial.currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+                      return (<>
+                        <tr className="border-b border-border/50">
+                          <td className="py-1.5 pr-4 font-mono text-[#e60000]">{rouCode}</td>
+                          <td className="py-1.5 pr-4">{rouName}</td>
+                          <td className="py-1.5 pr-4 text-right font-medium">{fmt(rouDebit)}</td>
+                          <td className="py-1.5 text-right text-muted-foreground">—</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-1.5 pr-4 font-mono text-[#e60000]">{liabCode}</td>
+                          <td className="py-1.5 pr-4">{liabName}</td>
+                          <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
+                          <td className="py-1.5 text-right font-medium">{fmt(liability)}</td>
+                        </tr>
+                        {idc > 0 && (
+                          <tr className="border-b border-border/50">
+                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">20020</td>
+                            <td className="py-1.5 pr-4">Accrued Initial Direct Costs</td>
+                            <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
+                            <td className="py-1.5 text-right font-medium">{fmt(idc)}</td>
+                          </tr>
+                        )}
+                        {incentives > 0 && (
+                          <tr className="border-b border-border/50">
+                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">20030</td>
+                            <td className="py-1.5 pr-4">Lease Incentives Received</td>
+                            <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
+                            <td className="py-1.5 text-right font-medium">{fmt(incentives)}</td>
+                          </tr>
+                        )}
+                        {deposit > 0 && (<>
+                          <tr className="border-b border-border/50">
+                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">12020</td>
+                            <td className="py-1.5 pr-4">Security Deposit — Lease</td>
+                            <td className="py-1.5 pr-4 text-right font-medium">{fmt(deposit)}</td>
+                            <td className="py-1.5 text-right text-muted-foreground">—</td>
+                          </tr>
+                          <tr className="border-b border-border/50">
+                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">11000</td>
+                            <td className="py-1.5 pr-4">Bank Account — QAR Operating</td>
+                            <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
+                            <td className="py-1.5 text-right font-medium">{fmt(deposit)}</td>
+                          </tr>
+                        </>)}
+                        <tr className="bg-muted/30 font-semibold">
+                          <td className="py-1.5 pr-4 text-xs text-muted-foreground" colSpan={2}>Total</td>
+                          <td className="py-1.5 pr-4 text-right">{fmt(rouDebit + deposit)}</td>
+                          <td className="py-1.5 text-right">{fmt(liability + idc + (incentives > 0 ? 0 : 0) + deposit)}</td>
+                        </tr>
+                      </>);
+                    })()}
+                  </tbody>
+                </table>
+                {!ifrs16Result && (
+                  <p className="text-xs text-amber-500">Note: IFRS 16 computation not yet run — go back to Step 4 and click Next to compute lease liability before reviewing.</p>
+                )}
+              </div>
+
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-600">
                 <strong>Maker/Checker:</strong> This lease will be submitted for approval based on the liability threshold configured in Administration.
               </div>
