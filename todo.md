@@ -1420,3 +1420,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Remove extra posted_by parameter from postInitialRecognitionJV mutation (SP only accepts contract_id)
 - [x] Fix SP to use correct column names: period_year, period_month, posting_date (not period, jv_date)
 - [x] Fix IBR display formatting in calc_explanation (was showing 0.0550% instead of 5.50%)
+
+## Remove Maker/Checker from Day-1 JV (May 2026)
+- [x] Remove Maker/Checker warning banner from NewLease Step 7 — replaced with green Auto-Post confirmation
+- [x] Day-1 JV is auto-posted (status = Posted) with no approval required (SP already sets status = Posted)

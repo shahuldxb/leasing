@@ -1406,8 +1406,8 @@ export default function NewLease() {
                 )}
               </div>
 
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-600">
-                <strong>Maker/Checker:</strong> This lease will be submitted for approval based on the liability threshold configured in Administration.
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm text-emerald-400">
+                <strong>Auto-Post:</strong> The Day-1 IFRS 16 Journal Entry above will be automatically posted to the Journal Voucher Register when you submit this lease. No additional approval is required.
               </div>
             </div>
           )}
