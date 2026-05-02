@@ -1388,3 +1388,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Replace inline CalcExplanationInline in NewLease Step 7 with a right-side slide-in full-height modal
 - [x] Replace inline CalcExplanation in JV Register with same right-side slide-in full-height modal
 - [x] Modal should cover the right side of the screen with proper formatting and scrolling
+
+## Move Calc Button to JV Header Level (May 2026)
+- [x] Remove per-line Calc buttons from JV lines in JV Register
+- [x] Add single Calc button at JV header row (next to Post/Reject actions)
+- [x] Modal shows combined calculation explanation for all entries in that JV as full-screen centered modal
+- [x] NewLease Step 7 keeps per-line Calc with right-side slide-in panel (different context — preview before posting)

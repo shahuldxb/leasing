@@ -45,64 +45,73 @@ function fmt(n: number | null | undefined, cur = "QAR") {
   return new Intl.NumberFormat("en-QA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + " " + cur;
 }
 
-function CalcExplanation({ explanation }: { explanation: string | null }) {
-  const [open, setOpen] = useState(false);
-  if (!explanation) return null;
+// Full-screen modal showing combined calculation explanations for all lines in a JV
+function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: string; lines: any[]; open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  const explanations = lines.filter((l: any) => l.calc_explanation).map((l: any) => ({
+    seq: l.line_seq,
+    drCr: l.dr_cr,
+    code: l.account_code,
+    name: l.account_name,
+    amount: l.amount,
+    explanation: l.calc_explanation,
+  }));
+  if (explanations.length === 0) return null;
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
-        title="View calculation explanation"
+    <div className="fixed inset-0 z-[9999]" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div
+        className="absolute inset-4 md:inset-8 lg:inset-12 bg-gray-950 border border-amber-500/30 rounded-2xl shadow-2xl flex flex-col animate-in fade-in duration-200"
+        onClick={(e) => e.stopPropagation()}
       >
-        <Calculator className="w-3 h-3" />
-        Calc
-      </button>
-      {open && (
-        <div className="fixed inset-0 z-[9999]" onClick={() => setOpen(false)}>
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          {/* Right-side panel */}
-          <div
-            className="absolute top-0 right-0 h-full w-full max-w-[600px] bg-gray-950 border-l border-amber-500/30 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-amber-500/20 bg-gray-900/80">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                  <Calculator className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Calculation Method</h2>
-                  <p className="text-xs text-amber-400/70">IFRS 16 — Blackboard Breakdown</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
-              >
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-amber-500/20 bg-gray-900/80 rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <Calculator className="w-5 h-5 text-amber-400" />
             </div>
-            {/* Body — scrollable */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="bg-gray-900 rounded-xl border border-gray-700/50 p-6">
-                <div className="font-mono text-sm text-gray-200 whitespace-pre-wrap leading-[1.8] tracking-wide">
-                  {explanation}
-                </div>
-              </div>
-            </div>
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50">
-              <Button variant="outline" className="w-full" onClick={() => setOpen(false)}>
-                Close
-              </Button>
+            <div>
+              <h2 className="text-lg font-bold text-white">IFRS 16 Calculation Breakdown</h2>
+              <p className="text-xs text-amber-400/70">{jvNumber} — All Journal Entry Lines</p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
+          >
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
         </div>
-      )}
-    </>
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {explanations.map((e: any, i: number) => (
+            <div key={i} className="bg-gray-900 rounded-xl border border-gray-700/50 overflow-hidden">
+              <div className="flex items-center gap-3 px-5 py-3 bg-gray-800/60 border-b border-gray-700/50">
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  e.drCr === "Dr" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                }`}>{e.drCr}</span>
+                <span className="font-mono text-blue-300 text-sm">{e.code}</span>
+                <span className="text-gray-200 text-sm font-medium">{e.name}</span>
+                <span className={`ml-auto font-mono text-sm font-semibold ${
+                  e.drCr === "Dr" ? "text-green-400" : "text-red-400"
+                }`}>{fmt(e.amount)}</span>
+              </div>
+              <div className="p-5">
+                <div className="font-mono text-sm text-gray-200 whitespace-pre-wrap leading-[1.8] tracking-wide">
+                  {e.explanation}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50 rounded-b-2xl">
+          <Button variant="outline" className="w-full" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -138,6 +147,7 @@ export default function JournalVoucher() {
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; jv_id: number | null; reason: string }>({ open: false, jv_id: null, reason: "" });
   const [genMonthlyDialog, setGenMonthlyDialog] = useState(false);
   const [batchSelected, setBatchSelected] = useState<Set<number>>(new Set());
+  const [calcModalJv, setCalcModalJv] = useState<{ jvNumber: string; jvId: number } | null>(null);
 
   // ── System Settings ───────────────────────────────────────────────────────
   const { data: settings } = trpc.journalVoucher.getSettings.useQuery();
@@ -452,21 +462,31 @@ export default function JournalVoucher() {
                               </span>
                             </td>
                             <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                              {(r.status === "Draft" || r.status === "Submitted") && (
-                                <div className="flex items-center gap-1">
-                                  <Button size="sm" className="h-6 px-2 text-[10px] bg-green-700 hover:bg-green-600 text-white"
-                                    onClick={() => postMut.mutate({ jv_id: r.jv_id })} disabled={postMut.isPending}>
-                                    <CheckCircle className="w-3 h-3 mr-0.5" />Post
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="h-6 px-2 text-[10px] border-red-700/50 text-red-400 hover:bg-red-900/20"
-                                    onClick={() => setRejectDialog({ open: true, jv_id: r.jv_id, reason: "" })}>
-                                    <XCircle className="w-3 h-3 mr-0.5" />Reject
-                                  </Button>
-                                </div>
-                              )}
-                              {r.status === "Posted" && (
-                                <span className="text-[10px] text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Posted</span>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {(r.status === "Draft" || r.status === "Submitted") && (
+                                  <>
+                                    <Button size="sm" className="h-6 px-2 text-[10px] bg-green-700 hover:bg-green-600 text-white"
+                                      onClick={() => postMut.mutate({ jv_id: r.jv_id })} disabled={postMut.isPending}>
+                                      <CheckCircle className="w-3 h-3 mr-0.5" />Post
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="h-6 px-2 text-[10px] border-red-700/50 text-red-400 hover:bg-red-900/20"
+                                      onClick={() => setRejectDialog({ open: true, jv_id: r.jv_id, reason: "" })}>
+                                      <XCircle className="w-3 h-3 mr-0.5" />Reject
+                                    </Button>
+                                  </>
+                                )}
+                                {r.status === "Posted" && (
+                                  <span className="text-[10px] text-green-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Posted</span>
+                                )}
+                                <button
+                                  onClick={() => setCalcModalJv({ jvNumber: r.jv_number, jvId: r.jv_id })}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors ml-1"
+                                  title="View IFRS 16 calculation breakdown"
+                                >
+                                  <Calculator className="w-3 h-3" />
+                                  Calc
+                                </button>
+                              </div>
                             </td>
                           </tr>
 
@@ -489,7 +509,7 @@ export default function JournalVoucher() {
                                         <th className="px-3 py-1.5 text-left text-gray-500 font-medium">Account Name</th>
                                         <th className="px-3 py-1.5 text-right text-gray-500 font-medium w-36">Amount</th>
                                         <th className="px-3 py-1.5 text-left text-gray-500 font-medium">Description</th>
-                                        <th className="px-3 py-1.5 text-left text-gray-500 font-medium w-16">Calc</th>
+
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -515,9 +535,7 @@ export default function JournalVoucher() {
                                               isDr ? "text-green-400" : "text-red-400"
                                             }`}>{fmt(line.amount, line.currency)}</td>
                                             <td className="px-3 py-1.5 text-gray-400 max-w-[240px] truncate">{line.description}</td>
-                                            <td className="px-3 py-1.5">
-                                              <CalcExplanation explanation={line.calc_explanation} />
-                                            </td>
+
                                           </tr>
                                         );
                                       })}
@@ -630,6 +648,15 @@ export default function JournalVoucher() {
             </div>
         </div>
       )}
+        {/* ── Calc Explanation Modal (JV-level) ── */}
+        {calcModalJv && (
+          <CalcExplanationModal
+            jvNumber={calcModalJv.jvNumber}
+            lines={allLines.filter((l: any) => l.jv_id === calcModalJv.jvId)}
+            open={true}
+            onClose={() => setCalcModalJv(null)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
