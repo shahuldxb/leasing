@@ -1377,3 +1377,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Security Deposit Default Fix (May 2026)
 - [x] Security deposit field in NewLease Step 4 should default to 1 month rent (monthly_payment value) and show hint "Default: 1 month rent"
 - [x] Auto-update deposit when monthly payment changes (unless user has manually overridden it)
+
+## JV Line Calculation Method Toggle (May 2026)
+- [x] Update sp_PostInitialRecognitionJV to store detailed calc_explanation for each JV line (formula + values)
+- [x] Add Calc button on each JV line in NewLease Step 7 preview to show/hide calculation method
+- [x] JV Register detail view already has CalcExplanation component rendering calc_explanation from DB
+- [x] Calculation shows blackboard-style formula with label names and actual values (PV formula, ROU breakdown, IDC, deposit)

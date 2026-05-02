@@ -7,7 +7,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin, CreditCard, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin, CreditCard, Plus, Trash2, Calculator } from "lucide-react";
+
+// Inline calculation explanation component for JV lines
+function CalcExplanationInline({ explanation }: { explanation: string | null }) {
+  const [open, setOpen] = useState(false);
+  if (!explanation) return null;
+  return (
+    <>
+      <button
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+        title="View calculation method"
+      >
+        <Calculator className="w-3 h-3" />
+        Calc
+      </button>
+      {open && (
+        <div className="mt-2 rounded-lg border border-amber-500/30 bg-gray-900/80 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold flex items-center gap-1 text-amber-400">
+              <Calculator className="w-3 h-3" /> Calculation Method
+            </span>
+            <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white"><X className="w-3 h-3" /></button>
+          </div>
+          <div className="bg-gray-800 rounded p-3 font-mono text-[11px] text-gray-200 whitespace-pre-wrap leading-relaxed border border-gray-700">
+            {explanation}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 import DashboardLayout from "@/components/DashboardLayout";
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -1249,6 +1280,7 @@ export default function NewLease() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-xs text-muted-foreground">
+                      <th className="text-left py-1.5 w-8"></th>
                       <th className="text-left py-1.5 pr-4">Account Code</th>
                       <th className="text-left py-1.5 pr-4">Account Name</th>
                       <th className="text-right py-1.5 pr-4">Debit</th>
@@ -1267,54 +1299,59 @@ export default function NewLease() {
                       const deposit = Number(financial.securityDeposit) || 0;
                       const liability = ifrs16Result?.leaseLiability ?? 0;
                       const rouDebit = liability + idc - incentives;
-                      const fmt = (n: number) => n > 0 ? `${financial.currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+                      const cur = financial.currency;
+                      const fmtN = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      const fmt = (n: number) => n > 0 ? `${cur} ${fmtN(n)}` : '—';
+                      const ibrPct = (Number(financial.discountRate) || 0);
+                      const ibrAnnual = ibrPct.toFixed(4);
+                      const monthlyRate = (ibrPct / 12);
+                      const monthlyRateStr = monthlyRate.toFixed(6);
+                      const n = termMonths;
+
+                      // Build blackboard-style calculation explanations
+                      const pvFormula = `PV = Monthly Payment × [(1 − (1 + r)⁻ⁿ) / r]\nPV = ${fmtN(monthlyPayment)} × [(1 − (1 + ${monthlyRateStr})⁻${n}) / ${monthlyRateStr}]\nPV = ${fmtN(liability)}`;
+
+                      const rouCalc = `ROU Asset = PV of Lease Payments + IDC − Lease Incentives\nROU Asset = ${fmtN(liability)} + ${fmtN(idc)} − ${fmtN(incentives)}\nROU Asset = ${fmtN(rouDebit)}\n\nWhere:\n  Monthly Payment = ${fmtN(monthlyPayment)} ${cur}\n  IBR (annual) = ${ibrAnnual}%\n  Monthly Rate (r) = ${ibrAnnual}% / 12 = ${monthlyRateStr}%\n  Lease Term (n) = ${n} months\n\n${pvFormula}`;
+
+                      const liabCalc = `Lease Liability = PV of future lease payments discounted at IBR\n\n${pvFormula}\n\nWhere:\n  Monthly Payment = ${fmtN(monthlyPayment)} ${cur}\n  IBR (annual) = ${ibrAnnual}%\n  Monthly Rate (r) = ${monthlyRateStr}%\n  Lease Term (n) = ${n} months`;
+
+                      const idcCalc = `Initial Direct Costs (IDC)\n= Legal fees + Broker commissions + Registration costs\n= ${fmtN(idc)} ${cur}\n\nThese costs are capitalised into the ROU Asset\nand accrued as a liability until paid.\n\nImpact on ROU: ROU = PV + IDC − Incentives\n             = ${fmtN(liability)} + ${fmtN(idc)} − ${fmtN(incentives)}\n             = ${fmtN(rouDebit)}`;
+
+                      const incentiveCalc = `Lease Incentives Received\n= Cash or rent-free periods received from lessor\n= ${fmtN(incentives)} ${cur}\n\nIncentives reduce the ROU Asset carrying value.\n\nImpact on ROU: ROU = PV + IDC − Incentives\n             = ${fmtN(liability)} + ${fmtN(idc)} − ${fmtN(incentives)}\n             = ${fmtN(rouDebit)}`;
+
+                      const depositDrCalc = `Security Deposit = Refundable deposit paid to lessor\nDeposit = ${fmtN(deposit)} ${cur}\n\nRecognised as a non-current asset (receivable).\nRefundable at lease end or early termination.\n\nDefault = 1 month rent = ${fmtN(monthlyPayment)} ${cur}`;
+
+                      const depositCrCalc = `Bank Payment for Security Deposit\nAmount = ${fmtN(deposit)} ${cur}\n\nCash outflow from operating bank account\nto lessor for refundable security deposit.`;
+
+                      // Helper to render a JV line row with calc button
+                      const JVRow = ({ code, name, debit, credit, calc, bgClass }: { code: string; name: string; debit: number; credit: number; calc: string; bgClass?: string }) => (
+                        <>
+                          <tr className={`border-b border-border/50 ${bgClass || ''}`}>
+                            <td className="py-1.5 pl-1">
+                              <CalcExplanationInline explanation={calc} />
+                            </td>
+                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">{code}</td>
+                            <td className="py-1.5 pr-4">{name}</td>
+                            <td className="py-1.5 pr-4 text-right font-medium">{debit > 0 ? fmt(debit) : '—'}</td>
+                            <td className="py-1.5 text-right font-medium">{credit > 0 ? fmt(credit) : '—'}</td>
+                          </tr>
+                        </>
+                      );
+
                       return (<>
-                        <tr className="border-b border-border/50">
-                          <td className="py-1.5 pr-4 font-mono text-[#e60000]">{rouCode}</td>
-                          <td className="py-1.5 pr-4">{rouName}</td>
-                          <td className="py-1.5 pr-4 text-right font-medium">{fmt(rouDebit)}</td>
-                          <td className="py-1.5 text-right text-muted-foreground">—</td>
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-1.5 pr-4 font-mono text-[#e60000]">{liabCode}</td>
-                          <td className="py-1.5 pr-4">{liabName}</td>
-                          <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
-                          <td className="py-1.5 text-right font-medium">{fmt(liability)}</td>
-                        </tr>
-                        {idc > 0 && (
-                          <tr className="border-b border-border/50">
-                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">20020</td>
-                            <td className="py-1.5 pr-4">Accrued Initial Direct Costs</td>
-                            <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
-                            <td className="py-1.5 text-right font-medium">{fmt(idc)}</td>
-                          </tr>
-                        )}
-                        {incentives > 0 && (
-                          <tr className="border-b border-border/50">
-                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">20030</td>
-                            <td className="py-1.5 pr-4">Lease Incentives Received</td>
-                            <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
-                            <td className="py-1.5 text-right font-medium">{fmt(incentives)}</td>
-                          </tr>
-                        )}
+                        <JVRow code={rouCode} name={rouName} debit={rouDebit} credit={0} calc={rouCalc} />
+                        <JVRow code={liabCode} name={liabName} debit={0} credit={liability} calc={liabCalc} />
+                        {idc > 0 && <JVRow code="20020" name="Accrued Initial Direct Costs" debit={0} credit={idc} calc={idcCalc} />}
+                        {incentives > 0 && <JVRow code="11000" name="Bank Account — Incentive Received" debit={incentives} credit={0} calc={incentiveCalc} />}
                         {deposit > 0 && (<>
-                          <tr className="border-b border-border/50">
-                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">12020</td>
-                            <td className="py-1.5 pr-4">Security Deposit — Lease</td>
-                            <td className="py-1.5 pr-4 text-right font-medium">{fmt(deposit)}</td>
-                            <td className="py-1.5 text-right text-muted-foreground">—</td>
-                          </tr>
-                          <tr className="border-b border-border/50">
-                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">11000</td>
-                            <td className="py-1.5 pr-4">Bank Account — QAR Operating</td>
-                            <td className="py-1.5 pr-4 text-right text-muted-foreground">—</td>
-                            <td className="py-1.5 text-right font-medium">{fmt(deposit)}</td>
-                          </tr>
+                          <JVRow code="12020" name="Security Deposit — Lease" debit={deposit} credit={0} calc={depositDrCalc} />
+                          <JVRow code="11000" name="Bank Account — QAR Operating" debit={0} credit={deposit} calc={depositCrCalc} />
                         </>)}
                         <tr className="bg-muted/30 font-semibold">
+                          <td className="py-1.5" />
                           <td className="py-1.5 pr-4 text-xs text-muted-foreground" colSpan={2}>Total</td>
-                          <td className="py-1.5 pr-4 text-right">{fmt(rouDebit + deposit)}</td>
-                          <td className="py-1.5 text-right">{fmt(liability + idc + (incentives > 0 ? 0 : 0) + deposit)}</td>
+                          <td className="py-1.5 pr-4 text-right">{fmt(rouDebit + (incentives > 0 ? incentives : 0) + deposit)}</td>
+                          <td className="py-1.5 text-right">{fmt(liability + idc + deposit)}</td>
                         </tr>
                       </>);
                     })()}
