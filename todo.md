@@ -1383,3 +1383,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add Calc button on each JV line in NewLease Step 7 preview to show/hide calculation method
 - [x] JV Register detail view already has CalcExplanation component rendering calc_explanation from DB
 - [x] Calculation shows blackboard-style formula with label names and actual values (PV formula, ROU breakdown, IDC, deposit)
+
+## Calculation Explanation Full-Screen Right-Side Modal (May 2026)
+- [x] Replace inline CalcExplanationInline in NewLease Step 7 with a right-side slide-in full-height modal
+- [x] Replace inline CalcExplanation in JV Register with same right-side slide-in full-height modal
+- [x] Modal should cover the right side of the screen with proper formatting and scrolling

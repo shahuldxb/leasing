@@ -9,14 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin, CreditCard, Plus, Trash2, Calculator } from "lucide-react";
 
-// Inline calculation explanation component for JV lines
+// Right-side slide-in full-height calculation explanation panel for JV lines
 function CalcExplanationInline({ explanation }: { explanation: string | null }) {
   const [open, setOpen] = useState(false);
   if (!explanation) return null;
   return (
     <>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
         title="View calculation method"
       >
@@ -24,15 +24,46 @@ function CalcExplanationInline({ explanation }: { explanation: string | null }) 
         Calc
       </button>
       {open && (
-        <div className="mt-2 rounded-lg border border-amber-500/30 bg-gray-900/80 p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold flex items-center gap-1 text-amber-400">
-              <Calculator className="w-3 h-3" /> Calculation Method
-            </span>
-            <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white"><X className="w-3 h-3" /></button>
-          </div>
-          <div className="bg-gray-800 rounded p-3 font-mono text-[11px] text-gray-200 whitespace-pre-wrap leading-relaxed border border-gray-700">
-            {explanation}
+        <div className="fixed inset-0 z-[9999]" onClick={() => setOpen(false)}>
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          {/* Right-side panel */}
+          <div
+            className="absolute top-0 right-0 h-full w-full max-w-[600px] bg-gray-950 border-l border-amber-500/30 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-amber-500/20 bg-gray-900/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                  <Calculator className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Calculation Method</h2>
+                  <p className="text-xs text-amber-400/70">IFRS 16 — Blackboard Breakdown</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            {/* Body — scrollable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="bg-gray-900 rounded-xl border border-gray-700/50 p-6">
+                <div className="font-mono text-sm text-gray-200 whitespace-pre-wrap leading-[1.8] tracking-wide">
+                  {explanation}
+                </div>
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50">
+              <Button variant="outline" className="w-full" onClick={() => setOpen(false)}>
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       )}
