@@ -1489,3 +1489,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Remove Cheque Inventory from sidebar
 - [x] Remove Workflows from sidebar
 - [x] Remove Operational from sidebar
+
+## IBR Library Bug Fix (May 2026)
+- [x] Fix duplicate entries showing in IBR Library (added 'Current Rates' toggle, defaults to showing only current/open rates - 45 instead of 145)
+- [x] Fix NaN% rate display in IBR Library (was using r.rate instead of r.rate_pct)
