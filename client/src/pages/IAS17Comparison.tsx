@@ -63,7 +63,7 @@ export default function IAS17Comparison() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFCMP-IAS17-001"
+          screenId="VFCMP-IAS17-001" screenType="ias17_comparison"
           title="IAS 17 vs IFRS 16 Comparison"
           subtitle="P&L and balance sheet impact of IFRS 16 adoption"
           icon={<Scale className="h-6 w-6 text-sky-400" />}

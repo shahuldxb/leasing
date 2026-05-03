@@ -83,7 +83,7 @@ export default function PeriodClose() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFACC-PERDCLOSE-001"
+          screenId="VFACC-PERDCLOSE-001" screenType="period_close"
           title="Period-End Close Lock"
           subtitle="Lock Posted periods to prevent re-posting — essential for audit integrity"
           icon={<Lock className="h-6 w-6 text-violet-400" />}

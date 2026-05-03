@@ -380,7 +380,7 @@ export default function LeaseSubAssets() {
       <div className="flex flex-col h-full bg-[#0a0c14] text-white">
 
         <ScreenHeader
-          screenId="VFLSE-SUBASSET-001"
+          screenId="VFLSE-SUBASSET-001" screenType="lease_sub_assets"
           title="Lease Sub-Asset Registry"
           subtitle="Attach, track and manage furniture & appliance sets per lease"
           icon={<Boxes className="h-6 w-6 text-amber-400" />}

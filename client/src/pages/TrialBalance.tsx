@@ -73,7 +73,7 @@ export default function TrialBalance() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFACC-TRIAL-001"
+          screenId="VFACC-TRIAL-001" screenType="trial_balance"
           title="Trial Balance"
           subtitle="Period-end GL account balances from all posted lease journal entries"
           icon={<Scale className="h-6 w-6 text-blue-400" />}

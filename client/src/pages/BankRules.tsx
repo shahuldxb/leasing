@@ -126,7 +126,7 @@ export default function BankRules() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFLBNKRUL0001P001"
+          screenId="VFLBNKRUL0001P001" screenType="bank_rules"
           title="Bank Matching Rules"
           subtitle="Configurable auto-matching rules for bank reconciliation"
           actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />New Rule</Button>}

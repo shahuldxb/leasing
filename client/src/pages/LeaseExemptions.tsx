@@ -68,7 +68,7 @@ export default function LeaseExemptions() {
         {/* ── Main content ────────────────────────────────────────────────── */}
         <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-6">
           <ScreenHeader
-            screenId="VFLSE-EXEMPT-001"
+            screenId="VFLSE-EXEMPT-001" screenType="lease_exemptions"
             title="Exemption Register"
             subtitle="Short-term and low-value lease exemptions — straight-line expense recognition"
             icon={<Clock className="h-6 w-6 text-blue-400" />}

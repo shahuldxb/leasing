@@ -91,7 +91,7 @@ export default function RenewalEngine() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFLSE-RENEWAL-001"
+          screenId="VFLSE-RENEWAL-001" screenType="renewal_engine"
           title="Renewal Engine"
           subtitle="IFRS 16 Para 45 — manage lease extensions with maker/checker approval"
           icon={<CalendarClock className="h-6 w-6 text-emerald-400" />}

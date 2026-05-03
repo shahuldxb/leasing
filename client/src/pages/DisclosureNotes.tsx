@@ -76,7 +76,7 @@ export default function DisclosureNotes() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFACC-DISCNOTES-001"
+          screenId="VFACC-DISCNOTES-001" screenType="disclosure_notes"
           title="IFRS 16 Disclosure Notes"
           subtitle="Auto-generated note for the financial statements"
           icon={<FileText className="h-6 w-6 text-blue-400" />}

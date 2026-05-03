@@ -190,7 +190,7 @@ export default function StaffMaster() {
     <DashboardLayout>
       <div className="flex flex-col h-full">
         <ScreenHeader
-          screenId="VFLSHRSTR0001P001"
+          screenId="VFLSHRSTR0001P001" screenType="staff_master"
           title="Staff Master"
           subtitle="HR staff directory — manage employee records for lease assignments"
         />

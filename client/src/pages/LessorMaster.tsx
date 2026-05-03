@@ -217,7 +217,7 @@ export default function LessorMaster() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <ScreenHeader screenId="VFLSLESSOR001" title="" formType="lessor" onAIFormFill={handleAIFormFill} />
+              <ScreenHeader screenId="VFLSLESSOR001" screenType="lessor_master" title="" formType="lessor" onAIFormFill={handleAIFormFill} />
               <Button variant="outline" className="border-white/10 text-gray-400"
                 onClick={() => { setViewMode(editingLessor ? "detail" : "list"); setEditingLessor(null); }}>Cancel</Button>
               <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={upsertMutation.isPending}

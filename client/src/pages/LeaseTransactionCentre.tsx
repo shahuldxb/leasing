@@ -1358,7 +1358,7 @@ export default function LeaseTransactionCentre() {
           {/* Screen title */}
           <div className="flex items-center gap-3 mr-2">
             <ScreenHeader
-              screenId="VFLTXNCTR0001P001"
+              screenId="VFLTXNCTR0001P001" screenType="lease_transaction_centre"
               title="Lease Transaction Centre"
               subtitle="IFRS 16 — Modification (JE-4) · Termination (JE-5) · Renewal (JE-7)"
             />

@@ -92,7 +92,7 @@ export default function FXRevaluation() {
       <div className="flex gap-0 h-full">
       <div className="flex-1 p-6 space-y-6 min-w-0">
         <ScreenHeader
-          screenId="VFACC-FXREVAL-001"
+          screenId="VFACC-FXREVAL-001" screenType="fx_revaluation"
           title="Multi-Currency FX Revaluation"
           subtitle="IAS 21 — Monthly revaluation of non-QAR lease liabilities to closing exchange rates"
           icon={<Globe className="h-6 w-6 text-indigo-400" />}

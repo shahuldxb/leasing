@@ -453,7 +453,7 @@ export default function NewLease() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
         <ScreenHeader
-  screenId="VFLNEWLEA0001P001"
+  screenId="VFLNEWLEA0001P001" screenType="new_lease"
   title={isEditMode ? "Modify Lease" : "New Lease Origination"}
   subtitle={isEditMode ? "Update existing lease contract details" : "IFRS 16 compliant lease creation wizard"}
 

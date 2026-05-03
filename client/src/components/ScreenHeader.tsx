@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, useCallback, ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   ClipboardList, AlertCircle, Clock, User, Monitor, CheckCircle2,
-  XCircle, Info, Sparkles, Loader2, Timer,
+  XCircle, Info, Sparkles, Loader2, Timer, Layers,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { ScreenMetaOverlay } from "@/components/ScreenMetaOverlay";
@@ -422,6 +422,12 @@ export function ScreenHeader({
   // Automatic visit logging — ENTER on mount, EXIT with elapsed ms on unmount
   useScreenAudit(screenId, title);
 
+  // Alt Sequences button state
+  const [altMode, setAltMode] = useState<1 | 2 | 3 | null>(null);
+  const cycleAltMode = useCallback(() => {
+    setAltMode(m => m === null ? 1 : m === 1 ? 2 : m === 2 ? 3 : null);
+  }, []);
+
   return (
     <div className="flex items-center justify-between gap-3 mb-2 py-1.5 px-0">
       {/* Left: title block */}
@@ -457,9 +463,24 @@ export function ScreenHeader({
         />
         <AuditLogDrawer screenId={screenId} />
         <ErrorLogDrawer screenId={screenId} />
+        {/* Alt Sequences button — shows SP/Tables, Standards, Techniques */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={cycleAltMode}
+          className={`gap-1.5 text-xs h-7 px-2 ${
+            altMode
+              ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 bg-amber-500/5"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          title="View stored procedures, standards & techniques (Alt+1/2/3)"
+        >
+          <Layers className="w-3.5 h-3.5" />
+          Alt Seq
+        </Button>
         {actions}
       </div>
-      <ScreenMetaOverlay screenId={screenId} />
+      <ScreenMetaOverlay screenId={screenId} externalMode={altMode} onExternalClose={() => setAltMode(null)} />
     </div>
   );
 }

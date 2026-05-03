@@ -299,7 +299,7 @@ export default function LeaseRenewal() {
       <div className="px-6 py-6 max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <ScreenHeader
-          screenId="VFLLSREN0001P001"
+          screenId="VFLLSREN0001P001" screenType="lease_renewal"
           title="Initiate Lease Renewal"
           subtitle={`IFRS 16 compliant renewal wizard · ${d?.contract_ref ?? ""}`}
         />

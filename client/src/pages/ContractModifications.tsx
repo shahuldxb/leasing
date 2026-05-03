@@ -201,7 +201,7 @@ export default function ContractModifications() {
     <DashboardLayout>
       <div className="flex flex-col h-full">
         <ScreenHeader
-          screenId={SCREEN_ID}
+          screenId={SCREEN_ID} screenType="contract_modifications"
           title="Contract Modifications"
           subtitle="IFRS 16 / ASC 842 compliant modification workflow with maker-checker approval"
           icon={<FileEdit className="w-5 h-5" />}

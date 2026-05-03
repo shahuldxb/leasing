@@ -685,7 +685,7 @@ export default function LeaseDetail() {
               </Button>
               <Separator orientation="vertical" className="h-5" />
               <ScreenHeader
-                screenId="VFLSECLSDET0001P001"
+                screenId="VFLSECLSDET0001P001" screenType="lease_detail"
                 title={`Lease — ${d.contract_ref ?? ''}`}
                 subtitle={isReadOnly ? "Read-only view" : "View and edit all lease details in-place"}
               />

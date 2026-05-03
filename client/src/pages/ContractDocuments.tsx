@@ -208,7 +208,7 @@ export default function ContractDocuments() {
     <DashboardLayout>
       <div className="flex flex-col h-full">
         <ScreenHeader
-          screenId={SCREEN_ID}
+          screenId={SCREEN_ID} screenType="contract_documents"
           title="Contract Documents"
           subtitle="Upload, manage, and track all contract documents with full metadata and AI extraction"
           icon={<FileText className="w-5 h-5" />}

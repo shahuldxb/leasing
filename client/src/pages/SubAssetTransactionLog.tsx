@@ -483,7 +483,7 @@ export default function SubAssetTransactionLog() {
     <DashboardLayout>
       <div className="flex flex-col h-full">
         <ScreenHeader
-          screenId="VFLSEASTTXN0001P001"
+          screenId="VFLSEASTTXN0001P001" screenType="sub_asset_transaction_log"
           title="Sub-Asset Transactions"
           subtitle="Select a lease and sub-asset set to view details and record transactions"
         />

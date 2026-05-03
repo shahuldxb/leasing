@@ -840,7 +840,7 @@ export default function AccountingStandardsPaper() {
     <DashboardLayout>
       <div className="flex flex-col h-full bg-background">
         <ScreenHeader
-          screenId="VFCMP-STDPAPER-001"
+          screenId="VFCMP-STDPAPER-001" screenType="accounting_standards_paper"
           title="Leasing Accounting Standards"
           subtitle="Reference paper, IBR calculator & journal entry generator — IFRS 16, ASC 842, GASB 87 & more"
           icon={<Scale className="w-6 h-6 text-blue-400" />}

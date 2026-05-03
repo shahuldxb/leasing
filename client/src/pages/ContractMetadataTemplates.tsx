@@ -171,7 +171,7 @@ export default function ContractMetadataTemplates() {
     <DashboardLayout>
       <div className="space-y-4">
         <ScreenHeader
-          screenId="VFCTR-METATEMPL-001"
+          screenId="VFCTR-METATEMPL-001" screenType="contract_metadata_templates"
           title="Contract Metadata Templates"
           subtitle="Define reusable field schemas for each contract type"
           icon={<Settings2 className="h-6 w-6 text-blue-400" />}

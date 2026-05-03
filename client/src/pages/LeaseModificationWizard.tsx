@@ -142,7 +142,7 @@ export default function LeaseModificationWizard() {
   return (
     <div className="p-6 space-y-6">
       <ScreenHeader
-        screenId="VFLLSMOD0001P001"
+        screenId="VFLLSMOD0001P001" screenType="lease_modification_wizard"
         title="Lease Modification Wizard"
         subtitle="IFRS 16 Para 44–46 — Remeasurement & GL Journal Generation"
       />

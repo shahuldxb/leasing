@@ -95,7 +95,7 @@ export default function MultiStandardComparison() {
   return (
     <div className="p-6 space-y-6">
       <ScreenHeader
-        screenId="VFLMULSTD0001P001"
+        screenId="VFLMULSTD0001P001" screenType="multi_standard_comparison"
         title="Multi-Standard Comparison"
         subtitle="IFRS 16 | ASC 842 | IPSAS 43 — parallel computation"
       />

@@ -502,7 +502,7 @@ export default function AssetRegistry() {
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full gap-4 p-4 overflow-auto">
-        <ScreenHeader screenId="VFLSASSET001" title="Sub-Asset Registry" formType="asset_registry" onAIFormFill={() => {}} />
+        <ScreenHeader screenId="VFLSASSET001" screenType="asset_registry" title="Sub-Asset Registry" formType="asset_registry" onAIFormFill={() => {}} />
 
         {/* ── TOP: Saved Sets Panel ─────────────────────────────────────── */}
         <Card className="bg-[#13161f] border-white/10 shrink-0">

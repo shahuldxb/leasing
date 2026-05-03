@@ -93,7 +93,7 @@ export default function BankAccounts() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <ScreenHeader screenId="VFLBNKACC0001P001" title="Bank Accounts" subtitle="Registered bank accounts for payment processing"
+        <ScreenHeader screenId="VFLBNKACC0001P001" screenType="bank_accounts" title="Bank Accounts" subtitle="Registered bank accounts for payment processing"
           actions={<Button size="sm" onClick={openAdd} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlusCircle className="w-4 h-4" />Add Account</Button>}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

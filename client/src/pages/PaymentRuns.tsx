@@ -111,7 +111,7 @@ export default function PaymentRuns() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFLPAYRUN0001P001"
+          screenId="VFLPAYRUN0001P001" screenType="payment_runs"
           title="Payment Runs"
           subtitle="Payment run creation and bank file generation"
           actions={<Button size="sm" onClick={() => setShowForm(true)} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2"><PlayCircle className="w-4 h-4" />Create Run</Button>}

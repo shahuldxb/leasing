@@ -19,6 +19,9 @@ type Mode = 1 | 2 | 3 | null;
 
 interface Props {
   screenId: string;
+  /** If provided, the overlay opens in this mode externally */
+  externalMode?: 1 | 2 | 3 | null;
+  onExternalClose?: () => void;
 }
 
 const MODE_CONFIG = {
@@ -48,8 +51,13 @@ const MODE_CONFIG = {
   },
 } as const;
 
-export function ScreenMetaOverlay({ screenId }: Props) {
+export function ScreenMetaOverlay({ screenId, externalMode, onExternalClose }: Props) {
   const [mode, setMode] = useState<Mode>(null);
+
+  // Sync external trigger
+  useEffect(() => {
+    if (externalMode != null) setMode(externalMode);
+  }, [externalMode]);
 
   const { data: meta } = trpc.screenMeta.get.useQuery(
     { screenId },
@@ -61,8 +69,8 @@ export function ScreenMetaOverlay({ screenId }: Props) {
     if (e.key === "1") { e.preventDefault(); setMode(m => m === 1 ? null : 1); }
     if (e.key === "2") { e.preventDefault(); setMode(m => m === 2 ? null : 2); }
     if (e.key === "3") { e.preventDefault(); setMode(m => m === 3 ? null : 3); }
-    if (e.key === "Escape") setMode(null);
-  }, []);
+    if (e.key === "Escape") { setMode(null); onExternalClose?.(); }
+  }, [onExternalClose]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKey);
@@ -191,7 +199,7 @@ export function ScreenMetaOverlay({ screenId }: Props) {
                 </button>
               ))}
             </div>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setMode(null)}>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setMode(null); onExternalClose?.(); }}>
               <X className="h-3 w-3" />
             </Button>
           </div>

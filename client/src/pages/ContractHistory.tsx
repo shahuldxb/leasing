@@ -78,7 +78,7 @@ export default function ContractHistory() {
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full">
-        <ScreenHeader screenId={SCREEN_ID} title="Contract History" subtitle="Complete audit trail of all contract events, changes, and activities" icon={<History className="w-5 h-5"/>} actions={<Button size="sm" variant="outline" onClick={exportCsv}><Download className="w-4 h-4 mr-2"/>Export CSV</Button>}/>
+        <ScreenHeader screenId={SCREEN_ID} screenType="contract_history" title="Contract History" subtitle="Complete audit trail of all contract events, changes, and activities" icon={<History className="w-5 h-5"/>} actions={<Button size="sm" variant="outline" onClick={exportCsv}><Download className="w-4 h-4 mr-2"/>Export CSV</Button>}/>
         <div className="flex gap-2 px-4 py-2 border-b border-border bg-muted/10 flex-wrap items-center">
           <div className="relative flex-1 min-w-[180px]"><Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground"/><Input placeholder="Search history..." value={search} onChange={e=>setSearch(e.target.value)} className="pl-8 h-8 text-xs"/></div>
           <Select value={filterContract} onValueChange={setFilterContract}><SelectTrigger className="h-8 text-xs w-[180px]"><SelectValue placeholder="All Contracts"/></SelectTrigger><SelectContent><SelectItem value="all">All Contracts</SelectItem>{leases.map((l:any)=><SelectItem key={l.contract_id} value={String(l.contract_id)}>{l.contract_ref??l.contract_id}</SelectItem>)}</SelectContent></Select>

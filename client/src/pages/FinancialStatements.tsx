@@ -131,7 +131,7 @@ export default function FinancialStatements() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <ScreenHeader
-          screenId="VFACC-FINSTAT-001"
+          screenId="VFACC-FINSTAT-001" screenType="financial_statements"
           title="Financial Statements"
           subtitle="Live statements generated from posted GL entries — Balance Sheet, P&L, Cash Flow"
           icon={<Building2 className="h-6 w-6 text-blue-400" />}

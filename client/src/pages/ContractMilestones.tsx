@@ -127,7 +127,7 @@ export default function ContractMilestones() {
     <DashboardLayout>
       <div className="flex flex-col h-full">
         <ScreenHeader
-          screenId={SCREEN_ID}
+          screenId={SCREEN_ID} screenType="contract_milestones"
           title="Contract Milestones"
           subtitle="Track and manage all contractual milestones, deadlines, and obligations"
           icon={<Milestone className="w-5 h-5"/>}

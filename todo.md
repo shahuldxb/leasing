@@ -1597,3 +1597,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Update single item threshold: USD 10,000 per individual asset
 - [x] Classify exempted leases as operational leases
 - [x] Update the IFRS 16 Para 5 info banner text with correct thresholds
+
+## All Screens - Standard Header Buttons (May 2026)
+- [x] Ensure all Accounting Engine screens have Gen AI (yellow), Audit Log, Error Log buttons
+- [x] Add Alt Sequences button (alt 1: entity/SP/tables, alt 2: standards, alt 3: techniques) to all screens
+- [x] Screens to check: CPI Escalation, Exemptions, IFRS 16 Disclosure, Disclosure Notes, IAS 17 vs IFRS 16, Period-End Close, JV Register, Transaction Engine, Accounting Settings, FX Revaluation, Roll-Forward, Disclosure Pack, Multi-Standard, ERP Export, Bulk Operations, Consolidation, Hedge Accounting
