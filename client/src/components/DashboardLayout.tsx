@@ -15,7 +15,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -23,10 +22,10 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText,
-  BarChart3, Shield, Settings, Bell,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight,
-  Sparkles, Calculator, Eye, EyeOff, Layers
+  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
+  BarChart3, Building2, Shield, Settings, Bell, Landmark,
+  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen,
+  Sparkles, Calculator, Calendar, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -43,122 +42,193 @@ type NavItem = {
   children?: { label: string; path: string }[];
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CORE MENU — 5 logical sections following the accountant's workflow
-// ═══════════════════════════════════════════════════════════════════════════════
-const coreMenuItems: NavItem[] = [
+const menuItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   {
-    icon: FileText, label: "Lease Portfolio",
+    icon: FileText, label: "Lease Management",
     children: [
-      { label: "Lease Register",       path: "/leases" },
-      { label: "New Lease",            path: "/leases/new" },
-      { label: "Lease Classification", path: "/accounting/classification" },
-      { label: "Lessor Master",        path: "/lessor-master" },
-      { label: "Lessee Master",        path: "/lessee-master" },
-      { label: "Sub-Asset Registry",   path: "/sub-asset-registry" },
-      { label: "Transaction Centre",   path: "/leases/transaction-centre" },
-    ],
-  },
-  {
-    icon: Calculator, label: "Accounting",
-    children: [
-      { label: "Amortisation Schedule",     path: "/leases/amortisation" },
-      { label: "Journal Voucher Register",  path: "/accounting/journal-voucher" },
-      { label: "Period-End Close",          path: "/accounting/period-close" },
-      { label: "GL Postings",               path: "/accounting/transaction-engine" },
-      { label: "ERP Export",                path: "/accounting/erp-export" },
-      { label: "Chart of Accounts",         path: "/accounting/settings" },
-    ],
-  },
-  {
-    icon: Shield, label: "Compliance & Reporting",
-    children: [
-      { label: "IFRS 16 Disclosure",       path: "/accounting/disclosure" },
-      { label: "Disclosure Notes",          path: "/accounting/disclosure-notes" },
-      { label: "Roll-Forward Report",       path: "/accounting/roll-forward" },
-      { label: "IAS 17 vs IFRS 16",         path: "/accounting/ias17-comparison" },
-      { label: "Disclosure Pack",           path: "/accounting/disclosure-pack" },
-      { label: "Standards Paper",           path: "/compliance/standards-paper" },
-    ],
-  },
-  {
-    icon: Settings, label: "Settings",
-    children: [
-      { label: "IBR Library",              path: "/accounting/ibr" },
-      { label: "Accounting Settings",      path: "/accounting/settings" },
-      { label: "Notification Settings",    path: "/admin/notifications" },
-      { label: "Audit Log",                path: "/compliance/audit" },
-      { label: "Error Log",                path: "/compliance/errors" },
-      { label: "Administration",           path: "/admin" },
-    ],
-  },
-];
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ADVANCED MENU — Hidden by default, shown via toggle
-// ═══════════════════════════════════════════════════════════════════════════════
-const advancedMenuItems: NavItem[] = [
-  {
-    icon: Sparkles, label: "Advanced Lease",
-    children: [
-      { label: "Remeasurement",         path: "/accounting/remeasurement" },
-      { label: "CPI Escalation",        path: "/accounting/cpi" },
-      { label: "Exemptions",            path: "/accounting/exemptions" },
-      { label: "FX Revaluation",        path: "/accounting/fx-revaluation" },
-      { label: "Modification Wizard",   path: "/leases/modification-wizard" },
-      { label: "Variable Rent",         path: "/accounting/variable-rent" },
-      { label: "Sub-Leases",            path: "/leases/sub-leases" },
-      { label: "Rent Reviews",          path: "/leases/rent-reviews" },
-      { label: "Security Deposits",     path: "/leases/security-deposits" },
-      { label: "Critical Dates",        path: "/leases/critical-dates" },
-    ],
-  },
-  {
-    icon: Layers, label: "Multi-Standard & Bulk",
-    children: [
-      { label: "Multi-Standard (IFRS/ASC/IPSAS)", path: "/accounting/multi-standard" },
-      { label: "ASC 842",               path: "/accounting/asc842" },
-      { label: "Bulk Operations",       path: "/accounting/bulk" },
-      { label: "Consolidation",         path: "/accounting/consolidation" },
-      { label: "Hedge Accounting",      path: "/accounting/hedge" },
-    ],
-  },
-  {
-    icon: BarChart3, label: "Analytics & Planning",
-    children: [
-      { label: "Portfolio Health",      path: "/mis/portfolio" },
-      { label: "Cash Flow Forecast",    path: "/mis/cashflow" },
-      { label: "Budget vs Actual",      path: "/accounting/budget-vs-actual" },
-      { label: "Maturity Analysis",     path: "/accounting/maturity" },
-      { label: "Scenario Modelling",    path: "/scenarios" },
-      { label: "Report Builder",        path: "/reports" },
-      { label: "AI Query Panel",        path: "/mis/ai-query" },
+      { label: "Lease Register",    path: "/leases" },
+      { label: "New Lease",         path: "/leases/new" },
+      { label: "Lessor Master",      path: "/lessor-master" },
+      { label: "Lessee Master",      path: "/lessee-master" },
+      { label: "Staff Master",       path: "/staff-master" },
+      { label: "Sub-Asset Registry",  path: "/sub-asset-registry" },
+      { label: "Sub-Asset Txn Log",   path: "/sub-asset-registry/transactions" },
+      { label: "Amortisation",        path: "/leases/amortisation" },
+      { label: "Transaction Centre", path: "/leases/transaction-centre" },
     ],
   },
   {
     icon: FileCheck, label: "Contracts",
     children: [
-      { label: "Contract Register",     path: "/contracts" },
+      { label: "Contract Register",    path: "/contracts" },
       { label: "Metadata Templates",    path: "/contracts/metadata-templates" },
       { label: "Master Contracts",      path: "/contracts/msc" },
       { label: "Documents",             path: "/contracts/documents" },
       { label: "Milestones",            path: "/contracts/milestones" },
       { label: "Modifications",         path: "/contracts/modifications" },
+      { label: "History",               path: "/contracts/history" },
     ],
   },
   {
-    icon: Bell, label: "Alerts & Automation",
+    icon: CreditCard, label: "Payables",
     children: [
-      { label: "Alert Centre",          path: "/alerts" },
-      { label: "Alert Rules",           path: "/admin/alerts-reports" },
-      { label: "Scheduled Reports",     path: "/admin/scheduled-reports" },
+      { label: "Invoice Register",  path: "/payables/invoices" },
+      { label: "Payment Runs",      path: "/payables/payments" },
+      { label: "GL Journals",       path: "/payables/journals" },
+      { label: "Approval Queue",    path: "/payables/approvals" },
+    ],
+  },
+  {
+    icon: Landmark, label: "Bank Reconciliation",
+    children: [
+      { label: "Bank Accounts",     path: "/bank/accounts" },
+      { label: "Import Statement",  path: "/bank/import" },
+      { label: "Recon Workspace",   path: "/bank/workspace" },
+      { label: "Recon History",     path: "/bank/history" },
+      { label: "Matching Rules",    path: "/bank/rules" },
+    ],
+  },
+  {
+    icon: BookOpen, label: "Cheque Inventory",
+    children: [
+      { label: "Cheque Register",   path: "/cheques" },
+      { label: "Cheque Books",      path: "/cheques/books" },
+      { label: "Bounce Management", path: "/cheques/bounce" },
+      { label: "Stale Alerts",      path: "/cheques/stale" },
+      { label: "Signatories",       path: "/cheques/signatories" },
+    ],
+  },
+  {
+    icon: GitBranch, label: "Workflows",
+    children: [
+      { label: "My Tasks",          path: "/workflows/tasks" },
+      { label: "Process Monitor",   path: "/workflows/monitor" },
+      { label: "Process Modeler",   path: "/workflows/modeler" },
+      { label: "Escalations",       path: "/workflows/escalations" },
+    ],
+  },
+  {
+    icon: BarChart3, label: "MIS & Analytics",
+    children: [
+      { label: "Portfolio Health",  path: "/mis/portfolio" },
+      { label: "Cash Flow Forecast",path: "/mis/cashflow" },
+      { label: "Cost Performance",  path: "/mis/cost" },
+      { label: "AI Query Panel",    path: "/mis/ai-query" },
+      { label: "Custom Reports",    path: "/mis/reports" },
+    ],
+  },
+  {
+    icon: Building2, label: "Operational",
+    children: [
+      { label: "Asset Maintenance", path: "/ops/maintenance" },
+      { label: "Insurance",         path: "/ops/insurance" },
+      { label: "ESG Dashboard",     path: "/ops/esg" },
+      { label: "Document Expiry",   path: "/ops/documents" },
+    ],
+  },
+  {
+    icon: Shield, label: "Compliance",
+    children: [
+      { label: "IFRS 16 Disclosures",path: "/compliance/ifrs16" },
+      { label: "Accounting Standards Paper", path: "/compliance/standards-paper" },
+    ],
+  },
+  {
+    icon: Calculator, label: "Accounting Engine",
+    children: [
+      { label: "IBR Library",         path: "/accounting/ibr" },
+      { label: "Lease Classification", path: "/accounting/classification" },
+      { label: "Remeasurement",       path: "/accounting/remeasurement" },
+      { label: "CPI Escalation",      path: "/accounting/cpi" },
+      { label: "Exemptions",          path: "/accounting/exemptions" },
+      { label: "IFRS 16 Disclosure",  path: "/accounting/disclosure" },
+      { label: "Disclosure Notes",     path: "/accounting/disclosure-notes" },
+      { label: "IAS 17 vs IFRS 16",    path: "/accounting/ias17-comparison" },
+      { label: "Period-End Close",     path: "/accounting/period-close" },
+      { label: "Journal Voucher Register", path: "/accounting/journal-voucher" },
+      { label: "Transaction Engine",       path: "/accounting/transaction-engine" },
+      { label: "Accounting Settings",    path: "/accounting/settings" },
+      { label: "FX Revaluation",        path: "/accounting/fx-revaluation" },
+      { label: "Roll-Forward Report",  path: "/accounting/roll-forward" },
+      { label: "Disclosure Pack",       path: "/accounting/disclosure-pack" },
+      { label: "Multi-Standard (IFRS/ASC/IPSAS)", path: "/accounting/multi-standard" },
+      { label: "ERP Export",            path: "/accounting/erp-export" },
+      { label: "Bulk Operations",       path: "/accounting/bulk" },
+      { label: "Consolidation",          path: "/accounting/consolidation" },
+      { label: "Hedge Accounting",       path: "/accounting/hedge" },
+    ],
+  },
+  {
+    icon: Sparkles, label: "Advanced Lease",
+    children: [
+      { label: "AI Abstraction",      path: "/leases/ai-abstraction" },
+      { label: "Critical Dates",      path: "/leases/critical-dates" },
+      { label: "Sub-Leases",          path: "/leases/sub-leases" },
+      { label: "Rent Reviews",        path: "/leases/rent-reviews" },
+      { label: "Security Deposits",   path: "/leases/security-deposits" },
+    ],
+  },
+  {
+    icon: LineChart, label: "Reports & Scenarios",
+    children: [
+      { label: "Report Builder",      path: "/reports" },
+      { label: "Scenario Modelling",  path: "/scenarios" },
+    ],
+  },
+  {
+    icon: TrendingUp, label: "Finance & Planning",
+    children: [
+      { label: "Budget Variance",    path: "/finance/budget-variance" },
+      { label: "Budget vs Actual",   path: "/accounting/budget-vs-actual" },
+      { label: "Maturity Analysis",  path: "/accounting/maturity" },
+      { label: "Maturity Ladder",    path: "/accounting/maturity-ladder" },
+      { label: "Modification Wizard",  path: "/leases/modification-wizard" },
+      { label: "Variable Rent",      path: "/accounting/variable-rent" },
+      { label: "ASC 842",            path: "/accounting/asc842" },
+    ],
+  },
+
+
+
+  {
+    icon: Bell, label: "Alerts & Reports",
+    children: [
+      { label: "Alert Rules",        path: "/admin/alerts-reports" },
+      { label: "Scheduled Reports",  path: "/admin/scheduled-reports" },
+      { label: "Alert Centre",       path: "/alerts" },
+    ],
+  },
+
+
+
+  {
+    icon: TrendingUp, label: "Budgeting & ESG",
+    children: [
+      { label: "Budgeting & Forecasting", path: "/finance/budgeting" },
+      { label: "ESG Reporting",           path: "/ops/esg-reporting" },
+    ],
+  },
+  {
+    icon: Sparkles, label: "AI & Intelligence",
+    children: [
+      { label: "AI Lease Analytics",   path: "/ai-analytics" },
+    ],
+  },
+
+  {
+    icon: Settings, label: "System Settings",
+    children: [
+      { label: "Notification Settings",path: "/admin/notifications" },
+      { label: "SSO Configuration",    path: "/admin/sso" },
+      { label: "API & Webhooks",       path: "/admin/api-webhooks" },
+      { label: "E-Signature",          path: "/admin/esignature" },
+      { label: "Audit Log",            path: "/compliance/audit" },
+      { label: "Error Log",            path: "/compliance/errors" },
+      { label: "Administration",       path: "/admin" },
     ],
   },
 ];
-
-// Combined for route matching
-const menuItems: NavItem[] = [...coreMenuItems, ...advancedMenuItems];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -239,7 +309,6 @@ function DashboardLayoutContent({
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
@@ -325,7 +394,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0 overflow-y-auto scrollbar-thin">
             <SidebarMenu className="px-2 py-1">
-              {coreMenuItems.map(item => {
+              {menuItems.map(item => {
                 if (item.children) {
                   const isGroupActive = item.children.some(c => location.startsWith(c.path));
                   return (
@@ -386,65 +455,6 @@ function DashboardLayoutContent({
                 );
               })}
             </SidebarMenu>
-
-            {/* Advanced toggle separator */}
-            <div className="px-3 py-2">
-              <SidebarSeparator className="my-1" />
-              <button
-                onClick={() => setShowAdvanced(prev => !prev)}
-                className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
-              >
-                {showAdvanced ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                <span>{showAdvanced ? "Hide Advanced" : "Show Advanced"}</span>
-              </button>
-            </div>
-
-            {showAdvanced && (
-              <SidebarMenu className="px-2 py-1">
-                {advancedMenuItems.map(item => {
-                  if (item.children) {
-                    const isGroupActive = item.children.some(c => location.startsWith(c.path));
-                    return (
-                      <Collapsible key={item.label} defaultOpen={isGroupActive}>
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              isActive={isGroupActive}
-                              tooltip={item.label}
-                              className="h-10 transition-all font-normal w-full justify-between"
-                            >
-                              <div className="flex items-center gap-2">
-                                <item.icon className={`h-4 w-4 ${isGroupActive ? "text-primary" : "text-muted-foreground"}`} />
-                                <span className="text-muted-foreground">{item.label}</span>
-                              </div>
-                              <ChevronDown className="h-3 w-3 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="ml-6 mt-0.5 mb-1 border-l border-sidebar-border pl-2 flex flex-col gap-0.5">
-                              {item.children.map(child => (
-                                <button
-                                  key={child.label}
-                                  onClick={() => setLocation(child.path)}
-                                  className={`text-left text-sm px-2 py-1.5 rounded-md transition-colors w-full ${
-                                    location === child.path
-                                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                                  }`}
-                                >
-                                  <span>{child.label}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    );
-                  }
-                  return null;
-                })}
-              </SidebarMenu>
-            )}
           </SidebarContent>
 
           <SidebarFooter className="p-3">

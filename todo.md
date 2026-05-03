@@ -1470,3 +1470,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Remove ERP items (Payables, Bank Reconciliation, Cheque Inventory)
 - [x] Add "Show Advanced" toggle at bottom for placeholder features
 - [x] Merge Contracts into Lease Portfolio section
+
+## Sidebar Revert (May 2026)
+- [x] Revert sidebar to previous version with all menus (user lost important menus after restructure)
