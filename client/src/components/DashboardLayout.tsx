@@ -22,7 +22,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard,
+  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText,
   BarChart3, Shield, Settings, Bell,
   FileCheck, TrendingUp, ChevronDown, ChevronRight,
   Sparkles, Calculator, Calendar, LineChart
@@ -70,15 +70,7 @@ const menuItems: NavItem[] = [
       { label: "History",               path: "/contracts/history" },
     ],
   },
-  {
-    icon: CreditCard, label: "Payables",
-    children: [
-      { label: "Invoice Register",  path: "/payables/invoices" },
-      { label: "Payment Runs",      path: "/payables/payments" },
-      { label: "GL Journals",       path: "/payables/journals" },
-      { label: "Approval Queue",    path: "/payables/approvals" },
-    ],
-  },
+
 
 
 

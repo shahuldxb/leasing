@@ -1503,3 +1503,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Build ESG Data Entry screen (VFLESGRPT0001P001) with Environmental/Social/Governance tabs, CRUD, Screen ID, Audit Log, Error Log
 - [x] Build ESG Report dashboard (VFLESGRPT0002P001) with Carbon Footprint, Green Scorecard, Risk Matrix, KPIs, Net Zero Tracker, Governance Summary
 - [x] Add sidebar entries under Budgeting & ESG and wire routes in App.tsx
+
+## Sidebar Cleanup (May 2026)
+- [x] Remove Payables from sidebar menu
