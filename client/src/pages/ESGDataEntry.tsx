@@ -102,9 +102,9 @@ export default function ESGDataEntry() {
             editingRow={editingRow}
             contracts={contracts}
             onCancel={() => { setShowForm(false); setEditingRow(null); }}
-            onSaveEnv={(data) => upsertEnv.mutate(data)}
-            onSaveSocial={(data) => upsertSocial.mutate(data)}
-            onSaveGov={(data) => upsertGov.mutate(data)}
+            onSaveEnv={(data: any) => upsertEnv.mutate(data)}
+            onSaveSocial={(data: any) => upsertSocial.mutate(data)}
+            onSaveGov={(data: any) => upsertGov.mutate(data)}
             saving={upsertEnv.isPending || upsertSocial.isPending || upsertGov.isPending}
           />
         ) : (

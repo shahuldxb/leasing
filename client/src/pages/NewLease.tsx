@@ -246,6 +246,7 @@ export default function NewLease() {
       maintenanceBy: (d.maintenance_responsibility === 'Vodafone' ? 'Vodafone' : 'Lessor') as 'Lessor' | 'Vodafone',
       initialDirectCosts: String(d.initial_direct_costs || ''),
       leaseIncentives: String(d.lease_incentives || ''),
+      _autoDeposit: '',
     });
     // Pre-set the savedContractId so the wizard updates rather than creates
     setSavedContractId(d.contract_id);

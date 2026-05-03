@@ -47,7 +47,7 @@ const TABS = [
 // ── Execution Dashboard ────────────────────────────────────────────────────────
 function ExecutionDashboard() {
   const { data: logs = [], isLoading } = trpc.businessRules.getExecutionLog.useQuery(
-    { pageSize: 100 },
+    { screenId: '', top: 100 },
     { staleTime: 10_000 }
   );
 
@@ -165,7 +165,7 @@ function RuleTestingSandbox() {
   const runTest = () => {
     try {
       const inputs = JSON.parse(testInputs);
-      executeMut.mutate({ screenId, inputs });
+      executeMut.mutate({ screenId, context: inputs });
     } catch {
       toast.error("Invalid JSON input");
     }
@@ -395,17 +395,14 @@ export default function BusinessRulesManager() {
   const saveEdit = () => {
     if (!editingRule) return;
     upsertMutation.mutate({
-      ruleId: editingRule.rule_id,
-      screenId: editingRule.screen_id,
-      ruleType: editingRule.rule_type,
-      ruleCategory: editingRule.rule_category,
-      ruleName: editForm.rule_name,
-      formula: editForm.formula || null,
-      jvPattern: editForm.jv_pattern || null,
-      ifrsReference: editForm.ifrs_reference || null,
-      ruleDefinitionJson: editForm.rule_definition_json || null,
+      rule_id: editingRule.rule_id,
+      screen_id: editingRule.screen_id,
+      category_code: editingRule.rule_category || editingRule.category_code || 'CALCULATION',
+      rule_name: editForm.rule_name,
+      formula: editForm.formula || undefined,
+      ifrs_reference: editForm.ifrs_reference || undefined,
       priority: editingRule.priority,
-      isActive: editingRule.is_active,
+      is_active: editingRule.is_active,
     });
   };
 
@@ -560,7 +557,7 @@ export default function BusinessRulesManager() {
                           onClick={(e) => {
                             e.stopPropagation();
                             if (confirm(`Regenerate all rules for ${sid} from AI?`)) {
-                              regenerateMutation.mutate({ screenId: sid });
+                              regenerateMutation.mutate({ screenId: sid, screenTitle: sid });
                             }
                           }}
                           disabled={regenerateMutation.isPending}
@@ -622,7 +619,7 @@ export default function BusinessRulesManager() {
                                   </td>
                                   <td className="px-4 py-2 text-center">
                                     <button
-                                      onClick={() => toggleMutation.mutate({ ruleId: rule.rule_id, isActive: !rule.is_active })}
+                                      onClick={() => toggleMutation.mutate({ rule_id: rule.rule_id, is_active: !rule.is_active })}
                                       title={rule.is_active ? "Deactivate" : "Activate"}
                                     >
                                       {rule.is_active ? <ToggleRight className="w-5 h-5 text-emerald-400" /> : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}

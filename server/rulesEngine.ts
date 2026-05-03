@@ -4,7 +4,7 @@
  * All DB access via stored procedures. Audit + error logging on every execution.
  */
 import { execSPP, execSPPOne, sql } from './db-sqlserver';
-import { writeAuditLog, writeErrorLog } from './audit';
+import { simpleAuditLog as writeAuditLog, simpleErrorLog as writeErrorLog } from './audit';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

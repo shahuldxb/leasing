@@ -90,3 +90,41 @@ export function extractClientInfo(req: Request) {
     screenId: req.headers['x-screen-id'] as string || '',
   };
 }
+
+// ── Simplified wrappers for rulesEngine / glConfiguration ──────────────────────
+// Accept positional args for convenience, mapping to the full structured signatures.
+
+export async function simpleAuditLog(
+  table: string, action: string, user: string, message: string, details?: object
+): Promise<string | null> {
+  return writeAuditLog({
+    userId: 0,
+    username: user,
+    userRole: 'system',
+    module: 'RulesEngine',
+    subModule: table,
+    actionType: action,
+    recordTable: table,
+    recordId: details && 'rule_id' in details ? String((details as any).rule_id) : undefined,
+    beforeState: null,
+    afterState: details ?? null,
+    outcome: 'Success',
+    screenId: details && 'screen_id' in details ? String((details as any).screen_id) : 'SYSTEM',
+    processStartTime: new Date(),
+  });
+}
+
+export async function simpleErrorLog(
+  source: string, message: string, module: string, context?: object
+): Promise<string | null> {
+  return writeErrorLog({
+    severity: 'Error',
+    module,
+    errorCode: source,
+    message,
+    fullMessage: message,
+    stackTrace: new Error().stack,
+    userContext: context ?? undefined,
+    screenId: context && 'screenId' in context ? String((context as any).screenId) : undefined,
+  });
+}

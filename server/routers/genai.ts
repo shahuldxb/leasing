@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
 import { invokeLLM } from '../_core/llm';
 import { execSPP, execSPPOne, sql, getPool } from '../db-sqlserver';
-import { writeErrorLog, writeAuditLog } from '../audit';
+import { writeErrorLog, simpleAuditLog } from '../audit';
 import { TRPCError } from '@trpc/server';
 import { RulesEngine } from '../rulesEngine';
 
@@ -478,7 +478,7 @@ Rules: Only generate SELECT statements. No INSERT/UPDATE/DELETE. Always include 
         ruleCount++;
       }
 
-      await writeAuditLog(
+      await simpleAuditLog(
         'business_rules', 'AI_GENERATE', userName,
         `Generated ${ruleCount} business rules from AI for screen ${screenId} (${screenTitle})`,
         { screen_id: screenId, rule_count: ruleCount }

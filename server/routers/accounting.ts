@@ -199,8 +199,8 @@ const remeasurementRouter = router({
       req.input("created_by", sql.NVarChar(200), ctx.user.name ?? ctx.user.email);
       const result = await req.execute("accounting.sp_CalculateRemeasurement");
       return {
-        summary: result.recordsets[0]?.[0] ?? null,
-        schedule: result.recordsets[1] ?? [],
+        summary: (result.recordsets as any[])[0]?.[0] ?? null,
+        schedule: (result.recordsets as any[])[1] ?? [],
       };
     }),
 

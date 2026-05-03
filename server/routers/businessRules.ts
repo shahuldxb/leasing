@@ -100,7 +100,7 @@ export const businessRulesRouter = router({
   executeRules: protectedProcedure
     .input(z.object({
       screenId: z.string(),
-      context: z.record(z.any()),
+      context: z.record(z.string(), z.any()),
     }))
     .mutation(async ({ input, ctx }) => {
       return await RulesEngine.executeAllRules(

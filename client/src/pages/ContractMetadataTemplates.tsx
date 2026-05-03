@@ -1,5 +1,5 @@
 /**
- * VodaLease Enterprise — Contract Metadata Templates
+ * VodaLease Enterprise -- Contract Metadata Templates
  * Screen ID: VFCNTMETA0001P001
  * Define reusable field schemas per contract type.
  * Each template defines which metadata fields a contract of that type must carry.
@@ -248,7 +248,7 @@ export default function ContractMetadataTemplates() {
                               <div className="flex-1 min-w-0">
                                 <span className="text-sm font-medium">{f.field_label}</span>
                                 <span className="ml-2 text-xs text-muted-foreground font-mono">{f.field_name}</span>
-                                {f.help_text && <span className="ml-2 text-xs text-muted-foreground">— {f.help_text}</span>}
+                                {f.help_text && <span className="ml-2 text-xs text-muted-foreground">-- {f.help_text}</span>}
                               </div>
                               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FIELD_TYPE_COLORS[f.field_type] ?? ""}`}>
                                 {FIELD_TYPES.find(ft => ft.value === f.field_type)?.label ?? f.field_type}

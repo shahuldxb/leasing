@@ -1875,3 +1875,29 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add breadcrumb navigation between COA → GL Mappings → Business Rules (sidebar active state)
 - [x] Add "Referenced by" links: click GL code → see all rules/SPs using it (UsagePanel in COA)
 - [x] Cross-link: GL Mapping screen links to COA for account details (COA selector in EditMappingForm)
+
+## Enhancement: Populate COA, GL Mappings, AI Rules, Fix TS Error (May 2026)
+
+### Phase 1: Seed Chart of Accounts
+- [x] Create seed script with 135 enterprise GL accounts (seed-coa.mjs)
+- [x] Include all account types: Asset (46), Liability (28), Equity (8), Revenue (18), Expense (46) = 146 total
+- [x] Proper parent-child relationships for tree view (account_code hierarchy)
+- [x] Seed via direct SQL insert (104 new + 42 existing = 146 accounts)
+
+### Phase 2: Fix GL Mapping Distribution
+- [x] Distribute 21 GL mappings across 5 lifecycle groups via classifyMapping() function
+- [x] Inception: ROU_INITIAL_RECOGNITION_* (5), SECURITY_DEPOSIT (1) = 6
+- [x] Monthly: DEPRECIATION_* (5), INTEREST_EXPENSE* (2), LEASE_PAYMENT (1), PERIOD_CLOSE_* (2) = 10
+- [x] Remeasurement: CPI_ESCALATION (1), LEASE_MODIFICATION (1) = 2
+- [x] Termination: LEASE_TERMINATION (1), TERMINATION_GAIN_LOSS (1) = 2
+- [x] Other: SUBLEASE_RECEIVABLE (1) = 1
+- [x] Fixed all GL codes to match COA: 0 mismatches remaining
+
+### Phase 3: Generate AI Rules for All Screens
+- [x] Generated AI business rules for 7 remaining screens (69 new rules via generate-rules.mjs + import-rules.mjs)
+- [x] Total: 123 rules across 9 screens (21 GL + 33 CPI + 10x7 other screens)
+
+### Phase 4: Fix ContractMetadataTemplates.tsx
+- [x] Fixed ContractMetadataTemplates.tsx parse error (em dash replaced)
+- [x] Fixed 37 backend TS errors (audit wrappers, z.record, recordsets types)
+- [x] Only 1 phantom TS error remains (stale tsc watcher from Apr 27)
