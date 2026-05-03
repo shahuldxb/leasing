@@ -19,6 +19,8 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
 import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
+import { groupDrCrByAmount } from "@/lib/jvGrouping";
+import type { JVLine } from "@/lib/jvGrouping";
 import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
@@ -53,26 +55,37 @@ function JETable({ lines }: { lines: Array<Record<string, unknown>> }) {
       <table className="w-full text-sm">
         <thead className="bg-muted/50">
           <tr>
-            {['#','Account','Account Name','Dr/Cr','Amount','Description'].map(h => (
-              <th key={h} className={`px-3 py-2 text-xs font-semibold text-muted-foreground ${h === 'Amount' ? 'text-right' : h === 'Dr/Cr' ? 'text-center' : 'text-left'}`}>{h}</th>
+            {['#','Account','Account Name','Dr/Cr','Debit','Credit','Description'].map(h => (
+              <th key={h} className={`px-3 py-2 text-xs font-semibold text-muted-foreground ${h === 'Debit' || h === 'Credit' ? 'text-right' : h === 'Dr/Cr' ? 'text-center' : 'text-left'}`}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {lines.map((l, i) => (
-            <tr key={i} className="border-t border-border hover:bg-muted/30">
-              <td className="px-3 py-2 text-muted-foreground">{String(l.line_no ?? i + 1)}</td>
-              <td className="px-3 py-2 font-mono text-xs">{String(l.account_code ?? '—')}</td>
-              <td className="px-3 py-2">{String(l.account_name ?? '—')}</td>
-              <td className="px-3 py-2 text-center">
-                <span className={`px-2 py-0.5 rounded text-xs font-bold ${l.dr_cr === 'Dr' ? 'bg-blue-500/15 text-blue-400' : 'bg-purple-500/15 text-purple-400'}`}>
-                  {String(l.dr_cr ?? '—')}
-                </span>
-              </td>
-              <td className="px-3 py-2 text-right font-mono">{fmt(l.amount)}</td>
-              <td className="px-3 py-2 text-muted-foreground text-xs">{String(l.description ?? '—')}</td>
-            </tr>
-          ))}
+          {(() => {
+            const groups = groupDrCrByAmount(lines as JVLine[]);
+            return groups.map((group, gIdx) => {
+              const allLines = [...group.drLines, ...group.crLines];
+              return allLines.map((l: any, i: number) => (
+                <tr key={`${gIdx}-${i}`} className={`border-t border-border hover:bg-muted/30 ${i === 0 && gIdx > 0 ? 'border-t-2 border-amber-500/20' : ''}`}>
+                  <td className="px-3 py-2 text-muted-foreground">{String(l.line_no ?? i + 1)}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{String(l.account_code ?? '—')}</td>
+                  <td className="px-3 py-2">{String(l.account_name ?? '—')}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${l.dr_cr === 'Dr' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}>
+                      {String(l.dr_cr ?? '—')}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-emerald-500">
+                    {l.dr_cr === 'Dr' ? fmt(l.amount) : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-rose-500">
+                    {l.dr_cr === 'Cr' ? fmt(l.amount) : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground text-xs">{String(l.description ?? '—')}</td>
+                </tr>
+              ));
+            });
+          })()}
         </tbody>
       </table>
     </div>
@@ -662,7 +675,7 @@ function TransactionHistoryPanel({ contractId }: { contractId: number }) {
               <thead className="bg-muted/50">
                 <tr>
                   {['Date','JE Ref','Label','Ledger No.','Account','Dr/Cr','Amount','Posted By'].map(h => (
-                    <th key={h} className={`px-3 py-2.5 text-xs font-semibold text-muted-foreground ${h === 'Amount' ? 'text-right' : 'text-left'}`}>{h}</th>
+                    <th key={h} className={`px-3 py-2.5 text-xs font-semibold text-muted-foreground ${h === 'Debit' || h === 'Credit' ? 'text-right' : 'text-left'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>

@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import React from "react";
-import { CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator, FileText, Download, Search, Filter, Calendar, TrendingUp, BookOpen, Layers, AlertTriangle, Info, X } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator, FileText, Download, Search, Filter, Calendar, TrendingUp, BookOpen, Layers, AlertTriangle, Info, X, Link2 } from "lucide-react";
+import { groupDrCrByAmount, type JVLine } from "@/lib/jvGrouping";
 
 const SCREEN_ID = "VFACCJVUIX0001P001";
 
@@ -493,8 +494,7 @@ export default function JournalVoucher() {
                       const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                       return rows.map((r: any, rIdx: number) => {
                         const jvLines = allLines.filter((l: any) => l.jv_id === r.jv_id);
-                        const drLines = jvLines.filter((l: any) => l.dr_cr === 'Dr');
-                        const crLines = jvLines.filter((l: any) => l.dr_cr === 'Cr');
+                        const groups = groupDrCrByAmount(jvLines as JVLine[]);
                         const periodStr = `${monthNames[r.period_month]}-${String(r.period_year).slice(2)}`;
                         const postingDateStr = r.posting_date ? new Date(r.posting_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
                         const createdDateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -559,37 +559,58 @@ export default function JournalVoucher() {
                                 )}
                               </td>
                             </tr>
-                            {/* ── Debit lines ── */}
-                            {drLines.map((line: any, idx: number) => (
-                              <tr key={`dr-${line.line_id ?? idx}`} className="border-b border-gray-800/30 bg-green-950/10 hover:bg-green-950/20">
-                                <td className="px-2 py-1.5"></td>
-                                <td className="px-3 py-1.5">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/40 text-green-400 border border-green-700/40">Dr</span>
-                                </td>
-                                <td className="px-3 py-1.5 font-mono text-blue-300 text-[11px]">{line.account_code}</td>
-                                <td className="px-3 py-1.5 text-gray-200">{line.account_name}</td>
-                                <td className="px-3 py-1.5 text-gray-400 max-w-[200px] truncate">{line.description}</td>
-                                <td className="px-3 py-1.5 text-right font-mono text-green-400 font-semibold">{fmt(line.amount, line.currency)}</td>
-                                <td className="px-3 py-1.5 text-right font-mono text-gray-700">—</td>
-                                <td className="px-3 py-1.5"></td>
-                                <td className="px-3 py-1.5"></td>
-                              </tr>
-                            ))}
-                            {/* ── Credit lines ── */}
-                            {crLines.map((line: any, idx: number) => (
-                              <tr key={`cr-${line.line_id ?? idx}`} className="border-b border-gray-800/30 bg-red-950/10 hover:bg-red-950/20">
-                                <td className="px-2 py-1.5"></td>
-                                <td className="px-3 py-1.5">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-900/40 text-red-400 border border-red-700/40">Cr</span>
-                                </td>
-                                <td className="px-3 py-1.5 font-mono text-blue-300 text-[11px]">{line.account_code}</td>
-                                <td className="px-3 py-1.5 text-gray-200 pl-6">{line.account_name}</td>
-                                <td className="px-3 py-1.5 text-gray-400 max-w-[200px] truncate">{line.description}</td>
-                                <td className="px-3 py-1.5 text-right font-mono text-gray-700">—</td>
-                                <td className="px-3 py-1.5 text-right font-mono text-red-400 font-semibold">{fmt(line.amount, line.currency)}</td>
-                                <td className="px-3 py-1.5"></td>
-                                <td className="px-3 py-1.5"></td>
-                              </tr>
+                            {/* ── Grouped Dr/Cr lines by matching amounts ── */}
+                            {groups.map((group, gIdx) => (
+                              <React.Fragment key={`grp-${group.id}`}>
+                                {/* Group separator */}
+                                {gIdx > 0 && (
+                                  <tr><td colSpan={9} className="h-px bg-gray-700/30"></td></tr>
+                                )}
+                                {/* Group label row */}
+                                <tr className="bg-gray-850/40">
+                                  <td colSpan={9} className="px-4 py-1">
+                                    <div className="flex items-center gap-2">
+                                      <Link2 className="w-3 h-3 text-amber-500/60" />
+                                      <span className="text-[9px] text-amber-400/70 font-medium tracking-wide uppercase">Group {group.id}: {group.label}</span>
+                                      {group.balanced && <span className="text-[8px] text-green-500/60 ml-auto">✓ balanced</span>}
+                                    </div>
+                                  </td>
+                                </tr>
+                                {/* Dr lines in this group */}
+                                {group.drLines.map((line: any, idx: number) => (
+                                  <tr key={`dr-${line.line_id ?? idx}`} className="border-b border-gray-800/30 bg-green-950/10 hover:bg-green-950/20">
+                                    <td className="px-2 py-1.5"></td>
+                                    <td className="px-3 py-1.5">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-900/40 text-green-400 border border-green-700/40">Dr</span>
+                                    </td>
+                                    <td className="px-3 py-1.5 font-mono text-blue-300 text-[11px]">{line.account_code}</td>
+                                    <td className="px-3 py-1.5 text-gray-200">{line.account_name}</td>
+                                    <td className="px-3 py-1.5 text-gray-400 max-w-[200px] truncate">{line.description}</td>
+                                    <td className="px-3 py-1.5 text-right font-mono text-green-400 font-semibold">{fmt(line.amount, line.currency)}</td>
+                                    <td className="px-3 py-1.5 text-right font-mono text-gray-700">—</td>
+                                    <td className="px-3 py-1.5"></td>
+                                    <td className="px-3 py-1.5"></td>
+                                  </tr>
+                                ))}
+                                {/* Cr lines in this group */}
+                                {group.crLines.map((line: any, idx: number) => (
+                                  <tr key={`cr-${line.line_id ?? idx}`} className="border-b border-gray-800/30 bg-red-950/10 hover:bg-red-950/20">
+                                    <td className="px-2 py-1.5">
+                                      <div className="w-3 border-l-2 border-b-2 border-amber-500/20 h-3 ml-1 rounded-bl"></div>
+                                    </td>
+                                    <td className="px-3 py-1.5">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-900/40 text-red-400 border border-red-700/40">Cr</span>
+                                    </td>
+                                    <td className="px-3 py-1.5 font-mono text-blue-300 text-[11px]">{line.account_code}</td>
+                                    <td className="px-3 py-1.5 text-gray-200 pl-4">{line.account_name}</td>
+                                    <td className="px-3 py-1.5 text-gray-400 max-w-[200px] truncate">{line.description}</td>
+                                    <td className="px-3 py-1.5 text-right font-mono text-gray-700">—</td>
+                                    <td className="px-3 py-1.5 text-right font-mono text-red-400 font-semibold">{fmt(line.amount, line.currency)}</td>
+                                    <td className="px-3 py-1.5"></td>
+                                    <td className="px-3 py-1.5"></td>
+                                  </tr>
+                                ))}
+                              </React.Fragment>
                             ))}
                             {/* ── Totals row ── */}
                             <tr className="border-b border-gray-700/50 bg-gray-800/40">

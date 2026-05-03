@@ -725,36 +725,74 @@ const erpExportRouter = router({
     return r.recordset;
   }),
 
+  // Preview: fetch posted JV lines for a date range (from accounting schema)
+  preview: protectedProcedure
+    .input(z.object({ period_from: z.string(), period_to: z.string() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("from", input.period_from);
+      req.input("to", input.period_to);
+      const result = await req.query(`
+        SELECT jv.jv_id, jv.jv_number, jv.jv_type, jv.posting_date, jv.description AS jv_description,
+               jv.period_year, jv.period_month, jv.currency, jv.status, jv.source_ref,
+               l.line_id, l.line_seq, l.account_code, l.account_name, l.dr_cr, l.amount,
+               l.description AS line_description, l.cost_centre, l.contract_ref
+        FROM accounting.journal_vouchers jv
+        JOIN accounting.jv_lines l ON l.jv_id = jv.jv_id
+        WHERE jv.posting_date BETWEEN @from AND @to AND jv.status = 'Posted'
+        ORDER BY jv.posting_date, jv.jv_number, l.line_seq
+      `);
+      return result.recordset;
+    }),
   generateExport: protectedProcedure
     .input(z.object({
       config_id: z.number(),
       period_from: z.string(),
       period_to: z.string(),
+      erp_type: z.string().default('SAP'),
     }))
     .mutation(async ({ input, ctx }) => {
       const pool = await getPool();
-      // Fetch journals in period
       const req = pool.request();
       req.input("from", input.period_from);
       req.input("to", input.period_to);
-      const journals = await req.query(`
-        SELECT j.journal_ref, j.journal_date, j.description, j.period_month, j.period_year,
-               l.account_code, l.account_name, l.debit_amount, l.credit_amount, l.cost_centre, l.contract_ref
-        FROM finance.gl_journals j
-        JOIN finance.gl_lines l ON l.journal_id=j.journal_id
-        WHERE j.journal_date BETWEEN @from AND @to AND j.status='Posted'
-        ORDER BY j.journal_date, j.journal_ref
+      const result = await req.query(`
+        SELECT jv.jv_number, jv.jv_type, jv.posting_date, jv.description AS jv_description,
+               jv.period_year, jv.period_month, jv.currency, jv.source_ref,
+               l.account_code, l.account_name, l.dr_cr, l.amount,
+               l.description AS line_description, l.cost_centre, l.contract_ref
+        FROM accounting.journal_vouchers jv
+        JOIN accounting.jv_lines l ON l.jv_id = jv.jv_id
+        WHERE jv.posting_date BETWEEN @from AND @to AND jv.status = 'Posted'
+        ORDER BY jv.posting_date, jv.jv_number, l.line_seq
       `);
-      // Log the export
+      const rows = result.recordset;
+      const uniqueJVs = new Set(rows.map((r: any) => r.jv_number)).size;
+      const headers = ['JV Number','JV Type','Posting Date','Period','Account Code','Account Name','Dr/Cr','Amount','Currency','Cost Centre','Contract Ref','Description'];
+      const csvLines = [headers.join(',')];
+      for (const r of rows) {
+        csvLines.push([
+          r.jv_number, r.jv_type,
+          new Date(r.posting_date).toISOString().split('T')[0],
+          `${r.period_year}-${String(r.period_month).padStart(2,'0')}`,
+          r.account_code, `"${(r.account_name||'').replace(/"/g,'""')}"`,
+          r.dr_cr, r.amount, r.currency||'QAR',
+          r.cost_centre||'', r.contract_ref||'',
+          `"${(r.line_description||r.jv_description||'').replace(/"/g,'""')}"`
+        ].join(','));
+      }
+      const csvContent = csvLines.join('\n');
+      const filename = `VodaLease_${input.erp_type}_${input.period_from}_to_${input.period_to}.csv`;
       const req2 = pool.request();
       req2.input("config_id", input.config_id);
       req2.input("period_from", input.period_from);
       req2.input("period_to", input.period_to);
-      req2.input("journal_count", journals.recordset.length);
-      req2.input("line_count", journals.recordset.length);
+      req2.input("journal_count", uniqueJVs);
+      req2.input("line_count", rows.length);
       req2.input("exported_by", ctx.user.id);
-      await req2.query(`INSERT INTO finance.erp_export_log (config_id,period_from,period_to,journal_count,line_count,status,exported_by) VALUES (@config_id,@period_from,@period_to,@journal_count,@line_count,'GENERATED',@exported_by)`);
-      return { success: true, rows: journals.recordset };
+      await req2.query(`INSERT INTO finance.erp_export_log (config_id,period_from,period_to,journal_count,line_count,status,exported_by) VALUES (@config_id,@period_from,@period_to,@journal_count,@line_count,'COMPLETED',@exported_by)`);
+      return { success: true, rowCount: rows.length, journalCount: uniqueJVs, csvContent, filename, rows };
     }),
 });
 

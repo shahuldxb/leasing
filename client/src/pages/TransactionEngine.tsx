@@ -16,6 +16,7 @@ import {
   ClipboardCheck, Lightbulb, Scale, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
+import { groupDrCrByAmount, type JVLine } from "@/lib/jvGrouping";
 
 // ─── Business Proof Data ──────────────────────────────────────────────────────
 // Each entry explains the function to a non-technical business audience.
@@ -164,6 +165,7 @@ type FnKey = typeof FUNCTIONS[number]["key"];
 // ─── JV Lines Table ───────────────────────────────────────────────────────────
 function JVLinesTable({ lines, onCalcClick }: { lines: any[]; onCalcClick: (line: any) => void }) {
   if (!lines.length) return <p className="text-muted-foreground text-sm py-4 text-center">No JV lines found.</p>;
+  const groups = groupDrCrByAmount(lines as JVLine[]);
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
@@ -173,33 +175,40 @@ function JVLinesTable({ lines, onCalcClick }: { lines: any[]; onCalcClick: (line
             <th className="px-3 py-2 text-left font-medium text-muted-foreground">Account</th>
             <th className="px-3 py-2 text-left font-medium text-muted-foreground">Account Name</th>
             <th className="px-3 py-2 text-center font-medium text-muted-foreground w-16">Dr/Cr</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Amount</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Debit</th>
+            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Credit</th>
             <th className="px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
             <th className="px-3 py-2 text-center font-medium text-muted-foreground w-20">Calc</th>
           </tr>
         </thead>
         <tbody>
-          {lines.map((line: any, idx: number) => (
-            <tr key={idx} className={`border-t border-border ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
-              <td className="px-3 py-2 text-muted-foreground">{line.line_seq}</td>
-              <td className="px-3 py-2 font-mono text-xs">{line.account_code}</td>
-              <td className="px-3 py-2 font-medium">{line.account_name}</td>
-              <td className="px-3 py-2 text-center">
-                <Badge variant={line.dr_cr === "DR" ? "default" : "secondary"} className={line.dr_cr === "DR" ? "bg-blue-600 text-white" : "bg-green-600 text-white"}>
-                  {line.dr_cr}
-                </Badge>
-              </td>
-              <td className="px-3 py-2 text-right font-mono font-semibold">
-                {Number(line.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </td>
-              <td className="px-3 py-2 text-muted-foreground text-xs">{line.description}</td>
-              <td className="px-3 py-2 text-center">
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onCalcClick(line)} title="Show calculation">
-                  <Info className="h-3.5 w-3.5 text-amber-500" />
-                </Button>
-              </td>
-            </tr>
-          ))}
+          {groups.map((group, gIdx) => {
+            const allLines = [...group.drLines, ...group.crLines];
+            return allLines.map((line: any, idx: number) => (
+              <tr key={`${gIdx}-${idx}`} className={`border-t border-border ${gIdx % 2 === 0 ? "bg-background" : "bg-muted/20"} ${idx === 0 && gIdx > 0 ? "border-t-2 border-amber-500/20" : ""}`}>
+                <td className="px-3 py-2 text-muted-foreground">{line.line_seq}</td>
+                <td className="px-3 py-2 font-mono text-xs">{line.account_code}</td>
+                <td className="px-3 py-2 font-medium">{line.account_name}</td>
+                <td className="px-3 py-2 text-center">
+                  <Badge variant={line.dr_cr === "DR" ? "default" : "secondary"} className={line.dr_cr === "DR" ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"}>
+                    {line.dr_cr}
+                  </Badge>
+                </td>
+                <td className="px-3 py-2 text-right font-mono font-semibold text-emerald-500">
+                  {line.dr_cr === "DR" ? Number(line.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "\u2014"}
+                </td>
+                <td className="px-3 py-2 text-right font-mono font-semibold text-rose-500">
+                  {line.dr_cr === "CR" ? Number(line.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "\u2014"}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground text-xs">{line.description}</td>
+                <td className="px-3 py-2 text-center">
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onCalcClick(line)} title="Show calculation">
+                    <Info className="h-3.5 w-3.5 text-amber-500" />
+                  </Button>
+                </td>
+              </tr>
+            ));
+          })}
         </tbody>
         <tfoot className="bg-muted/50 border-t-2 border-border">
           <tr>

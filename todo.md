@@ -1687,3 +1687,41 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Update sp_GenerateRemeasurementJV to use fn_GetGLCode
 - [x] Seed 21 default GL code rules for all IFRS 16 transaction types
 - [x] Test end-to-end: fn_GetGLCode returns from rules table, falls back correctly for unknown types
+
+## JV Detail View — Group Dr/Cr by Amount (All Screens, All Future Postings)
+- [x] Create shared utility function `groupDrCrByAmount()` for reuse across all screens
+- [x] Update JournalVoucher.tsx — group Dr/Cr lines by matching amounts with visual pairing
+- [x] Update TransactionEngine.tsx — group Dr/Cr lines by matching amounts
+- [ ] Update GLJournals.tsx — group Dr/Cr lines by matching amounts
+- [ ] Update NewLease.tsx — group Dr/Cr preview lines by matching amounts
+- [x] Update CPIEscalation.tsx — group Dr/Cr lines by matching amounts
+- [x] Update RemeasurementEngine.tsx — group Dr/Cr lines by matching amounts
+- [ ] Update PeriodClose.tsx — group Dr/Cr lines by matching amounts
+- [ ] Update CalcExplanationModal — use same grouping logic for consistency
+- [x] Record design decision in DESIGN_DECISIONS.md
+
+## ERP Export — Empty Results Bug
+- [x] Diagnose why ERP Export returns empty — was querying wrong tables (finance.gl_journals instead of accounting.journal_vouchers) data
+- [ ] Fix ERP Export to return posted JV data correctly
+
+## Duplicate Control — JV Generation & Posting
+- [ ] Audit all JV generation SPs for duplicate prevention
+- [ ] Implement idempotency checks in sp_GenerateInceptionJV
+- [ ] Implement idempotency checks in sp_GenerateMonthlyJVs
+- [ ] Implement idempotency checks in sp_GenerateRemeasurementJV
+- [ ] Implement idempotency checks in sp_GeneratePeriodCloseJV
+- [ ] Add duplicate detection on JV posting (prevent double-post)
+- [ ] Record duplicate control design decision in DESIGN_DECISIONS.md
+
+## JV Unique Serial Number & Duplicate Control
+- [ ] Audit current JV table schema (accounting.journal_vouchers, accounting.jv_lines)
+- [ ] Add/verify unique serial number column with auto-increment format (JV-YYYYMM-NNNNN)
+- [ ] Add/verify primary key constraint on jv_id
+- [x] Add UQ_jv_contract_period_type composite unique constraint (contract_id + period_year + period_month + jv_type) to prevent duplicates
+- [ ] Add unique index on jv_number to prevent duplicate serial numbers
+- [ ] Update sp_GenerateInceptionJV with duplicate check (IF EXISTS → skip or return error)
+- [ ] Update sp_GenerateMonthlyJVs with duplicate check
+- [ ] Update sp_GenerateRemeasurementJV with duplicate check
+- [ ] Update sp_GeneratePeriodCloseJV with duplicate check
+- [ ] Add duplicate detection on JV posting (prevent double-post of same JV)
+- [x] Record design decision in DESIGN_DECISIONS.md

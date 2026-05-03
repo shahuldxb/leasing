@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { groupDrCrByAmount, type JVLine } from "@/lib/jvGrouping";
 
 export default function RemeasurementEngine() {
   const [mode, setMode] = useState<"list" | "form" | "preview">("list");
@@ -845,24 +846,36 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
                           <TableHead className="text-xs">Account</TableHead>
                           <TableHead className="text-xs">Account Name</TableHead>
                           <TableHead className="text-xs">Dr/Cr</TableHead>
-                          <TableHead className="text-xs text-right">Amount</TableHead>
+                          <TableHead className="text-xs text-right">Debit</TableHead>
+                          <TableHead className="text-xs text-right">Credit</TableHead>
                           <TableHead className="text-xs">Description</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
-                          {(leaseJVs as any).allLines.map((line: any, idx: number) => (
-                            <TableRow key={idx} className={line.dr_cr === 'DR' ? 'bg-red-500/5' : 'bg-green-500/5'}>
-                              <TableCell className="font-mono text-xs">{line.jv_number ?? ''}</TableCell>
-                              <TableCell className="font-mono text-xs font-semibold">{line.account_code}</TableCell>
-                              <TableCell className="text-xs">{line.account_name ?? line.description ?? ''}</TableCell>
-                              <TableCell>
-                                <Badge className={line.dr_cr === 'DR' ? 'bg-red-500/20 text-red-400 text-xs' : 'bg-green-500/20 text-green-400 text-xs'}>
-                                  {line.dr_cr}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-xs font-semibold">{fmt(line.amount)}</TableCell>
-                              <TableCell className="text-xs max-w-[200px] truncate">{line.line_description ?? ''}</TableCell>
-                            </TableRow>
-                          ))}
+                          {(() => {
+                            const groups = groupDrCrByAmount((leaseJVs as any).allLines as JVLine[]);
+                            return groups.map((group, gIdx) => {
+                              const allLines = [...group.drLines, ...group.crLines];
+                              return allLines.map((line: any, idx: number) => (
+                                <TableRow key={`${gIdx}-${idx}`} className={`${line.dr_cr === 'DR' ? 'bg-emerald-500/5' : 'bg-rose-500/5'} ${idx === 0 && gIdx > 0 ? 'border-t-2 border-amber-500/20' : ''}`}>
+                                  <TableCell className="font-mono text-xs">{line.jv_number ?? ''}</TableCell>
+                                  <TableCell className="font-mono text-xs font-semibold">{line.account_code}</TableCell>
+                                  <TableCell className="text-xs">{line.account_name ?? line.description ?? ''}</TableCell>
+                                  <TableCell>
+                                    <Badge className={line.dr_cr === 'DR' ? 'bg-emerald-500/20 text-emerald-400 text-xs' : 'bg-rose-500/20 text-rose-400 text-xs'}>
+                                      {line.dr_cr}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono text-xs font-semibold text-emerald-500">
+                                    {line.dr_cr === 'DR' ? fmt(line.amount) : '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono text-xs font-semibold text-rose-500">
+                                    {line.dr_cr === 'CR' ? fmt(line.amount) : '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-xs max-w-[200px] truncate">{line.line_description ?? ''}</TableCell>
+                                </TableRow>
+                              ));
+                            });
+                          })()}
                         </TableBody>
                       </Table>
                     </div>
