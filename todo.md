@@ -1473,3 +1473,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## Sidebar Revert (May 2026)
 - [x] Revert sidebar to previous version with all menus (user lost important menus after restructure)
+
+## Sub-Asset Set Bug Fix (May 2026)
+- [x] Fix NULL created_at error when saving sub-asset set in leasing.asset.assets table
+- [x] Ensure newly created sub-asset set shows in the list after save
