@@ -1793,3 +1793,10 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Remove Reports & Scenarios from sidebar navigation
 - [x] Remove Reports & Scenarios backend router/endpoints
 - [x] Clean up any related imports
+
+## Remove Compliance Menu
+- [x] Remove Compliance section from sidebar navigation
+- [x] Remove Compliance page components (IFRS16 Disclosures, Standards Paper)
+- [x] Remove Compliance routes from App.tsx
+- [x] Keep compliance backend router (used for audit logging, screen visits, error logging across entire app)
+- [x] Clean up related imports (Shield icon, page imports)

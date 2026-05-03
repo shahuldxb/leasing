@@ -67,7 +67,6 @@ import OpsESG             from "./pages/OpsESG";
 import OpsDocuments       from "./pages/OpsDocuments";
 
 // Compliance
-import ComplianceIFRS16   from "./pages/ComplianceIFRS16";
 import AuditLog           from "./pages/AuditLog";
 import ComplianceErrors   from "./pages/ComplianceErrors";
 
@@ -168,7 +167,6 @@ import MultiStandardComparison   from "./pages/MultiStandardComparison";
 import LeaseModificationWizard   from "./pages/LeaseModificationWizard";
 
 // Accounting Standards Paper
-import AccountingStandardsPaper  from "./pages/AccountingStandardsPaper";
 
 function Router() {
   return (
@@ -240,7 +238,6 @@ function Router() {
       <Route path="/ops/documents"           component={OpsDocuments} />
 
       {/* Compliance */}
-      <Route path="/compliance/ifrs16"       component={ComplianceIFRS16} />
       <Route path="/compliance/audit"        component={AuditLog} />
       <Route path="/compliance/errors"       component={ComplianceErrors} />
       <Route path="/audit"                   component={AuditLog} />
@@ -350,7 +347,6 @@ function Router() {
       <Route path="/admin/business-rules"         component={BusinessRulesManager} />
       <Route path="/leases/modification-wizard"   component={LeaseModificationWizard} />
       {/* Accounting Standards Reference Paper */}
-      <Route path="/compliance/standards-paper"   component={AccountingStandardsPaper} />
       {/* 404 */}
       <Route path="/404"                     component={NotFound} />
       <Route                                 component={NotFound} />

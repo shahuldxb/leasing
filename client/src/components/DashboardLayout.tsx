@@ -23,7 +23,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText,
-  BarChart3, Shield, Settings, Bell,
+  BarChart3, Settings, Bell,
   FileCheck, TrendingUp, ChevronDown, ChevronRight,
   Sparkles, Calculator, Calendar
 } from "lucide-react";
@@ -85,13 +85,7 @@ const menuItems: NavItem[] = [
     ],
   },
 
-  {
-    icon: Shield, label: "Compliance",
-    children: [
-      { label: "IFRS 16 Disclosures",path: "/compliance/ifrs16" },
-      { label: "Accounting Standards Paper", path: "/compliance/standards-paper" },
-    ],
-  },
+
   {
     icon: Calculator, label: "Accounting Engine",
     children: [
