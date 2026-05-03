@@ -1591,3 +1591,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add screen ID badge (VFLCPIESC001P001) to CPI Escalation header
 - [x] Add Gen AI, Audit Log, Error Log buttons to CPI Escalation header (matching other screens)
 - [x] Fix executeCPICycle SQL to match actual lease_escalations table columns
+
+## Exemption Register - Threshold Updates (May 2026)
+- [x] Update low-value threshold: USD 20,000 total per year (not USD 5,000)
+- [x] Update single item threshold: USD 10,000 per individual asset
+- [x] Classify exempted leases as operational leases
+- [x] Update the IFRS 16 Para 5 info banner text with correct thresholds

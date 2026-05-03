@@ -36,7 +36,7 @@ const EXEMPTION_COLOURS: Record<string, string> = {
 
 const EXEMPTION_LABELS: Record<string, string> = {
   ShortTerm: 'Short-term (≤12 months)',
-  LowValue: 'Low-value (< USD 5,000)',
+  LowValue: 'Low-value (< USD 10,000/item)',
   None: 'No Exemption',
 };
 
@@ -87,7 +87,7 @@ export default function LeaseExemptions() {
             }
           />
           <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm text-blue-300">
-            <strong>IFRS 16 Para 5:</strong> Short-term leases (term &le;12 months) and low-value leases (asset &lt; USD 5,000) may be exempted from capitalisation. Payments recognised straight-line over the lease term.
+            <strong>IFRS 16 Para 5:</strong> Short-term leases (term &le;12 months) and low-value leases (single item &lt; USD 10,000 or total annual value &lt; USD 20,000) may be exempted from capitalisation. Exempted leases are treated as <strong>operational leases</strong> with payments recognised straight-line over the lease term.
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-4 pb-4">
@@ -188,7 +188,7 @@ export default function LeaseExemptions() {
                   <SelectContent>
                     <SelectItem value="None">No Exemption (capitalise under IFRS 16)</SelectItem>
                     <SelectItem value="ShortTerm">Short-term (lease term ≤12 months)</SelectItem>
-                    <SelectItem value="LowValue">Low-value (asset value &lt; USD 5,000)</SelectItem>
+                    <SelectItem value="LowValue">Low-value (item &lt; USD 10,000 or annual &lt; USD 20,000)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -198,7 +198,7 @@ export default function LeaseExemptions() {
               </div>
               {editType !== 'None' && (
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300">
-                  This lease will be excluded from the IFRS 16 balance sheet. Payments expensed straight-line per IFRS 16 Para 6.
+                  This lease will be classified as an <strong>operational lease</strong> and excluded from the IFRS 16 balance sheet. Payments expensed straight-line per IFRS 16 Para 6. Low-value threshold: USD 10,000 per single item or USD 20,000 total annual value.
                 </div>
               )}
             </div>
