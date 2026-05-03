@@ -1477,3 +1477,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Sub-Asset Set Bug Fix (May 2026)
 - [x] Fix NULL created_at error when saving sub-asset set in leasing.asset.assets table
 - [x] Ensure newly created sub-asset set shows in the list after save
+
+## Sub-Asset Registry UI Improvement (May 2026)
+- [x] Move Save Set button to the top of the Sub-Asset Registry page

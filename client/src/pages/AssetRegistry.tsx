@@ -776,6 +776,19 @@ export default function AssetRegistry() {
                         value={draftDesc} onChange={e => setDraftDesc(e.target.value)} />
                     </div>
                   </div>
+                  {/* Save/Cancel buttons at top */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">{draftLines.length} item types · <strong className="text-white">{totalItems}</strong> units</span>
+                    <span className="text-xs font-semibold text-amber-400">QAR {totalValue.toLocaleString()}</span>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <Button variant="outline" size="sm" className="flex-1 h-8 border-white/10 text-gray-300" onClick={cancelDraft}>Cancel</Button>
+                    <Button size="sm" className="flex-1 h-8 bg-red-600 hover:bg-red-700 text-white gap-1.5"
+                      onClick={saveSet} disabled={upsertMutation.isPending}>
+                      {upsertMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                      {builderMode === "new" ? "Save Set" : "Update Set"}
+                    </Button>
+                  </div>
                   <Separator className="bg-white/5 mb-3" />
                   {draftLines.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-4">Click items from the library to add them here.</p>
@@ -808,21 +821,7 @@ export default function AssetRegistry() {
                     </div>
                   )}
                 </CardContent>
-                <Separator className="bg-white/5" />
-                <div className="px-4 py-3 shrink-0 bg-[#0f1117]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground">{draftLines.length} item types · <strong className="text-white">{totalItems}</strong> units</span>
-                    <span className="text-xs font-semibold text-amber-400">QAR {totalValue.toLocaleString()}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8 border-white/10 text-gray-300" onClick={cancelDraft}>Cancel</Button>
-                    <Button size="sm" className="flex-1 h-8 bg-red-600 hover:bg-red-700 text-white gap-1.5"
-                      onClick={saveSet} disabled={upsertMutation.isPending}>
-                      {upsertMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                      {builderMode === "new" ? "Save Set" : "Update Set"}
-                    </Button>
-                  </div>
-                </div>
+
               </>
             )}
           </Card>
