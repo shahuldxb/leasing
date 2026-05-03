@@ -85,11 +85,6 @@ import ERPExport          from "./pages/ERPExport";
 import BulkOperations     from "./pages/BulkOperations";
 
 // P2 Features
-import CriticalDateCalendar from "./pages/CriticalDateCalendar";
-import AIAbstraction      from "./pages/AIAbstraction";
-import SubLeases          from "./pages/SubLeases";
-import RentReviews        from "./pages/RentReviews";
-import SecurityDeposits   from "./pages/SecurityDeposits";
 
 // Alerts & Admin
 import AlertCentre        from "./pages/AlertCentre";
@@ -254,11 +249,6 @@ function Router() {
       <Route path="/accounting/bulk"         component={BulkOperations} />
 
       {/* Advanced Features */}
-      <Route path="/leases/critical-dates"   component={CriticalDateCalendar} />
-      <Route path="/leases/ai-abstraction"   component={AIAbstraction} />
-      <Route path="/leases/sub-leases"       component={SubLeases} />
-      <Route path="/leases/rent-reviews"     component={RentReviews} />
-      <Route path="/leases/security-deposits" component={SecurityDeposits} />
 
       {/* Lessor & Asset */}
       <Route path="/lessor-master"                    component={LessorMaster} />

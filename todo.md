@@ -1800,3 +1800,13 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Remove Compliance routes from App.tsx
 - [x] Keep compliance backend router (used for audit logging, screen visits, error logging across entire app)
 - [x] Clean up related imports (Shield icon, page imports)
+
+## Remove Advanced Lease Menu
+- [x] Remove Advanced Lease section from sidebar navigation
+- [x] Remove Advanced Lease page components (AIAbstraction, CriticalDateCalendar, SubLeases, RentReviews, SecurityDeposits)
+- [x] Remove Advanced Lease routes from App.tsx
+- [x] Clean up related imports
+
+## Bug: Period-End Close shows 0 Posted / 0 Projected for all months
+- [x] Investigate why period cards show 0 counts despite active leases existing
+- [x] Fix the backend query to correctly count posted/projected JVs per period (SP was counting 'Projected' but data uses 'Scheduled')

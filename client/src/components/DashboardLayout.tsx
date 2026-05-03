@@ -110,16 +110,7 @@ const menuItems: NavItem[] = [
       { label: "Consolidation",          path: "/accounting/consolidation" },
     ],
   },
-  {
-    icon: Sparkles, label: "Advanced Lease",
-    children: [
-      { label: "AI Abstraction",      path: "/leases/ai-abstraction" },
-      { label: "Critical Dates",      path: "/leases/critical-dates" },
-      { label: "Sub-Leases",          path: "/leases/sub-leases" },
-      { label: "Rent Reviews",        path: "/leases/rent-reviews" },
-      { label: "Security Deposits",   path: "/leases/security-deposits" },
-    ],
-  },
+
   {
     icon: TrendingUp, label: "Finance & Planning",
     children: [
