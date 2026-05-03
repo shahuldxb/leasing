@@ -20,6 +20,7 @@ import { contractDmsRouter }    from "./routers/contractDms";
 import { lesseeRouter }         from "./routers/lessee";
 import { staffRouter }          from "./routers/staff";
 import { journalVoucherRouter } from "./routers/journalVoucher";
+import { esgRouter }            from "./routers/esg";
 import { transactionEngineRouter } from "./routers/transactionEngine";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
@@ -83,6 +84,7 @@ export const appRouter = router({
   spaceManagement: spaceManagementRouter,
   capitalProjects: capitalProjectsRouter,
   esgCarbon:   esgCarbonRouter,
+  esg:         esgRouter,
   multiEntity: multiEntityRouter,
   fxAccounting: fxAccountingRouter,
   lessorCredit: lessorCreditRouter,

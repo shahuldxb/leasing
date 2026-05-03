@@ -172,7 +172,8 @@ const menuItems: NavItem[] = [
     icon: TrendingUp, label: "Budgeting & ESG",
     children: [
       { label: "Budgeting & Forecasting", path: "/finance/budgeting" },
-      { label: "ESG Reporting",           path: "/ops/esg-reporting" },
+      { label: "ESG Data Entry",          path: "/esg/data-entry" },
+      { label: "ESG Report",              path: "/esg/report" },
     ],
   },
   {

@@ -1496,3 +1496,10 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## IBR Library Cleanup (May 2026)
 - [x] Remove all non-QAR rates from IBR Library, keep only QAR entries (deleted 110 rows, kept 35 QAR)
+
+## ESG Reporting Module (May 2026)
+- [x] Create DB tables: esg.environmental_metrics, esg.social_metrics, esg.governance_metrics
+- [x] Create SPs: sp_UpsertEnvironmentalMetric, sp_UpsertSocialMetric, sp_UpsertGovernanceMetric, sp_DeleteESGMetric, sp_ListESGMetrics, sp_GetESGReport
+- [x] Build ESG Data Entry screen (VFLESGRPT0001P001) with Environmental/Social/Governance tabs, CRUD, Screen ID, Audit Log, Error Log
+- [x] Build ESG Report dashboard (VFLESGRPT0002P001) with Carbon Footprint, Green Scorecard, Risk Matrix, KPIs, Net Zero Tracker, Governance Summary
+- [x] Add sidebar entries under Budgeting & ESG and wire routes in App.tsx

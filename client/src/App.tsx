@@ -140,6 +140,8 @@ import LeaseOptionsBreaks from "./pages/LeaseOptionsBreaks";
 import BudgetVariance     from "./pages/BudgetVariance";
 import SpaceManagement    from "./pages/SpaceManagement";
 import ESGCarbon          from "./pages/ESGCarbon";
+import ESGDataEntry       from "./pages/ESGDataEntry";
+import ESGReport          from "./pages/ESGReport";
 import MultiEntityFX      from "./pages/MultiEntityFX";
 import LessorCreditScore  from "./pages/LessorCreditScore";
 import AlertsReports      from "./pages/AlertsReports";
@@ -310,6 +312,8 @@ function Router() {
       <Route path="/accounting/hedge"        component={HedgeAccounting} />
       <Route path="/finance/budgeting"       component={BudgetingForecasting} />
       <Route path="/ops/esg-reporting"       component={ESGReporting} />
+      <Route path="/esg/data-entry"           component={ESGDataEntry} />
+      <Route path="/esg/report"               component={ESGReport} />
       <Route path="/ai-analytics"            component={AILeaseAnalytics} />
       <Route path="/mobile-field"            component={MobileFieldApp} />
       <Route path="/tenant-portal"           component={TenantPortal} />
