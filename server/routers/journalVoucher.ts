@@ -98,8 +98,8 @@ export const journalVoucherRouter = router({
       req.input("period_year", input.period_year);
       req.input("period_month", input.period_month);
       req.input("created_by", ctx.user.name ?? ctx.user.email);
-      const result = await req.execute("accounting.sp_GeneratePeriodCloseJV");
-      return (result.recordset as any[])?.[0] ?? null;
+      const result = await req.execute("accounting.sp_GenerateMonthlyJVs");
+      return (result.recordset as any[])?.[0] ?? { generated_count: 0 };
     }),
 
   // ── Post JV ───────────────────────────────────────────────────────────────
