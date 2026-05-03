@@ -172,6 +172,7 @@ const menuItems: NavItem[] = [
     icon: Sparkles, label: "AI & Intelligence",
     children: [
       { label: "AI Lease Analytics",   path: "/ai-analytics" },
+      { label: "Business Rules Engine", path: "/admin/business-rules" },
     ],
   },
 

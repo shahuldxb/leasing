@@ -1602,3 +1602,88 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Ensure all Accounting Engine screens have Gen AI (yellow), Audit Log, Error Log buttons
 - [x] Add Alt Sequences button (alt 1: entity/SP/tables, alt 2: standards, alt 3: techniques) to all screens
 - [x] Screens to check: CPI Escalation, Exemptions, IFRS 16 Disclosure, Disclosure Notes, IAS 17 vs IFRS 16, Period-End Close, JV Register, Transaction Engine, Accounting Settings, FX Revaluation, Roll-Forward, Disclosure Pack, Multi-Standard, ERP Export, Bulk Operations, Consolidation, Hedge Accounting
+
+## Gen AI Button Missing on Specific Screens (May 2026)
+- [ ] Add onAIData handler to CPI Escalation screen for Gen AI button
+- [ ] Add onAIData handler to Exemptions screen for Gen AI button
+- [ ] Add onAIData handler to IFRS 16 Disclosure screen for Gen AI button
+- [ ] Add onAIData handler to Period-End Close screen for Gen AI button
+
+## Yellow Button Redesign - Business Rules from AI (May 2026)
+- [ ] Create DB table: screen_business_rules (screen_id, rules_json, generated_at, source_model)
+- [ ] Create backend tRPC procedure: getBusinessRules (returns stored rules or null)
+- [ ] Create backend tRPC procedure: generateBusinessRules (calls OpenAI once, stores result)
+- [ ] Create BusinessRulesButton component (yellow, replaces GenAIFillButton in ScreenHeader)
+- [ ] First click: calls OpenAI for IFRS/business methodology for that screen, stores in DB
+- [ ] Subsequent clicks: shows stored business rules in full-screen overlay
+- [ ] Update ScreenHeader to use BusinessRulesButton instead of GenAIFillButton
+- [ ] Remove old onAIData/onAIFormFill props from ScreenHeader (no longer needed)
+- [ ] Ensure yellow button appears on ALL screens (no props needed - auto from screenId)
+
+## Business Rules Engine - Super Intelligence (May 2026)
+
+### DB Schema
+- [x] Create business_rules table (rule_id, screen_id, rule_type, rule_category, rule_name, rule_definition_json, formula, jv_pattern, ifrs_reference, priority, is_active, version, created_by_ai, created_at, updated_at)
+- [x] Create rule_categories table (calculation, validation, jv_pattern, standard_reference, classification, recognition, measurement)
+- [x] Create rule_execution_log table (track when rules are executed and results)
+
+### Backend - Generic Rules Engine
+- [x] Build RulesEngine class: loadRules(screenId) → reads active rules from DB
+- [x] Build RulesEngine: executeCalculation(ruleId, inputParams) → evaluates formula dynamically
+- [x] Build RulesEngine: executeValidation(ruleId, data) → validates against rule conditions
+- [x] Build RulesEngine: getJVPattern(ruleId) → returns JV debit/credit pattern
+- [x] Build RulesEngine: executeAllRules(screenId, context) → runs all active rules for a screen
+
+### Backend - AI Generation (Fix Yellow Button)
+- [x] Fix genai.ts: use getPool() instead of execSPPOne for raw SQL queries
+- [x] AI generates structured rules per screen (formulas, JV patterns, IFRS references, validations)
+- [x] Store each rule as individual row in business_rules table (not one big JSON blob)
+
+### Frontend - Yellow Button (All Screens)
+- [x] Yellow button on all screens: first click generates rules from AI
+- [x] Subsequent clicks show stored rules in full-screen overlay
+- [x] Rules overlay shows: Standards, Business Rules, Calculation Steps, Validation Rules, JV Patterns
+
+### Frontend - Rules Management UI
+- [x] tRPC router: getByScreen, getAll, getSummary, upsert, toggle, deleteByScreen, executeRules, getJVPatterns, getExecutionLog
+- [ ] New screen: Business Rules Manager (under AI & Intelligence)
+- [ ] Full-screen table showing all rules grouped by screen
+- [ ] Edit individual rules (formula, conditions, JV pattern)
+- [ ] Activate/deactivate individual rules
+- [ ] Regenerate rules from AI per screen
+- [ ] Version history per rule
+
+### Refactor Screens to Use Rules Engine
+- [ ] Initial Recognition (Day 1 entry): ROU Asset + Lease Liability calculation driven by rules
+- [ ] Amortisation Schedule: Interest, Principal, Depreciation formulas from rules table
+- [ ] CPI Escalation: Rent increase formula + remeasurement logic from rules
+- [ ] Remeasurement Engine: Remeasurement calculation driven by rules
+- [ ] Lease Modification: Scope change logic from rules
+- [ ] Period-End Close: Closing entries driven by rules
+- [ ] Lease Classification: Classification test logic from rules
+- [ ] IFRS 16 Disclosure: Disclosure calculations from rules
+
+## Yellow Button = Alt+4 Integration (May 2026)
+- [ ] Merge Business Rules into ScreenMetaOverlay as Alt+4 mode
+- [ ] Alt Seq button cycles: Alt+1 (SPs/Tables) → Alt+2 (Standards) → Alt+3 (Techniques) → Alt+4 (Business Rules)
+- [ ] Alt+4 panel: shows AI-generated business rules, formulas, JV patterns, validations
+- [ ] Alt+4 first time: calls AI to generate rules, stores in DB
+- [ ] Alt+4 subsequent: shows stored rules from DB
+- [ ] Remove separate yellow BusinessRulesButton from ScreenHeader toolbar
+
+## Future Design Decisions (Recorded Requirements)
+
+- [ ] **GL Codes in Business Rules Table**: In future, ALL GL (General Ledger) codes will be stored in the `business_rules` table. The rules engine should become the single source of truth for GL account codes used across the application (JV posting, escalation entries, modifications, terminations, etc.). When implementing GL code management, store them as rules with category `GL_CODE` or a dedicated column in the business_rules table.
+
+## GL Code Management via Business Rules Table (Implementing Now)
+
+- [x] Add GL_CODE category to rule_categories table
+- [x] Create fn_GetGLCode scalar function — lookup GL code from business_rules by screen/transaction type with fallback
+- [x] Create fn_GetGLAccountName scalar function — lookup account name from COA
+- [x] Add GL code lookup, auto-create, and seed methods to RulesEngine class
+- [x] Create tRPC endpoints: lookupGLCode, upsertGLCode, getAllGLCodes, getGLCodesForScreen, seedGLCodes
+- [x] Update sp_GenerateInceptionJV to use fn_GetGLCode (no more hardcoded GL codes)
+- [x] Update sp_GenerateMonthlyJVs to use fn_GetGLCode
+- [x] Update sp_GenerateRemeasurementJV to use fn_GetGLCode
+- [x] Seed 21 default GL code rules for all IFRS 16 transaction types
+- [x] Test end-to-end: fn_GetGLCode returns from rules table, falls back correctly for unknown types

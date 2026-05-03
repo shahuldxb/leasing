@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { ScreenMetaOverlay } from "@/components/ScreenMetaOverlay";
 import { toast } from "sonner";
 import { useScreenAudit } from "@/hooks/useScreenAudit";
+// BusinessRulesButton is now integrated into ScreenMetaOverlay as Alt+4
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,7 @@ interface ScreenHeaderProps {
    */
   screenType?: string;
   onAIData?: (rows: Record<string, unknown>[]) => void;
+
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -422,10 +424,10 @@ export function ScreenHeader({
   // Automatic visit logging — ENTER on mount, EXIT with elapsed ms on unmount
   useScreenAudit(screenId, title);
 
-  // Alt Sequences button state
-  const [altMode, setAltMode] = useState<1 | 2 | 3 | null>(null);
+  // Alt Sequences button state (Alt+1 through Alt+4)
+  const [altMode, setAltMode] = useState<1 | 2 | 3 | 4 | null>(null);
   const cycleAltMode = useCallback(() => {
-    setAltMode(m => m === null ? 1 : m === 1 ? 2 : m === 2 ? 3 : null);
+    setAltMode(m => m === null ? 1 : m === 1 ? 2 : m === 2 ? 3 : m === 3 ? 4 : null);
   }, []);
 
   return (
@@ -454,13 +456,7 @@ export function ScreenHeader({
 
       {/* Right: toolbar */}
       <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-        {/* Gen AI button — form fill or screen data mode */}
-        <GenAIButton
-          formType={formType}
-          onAIFormFill={onAIFormFill}
-          screenType={screenType}
-          onAIData={onAIData}
-        />
+        <GenAIButton formType={formType} onAIFormFill={onAIFormFill} screenType={screenType} onAIData={onAIData} />
         <AuditLogDrawer screenId={screenId} />
         <ErrorLogDrawer screenId={screenId} />
         {/* Alt Sequences button — shows SP/Tables, Standards, Techniques */}
@@ -473,14 +469,14 @@ export function ScreenHeader({
               ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 bg-amber-500/5"
               : "border-border text-muted-foreground hover:text-foreground"
           }`}
-          title="View stored procedures, standards & techniques (Alt+1/2/3)"
+          title="View SPs/Tables, Standards, Techniques & Business Rules (Alt+1/2/3/4)"
         >
           <Layers className="w-3.5 h-3.5" />
           Alt Seq
         </Button>
         {actions}
       </div>
-      <ScreenMetaOverlay screenId={screenId} externalMode={altMode} onExternalClose={() => setAltMode(null)} />
+      <ScreenMetaOverlay screenId={screenId} screenTitle={title} externalMode={altMode} onExternalClose={() => setAltMode(null)} onExternalModeChange={(m) => setAltMode(m)} />
     </div>
   );
 }

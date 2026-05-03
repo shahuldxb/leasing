@@ -152,6 +152,7 @@ import FurnitureCollectionDetail from "./pages/FurnitureCollectionDetail";
 import DisclosureNotes  from "./pages/DisclosureNotes";
 import RenewalEngine   from "./pages/RenewalEngine";
 import PeriodClose     from "./pages/PeriodClose";
+import BusinessRulesManager from "./pages/BusinessRulesManager";
 import IAS17Comparison from "./pages/IAS17Comparison";
 import FXRevaluation   from "./pages/FXRevaluation";
 import LeaseTransactionCentre from "./pages/LeaseTransactionCentre";
@@ -352,6 +353,7 @@ function Router() {
       <Route path="/accounting/maturity-ladder"   component={MaturityLadder} />
       {/* Phase 8: Features 15, 17 */}
       <Route path="/accounting/multi-standard"    component={MultiStandardComparison} />
+      <Route path="/admin/business-rules"         component={BusinessRulesManager} />
       <Route path="/leases/modification-wizard"   component={LeaseModificationWizard} />
       {/* Accounting Standards Reference Paper */}
       <Route path="/compliance/standards-paper"   component={AccountingStandardsPaper} />

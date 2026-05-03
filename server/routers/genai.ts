@@ -5,9 +5,10 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
 import { invokeLLM } from '../_core/llm';
-import { execSPP, execSPPOne, sql } from '../db-sqlserver';
-import { writeErrorLog } from '../audit';
+import { execSPP, execSPPOne, sql, getPool } from '../db-sqlserver';
+import { writeErrorLog, writeAuditLog } from '../audit';
 import { TRPCError } from '@trpc/server';
+import { RulesEngine } from '../rulesEngine';
 
 // ── IFRS 16 Computation (inline, no Python dependency) ──────────────────────
 function computeIFRS16Schedule(params: {
@@ -253,5 +254,236 @@ Rules: Only generate SELECT statements. No INSERT/UPDATE/DELETE. Always include 
       } catch (err: any) {
         return { insights: 'AI insights temporarily unavailable.' };
       }
+    }),
+
+  // ── Business Rules from AI ─────────────────────────────────
+  getBusinessRules: protectedProcedure
+    .input(z.object({ screenId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const pool = await getPool();
+        const result = await pool.request()
+          .input('screenId', sql.NVarChar(100), input.screenId)
+          .query(`SELECT rules_json, generated_at, source_model FROM dbo.screen_business_rules WHERE screen_id = @screenId`);
+        const row = result.recordset?.[0];
+        if (!row) return { rules: null, generatedAt: null };
+        try {
+          return { rules: JSON.parse(row.rules_json), generatedAt: row.generated_at };
+        } catch {
+          return { rules: null, generatedAt: null };
+        }
+      } catch {
+        return { rules: null, generatedAt: null };
+      }
+    }),
+
+  generateBusinessRules: protectedProcedure
+    .input(z.object({ screenId: z.string(), screenTitle: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { screenId, screenTitle } = input;
+
+      // Get screen metadata from registry for context
+      let screenMeta: any = null;
+      try {
+        const pool = await getPool();
+        const metaResult = await pool.request()
+          .input('screenId', sql.NVarChar(100), screenId)
+          .query(`SELECT screen_name, module, sub_module, stored_procedures, db_tables, computation_techniques, accounting_standards FROM security.screen_registry WHERE screen_id = @screenId`);
+        screenMeta = metaResult.recordset?.[0] || null;
+      } catch { /* ignore */ }
+
+      const contextInfo = screenMeta
+        ? `\nScreen metadata:\n- Module: ${screenMeta.module}\n- Sub-module: ${screenMeta.sub_module}\n- Stored Procedures: ${screenMeta.stored_procedures}\n- DB Tables: ${screenMeta.db_tables}\n- Computation Techniques: ${screenMeta.computation_techniques}\n- Accounting Standards: ${screenMeta.accounting_standards}`
+        : '';
+
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: 'system',
+            content: `You are a senior IFRS 16 / ASC 842 lease accounting expert and enterprise systems architect. Your task is to define the complete business rules, methodology, and validation logic for a specific screen in a lease management system (VodaLease Enterprise for Vodafone Qatar).\n\nReturn a structured JSON object with the following sections:\n- summary: A 2-3 sentence overview of what this screen does and its purpose\n- standards: Array of { reference, description } — applicable IFRS/ASC/IAS paragraphs\n- businessRules: Array of { rule, explanation } — specific business logic rules\n- calculationSteps: Array of { step, formula? } — calculation methodology if applicable\n- validationRules: Array of strings — data validation requirements\n- journalEntryPattern: String or object describing the typical JV pattern if applicable\n\nBe specific to Vodafone Qatar context (QAR currency, Qatar regulations, telecom industry leases).`,
+          },
+          {
+            role: 'user',
+            content: `Generate the complete business rules and methodology for this screen:\n\nScreen: ${screenTitle}\nScreen ID: ${screenId}${contextInfo}\n\nProvide comprehensive IFRS 16 business rules, calculation methodology, validation rules, and journal entry patterns specific to this screen's function.`,
+          },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'business_rules',
+            strict: true,
+            schema: {
+              type: 'object',
+              properties: {
+                summary: { type: 'string', description: 'Overview of screen purpose' },
+                standards: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      reference: { type: 'string' },
+                      description: { type: 'string' },
+                    },
+                    required: ['reference', 'description'],
+                    additionalProperties: false,
+                  },
+                },
+                businessRules: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      rule: { type: 'string' },
+                      explanation: { type: 'string' },
+                    },
+                    required: ['rule', 'explanation'],
+                    additionalProperties: false,
+                  },
+                },
+                calculationSteps: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      step: { type: 'string' },
+                      formula: { type: 'string' },
+                    },
+                    required: ['step', 'formula'],
+                    additionalProperties: false,
+                  },
+                },
+                validationRules: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                journalEntryPattern: { type: 'string' },
+              },
+              required: ['summary', 'standards', 'businessRules', 'calculationSteps', 'validationRules', 'journalEntryPattern'],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const content = response.choices?.[0]?.message?.content as string;
+      let rulesJson: any;
+      try {
+        rulesJson = JSON.parse(content);
+      } catch {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to parse AI response as JSON' });
+      }
+
+      // Upsert into screen_business_rules (summary table)
+      const pool = await getPool();
+      await pool.request()
+        .input('screenId', sql.NVarChar(100), screenId)
+        .input('screenTitle', sql.NVarChar(255), screenTitle)
+        .input('rulesJson', sql.NVarChar(sql.MAX), JSON.stringify(rulesJson))
+        .input('summary', sql.NVarChar(sql.MAX), rulesJson.summary || '')
+        .query(`MERGE dbo.screen_business_rules AS target
+         USING (SELECT @screenId AS screen_id) AS source
+         ON target.screen_id = source.screen_id
+         WHEN MATCHED THEN
+           UPDATE SET rules_json = @rulesJson, screen_title = @screenTitle, updated_at = GETUTCDATE(), source_model = 'gpt-4o'
+         WHEN NOT MATCHED THEN
+           INSERT (screen_id, screen_title, rules_json, summary, source_model)
+           VALUES (@screenId, @screenTitle, @rulesJson, @summary, 'gpt-4o');`);
+
+      // ── Also store individual rules in business_rules table for the Rules Engine ──
+      // Delete existing rules for this screen first (regeneration)
+      try {
+        await RulesEngine.deleteRulesForScreen(screenId, ctx.user?.name || 'system');
+      } catch { /* ignore if no rules existed */ }
+
+      const userName = ctx.user?.name || 'system';
+      let ruleCount = 0;
+
+      // Store standards as STANDARD_REF rules
+      if (rulesJson.standards) {
+        for (const s of rulesJson.standards) {
+          await RulesEngine.upsertRule({
+            screen_id: screenId, screen_title: screenTitle,
+            category_code: 'STANDARD_REF', rule_name: s.reference,
+            rule_description: s.description, ifrs_reference: s.reference,
+            priority: 10 + ruleCount, created_by_ai: true, source_model: 'gpt-4o', updated_by: userName,
+          });
+          ruleCount++;
+        }
+      }
+
+      // Store business rules — map to appropriate categories
+      if (rulesJson.businessRules) {
+        for (const r of rulesJson.businessRules) {
+          // Determine category based on rule content
+          let category = 'VALIDATION';
+          const lower = (r.rule + ' ' + r.explanation).toLowerCase();
+          if (lower.includes('recogni')) category = 'RECOGNITION';
+          else if (lower.includes('classif')) category = 'CLASSIFICATION';
+          else if (lower.includes('modif') || lower.includes('remeasur')) category = 'MODIFICATION';
+          else if (lower.includes('escalat') || lower.includes('cpi') || lower.includes('index')) category = 'ESCALATION';
+          else if (lower.includes('terminat') || lower.includes('derecogni')) category = 'TERMINATION';
+          else if (lower.includes('disclos')) category = 'DISCLOSURE';
+          else if (lower.includes('impair')) category = 'IMPAIRMENT';
+          else if (lower.includes('fx') || lower.includes('foreign') || lower.includes('exchange')) category = 'FX';
+          else if (lower.includes('period') || lower.includes('close') || lower.includes('closing')) category = 'PERIOD_CLOSE';
+          else if (lower.includes('measur') || lower.includes('depreci') || lower.includes('amortis')) category = 'MEASUREMENT';
+
+          await RulesEngine.upsertRule({
+            screen_id: screenId, screen_title: screenTitle,
+            category_code: category, rule_name: r.rule,
+            rule_description: r.explanation,
+            priority: 50 + ruleCount, created_by_ai: true, source_model: 'gpt-4o', updated_by: userName,
+          });
+          ruleCount++;
+        }
+      }
+
+      // Store calculation steps as CALCULATION rules
+      if (rulesJson.calculationSteps) {
+        for (const step of rulesJson.calculationSteps) {
+          await RulesEngine.upsertRule({
+            screen_id: screenId, screen_title: screenTitle,
+            category_code: 'CALCULATION', rule_name: step.step,
+            formula: step.formula || null,
+            priority: 100 + ruleCount, created_by_ai: true, source_model: 'gpt-4o', updated_by: userName,
+          });
+          ruleCount++;
+        }
+      }
+
+      // Store validation rules
+      if (rulesJson.validationRules) {
+        for (const v of rulesJson.validationRules) {
+          await RulesEngine.upsertRule({
+            screen_id: screenId, screen_title: screenTitle,
+            category_code: 'VALIDATION', rule_name: v,
+            condition_expression: v,
+            priority: 200 + ruleCount, created_by_ai: true, source_model: 'gpt-4o', updated_by: userName,
+          });
+          ruleCount++;
+        }
+      }
+
+      // Store journal entry pattern as JV_PATTERN rule
+      if (rulesJson.journalEntryPattern) {
+        await RulesEngine.upsertRule({
+          screen_id: screenId, screen_title: screenTitle,
+          category_code: 'JV_PATTERN',
+          rule_name: `JV Pattern — ${screenTitle}`,
+          rule_description: typeof rulesJson.journalEntryPattern === 'string'
+            ? rulesJson.journalEntryPattern
+            : JSON.stringify(rulesJson.journalEntryPattern),
+          priority: 300, created_by_ai: true, source_model: 'gpt-4o', updated_by: userName,
+        });
+        ruleCount++;
+      }
+
+      await writeAuditLog(
+        'business_rules', 'AI_GENERATE', userName,
+        `Generated ${ruleCount} business rules from AI for screen ${screenId} (${screenTitle})`,
+        { screen_id: screenId, rule_count: ruleCount }
+      );
+
+      return { success: true, rules: rulesJson, ruleCount };
     }),
 });
