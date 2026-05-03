@@ -1756,3 +1756,40 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Update ERPExport.tsx to display enriched JV header (lease ref, lessor, asset, staff, currency)
 - [x] Fix LeaseTransactionCentre.tsx TS error (inline type import syntax)
 - [x] Clean up temporary update_jv_sps.cjs script
+
+## ERP Export — Date Object Rendering Error
+- [x] Fix Date object being rendered directly in <td> — must format as string
+
+## Remove Hedge Accounting Feature
+- [x] Remove Hedge Accounting page/component
+- [x] Remove Hedge Accounting route from App.tsx
+- [x] Remove Hedge Accounting from sidebar navigation
+- [x] Remove Hedge Accounting backend router/endpoints
+- [x] Clean up any related imports
+
+## Bulk Operations — Full Implementation
+- [x] Create bulk_operations table in DB for operation history logging
+- [x] Create stored procedure sp_LogBulkOperation for audit trail
+- [x] Create stored procedure sp_BulkImportLeases for lease register import
+- [x] Create stored procedure sp_BulkImportIBRRates for IBR rates import
+- [x] Create stored procedure sp_BulkImportInvoices for invoice import
+- [x] Create stored procedure sp_BulkImportLessorContacts for lessor contacts import
+- [x] Create stored procedure sp_BulkImportAmortisation for amortisation schedule import
+- [x] Create stored procedure sp_MassRemeasure for bulk remeasurement
+- [x] Build server-side bulk router with Excel parsing (xlsx package)
+- [x] Implement file upload endpoint accepting base64 Excel data
+- [x] Implement validation logic for each import type (required fields, data types)
+- [x] Implement row-by-row processing with error collection
+- [x] Implement mass remeasurement endpoint (select contracts, trigger recalc)
+- [x] Implement operation history query endpoint
+- [x] Implement downloadable Excel template generation for each type
+- [x] Update BulkOperations.tsx to use real backend endpoints
+- [x] Add progress tracking and detailed error reporting in UI
+- [x] Add template download buttons that generate proper Excel files
+
+## Remove Reports & Scenarios Feature
+- [x] Remove Reports & Scenarios page/components
+- [x] Remove Reports & Scenarios routes from App.tsx
+- [x] Remove Reports & Scenarios from sidebar navigation
+- [x] Remove Reports & Scenarios backend router/endpoints
+- [x] Clean up any related imports

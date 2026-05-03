@@ -25,7 +25,7 @@ import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText,
   BarChart3, Shield, Settings, Bell,
   FileCheck, TrendingUp, ChevronDown, ChevronRight,
-  Sparkles, Calculator, Calendar, LineChart
+  Sparkles, Calculator, Calendar
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -114,7 +114,6 @@ const menuItems: NavItem[] = [
       { label: "ERP Export",            path: "/accounting/erp-export" },
       { label: "Bulk Operations",       path: "/accounting/bulk" },
       { label: "Consolidation",          path: "/accounting/consolidation" },
-      { label: "Hedge Accounting",       path: "/accounting/hedge" },
     ],
   },
   {
@@ -125,13 +124,6 @@ const menuItems: NavItem[] = [
       { label: "Sub-Leases",          path: "/leases/sub-leases" },
       { label: "Rent Reviews",        path: "/leases/rent-reviews" },
       { label: "Security Deposits",   path: "/leases/security-deposits" },
-    ],
-  },
-  {
-    icon: LineChart, label: "Reports & Scenarios",
-    children: [
-      { label: "Report Builder",      path: "/reports" },
-      { label: "Scenario Modelling",  path: "/scenarios" },
     ],
   },
   {

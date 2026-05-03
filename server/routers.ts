@@ -40,7 +40,7 @@ const screenMetaRouter = router({
 });
 import { furnitureCollectionsRouter } from "./routers/furnitureCollections";
 import { vendorRouter, brokerRouter, loiRouter, tiAllowanceRouter, deskBookingRouter, workOrderRouter, notificationSettingsRouter, ssoConfigRouter, apiWebhookRouter, leaseModificationRouter, leaseRenewalRouter, glJournalRouter, leaseComparisonRouter, eSignatureRouter } from "./routers/ops";
-import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, reportBuilderRouter, scenarioRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter, terminationRouter, bouncePenaltyRouter, leaseOriginationNewRouter } from "./routers/features";
+import { criticalDatesRouter, aiAbstractionRouter, subLeaseRouter, rentReviewRouter, securityDepositRouter, asc842Router, leaseOriginationRouter, leaseOptionsRouter, breakClauseRouter, leaseIncentiveRouter, budgetVarianceRouter, costCentreRouter, marketRentRouter, spaceManagementRouter, capitalProjectsRouter, esgCarbonRouter, multiEntityRouter, fxAccountingRouter, lessorCreditRouter, emailAlertsRouter, scheduledReportsRouter, terminationRouter, bouncePenaltyRouter, leaseOriginationNewRouter } from "./routers/features";
 
 export const appRouter = router({
   system: systemRouter,
@@ -72,8 +72,6 @@ export const appRouter = router({
   subLease:    subLeaseRouter,
   rentReview:  rentReviewRouter,
   securityDeposit: securityDepositRouter,
-  reportBuilder: reportBuilderRouter,
-  scenario:    scenarioRouter,
   asc842:      asc842Router,
   leaseOrigination: leaseOriginationRouter,
   leaseOptions: leaseOptionsRouter,

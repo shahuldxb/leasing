@@ -19,8 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
 import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
-import { groupDrCrByAmount } from "@/lib/jvGrouping";
-import type { JVLine } from "@/lib/jvGrouping";
+import { groupDrCrByAmount, type JVLine } from "@/lib/jvGrouping";
 import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,

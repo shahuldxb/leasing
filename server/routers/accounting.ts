@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getPool, sql } from "../db-sqlserver";
 import { TRPCError } from "@trpc/server";
+import { bulkImportRouter } from "./bulkImport";
 
 // ─── IBR Library ──────────────────────────────────────────────────────────────
 const ibrRouter = router({
@@ -1016,7 +1017,7 @@ export const accountingRouter = router({
   variableRent: variableRentRouter,
   reporting: reportingRouter,
   erpExport: erpExportRouter,
-  bulk: bulkRouter,
+  bulk: bulkImportRouter,
   disclosurePack: disclosurePackRouter,
   budgetVsActual: budgetVsActualRouter,
   maturityLadder: maturityLadderRouter,

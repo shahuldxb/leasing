@@ -348,9 +348,9 @@ export default function ERPExport() {
                   {exports.map((exp: any, i: number) => (
                     <TableRow key={i} className="border-slate-700/50">
                       <TableCell className="text-slate-300">
-                        {new Date(exp.export_date || exp.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {exp.export_date ? new Date(exp.export_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                       </TableCell>
-                      <TableCell className="text-slate-400">{exp.period_from} → {exp.period_to}</TableCell>
+                      <TableCell className="text-slate-400">{exp.period_from instanceof Date ? exp.period_from.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : exp.period_from} → {exp.period_to instanceof Date ? exp.period_to.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : exp.period_to}</TableCell>
                       <TableCell className="text-center">{exp.journal_count}</TableCell>
                       <TableCell className="text-center">{exp.line_count}</TableCell>
                       <TableCell className="text-center flex items-center justify-center gap-1">

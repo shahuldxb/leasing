@@ -91,8 +91,6 @@ import AIAbstraction      from "./pages/AIAbstraction";
 import SubLeases          from "./pages/SubLeases";
 import RentReviews        from "./pages/RentReviews";
 import SecurityDeposits   from "./pages/SecurityDeposits";
-import ReportBuilder      from "./pages/ReportBuilder";
-import ScenarioModelling  from "./pages/ScenarioModelling";
 
 // Alerts & Admin
 import AlertCentre        from "./pages/AlertCentre";
@@ -108,7 +106,6 @@ import FacilitiesWorkOrders from "./pages/FacilitiesWorkOrders";
 import VendorManagement     from "./pages/VendorManagement";
 import LeaseDataQuality     from "./pages/LeaseDataQuality";
 import ConsolidationReporting from "./pages/ConsolidationReporting";
-import HedgeAccounting      from "./pages/HedgeAccounting";
 import BudgetingForecasting from "./pages/BudgetingForecasting";
 import ESGReporting         from "./pages/ESGReporting";
 import AILeaseAnalytics     from "./pages/AILeaseAnalytics";
@@ -265,8 +262,6 @@ function Router() {
       <Route path="/leases/sub-leases"       component={SubLeases} />
       <Route path="/leases/rent-reviews"     component={RentReviews} />
       <Route path="/leases/security-deposits" component={SecurityDeposits} />
-      <Route path="/reports"                 component={ReportBuilder} />
-      <Route path="/scenarios"               component={ScenarioModelling} />
 
       {/* Lessor & Asset */}
       <Route path="/lessor-master"                    component={LessorMaster} />
@@ -310,7 +305,6 @@ function Router() {
       <Route path="/ops/vendors"             component={VendorManagement} />
       <Route path="/leases/data-quality"     component={LeaseDataQuality} />
       <Route path="/accounting/consolidation" component={ConsolidationReporting} />
-      <Route path="/accounting/hedge"        component={HedgeAccounting} />
       <Route path="/finance/budgeting"       component={BudgetingForecasting} />
       <Route path="/ops/esg-reporting"       component={ESGReporting} />
       <Route path="/esg/data-entry"           component={ESGDataEntry} />
