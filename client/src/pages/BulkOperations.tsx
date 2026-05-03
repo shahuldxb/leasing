@@ -113,9 +113,9 @@ export default function BulkOperations() {
 
   const doDownloadTemplate = async (type: ImportType) => {
     try {
-      const res = await fetch(`/api/trpc/accounting.bulk.downloadTemplate?input=${encodeURIComponent(JSON.stringify({ type }))}`);
+      const res = await fetch(`/api/trpc/accounting.bulk.downloadTemplate?input=${encodeURIComponent(JSON.stringify({ json: { type } }))}`, { credentials: 'include' });
       const json = await res.json();
-      const base64 = json?.result?.data?.base64;
+      const base64 = json?.result?.data?.json?.base64 || json?.result?.data?.base64;
       if (!base64) { toast.error("Failed to generate template"); return; }
       const blob = new Blob([Uint8Array.from(atob(base64), c => c.charCodeAt(0))], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const url = URL.createObjectURL(blob);

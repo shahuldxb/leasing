@@ -9,7 +9,7 @@
  * Also: Mass Remeasurement, Operation Log, Template Generation
  */
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getPool, sql } from "../db-sqlserver";
 import * as XLSX from "xlsx";
 
@@ -458,7 +458,7 @@ function generateTemplate(type: string): string {
 
 export const bulkImportRouter = router({
   // Download template
-  downloadTemplate: protectedProcedure
+  downloadTemplate: publicProcedure
     .input(z.object({ type: z.enum(["LEASE_REGISTER", "AMORTISATION", "IBR_RATES", "INVOICES", "LESSOR_CONTACTS"]) }))
     .query(({ input }) => {
       return { base64: generateTemplate(input.type), filename: `${input.type.toLowerCase()}_template.xlsx` };
