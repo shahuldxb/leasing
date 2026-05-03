@@ -22,9 +22,9 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
-  BarChart3, Building2, Shield, Settings, Bell,
-  FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen,
+  AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard,
+  BarChart3, Shield, Settings, Bell,
+  FileCheck, TrendingUp, ChevronDown, ChevronRight,
   Sparkles, Calculator, Calendar, LineChart
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -80,25 +80,8 @@ const menuItems: NavItem[] = [
     ],
   },
 
-  {
-    icon: BookOpen, label: "Cheque Inventory",
-    children: [
-      { label: "Cheque Register",   path: "/cheques" },
-      { label: "Cheque Books",      path: "/cheques/books" },
-      { label: "Bounce Management", path: "/cheques/bounce" },
-      { label: "Stale Alerts",      path: "/cheques/stale" },
-      { label: "Signatories",       path: "/cheques/signatories" },
-    ],
-  },
-  {
-    icon: GitBranch, label: "Workflows",
-    children: [
-      { label: "My Tasks",          path: "/workflows/tasks" },
-      { label: "Process Monitor",   path: "/workflows/monitor" },
-      { label: "Process Modeler",   path: "/workflows/modeler" },
-      { label: "Escalations",       path: "/workflows/escalations" },
-    ],
-  },
+
+
   {
     icon: BarChart3, label: "MIS & Analytics",
     children: [
@@ -109,15 +92,7 @@ const menuItems: NavItem[] = [
       { label: "Custom Reports",    path: "/mis/reports" },
     ],
   },
-  {
-    icon: Building2, label: "Operational",
-    children: [
-      { label: "Asset Maintenance", path: "/ops/maintenance" },
-      { label: "Insurance",         path: "/ops/insurance" },
-      { label: "ESG Dashboard",     path: "/ops/esg" },
-      { label: "Document Expiry",   path: "/ops/documents" },
-    ],
-  },
+
   {
     icon: Shield, label: "Compliance",
     children: [

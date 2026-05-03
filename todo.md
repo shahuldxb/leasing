@@ -1484,3 +1484,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Calculation Explanation Bug (May 2026)
 - [x] Fix: Only first calculation row shows explanation, subsequent rows do not show
 - [x] Remove Bank Reconciliation from sidebar menu
+
+## Sidebar Menu Cleanup (May 2026)
+- [x] Remove Cheque Inventory from sidebar
+- [x] Remove Workflows from sidebar
+- [x] Remove Operational from sidebar
