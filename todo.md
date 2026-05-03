@@ -1912,3 +1912,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Debug classifyMapping function — verified rule_name values from SP and fixed bidirectional matching
 - [x] Fix classification logic to correctly match transaction types to lifecycle groups (bidirectional + keyword fallback)
 - [x] Also fix: Transaction Type column now shows rule_name, Dr/Cr GL Code columns show actual codes from jv_debit_account/jv_credit_account
+
+## Bug Fix: tRPC API returning HTML instead of JSON on Dashboard (May 2026)
+- [x] Dashboard tRPC query returning "<!doctype..." HTML instead of JSON — caused by Vite SPA fallback during server restart
+- [x] Added /api/* guard route to return JSON 404 instead of HTML for unmatched API routes
+- [x] Added retry logic in QueryClient for transient 'not valid JSON' errors
+- [x] Added HTML content-type detection in tRPC fetch to trigger retry instead of parse failure

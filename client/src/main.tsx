@@ -8,7 +8,24 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // Retry up to 3 times for transient errors (HTML responses during HMR restart)
+        if (failureCount >= 3) return false;
+        if (error instanceof TRPCClientError) {
+          // Retry if we got HTML instead of JSON (server restart)
+          if (error.message.includes('is not valid JSON')) return true;
+          // Don't retry auth errors
+          if (error.message === UNAUTHED_ERR_MSG) return false;
+        }
+        return true;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -42,11 +59,17 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
+      async fetch(input, init) {
+        const response = await globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
         });
+        // If the response is HTML (server restart returned SPA shell), throw to trigger retry
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('text/html')) {
+          throw new Error('Received HTML instead of JSON - server may be restarting');
+        }
+        return response;
       },
     }),
   ],

@@ -54,6 +54,12 @@ async function startServer() {
       createContext,
     })
   );
+  // Guard: ensure /api/* routes that don't match any handler return JSON 404
+  // This prevents the Vite SPA fallback from returning HTML for API requests
+  app.use('/api/*', (_req, res) => {
+    res.status(404).json({ error: { message: 'API route not found', code: 'NOT_FOUND' } });
+  });
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
