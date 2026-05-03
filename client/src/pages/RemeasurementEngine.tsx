@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Calculator, CheckCircle2, AlertTriangle, BookOpen, Info, Pencil, Save } from "lucide-react";
+import { ArrowLeft, Calculator, CheckCircle2, AlertTriangle, BookOpen, Info } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -21,15 +22,24 @@ export default function RemeasurementEngine() {
     triggerType: "Modification",
     eventDate: new Date().toISOString().slice(0, 10),
     triggerDescription: "",
-    newIbr: "",
-    newRemainingTerm: "",
-    newMonthlyPayment: "",
+  });
+  // Scope of change checkboxes
+  const [scope, setScope] = useState({
+    ibr: false,
+    term: false,
+    payment: false,
+    renewal: false,
+    purchase: false,
+  });
+  // Editable revised values
+  const [revised, setRevised] = useState({
+    ibr: "",
+    remainingTerm: "",
+    monthlyPayment: "",
+    expiryDate: "",
   });
   const [preview, setPreview] = useState<any>(null);
   const [showCalcExplanation, setShowCalcExplanation] = useState(false);
-  // Editable lease fields
-  const [editMode, setEditMode] = useState(false);
-  const [editedFields, setEditedFields] = useState<Record<string, string>>({});
 
   const { data: events = [], refetch } = trpc.accounting.remeasurement.list.useQuery({ status: filterStatus || undefined });
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({});
@@ -74,14 +84,17 @@ export default function RemeasurementEngine() {
 
   const handleCalculate = () => {
     if (!form.contractId) { toast.error("Select a contract"); return; }
+    if (!scope.ibr && !scope.term && !scope.payment && !scope.renewal && !scope.purchase) {
+      toast.error("Select at least one scope of change"); return;
+    }
     calculateMut.mutate({
       contract_id: Number(form.contractId),
       event_type: form.triggerType,
       event_date: form.eventDate,
       trigger_description: form.triggerDescription,
-      new_ibr: form.newIbr ? Number(form.newIbr) : null,
-      new_remaining_term: form.newRemainingTerm ? Number(form.newRemainingTerm) : null,
-      new_monthly_payment: form.newMonthlyPayment ? Number(form.newMonthlyPayment) : null,
+      new_ibr: scope.ibr && revised.ibr ? Number(revised.ibr) : null,
+      new_remaining_term: (scope.term || scope.renewal) && revised.remainingTerm ? Number(revised.remainingTerm) : null,
+      new_monthly_payment: scope.payment && revised.monthlyPayment ? Number(revised.monthlyPayment) : null,
     });
   };
 
@@ -91,18 +104,15 @@ export default function RemeasurementEngine() {
       event_type: form.triggerType,
       event_date: form.eventDate,
       trigger_description: form.triggerDescription,
-      new_ibr: form.newIbr ? Number(form.newIbr) : null,
-      new_remaining_term: form.newRemainingTerm ? Number(form.newRemainingTerm) : null,
-      new_monthly_payment: form.newMonthlyPayment ? Number(form.newMonthlyPayment) : null,
+      new_ibr: scope.ibr && revised.ibr ? Number(revised.ibr) : null,
+      new_remaining_term: (scope.term || scope.renewal) && revised.remainingTerm ? Number(revised.remainingTerm) : null,
+      new_monthly_payment: scope.payment && revised.monthlyPayment ? Number(revised.monthlyPayment) : null,
     });
   };
 
   const fmt = (v: any) => v != null ? Number(v).toLocaleString("en-QA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
   const fmtPct = (v: any) => v != null ? `${(Number(v) * 100).toFixed(3)}%` : "—";
   const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-
-  // Helper to get editable value or original
-  const getVal = (field: string, original: any) => editMode && editedFields[field] !== undefined ? editedFields[field] : (original ?? "");
 
   // ═══ FULL-SCREEN CALC EXPLANATION ═══════════════════════════════════════════
   if (showCalcExplanation && preview?.summary) {
@@ -213,7 +223,7 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
     );
   }
 
-  // ═══ PREVIEW MODE ═══════════════════════════════════════════════════════════
+  // ═══ PREVIEW MODE — Current vs New Comparison ══════════════════════════════
   if (mode === "preview" && preview?.summary) {
     const s = preview.summary;
     const schedule = preview.schedule ?? [];
@@ -225,7 +235,7 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
               <ArrowLeft className="w-4 h-4" />Back to Form
             </Button>
             <div>
-              <h2 className="font-semibold text-lg">Remeasurement Preview</h2>
+              <h2 className="font-semibold text-lg">Current Entries vs New Adjusted Entries</h2>
               <p className="text-sm text-muted-foreground">Review before confirming — old JVs will NOT be touched</p>
             </div>
             <div className="ml-auto flex gap-3">
@@ -242,61 +252,151 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <Tabs defaultValue="summary" className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* ─── CURRENT vs NEW Side-by-Side ─── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Current Entries */}
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="bg-muted/30 px-4 py-3 border-b border-border">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+                    Current Entries (Before Remeasurement)
+                  </h3>
+                </div>
+                <Table>
+                  <TableBody>
+                    <TableRow><TableCell className="text-muted-foreground text-xs w-48">Lease Liability</TableCell><TableCell className="font-mono font-semibold">{fmt(s.old_liability)} {s.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">ROU Asset (NBV)</TableCell><TableCell className="font-mono font-semibold">{fmt(s.old_rou_asset)} {s.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">IBR (Annual)</TableCell><TableCell className="font-mono">{fmtPct(s.old_ibr)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">Monthly Payment</TableCell><TableCell className="font-mono">{fmt(s.old_monthly_payment)} {s.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">Remaining Term</TableCell><TableCell className="font-mono">{s.old_remaining_term} months</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">Months Already Posted</TableCell><TableCell className="font-mono">{s.months_already_posted}</TableCell></TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* New Adjusted Entries */}
+              <div className="rounded-xl border border-[#ffd700]/30 overflow-hidden">
+                <div className="bg-[#ffd700]/10 px-4 py-3 border-b border-[#ffd700]/30">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-[#ffd700] inline-block"></span>
+                    New Adjusted Entries (After Remeasurement)
+                  </h3>
+                </div>
+                <Table>
+                  <TableBody>
+                    <TableRow><TableCell className="text-muted-foreground text-xs w-48">Lease Liability</TableCell><TableCell className="font-mono font-semibold text-[#ffd700]">{fmt(s.new_liability)} {s.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">ROU Asset (NBV)</TableCell><TableCell className="font-mono font-semibold text-[#ffd700]">{fmt(s.new_rou_asset)} {s.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">IBR (Annual)</TableCell><TableCell className="font-mono text-[#ffd700]">{fmtPct(s.new_ibr)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">Monthly Payment</TableCell><TableCell className="font-mono text-[#ffd700]">{fmt(s.new_monthly_payment)} {s.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">Remaining Term</TableCell><TableCell className="font-mono text-[#ffd700]">{s.new_remaining_term} months</TableCell></TableRow>
+                    <TableRow><TableCell className="text-muted-foreground text-xs">New Depreciation/mo</TableCell><TableCell className="font-mono text-[#ffd700]">{fmt(Number(s.new_rou_asset) / s.new_remaining_term)} {s.currency}</TableCell></TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* ─── Adjustment Summary ─── */}
+            <div className="rounded-xl border border-border p-5">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><Info className="w-4 h-4 text-blue-400" />Adjustment Impact</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block mb-1">Liability Change</span>
+                  <span className={`font-mono font-bold text-lg ${Number(s.liability_adjustment) > 0 ? 'text-red-400' : 'text-green-400'}`}>{fmt(s.liability_adjustment)}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block mb-1">ROU Asset Change</span>
+                  <span className={`font-mono font-bold text-lg ${Number(s.rou_adjustment) > 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(s.rou_adjustment)}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block mb-1">P&L Impact</span>
+                  <span className={`font-mono font-bold text-lg ${Number(s.pnl_adjustment) !== 0 ? 'text-amber-400' : 'text-muted-foreground'}`}>{Number(s.pnl_adjustment) !== 0 ? fmt(s.pnl_adjustment) : 'Nil'}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground block mb-1">Event Type</span>
+                  <Badge variant="outline" className="text-sm">{s.event_type}</Badge>
+                </div>
+              </div>
+              {Number(s.pnl_adjustment) !== 0 && (
+                <div className="flex items-center gap-2 p-3 mt-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-amber-300 text-xs">ROU Asset reduced to zero. Excess {fmt(Math.abs(s.pnl_adjustment))} {s.currency} recognised in P&L per IFRS 16.46(b).</span>
+                </div>
+              )}
+            </div>
+
+            {/* ─── Tabs: JV Preview + New Schedule ─── */}
+            <Tabs defaultValue="jv" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="summary">Adjustment Summary</TabsTrigger>
+                <TabsTrigger value="jv">Adjustment JV</TabsTrigger>
                 <TabsTrigger value="schedule">New Amortisation Schedule ({schedule.length} months)</TabsTrigger>
-                <TabsTrigger value="jv">JV Preview</TabsTrigger>
               </TabsList>
 
-              {/* ─── Summary Tab ─────────────────────────────────────────── */}
-              <TabsContent value="summary">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Old vs New comparison */}
-                  <div className="rounded-xl border border-border p-5 space-y-4">
-                    <h3 className="font-semibold text-base flex items-center gap-2"><Info className="w-4 h-4 text-blue-400" />Comparison: Old vs New</h3>
-                    <Table>
-                      <TableHeader><TableRow>
-                        <TableHead>Parameter</TableHead><TableHead className="text-right">Old</TableHead><TableHead className="text-right">New</TableHead><TableHead className="text-right">Change</TableHead>
-                      </TableRow></TableHeader>
-                      <TableBody>
-                        <TableRow><TableCell>Lease Liability</TableCell><TableCell className="text-right font-mono">{fmt(s.old_liability)}</TableCell><TableCell className="text-right font-mono font-semibold">{fmt(s.new_liability)}</TableCell><TableCell className="text-right font-mono">{fmt(s.liability_adjustment)}</TableCell></TableRow>
-                        <TableRow><TableCell>ROU Asset</TableCell><TableCell className="text-right font-mono">{fmt(s.old_rou_asset)}</TableCell><TableCell className="text-right font-mono font-semibold">{fmt(s.new_rou_asset)}</TableCell><TableCell className="text-right font-mono">{fmt(s.rou_adjustment)}</TableCell></TableRow>
-                        <TableRow><TableCell>IBR</TableCell><TableCell className="text-right font-mono">{fmtPct(s.old_ibr)}</TableCell><TableCell className="text-right font-mono font-semibold">{fmtPct(s.new_ibr)}</TableCell><TableCell className="text-right">—</TableCell></TableRow>
-                        <TableRow><TableCell>Monthly Payment</TableCell><TableCell className="text-right font-mono">{fmt(s.old_monthly_payment)}</TableCell><TableCell className="text-right font-mono font-semibold">{fmt(s.new_monthly_payment)}</TableCell><TableCell className="text-right">—</TableCell></TableRow>
-                        <TableRow><TableCell>Remaining Term</TableCell><TableCell className="text-right">{s.old_remaining_term} mo</TableCell><TableCell className="text-right font-semibold">{s.new_remaining_term} mo</TableCell><TableCell className="text-right">—</TableCell></TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Key Facts */}
-                  <div className="rounded-xl border border-border p-5 space-y-4">
-                    <h3 className="font-semibold text-base">Key Facts</h3>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Contract</span><span className="font-mono">{s.contract_ref}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Event Type</span><Badge variant="outline">{s.event_type}</Badge></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Effective Date</span><span>{fmtDate(s.event_date)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Months Already Posted</span><span>{s.months_already_posted}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Currency</span><span>{s.currency}</span></div>
-                      {Number(s.pnl_adjustment) !== 0 && (
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                          <span className="text-amber-300 text-xs">ROU Asset reduced to zero. Excess {fmt(Math.abs(s.pnl_adjustment))} {s.currency} recognised in P&L per IFRS 16.46(b).</span>
-                        </div>
+              <TabsContent value="jv">
+                <div className="rounded-xl border border-border p-5 space-y-4">
+                  <h3 className="font-semibold">Adjustment Journal Voucher</h3>
+                  <p className="text-sm text-muted-foreground">This single JV will be posted on {fmtDate(s.event_date)}. Existing JVs remain untouched.</p>
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>#</TableHead><TableHead>Account</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Debit ({s.currency})</TableHead><TableHead className="text-right">Credit ({s.currency})</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {Number(s.liability_adjustment) > 0 ? (
+                        <>
+                          <TableRow>
+                            <TableCell>1</TableCell>
+                            <TableCell className="font-mono">10100</TableCell>
+                            <TableCell>Right-of-Use Asset</TableCell>
+                            <TableCell className="text-right font-semibold text-green-400">{fmt(Math.abs(s.rou_adjustment))}</TableCell>
+                            <TableCell className="text-right">—</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>2</TableCell>
+                            <TableCell className="font-mono">21020</TableCell>
+                            <TableCell>Lease Liability</TableCell>
+                            <TableCell className="text-right">—</TableCell>
+                            <TableCell className="text-right font-semibold text-red-400">{fmt(Math.abs(s.liability_adjustment))}</TableCell>
+                          </TableRow>
+                        </>
+                      ) : (
+                        <>
+                          <TableRow>
+                            <TableCell>1</TableCell>
+                            <TableCell className="font-mono">21020</TableCell>
+                            <TableCell>Lease Liability</TableCell>
+                            <TableCell className="text-right font-semibold text-green-400">{fmt(Math.abs(s.liability_adjustment))}</TableCell>
+                            <TableCell className="text-right">—</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>2</TableCell>
+                            <TableCell className="font-mono">10100</TableCell>
+                            <TableCell>Right-of-Use Asset</TableCell>
+                            <TableCell className="text-right">—</TableCell>
+                            <TableCell className="text-right font-semibold text-red-400">{fmt(Math.abs(s.rou_adjustment))}</TableCell>
+                          </TableRow>
+                          {Number(s.pnl_adjustment) !== 0 && (
+                            <TableRow>
+                              <TableCell>3</TableCell>
+                              <TableCell className="font-mono">40500</TableCell>
+                              <TableCell>Gain on Lease Remeasurement (P&L)</TableCell>
+                              <TableCell className="text-right">—</TableCell>
+                              <TableCell className="text-right font-semibold text-amber-400">{fmt(Math.abs(s.pnl_adjustment))}</TableCell>
+                            </TableRow>
+                          )}
+                        </>
                       )}
-                    </div>
-                    <div className="pt-3 border-t border-border">
-                      <p className="text-xs text-muted-foreground italic">{s.jv_description}</p>
-                    </div>
+                    </TableBody>
+                  </Table>
+                  <div className="flex justify-between pt-3 border-t border-border text-sm">
+                    <span className="text-muted-foreground">Total Debit = Total Credit</span>
+                    <span className="font-semibold font-mono">{fmt(Math.abs(s.liability_adjustment))} {s.currency}</span>
                   </div>
                 </div>
               </TabsContent>
 
-              {/* ─── Schedule Tab ────────────────────────────────────────── */}
               <TabsContent value="schedule">
                 <div className="rounded-xl border border-border overflow-hidden">
-                  <div className="max-h-[500px] overflow-y-auto">
+                  <div className="max-h-[400px] overflow-y-auto">
                     <Table>
                       <TableHeader className="sticky top-0 bg-card z-10">
                         <TableRow>
@@ -330,116 +430,23 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
                   </div>
                 </div>
               </TabsContent>
-
-              {/* ─── JV Preview Tab ─────────────────────────────────────── */}
-              <TabsContent value="jv">
-                <div className="rounded-xl border border-border p-5 space-y-4">
-                  <h3 className="font-semibold">Adjustment Journal Voucher</h3>
-                  <p className="text-sm text-muted-foreground">This single JV will be posted on {fmtDate(s.event_date)}. Existing JVs remain untouched.</p>
-                  <Table>
-                    <TableHeader><TableRow>
-                      <TableHead>#</TableHead><TableHead>Account</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Debit</TableHead><TableHead className="text-right">Credit</TableHead>
-                    </TableRow></TableHeader>
-                    <TableBody>
-                      {Number(s.liability_adjustment) > 0 ? (
-                        <>
-                          <TableRow>
-                            <TableCell>1</TableCell>
-                            <TableCell className="font-mono">10100</TableCell>
-                            <TableCell>Right-of-Use Asset — Property</TableCell>
-                            <TableCell className="text-right font-semibold text-green-400">{fmt(Math.abs(s.rou_adjustment))}</TableCell>
-                            <TableCell className="text-right">—</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>2</TableCell>
-                            <TableCell className="font-mono">21020</TableCell>
-                            <TableCell>Lease Liability — Property</TableCell>
-                            <TableCell className="text-right">—</TableCell>
-                            <TableCell className="text-right font-semibold text-red-400">{fmt(Math.abs(s.liability_adjustment))}</TableCell>
-                          </TableRow>
-                        </>
-                      ) : (
-                        <>
-                          <TableRow>
-                            <TableCell>1</TableCell>
-                            <TableCell className="font-mono">21020</TableCell>
-                            <TableCell>Lease Liability — Property</TableCell>
-                            <TableCell className="text-right font-semibold text-green-400">{fmt(Math.abs(s.liability_adjustment))}</TableCell>
-                            <TableCell className="text-right">—</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>2</TableCell>
-                            <TableCell className="font-mono">10100</TableCell>
-                            <TableCell>Right-of-Use Asset — Property</TableCell>
-                            <TableCell className="text-right">—</TableCell>
-                            <TableCell className="text-right font-semibold text-red-400">{fmt(Math.abs(s.rou_adjustment))}</TableCell>
-                          </TableRow>
-                          {Number(s.pnl_adjustment) !== 0 && (
-                            <TableRow>
-                              <TableCell>3</TableCell>
-                              <TableCell className="font-mono">40500</TableCell>
-                              <TableCell>Gain on Lease Remeasurement (P&L)</TableCell>
-                              <TableCell className="text-right">—</TableCell>
-                              <TableCell className="text-right font-semibold text-amber-400">{fmt(Math.abs(s.pnl_adjustment))}</TableCell>
-                            </TableRow>
-                          )}
-                        </>
-                      )}
-                    </TableBody>
-                  </Table>
-                  <div className="flex justify-between pt-3 border-t border-border text-sm">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="font-semibold">{fmt(Math.abs(s.liability_adjustment))} {s.currency}</span>
-                  </div>
-                </div>
-              </TabsContent>
             </Tabs>
+
+            {/* IFRS 16 Note */}
+            <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4 text-xs text-green-300">
+              <CheckCircle2 className="w-4 h-4 inline mr-2" />
+              <strong>Old JVs are PRESERVED.</strong> Only a single adjustment JV will be posted. The amortisation schedule is regenerated prospectively from {fmtDate(s.event_date)}.
+            </div>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
-  // ═══ FORM MODE ══════════════════════════════════════════════════════════════
+  // ═══ FORM MODE — Step-by-step ══════════════════════════════════════════════
   if (mode === "form") {
     const d = selectedContract || {};
     const remainingMonths = d.expiry_date ? Math.max(0, Math.ceil((new Date(d.expiry_date).getTime() - Date.now()) / (1000*60*60*24*30.44))) : null;
-
-    // Lease details table rows
-    const leaseTableRows = [
-      { category: "Financial", fields: [
-        { label: "Lease Liability (Commencement)", key: "lease_liability_commence", value: fmt(d.lease_liability_commence), editable: false },
-        { label: "ROU Asset Value", key: "rou_asset_value", value: fmt(d.rou_asset_value), editable: false },
-        { label: "Monthly Payment", key: "monthly_payment", value: fmt(d.monthly_payment), suffix: d.currency, editable: true, type: "number" },
-        { label: "IBR (Annual)", key: "ibr", value: d.ibr != null ? fmtPct(d.ibr) : "—", editable: true, type: "number" },
-        { label: "Escalation Rate", key: "escalation_rate", value: d.escalation_rate != null ? `${(Number(d.escalation_rate)*100).toFixed(2)}%` : "—", editable: false },
-        { label: "Deposit Amount", key: "deposit_amount", value: fmt(d.deposit_amount), suffix: d.currency, editable: false },
-        { label: "Currency", key: "currency", value: d.currency ?? "—", editable: false },
-      ]},
-      { category: "Term & Dates", fields: [
-        { label: "Commencement Date", key: "commencement_date", value: fmtDate(d.commencement_date), editable: false },
-        { label: "Expiry Date", key: "expiry_date", value: fmtDate(d.expiry_date), editable: true, type: "date" },
-        { label: "Original Term (months)", key: "term_months", value: d.term_months ?? "—", editable: false },
-        { label: "Remaining Term (months)", key: "remaining_term", value: remainingMonths ?? "—", editable: true, type: "number" },
-        { label: "Payment Frequency", key: "payment_frequency", value: d.payment_frequency ?? "Monthly", editable: false },
-      ]},
-      { category: "Contract & Asset", fields: [
-        { label: "Contract Reference", key: "contract_ref", value: d.contract_ref ?? "—", editable: false },
-        { label: "Lessor Name", key: "lessor_name", value: d.lessor_name ?? "—", editable: false },
-        { label: "Asset Type", key: "asset_type", value: d.asset_type ?? "—", editable: false },
-        { label: "Asset Description", key: "asset_description", value: d.asset_description ?? "—", editable: false },
-        { label: "IFRS 16 Classification", key: "ifrs16_classification", value: d.ifrs16_classification ?? "—", editable: false },
-        { label: "Status", key: "status", value: d.status ?? "—", editable: false },
-      ]},
-      { category: "Options & Obligations", fields: [
-        { label: "Renewal Option", key: "renewal_option", value: d.renewal_option ? "Yes" : "No", editable: false },
-        { label: "Renewal Certain", key: "renewal_certain", value: d.renewal_certain ? "Yes" : "No", editable: false },
-        { label: "Purchase Option", key: "purchase_option", value: d.purchase_option ? "Yes" : "No", editable: false },
-        { label: "Purchase Certain", key: "purchase_certain", value: d.purchase_certain ? "Yes" : "No", editable: false },
-        { label: "Make-Good Obligation", key: "make_good_obligation", value: d.make_good_obligation ? `Yes (${fmt(d.make_good_estimate)})` : "No", editable: false },
-        { label: "Maintenance Responsibility", key: "maintenance_responsibility", value: d.maintenance_responsibility ?? "—", editable: false },
-      ]},
-    ];
 
     return (
       <DashboardLayout>
@@ -451,30 +458,20 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
             </Button>
             <div className="flex-1">
               <h2 className="font-semibold text-lg">New Remeasurement</h2>
-              <p className="text-sm text-muted-foreground">Select lease → Check remeasurement option → Enter revised parameters</p>
+              <p className="text-sm text-muted-foreground">Select lease → Check scope of change → Review & Calculate</p>
             </div>
-            {selectedContract && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => { setEditMode(!editMode); if (editMode) setEditedFields({}); }}
-              >
-                {editMode ? <><Save className="w-4 h-4" />Done Editing</> : <><Pencil className="w-4 h-4" />Edit Fields</>}
-              </Button>
-            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* ─── STEP 1: Lease Selection ─── */}
             <div className="space-y-3">
               <h3 className="font-semibold text-base border-b border-border pb-2">Step 1 — Select Lease</h3>
-              <Select value={form.contractId} onValueChange={v => { setForm(f => ({ ...f, contractId: v })); setEditedFields({}); setEditMode(false); }}>
+              <Select value={form.contractId} onValueChange={v => { setForm(f => ({ ...f, contractId: v })); setScope({ ibr: false, term: false, payment: false, renewal: false, purchase: false }); setRevised({ ibr: "", remainingTerm: "", monthlyPayment: "", expiryDate: "" }); }}>
                 <SelectTrigger className="w-full max-w-lg"><SelectValue placeholder="Choose a lease contract..." /></SelectTrigger>
                 <SelectContent>
                   {contracts.map((c: any) => (
                     <SelectItem key={c.contract_id} value={String(c.contract_id)}>
-                      {c.contract_ref} — {c.lessor_name || c.asset_name || `Contract ${c.contract_id}`}
+                      {c.contract_ref} — {c.lessor_name || c.asset_description || `Contract ${c.contract_id}`} ({fmt(c.monthly_payment)} {c.currency}/mo)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -484,54 +481,94 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
             {/* ─── Lease Details Table (shown when contract selected) ─── */}
             {selectedContract && (
               <div className="rounded-xl border border-border overflow-hidden">
-                <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center justify-between">
+                <div className="bg-muted/30 px-4 py-2 border-b border-border">
                   <span className="text-sm font-semibold">Lease Details — {d.contract_ref}</span>
-                  {editMode && <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Edit Mode</Badge>}
                 </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-48">Category</TableHead>
-                      <TableHead className="w-64">Field</TableHead>
-                      <TableHead>Value</TableHead>
+                      <TableHead className="w-44">Category</TableHead>
+                      <TableHead className="w-56">Field</TableHead>
+                      <TableHead>Current Value</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaseTableRows.map((section) => (
-                      section.fields.map((field, idx) => (
-                        <TableRow key={`${section.category}-${field.key}`} className={idx === 0 ? "border-t-2 border-border" : ""}>
-                          {idx === 0 && (
-                            <TableCell rowSpan={section.fields.length} className="align-top font-semibold text-xs uppercase tracking-wide text-muted-foreground bg-muted/20 border-r border-border">
-                              {section.category}
-                            </TableCell>
-                          )}
-                          <TableCell className="text-sm">{field.label}</TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {editMode && field.editable ? (
-                              <Input
-                                className="h-8 w-48 font-mono text-sm"
-                                type={field.type || "text"}
-                                defaultValue={field.type === "number" ? (d[field.key] ?? "") : (field.value !== "—" ? field.value : "")}
-                                onChange={e => setEditedFields(prev => ({ ...prev, [field.key]: e.target.value }))}
-                                placeholder={field.value}
-                              />
-                            ) : (
-                              <span>{field.value}{field.suffix ? ` ${field.suffix}` : ""}</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ))}
+                    {/* Financial */}
+                    <TableRow className="border-t-2"><TableCell rowSpan={7} className="align-top font-semibold text-xs uppercase tracking-wide text-muted-foreground bg-muted/20 border-r border-border">Financial</TableCell><TableCell className="text-sm">Lease Liability (Commencement)</TableCell><TableCell className="font-mono text-sm">{fmt(d.lease_liability_commence)} {d.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">ROU Asset Value</TableCell><TableCell className="font-mono text-sm">{fmt(d.rou_asset_value)} {d.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Monthly Payment</TableCell><TableCell className="font-mono text-sm">{fmt(d.monthly_payment)} {d.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">IBR (Annual)</TableCell><TableCell className="font-mono text-sm">{d.ibr != null ? fmtPct(d.ibr) : "—"}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Escalation Rate</TableCell><TableCell className="font-mono text-sm">{d.escalation_rate != null ? `${(Number(d.escalation_rate)*100).toFixed(2)}%` : "—"}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Deposit Amount</TableCell><TableCell className="font-mono text-sm">{fmt(d.deposit_amount)} {d.currency}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Currency</TableCell><TableCell className="font-mono text-sm">{d.currency ?? "—"}</TableCell></TableRow>
+                    {/* Term & Dates */}
+                    <TableRow className="border-t-2"><TableCell rowSpan={5} className="align-top font-semibold text-xs uppercase tracking-wide text-muted-foreground bg-muted/20 border-r border-border">Term & Dates</TableCell><TableCell className="text-sm">Commencement Date</TableCell><TableCell className="font-mono text-sm">{fmtDate(d.commencement_date)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Expiry Date</TableCell><TableCell className="font-mono text-sm">{fmtDate(d.expiry_date)}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Original Term</TableCell><TableCell className="font-mono text-sm">{d.term_months ?? "—"} months</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Remaining Term</TableCell><TableCell className="font-mono text-sm">{remainingMonths ?? "—"} months</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">IFRS 16 Classification</TableCell><TableCell className="text-sm"><Badge variant="outline">{d.ifrs16_classification ?? "—"}</Badge></TableCell></TableRow>
+                    {/* Contract & Asset */}
+                    <TableRow className="border-t-2"><TableCell rowSpan={4} className="align-top font-semibold text-xs uppercase tracking-wide text-muted-foreground bg-muted/20 border-r border-border">Contract & Asset</TableCell><TableCell className="text-sm">Lessor</TableCell><TableCell className="text-sm">{d.lessor_name ?? "—"}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Asset Type</TableCell><TableCell className="text-sm">{d.asset_type ?? "—"}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Asset Description</TableCell><TableCell className="text-sm">{d.asset_description ?? "—"}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Status</TableCell><TableCell className="text-sm"><Badge variant="outline">{d.status ?? "—"}</Badge></TableCell></TableRow>
+                    {/* Options */}
+                    <TableRow className="border-t-2"><TableCell rowSpan={4} className="align-top font-semibold text-xs uppercase tracking-wide text-muted-foreground bg-muted/20 border-r border-border">Options</TableCell><TableCell className="text-sm">Renewal Option</TableCell><TableCell className="text-sm">{d.renewal_option ? "Yes" : "No"}{d.renewal_certain ? " (Certain)" : ""}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Purchase Option</TableCell><TableCell className="text-sm">{d.purchase_option ? "Yes" : "No"}{d.purchase_certain ? " (Certain)" : ""}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Make-Good Obligation</TableCell><TableCell className="text-sm">{d.make_good_obligation ? `Yes (${fmt(d.make_good_estimate)})` : "No"}</TableCell></TableRow>
+                    <TableRow><TableCell className="text-sm">Maintenance</TableCell><TableCell className="text-sm">{d.maintenance_responsibility ?? "—"}</TableCell></TableRow>
                   </TableBody>
                 </Table>
               </div>
             )}
 
-            {/* ─── STEP 2: Remeasurement Option ─── */}
+            {/* ─── STEP 2: Scope of Change ─── */}
             {selectedContract && (
               <div className="space-y-4">
-                <h3 className="font-semibold text-base border-b border-border pb-2">Step 2 — Remeasurement Option</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <h3 className="font-semibold text-base border-b border-border pb-2">Step 2 — Scope of Change</h3>
+                <p className="text-xs text-muted-foreground mb-3">Select what is changing in this remeasurement event. The selected fields will become editable below.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Scope checkboxes */}
+                  <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#ffd700]/50 transition-colors">
+                    <Checkbox id="scope-ibr" checked={scope.ibr} onCheckedChange={(v) => setScope(s => ({ ...s, ibr: !!v }))} />
+                    <div>
+                      <label htmlFor="scope-ibr" className="text-sm font-medium cursor-pointer">Change IBR / Discount Rate</label>
+                      <p className="text-xs text-muted-foreground">Revised incremental borrowing rate</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#ffd700]/50 transition-colors">
+                    <Checkbox id="scope-term" checked={scope.term} onCheckedChange={(v) => setScope(s => ({ ...s, term: !!v }))} />
+                    <div>
+                      <label htmlFor="scope-term" className="text-sm font-medium cursor-pointer">Change Lease Term</label>
+                      <p className="text-xs text-muted-foreground">Extension, reduction, or reassessment</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#ffd700]/50 transition-colors">
+                    <Checkbox id="scope-payment" checked={scope.payment} onCheckedChange={(v) => setScope(s => ({ ...s, payment: !!v }))} />
+                    <div>
+                      <label htmlFor="scope-payment" className="text-sm font-medium cursor-pointer">Change Monthly Payment</label>
+                      <p className="text-xs text-muted-foreground">Rent review, index adjustment, modification</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#ffd700]/50 transition-colors">
+                    <Checkbox id="scope-renewal" checked={scope.renewal} onCheckedChange={(v) => setScope(s => ({ ...s, renewal: !!v }))} />
+                    <div>
+                      <label htmlFor="scope-renewal" className="text-sm font-medium cursor-pointer">Exercise Renewal Option</label>
+                      <p className="text-xs text-muted-foreground">Now reasonably certain to renew</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-[#ffd700]/50 transition-colors">
+                    <Checkbox id="scope-purchase" checked={scope.purchase} onCheckedChange={(v) => setScope(s => ({ ...s, purchase: !!v }))} />
+                    <div>
+                      <label htmlFor="scope-purchase" className="text-sm font-medium cursor-pointer">Exercise Purchase Option</label>
+                      <p className="text-xs text-muted-foreground">Now reasonably certain to purchase</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trigger type and date */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3">
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trigger Type</Label>
                     <Select value={form.triggerType} onValueChange={v => setForm(f => ({ ...f, triggerType: v }))}>
@@ -549,11 +586,70 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
                   </div>
                   <div>
                     <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description / Reason</Label>
-                    <Input className="mt-1" placeholder="e.g., Renewal option exercised, adding 24 months" value={form.triggerDescription} onChange={e => setForm(f => ({ ...f, triggerDescription: e.target.value }))} />
+                    <Input className="mt-1" placeholder="e.g., Renewal option exercised" value={form.triggerDescription} onChange={e => setForm(f => ({ ...f, triggerDescription: e.target.value }))} />
                   </div>
                 </div>
+              </div>
+            )}
 
-                {/* Trigger explanation */}
+            {/* ─── STEP 3: Revised Values (editable based on scope) ─── */}
+            {selectedContract && (scope.ibr || scope.term || scope.payment || scope.renewal || scope.purchase) && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-base border-b border-border pb-2">Step 3 — Enter Revised Values</h3>
+                <p className="text-xs text-muted-foreground">Only the fields within scope of change are editable below.</p>
+                
+                <div className="rounded-xl border border-[#ffd700]/30 overflow-hidden">
+                  <div className="bg-[#ffd700]/10 px-4 py-2 border-b border-[#ffd700]/30">
+                    <span className="text-sm font-semibold text-[#ffd700]">Revised Parameters</span>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-56">Parameter</TableHead>
+                        <TableHead className="w-48">Current Value</TableHead>
+                        <TableHead className="w-48">New Value</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* IBR Row */}
+                      <TableRow className={!scope.ibr ? "opacity-40" : ""}>
+                        <TableCell className="text-sm font-medium">IBR (Annual, decimal)</TableCell>
+                        <TableCell className="font-mono text-sm">{d.ibr != null ? String(d.ibr) : "—"}</TableCell>
+                        <TableCell>
+                          {scope.ibr ? (
+                            <Input className="h-8 w-40 font-mono text-sm border-[#ffd700]/50 focus:border-[#ffd700]" type="number" step="0.001" placeholder={d.ibr ? String(d.ibr) : "0.065"} value={revised.ibr} onChange={e => setRevised(r => ({ ...r, ibr: e.target.value }))} />
+                          ) : <span className="text-muted-foreground text-xs">Not in scope</span>}
+                        </TableCell>
+                        <TableCell>{scope.ibr ? <Badge className="bg-[#ffd700]/20 text-[#ffd700] border-[#ffd700]/30">Changing</Badge> : <Badge variant="outline" className="text-muted-foreground">Unchanged</Badge>}</TableCell>
+                      </TableRow>
+                      {/* Term Row */}
+                      <TableRow className={!(scope.term || scope.renewal) ? "opacity-40" : ""}>
+                        <TableCell className="text-sm font-medium">Remaining Term (months)</TableCell>
+                        <TableCell className="font-mono text-sm">{remainingMonths ?? "—"}</TableCell>
+                        <TableCell>
+                          {(scope.term || scope.renewal) ? (
+                            <Input className="h-8 w-40 font-mono text-sm border-[#ffd700]/50 focus:border-[#ffd700]" type="number" placeholder={remainingMonths ? String(remainingMonths) : "36"} value={revised.remainingTerm} onChange={e => setRevised(r => ({ ...r, remainingTerm: e.target.value }))} />
+                          ) : <span className="text-muted-foreground text-xs">Not in scope</span>}
+                        </TableCell>
+                        <TableCell>{(scope.term || scope.renewal) ? <Badge className="bg-[#ffd700]/20 text-[#ffd700] border-[#ffd700]/30">Changing</Badge> : <Badge variant="outline" className="text-muted-foreground">Unchanged</Badge>}</TableCell>
+                      </TableRow>
+                      {/* Payment Row */}
+                      <TableRow className={!scope.payment ? "opacity-40" : ""}>
+                        <TableCell className="text-sm font-medium">Monthly Payment ({d.currency})</TableCell>
+                        <TableCell className="font-mono text-sm">{fmt(d.monthly_payment)}</TableCell>
+                        <TableCell>
+                          {scope.payment ? (
+                            <Input className="h-8 w-40 font-mono text-sm border-[#ffd700]/50 focus:border-[#ffd700]" type="number" step="0.01" placeholder={d.monthly_payment ? String(d.monthly_payment) : "0"} value={revised.monthlyPayment} onChange={e => setRevised(r => ({ ...r, monthlyPayment: e.target.value }))} />
+                          ) : <span className="text-muted-foreground text-xs">Not in scope</span>}
+                        </TableCell>
+                        <TableCell>{scope.payment ? <Badge className="bg-[#ffd700]/20 text-[#ffd700] border-[#ffd700]/30">Changing</Badge> : <Badge variant="outline" className="text-muted-foreground">Unchanged</Badge>}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* IFRS 16 Guidance */}
                 <div className="rounded-lg border border-[#ffd700]/30 bg-[#ffd700]/5 p-3 text-xs">
                   <span className="font-semibold text-[#ffd700]">IFRS 16 Guidance:</span>
                   {form.triggerType === "Modification" && <span className="ml-2">A change in scope/consideration not part of original terms. Remeasure liability with revised payments at revised discount rate.</span>}
@@ -567,41 +663,17 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
               </div>
             )}
 
-            {/* ─── STEP 3: Revised Parameters ─── */}
-            {selectedContract && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-base border-b border-border pb-2">Step 3 — Revised Parameters</h3>
-                <p className="text-xs text-muted-foreground">Leave blank to keep existing value unchanged</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">New IBR (decimal, e.g. 0.065)</Label>
-                    <Input className="mt-1" type="number" step="0.001" placeholder={d.ibr ? String(d.ibr) : "e.g. 0.065"} value={form.newIbr} onChange={e => setForm(f => ({ ...f, newIbr: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">New Remaining Term (months)</Label>
-                    <Input className="mt-1" type="number" placeholder={remainingMonths ? String(remainingMonths) : "e.g., 36"} value={form.newRemainingTerm} onChange={e => setForm(f => ({ ...f, newRemainingTerm: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">New Monthly Payment</Label>
-                    <Input className="mt-1" type="number" step="0.01" placeholder={d.monthly_payment ? String(d.monthly_payment) : "Current payment"} value={form.newMonthlyPayment} onChange={e => setForm(f => ({ ...f, newMonthlyPayment: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* ─── Actions ─── */}
             {selectedContract && (
               <div className="flex items-center justify-between pt-4 border-t border-border">
                 <Button variant="outline" onClick={() => setMode("list")}>Cancel</Button>
-                <div className="flex gap-3">
-                  <Button
-                    className="bg-[#ffd700] hover:bg-[#e6c200] text-black font-semibold gap-2"
-                    onClick={handleCalculate}
-                    disabled={calculateMut.isPending}
-                  >
-                    <Calculator className="w-4 h-4" />{calculateMut.isPending ? "Calculating..." : "Calculate & Preview"}
-                  </Button>
-                </div>
+                <Button
+                  className="bg-[#ffd700] hover:bg-[#e6c200] text-black font-semibold gap-2 px-6"
+                  onClick={handleCalculate}
+                  disabled={calculateMut.isPending || (!scope.ibr && !scope.term && !scope.payment && !scope.renewal && !scope.purchase)}
+                >
+                  <Calculator className="w-4 h-4" />{calculateMut.isPending ? "Calculating..." : "Calculate & Preview"}
+                </Button>
               </div>
             )}
           </div>
@@ -620,7 +692,7 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
           subtitle="IFRS 16 lease liability remeasurement — prospective treatment, old JVs preserved"
           screenType="remeasurement_engine"
           actions={
-            <Button onClick={() => { setForm({ contractId: "", triggerType: "Modification", eventDate: new Date().toISOString().slice(0, 10), triggerDescription: "", newIbr: "", newRemainingTerm: "", newMonthlyPayment: "" }); setPreview(null); setMode("form"); }} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg">
+            <Button onClick={() => { setForm({ contractId: "", triggerType: "Modification", eventDate: new Date().toISOString().slice(0, 10), triggerDescription: "" }); setScope({ ibr: false, term: false, payment: false, renewal: false, purchase: false }); setRevised({ ibr: "", remainingTerm: "", monthlyPayment: "", expiryDate: "" }); setPreview(null); setMode("form"); }} className="bg-[#e60000] hover:bg-[#cc0000] text-white gap-2 h-9 px-3 text-sm rounded-lg">
               <Calculator className="w-4 h-4" />New Remeasurement
             </Button>
           }
@@ -629,12 +701,12 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
         {/* Filters Row */}
         <div className="flex gap-3 flex-wrap">
           <Select value={filterContractId || "all"} onValueChange={v => setFilterContractId(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-72"><SelectValue placeholder="Select Lease" /></SelectTrigger>
+            <SelectTrigger className="w-80"><SelectValue placeholder="Select Lease" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Leases</SelectItem>
               {contracts.map((c: any) => (
                 <SelectItem key={c.contract_id} value={String(c.contract_id)}>
-                  {c.contract_ref} — {c.lessor_name || c.asset_name || `Contract ${c.contract_id}`}
+                  {c.contract_ref} — {c.lessor_name || c.asset_description || `Contract ${c.contract_id}`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -651,7 +723,7 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
           )}
         </div>
 
-        {/* Lease Details Panel - shown when a lease is selected */}
+        {/* Lease Details Panel - shown when a lease is selected in filter */}
         {listSelectedContract && (
           <div className="rounded-xl border border-border overflow-hidden">
             <div className="bg-muted/30 px-4 py-2 border-b border-border">
@@ -710,17 +782,6 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
                         size="sm"
                         className="h-7 text-xs bg-[#ffd700] hover:bg-[#e6c200] text-black font-semibold gap-1"
                         onClick={() => {
-                          // Set form with this event's data and trigger calculate to show explanation
-                          setForm({
-                            contractId: String(e.contract_id),
-                            triggerType: e.event_type,
-                            eventDate: e.event_date ? new Date(e.event_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
-                            triggerDescription: e.trigger_description || "",
-                            newIbr: e.new_ibr ? String(e.new_ibr) : "",
-                            newRemainingTerm: e.new_remaining_term ? String(e.new_remaining_term) : "",
-                            newMonthlyPayment: e.new_monthly_payment ? String(e.new_monthly_payment) : "",
-                          });
-                          // Build inline explanation
                           const explanation = {
                             summary: {
                               contract_ref: e.contract_ref,

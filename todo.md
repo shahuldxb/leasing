@@ -1541,3 +1541,16 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Revised parameters section with new IBR, term, payment
 - [x] Yellow Calc button that shows full calculation logic in blackboard style
 - [x] Full-screen layout, no modals (except calc explanation which covers whole screen)
+
+## Remeasurement Engine V2 - Full Redesign (May 2026)
+- [x] Add 4-5 sample lease contracts to database so dropdown has multiple options
+- [x] Lease dropdown shows all leases with key info (ref, lessor, asset, liability)
+- [x] When lease selected, show full details in editable table
+- [x] Scope of Change checkboxes: Change IBR, Change Term, Change Payment, Exercise Renewal, Exercise Purchase
+- [x] Based on checked scope, make those specific fields editable in the details table
+- [x] After editing, show Current Entries vs New Adjusted Entries side-by-side comparison
+- [x] Show adjustment JV preview (Dr/Cr that bridges old to new)
+- [x] Show new amortisation schedule preview
+- [x] Yellow Calc button with full PV calculation breakdown (blackboard style, full screen)
+- [x] Confirm & Post button to finalize
+- [x] Full-screen layout, no modals (except Calc explanation covers whole screen)
