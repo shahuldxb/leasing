@@ -444,27 +444,68 @@ export const glConfigurationRouter = router({
   /** Get all GL mappings (from business_rules where category_code = GL_CODE) */
   getAllMappings: protectedProcedure
     .query(async () => {
-      return await RulesEngine.getAllGLCodeRules();
+      try {
+        const pool = await getPool();
+        const r = await pool.request().query(`
+          SELECT br.rule_id, br.screen_id, br.rule_name, br.rule_description,
+                 br.jv_debit_account, br.jv_credit_account, br.jv_description,
+                 br.ifrs_reference, br.priority, br.is_active, br.version,
+                 br.created_at, br.updated_at,
+                 da.account_name AS debit_account_name,
+                 ca.account_name AS credit_account_name
+          FROM dbo.business_rules br
+          LEFT JOIN accounting.gl_chart_of_accounts da ON da.account_code = br.jv_debit_account
+          LEFT JOIN accounting.gl_chart_of_accounts ca ON ca.account_code = br.jv_credit_account
+          WHERE br.category_code = 'GL_CODE'
+          ORDER BY br.priority, br.rule_name
+        `);
+        return r.recordset;
+      } catch (err: any) {
+        console.error('getAllMappings error:', err.message);
+        return [];
+      }
     }),
-
   /** Get GL mappings grouped by lifecycle stage — uses intelligent classification */
   getMappingsByLifecycle: protectedProcedure
     .query(async () => {
-      const allMappings = await RulesEngine.getAllGLCodeRules();
-      const grouped: Record<string, { label: string; mappings: any[] }> = {};
-      for (const [key, group] of Object.entries(LIFECYCLE_GROUPS)) {
-        grouped[key] = { label: group.label, mappings: [] };
-      }
-      // Classify each mapping into the correct lifecycle group
-      for (const m of allMappings) {
-        const groupKey = classifyMapping(m);
-        if (grouped[groupKey]) {
-          grouped[groupKey].mappings.push(m);
-        } else {
-          grouped.OTHER.mappings.push(m);
+      try {
+        const pool = await getPool();
+        const r = await pool.request().query(`
+          SELECT br.rule_id, br.screen_id, br.rule_name, br.rule_description,
+                 br.jv_debit_account, br.jv_credit_account, br.jv_description,
+                 br.ifrs_reference, br.priority, br.is_active, br.version,
+                 br.created_at, br.updated_at,
+                 da.account_name AS debit_account_name,
+                 ca.account_name AS credit_account_name
+          FROM dbo.business_rules br
+          LEFT JOIN accounting.gl_chart_of_accounts da ON da.account_code = br.jv_debit_account
+          LEFT JOIN accounting.gl_chart_of_accounts ca ON ca.account_code = br.jv_credit_account
+          WHERE br.category_code = 'GL_CODE'
+          ORDER BY br.priority, br.rule_name
+        `);
+        const allMappings = r.recordset;
+        const grouped: Record<string, { label: string; mappings: any[] }> = {};
+        for (const [key, group] of Object.entries(LIFECYCLE_GROUPS)) {
+          grouped[key] = { label: group.label, mappings: [] };
         }
+        // Classify each mapping into the correct lifecycle group
+        for (const m of allMappings) {
+          const groupKey = classifyMapping(m);
+          if (grouped[groupKey]) {
+            grouped[groupKey].mappings.push(m);
+          } else {
+            grouped.OTHER.mappings.push(m);
+          }
+        }
+        return grouped;
+      } catch (err: any) {
+        console.error('getMappingsByLifecycle error:', err.message);
+        const grouped: Record<string, { label: string; mappings: any[] }> = {};
+        for (const [key, group] of Object.entries(LIFECYCLE_GROUPS)) {
+          grouped[key] = { label: group.label, mappings: [] };
+        }
+        return grouped;
       }
-      return grouped;
     }),
 
   /** Upsert a GL mapping rule */

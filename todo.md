@@ -1906,3 +1906,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Investigate why Chart of Accounts screen shows empty despite 146 seeded accounts (column name mismatch: sub_type/parent_code/ifrs16_relevant didn't exist)
 - [x] Fix backend getCOA query — added missing columns to DB table and populated from existing data
 - [x] 146 accounts now display correctly in both tree and table views with IFRS 16 badges
+
+## Bug Fix: GL Mapping Rules All Under "Other Transactions" (May 2026)
+- [x] All 21 mappings showing under "Other Transactions" instead of distributed across 5 lifecycle groups
+- [x] Debug classifyMapping function — verified rule_name values from SP and fixed bidirectional matching
+- [x] Fix classification logic to correctly match transaction types to lifecycle groups (bidirectional + keyword fallback)
+- [x] Also fix: Transaction Type column now shows rule_name, Dr/Cr GL Code columns show actual codes from jv_debit_account/jv_credit_account

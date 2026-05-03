@@ -340,15 +340,33 @@ export default function GLMappingRules() {
     for (const lg of lifecycleGroups as any[]) {
       groups[lg.key] = { label: lg.label, types: lg.transactionTypes, mappings: [] };
     }
-    // Assign each mapping to a group
+    // Assign each mapping to a group using bidirectional matching + keyword fallback
     for (const m of allMappings as any[]) {
       const txType = m.rule_name?.replace(/\s+/g, "_").toUpperCase() || "";
+      const desc = (m.jv_description || "").toUpperCase().replace(/[\s-]+/g, "_");
+      const combined = `${txType} ${desc}`;
       let assigned = false;
       for (const [key, group] of Object.entries(groups)) {
-        if (group.types.some((t: string) => txType.includes(t) || m.rule_name?.toUpperCase().includes(t))) {
+        // Bidirectional: rule_name includes type OR type includes rule_name
+        if (group.types.some((t: string) => txType.includes(t) || t.includes(txType) || desc.includes(t))) {
           group.mappings.push(m);
           assigned = true;
           break;
+        }
+      }
+      // Keyword-based fallback (mirrors backend classifyMapping logic)
+      // Order matters: check TERMINATION before INCEPTION to avoid "derecognition" matching "recognition"
+      if (!assigned) {
+        if (combined.includes('TERMINAT') || combined.includes('IMPAIR') || combined.includes('DERECOG')) {
+          if (groups.TERMINATION) { groups.TERMINATION.mappings.push(m); assigned = true; }
+        } else if (combined.includes('CPI') || combined.includes('ESCALAT') || combined.includes('MODIFIC') || combined.includes('REMEASUR') || combined.includes('RENEWAL')) {
+          if (groups.REMEASUREMENT) { groups.REMEASUREMENT.mappings.push(m); assigned = true; }
+        } else if (combined.includes('DEPRECIATION') || combined.includes('INTEREST') || combined.includes('PAYMENT') || combined.includes('AMORTIS') || combined.includes('PERIOD_CLOSE')) {
+          if (groups.MONTHLY) { groups.MONTHLY.mappings.push(m); assigned = true; }
+        } else if (combined.includes('INITIAL') || combined.includes('INCEPTION') || combined.includes('RECOGNITION') || combined.includes('DEPOSIT') || combined.includes('PREPAY')) {
+          if (groups.INCEPTION) { groups.INCEPTION.mappings.push(m); assigned = true; }
+        } else if (combined.includes('SUBLEASE') || combined.includes('FX_REVAL') || combined.includes('RENT_EXPENSE')) {
+          if (groups.OTHER) { groups.OTHER.mappings.push(m); assigned = true; }
         }
       }
       if (!assigned && groups.OTHER) {
