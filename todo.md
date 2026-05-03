@@ -1901,3 +1901,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Fixed ContractMetadataTemplates.tsx parse error (em dash replaced)
 - [x] Fixed 37 backend TS errors (audit wrappers, z.record, recordsets types)
 - [x] Only 1 phantom TS error remains (stale tsc watcher from Apr 27)
+
+## Bug Fix: COA Screen Showing Empty (May 2026)
+- [x] Investigate why Chart of Accounts screen shows empty despite 146 seeded accounts (column name mismatch: sub_type/parent_code/ifrs16_relevant didn't exist)
+- [x] Fix backend getCOA query — added missing columns to DB table and populated from existing data
+- [x] 146 accounts now display correctly in both tree and table views with IFRS 16 badges
