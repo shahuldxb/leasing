@@ -1554,3 +1554,10 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Yellow Calc button with full PV calculation breakdown (blackboard style, full screen)
 - [x] Confirm & Post button to finalize
 - [x] Full-screen layout, no modals (except Calc explanation covers whole screen)
+
+## JV Calculation Breakdown - Fix Duplicate Text (May 2026)
+- [x] Fix Debit card to show liability-specific explanation (why liability decreased/increased)
+- [x] Fix Credit card to show ROU asset-specific explanation (why asset value adjusted)
+- [x] Update SP sp_ExecuteRemeasurement to generate separate Dr/Cr explanations for future events
+- [x] Update existing 4 JV lines in database with corrected explanations
+- [ ] Ensure left and right cards show different, contextually appropriate text
