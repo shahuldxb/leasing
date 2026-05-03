@@ -1493,3 +1493,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## IBR Library Bug Fix (May 2026)
 - [x] Fix duplicate entries showing in IBR Library (added 'Current Rates' toggle, defaults to showing only current/open rates - 45 instead of 145)
 - [x] Fix NaN% rate display in IBR Library (was using r.rate instead of r.rate_pct)
+
+## IBR Library Cleanup (May 2026)
+- [x] Remove all non-QAR rates from IBR Library, keep only QAR entries (deleted 110 rows, kept 35 QAR)
