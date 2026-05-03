@@ -1528,3 +1528,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Fix IBR placeholder showing "undefined"
 - [x] Show comprehensive lease details: lessor, commencement, expiry, term, asset type, currency, etc.
 - [x] Ensure all values from the contract are displayed in the contract info panel
+
+## Remeasurement Register - Lease Dropdown with Details (May 2026)
+- [x] Add lease dropdown filter at top of register list view
+- [x] When a lease is selected in dropdown, show full contract details panel above the table
+- [x] Show all key lease info: liability, ROU, IBR, term, dates, lessor, asset, classification

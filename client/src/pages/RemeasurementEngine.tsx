@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 export default function RemeasurementEngine() {
   const [mode, setMode] = useState<"list" | "form" | "preview">("list");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterContractId, setFilterContractId] = useState("");
   const [form, setForm] = useState({
     contractId: "",
     triggerType: "Modification",
@@ -32,12 +33,19 @@ export default function RemeasurementEngine() {
   const { data: contractsData } = trpc.lease.getLeaseRegister.useQuery({});
   const contracts = useMemo(() => (contractsData as any)?.rows ?? [], [contractsData]);
 
-  // Fetch full contract details when a contract is selected
+  // Fetch full contract details when a contract is selected (form mode)
   const { data: fullContractDetails } = trpc.lease.getLeaseById.useQuery(
     { contractId: Number(form.contractId) },
     { enabled: !!form.contractId }
   );
   const selectedContract = fullContractDetails as any;
+
+  // Fetch full contract details for the list filter dropdown
+  const { data: listContractDetails } = trpc.lease.getLeaseById.useQuery(
+    { contractId: Number(filterContractId) },
+    { enabled: !!filterContractId }
+  );
+  const listSelectedContract = listContractDetails as any;
 
   const calculateMut = trpc.accounting.remeasurement.calculate.useMutation({
     onSuccess: (data) => {
@@ -446,7 +454,19 @@ ROU Adjustment = ${fmt(s.rou_adjustment)} ${s.currency}${Number(s.pnl_adjustment
           }
         />
 
-        <div className="flex gap-3">
+        {/* Filters Row */}
+        <div className="flex gap-3 flex-wrap">
+          <Select value={filterContractId || "all"} onValueChange={v => setFilterContractId(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-72"><SelectValue placeholder="Select Lease" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Leases</SelectItem>
+              {contracts.map((c: any) => (
+                <SelectItem key={c.contract_id} value={String(c.contract_id)}>
+                  {c.contract_ref} — {c.lessor_name || c.asset_name || `Contract ${c.contract_id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterStatus || "all"} onValueChange={v => setFilterStatus(v === "all" ? "" : v)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -455,6 +475,48 @@ ROU Adjustment = ${fmt(s.rou_adjustment)} ${s.currency}${Number(s.pnl_adjustment
             </SelectContent>
           </Select>
         </div>
+
+        {/* Lease Details Panel - shown when a lease is selected */}
+        {listSelectedContract && (
+          <div className="rounded-xl border border-border p-4 space-y-3 bg-muted/10">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Lease Details — {listSelectedContract.contract_ref}</h4>
+              <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setFilterContractId("")}>Clear</Button>
+            </div>
+            {/* Row 1: Key Financial Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              <div><span className="text-muted-foreground block text-xs">Lease Liability</span><span className="font-mono font-semibold">{fmt(listSelectedContract.lease_liability_commence)}</span></div>
+              <div><span className="text-muted-foreground block text-xs">ROU Asset</span><span className="font-mono font-semibold">{fmt(listSelectedContract.rou_asset_value)}</span></div>
+              <div><span className="text-muted-foreground block text-xs">IBR</span><span className="font-mono font-semibold">{listSelectedContract.ibr != null ? `${(Number(listSelectedContract.ibr) * 100).toFixed(3)}%` : '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Monthly Payment</span><span className="font-mono font-semibold">{fmt(listSelectedContract.monthly_payment)} {listSelectedContract.currency}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Classification</span><Badge variant="outline">{listSelectedContract.ifrs16_classification ?? '—'}</Badge></div>
+            </div>
+            {/* Row 2: Dates & Term */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              <div><span className="text-muted-foreground block text-xs">Commencement</span><span className="font-mono">{listSelectedContract.commencement_date ? new Date(listSelectedContract.commencement_date).toLocaleDateString() : '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Expiry</span><span className="font-mono">{listSelectedContract.expiry_date ? new Date(listSelectedContract.expiry_date).toLocaleDateString() : '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Term</span><span className="font-mono">{listSelectedContract.term_months ?? '—'} months</span></div>
+              <div><span className="text-muted-foreground block text-xs">Remaining</span><span className="font-mono">{listSelectedContract.expiry_date ? `${Math.max(0, Math.ceil((new Date(listSelectedContract.expiry_date).getTime() - Date.now()) / (1000*60*60*24*30.44)))} mo` : '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Escalation</span><span className="font-mono">{listSelectedContract.escalation_rate != null ? `${(Number(listSelectedContract.escalation_rate) * 100).toFixed(2)}%` : '—'}</span></div>
+            </div>
+            {/* Row 3: Lessor & Asset */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              <div><span className="text-muted-foreground block text-xs">Lessor</span><span>{listSelectedContract.lessor_name ?? '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Asset Type</span><Badge variant="outline">{listSelectedContract.asset_type ?? '—'}</Badge></div>
+              <div><span className="text-muted-foreground block text-xs">Asset</span><span className="text-xs">{listSelectedContract.asset_description ?? '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Deposit</span><span className="font-mono">{fmt(listSelectedContract.deposit_amount)}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Status</span><Badge variant="secondary">{listSelectedContract.status ?? '—'}</Badge></div>
+            </div>
+            {/* Row 4: Options */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              <div><span className="text-muted-foreground block text-xs">Renewal Option</span><span>{listSelectedContract.renewal_option ? 'Yes' : 'No'}{listSelectedContract.renewal_certain ? ' (Certain)' : ''}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Purchase Option</span><span>{listSelectedContract.purchase_option ? 'Yes' : 'No'}{listSelectedContract.purchase_certain ? ' (Certain)' : ''}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Make-Good</span><span>{listSelectedContract.make_good_obligation ? `Yes (${fmt(listSelectedContract.make_good_estimate)})` : 'No'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Maintenance</span><span>{listSelectedContract.maintenance_responsibility ?? '—'}</span></div>
+              <div><span className="text-muted-foreground block text-xs">Currency</span><span className="font-mono">{listSelectedContract.currency ?? '—'}</span></div>
+            </div>
+          </div>
+        )}
 
         <div className="rounded-xl border border-border overflow-hidden">
           <Table>
