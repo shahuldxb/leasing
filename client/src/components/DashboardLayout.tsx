@@ -23,7 +23,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText, CreditCard, GitBranch,
-  BarChart3, Building2, Shield, Settings, Bell, Landmark,
+  BarChart3, Building2, Shield, Settings, Bell,
   FileCheck, TrendingUp, ChevronDown, ChevronRight, BookOpen,
   Sparkles, Calculator, Calendar, LineChart
 } from "lucide-react";
@@ -79,16 +79,7 @@ const menuItems: NavItem[] = [
       { label: "Approval Queue",    path: "/payables/approvals" },
     ],
   },
-  {
-    icon: Landmark, label: "Bank Reconciliation",
-    children: [
-      { label: "Bank Accounts",     path: "/bank/accounts" },
-      { label: "Import Statement",  path: "/bank/import" },
-      { label: "Recon Workspace",   path: "/bank/workspace" },
-      { label: "Recon History",     path: "/bank/history" },
-      { label: "Matching Rules",    path: "/bank/rules" },
-    ],
-  },
+
   {
     icon: BookOpen, label: "Cheque Inventory",
     children: [

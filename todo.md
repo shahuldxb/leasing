@@ -1480,3 +1480,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## Sub-Asset Registry UI Improvement (May 2026)
 - [x] Move Save Set button to the top of the Sub-Asset Registry page
+
+## Calculation Explanation Bug (May 2026)
+- [x] Fix: Only first calculation row shows explanation, subsequent rows do not show
+- [x] Remove Bank Reconciliation from sidebar menu

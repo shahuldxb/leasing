@@ -64,28 +64,22 @@ function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: st
   }));
   if (allLines.length === 0) return null;
 
-  // Group into Dr/Cr pairs
+  // Group into Dr/Cr pairs — generic approach that works for all JV types
   const drLines = allLines.filter((l: any) => l.drCr === 'Dr');
   const crLines = allLines.filter((l: any) => l.drCr === 'Cr');
   const pairs: { dr: any; cr: any; label: string }[] = [];
 
-  // Pair 1: ROU Asset (Dr) / Lease Liability (Cr)
-  const rouDr = drLines.find((l: any) => l.code.startsWith('101'));
-  const liabCr = crLines.find((l: any) => l.code.startsWith('210'));
-  if (rouDr && liabCr) pairs.push({ dr: rouDr, cr: liabCr, label: 'ROU Asset Recognition & Lease Liability' });
-
-  // Pair 2: ROU includes IDC (Dr already in ROU) / Accrued IDC (Cr)
-  const idcCr = crLines.find((l: any) => l.code === '20020');
-  if (idcCr) pairs.push({ dr: null, cr: idcCr, label: 'Initial Direct Costs (IDC) Accrual' });
-
-  // Pair 3: Lease Incentives (Cr) — reduces ROU
-  const incentCr = crLines.find((l: any) => l.code === '20030');
-  if (incentCr) pairs.push({ dr: null, cr: incentCr, label: 'Lease Incentives Received' });
-
-  // Pair 4: Security Deposit (Dr) / Bank (Cr)
-  const depDr = drLines.find((l: any) => l.code === '12020');
-  const bankCr = crLines.find((l: any) => l.code === '11000');
-  if (depDr && bankCr) pairs.push({ dr: depDr, cr: bankCr, label: 'Security Deposit Payment' });
+  // Build pairs: match Dr and Cr lines sequentially
+  const maxLen = Math.max(drLines.length, crLines.length);
+  for (let i = 0; i < maxLen; i++) {
+    const dr = drLines[i] ?? null;
+    const cr = crLines[i] ?? null;
+    // Generate a meaningful label from the line names
+    const label = dr && cr
+      ? `${dr.name} / ${cr.name}`
+      : dr ? dr.name : cr ? cr.name : `Entry ${i + 1}`;
+    pairs.push({ dr, cr, label });
+  }
 
   // Totals
   const totalDr = allLines.filter((l: any) => l.drCr === 'Dr').reduce((s: number, l: any) => s + (l.amount || 0), 0);
@@ -150,7 +144,7 @@ function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: st
                   </div>
                 ) : (
                   <div className="p-5 flex items-center justify-center">
-                    <p className="text-xs text-gray-500 italic">Included in ROU Asset (Line 1)</p>
+                    <p className="text-xs text-gray-500 italic">No debit entry</p>
                   </div>
                 )}
 
