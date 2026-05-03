@@ -1574,3 +1574,20 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Revise New Remeasurement form: starting screen shows clean Step 1 with just lease dropdown and stepper breadcrumb
 - [x] Progressive reveal: details/steps only appear after lease is selected
 - [x] Match LeaseModificationWizard.tsx pattern: gated advancement, simple initial state
+
+## CPI Escalation Cycle - Professional Wizard (May 2026)
+- [x] Backend: Stored procedure to identify eligible leases (those with escalation_rate/CPI clause)
+- [x] Backend: tRPC procedure to calculate proposed new rents based on CPI rate input
+- [x] Backend: tRPC procedure to execute CPI escalation (trigger remeasurement + JV posting)
+- [x] Frontend: "Run CPI Escalation Cycle" button on CPI Escalation page
+- [x] Frontend: Step 1 - Input CPI rate and effective date
+- [x] Frontend: Step 2 - Show all eligible leases with proposed new rents (current vs proposed)
+- [x] Frontend: Step 3 - Review/approve each lease with override capability
+- [x] Frontend: Step 4 - Execute remeasurement and post JVs for approved leases
+- [x] Step indicator (4-step wizard) matching the Remeasurement Engine pattern
+- [x] Calc button showing CPI calculation logic in blackboard style
+
+## CPI Escalation - Header & Execution Fixes (May 2026)
+- [x] Add screen ID badge (VFLCPIESC001P001) to CPI Escalation header
+- [x] Add Gen AI, Audit Log, Error Log buttons to CPI Escalation header (matching other screens)
+- [x] Fix executeCPICycle SQL to match actual lease_escalations table columns

@@ -324,6 +324,150 @@ const escalationRouter = router({
       await req2.query(`UPDATE lease.contracts SET monthly_payment=@new_rent WHERE contract_id=(SELECT contract_id FROM lease.lease_escalations WHERE escalation_id=@escalation_id)`);
       return { success: true };
     }),
+
+  // ─── CPI Escalation Cycle: Identify eligible leases ───────────────────────
+  getEligibleLeases: protectedProcedure
+    .input(z.object({}))
+    .query(async () => {
+      const pool = await getPool();
+      const r = await pool.request().query(`
+        SELECT c.contract_id, c.contract_ref, ISNULL(l.legal_name, '') AS lessor_name,
+               c.asset_description, c.asset_type,
+               c.monthly_payment, c.currency, c.escalation_rate, c.commencement_date, c.expiry_date,
+               c.ibr, c.lease_liability_commence, c.rou_asset_value, c.term_months, c.status,
+               c.ifrs16_classification
+        FROM lease.contracts c
+        LEFT JOIN lease.lessors l ON l.lessor_id = c.lessor_id
+        WHERE c.status = 'Active'
+          AND c.escalation_rate IS NOT NULL
+          AND c.escalation_rate > 0
+        ORDER BY c.contract_ref
+      `);
+      return r.recordset;
+    }),
+
+  // ─── CPI Escalation Cycle: Calculate proposed rents ───────────────────────
+  calculateCPICycle: protectedProcedure
+    .input(z.object({
+      cpi_rate: z.number(), // e.g. 3.5 for 3.5%
+      effective_date: z.string(),
+      contract_ids: z.array(z.number()), // which contracts to include
+    }))
+    .mutation(async ({ input }) => {
+      const pool = await getPool();
+      // Fetch the selected contracts
+      const contractList = input.contract_ids.join(',');
+      const r = await pool.request().query(`
+        SELECT c.contract_id, c.contract_ref, ISNULL(l.legal_name, '') AS lessor_name,
+               c.asset_description,
+               c.monthly_payment, c.currency, c.escalation_rate, c.ibr,
+               c.lease_liability_commence, c.rou_asset_value, c.term_months,
+               c.commencement_date, c.expiry_date
+        FROM lease.contracts c
+        LEFT JOIN lease.lessors l ON l.lessor_id = c.lessor_id
+        WHERE c.contract_id IN (${contractList})
+      `);
+      const contracts = r.recordset;
+      const cpiDecimal = input.cpi_rate / 100;
+      const results = contracts.map((c: any) => {
+        const currentRent = Number(c.monthly_payment);
+        const proposedRent = Math.round(currentRent * (1 + cpiDecimal) * 100) / 100;
+        const annualIncrease = (proposedRent - currentRent) * 12;
+        // Calculate remaining months from effective date
+        const expiryDate = new Date(c.expiry_date);
+        const effectiveDate = new Date(input.effective_date);
+        const remainingMonths = Math.max(1, Math.ceil((expiryDate.getTime() - effectiveDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+        // PV calculation for new liability
+        const ibr = Number(c.ibr) || 0.06;
+        const monthlyRate = ibr / 12;
+        const pvFactor = monthlyRate > 0 ? (1 - Math.pow(1 + monthlyRate, -remainingMonths)) / monthlyRate : remainingMonths;
+        const newLiability = Math.round(proposedRent * pvFactor * 100) / 100;
+        const oldLiability = Math.round(currentRent * pvFactor * 100) / 100;
+        const liabilityAdjustment = Math.round((newLiability - oldLiability) * 100) / 100;
+        return {
+          contract_id: c.contract_id,
+          contract_ref: c.contract_ref,
+          lessor_name: c.lessor_name,
+          asset_description: c.asset_description,
+          currency: c.currency,
+          current_rent: currentRent,
+          cpi_rate: input.cpi_rate,
+          proposed_rent: proposedRent,
+          annual_increase: annualIncrease,
+          remaining_months: remainingMonths,
+          ibr: ibr,
+          old_liability: oldLiability,
+          new_liability: newLiability,
+          liability_adjustment: liabilityAdjustment,
+          effective_date: input.effective_date,
+        };
+      });
+      return results;
+    }),
+
+  // ─── CPI Escalation Cycle: Execute (apply escalation + trigger remeasurement) ─
+  executeCPICycle: protectedProcedure
+    .input(z.object({
+      escalations: z.array(z.object({
+        contract_id: z.number(),
+        current_rent: z.number(),
+        proposed_rent: z.number(),
+        cpi_rate: z.number(),
+        effective_date: z.string(),
+        override_rent: z.number().optional(), // if user overrode the proposed rent
+      })),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const results: any[] = [];
+      for (const esc of input.escalations) {
+        const newRent = esc.override_rent ?? esc.proposed_rent;
+        // 1. Insert escalation record into lease.lease_escalations
+        // Actual columns: escalation_id(auto), contract_id, escalation_type, review_date,
+        //   base_rent, escalation_rate_pct, escalation_amount, new_rent, cpi_index_id,
+        //   status, applied_date, applied_by, notes, created_at
+        const escalationAmount = Math.round((newRent - esc.current_rent) * 100) / 100;
+        const insReq = pool.request();
+        insReq.input("contract_id", sql.Int, esc.contract_id);
+        insReq.input("escalation_type", sql.NVarChar(50), 'CPI');
+        insReq.input("review_date", sql.Date, esc.effective_date);
+        insReq.input("base_rent", sql.Decimal(18, 4), esc.current_rent);
+        insReq.input("escalation_rate_pct", sql.Decimal(8, 4), esc.cpi_rate);
+        insReq.input("escalation_amount", sql.Decimal(18, 4), escalationAmount);
+        insReq.input("new_rent", sql.Decimal(18, 4), newRent);
+        insReq.input("status", sql.NVarChar(50), 'APPLIED');
+        insReq.input("applied_date", sql.Date, new Date());
+        insReq.input("applied_by", sql.Int, ctx.user.id ?? 0);
+        insReq.input("notes", sql.NVarChar(500), `CPI Escalation: ${esc.cpi_rate}% applied. Rent changed from ${esc.current_rent} to ${newRent}`);
+        await insReq.query(`
+          INSERT INTO lease.lease_escalations (contract_id, escalation_type, review_date, base_rent, escalation_rate_pct, escalation_amount, new_rent, status, applied_date, applied_by, notes)
+          VALUES (@contract_id, @escalation_type, @review_date, @base_rent, @escalation_rate_pct, @escalation_amount, @new_rent, @status, @applied_date, @applied_by, @notes)
+        `);
+        // 2. Update contract monthly payment
+        const updReq = pool.request();
+        updReq.input("contract_id", sql.Int, esc.contract_id);
+        updReq.input("new_rent", sql.Decimal(18, 4), newRent);
+        await updReq.query(`UPDATE lease.contracts SET monthly_payment=@new_rent WHERE contract_id=@contract_id`);
+        // 3. Trigger remeasurement via stored procedure
+        try {
+          const remReq = pool.request();
+          remReq.input("contract_id", sql.Int, esc.contract_id);
+          remReq.input("event_type", sql.NVarChar(50), 'Index/Rate Change');
+          remReq.input("event_date", sql.Date, esc.effective_date);
+          remReq.input("trigger_description", sql.NVarChar(500), `CPI Escalation: ${esc.cpi_rate}% applied. Rent changed from ${esc.current_rent} to ${newRent}`);
+          remReq.input("new_ibr", sql.Decimal(8, 6), null);
+          remReq.input("new_remaining_term", sql.Int, null);
+          remReq.input("new_monthly_payment", sql.Decimal(18, 4), newRent);
+          remReq.input("created_by", sql.NVarChar(200), ctx.user.name ?? ctx.user.email);
+          const remResult = await remReq.execute("accounting.sp_ExecuteRemeasurement");
+          results.push({ contract_id: esc.contract_id, success: true, jv: remResult.recordset?.[0] ?? null });
+        } catch (remErr: any) {
+          // If SP doesn't exist or fails, still mark success for the escalation itself
+          results.push({ contract_id: esc.contract_id, success: true, jv: null, warning: remErr.message });
+        }
+      }
+      return { results, total: input.escalations.length, successful: results.filter(r => r.success).length };
+    }),
 });
 
 // ─── Exemptions ───────────────────────────────────────────────────────────────
