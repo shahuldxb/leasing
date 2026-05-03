@@ -1815,3 +1815,6 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add "Send to JV" buttons on the amortisation schedule view in Lease Detail
 - [x] Wire buttons to call generateInception and generateMonthly mutations
 - [x] Show success/error feedback after JV generation
+
+## Bug: Delete Lease does not delete related Journal Vouchers
+- [x] Update lease delete SP/logic to cascade-delete JV lines, JVs, and amortisation for the contract
