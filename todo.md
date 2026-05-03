@@ -1810,3 +1810,8 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Bug: Period-End Close shows 0 Posted / 0 Projected for all months
 - [x] Investigate why period cards show 0 counts despite active leases existing
 - [x] Fix the backend query to correctly count posted/projected JVs per period (SP was counting 'Projected' but data uses 'Scheduled')
+
+## Lease Register — Send Active Amortisation Records to JV
+- [x] Add "Send to JV" buttons on the amortisation schedule view in Lease Detail
+- [x] Wire buttons to call generateInception and generateMonthly mutations
+- [x] Show success/error feedback after JV generation

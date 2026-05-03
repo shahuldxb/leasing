@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Building2, DollarSign, FileText, User, Package, History, ArrowLeft, RefreshCw, BarChart2, Info, Save, Calculator, ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle, X } from "lucide-react";
+import { Building2, DollarSign, FileText, User, Package, History, ArrowLeft, RefreshCw, BarChart2, Info, Save, Calculator, ChevronDown, ChevronUp, Pencil, CheckCircle, XCircle, AlertTriangle, X, Send } from "lucide-react";
 import { LeaseStatPill, LeaseStatDivider, LeaseStatStrip } from "@/components/LeaseStatPill";
 
 // ── Sub-Assets Grid ───────────────────────────────────────────────────────────
@@ -318,8 +318,15 @@ function AmortisationTab({ contractId }: { contractId: number }) {
   const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
   const [blackboardRow, setBlackboardRow] = useState<Record<string, unknown> | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-
   const { data, isLoading } = trpc.lease.getAmortisationSchedule.useQuery({ contractId });
+  const generateJvMut = trpc.journalVoucher.generateInception.useMutation({
+    onSuccess: (r: any) => toast.success(`JV ${r?.jv_number ?? ''} created for this lease — check Journal Voucher Register`),
+    onError: (e: any) => toast.error(`JV generation failed: ${e.message}`),
+  });
+  const generateMonthlyMut = trpc.journalVoucher.generateMonthly.useMutation({
+    onSuccess: (r: any) => toast.success(`${r?.generated_count ?? 0} monthly JV(s) generated — check Journal Voucher Register`),
+    onError: (e: any) => toast.error(`Monthly JV generation failed: ${e.message}`),
+  });
 
   if (isLoading) return <p className="text-sm text-muted-foreground animate-pulse p-4">Loading schedule…</p>;
 
@@ -364,12 +371,35 @@ function AmortisationTab({ contractId }: { contractId: number }) {
         </LeaseStatStrip>
       )}
 
-      {/* View toggle */}
-      <div className="flex items-center gap-2">
+      {/* View toggle + Send to JV */}
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-muted-foreground">View:</span>
         {(['monthly', 'yearly'] as const).map(v => (
           <Button key={v} size="sm" variant={viewMode === v ? 'default' : 'outline'} className="h-7 text-xs capitalize" onClick={() => setViewMode(v)}>{v}</Button>
         ))}
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+            disabled={generateJvMut.isPending}
+            onClick={() => generateJvMut.mutate({ contract_id: contractId })}
+          >
+            <Send className="w-3 h-3 mr-1" /> {generateJvMut.isPending ? 'Generating…' : 'Send Inception JV'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
+            disabled={generateMonthlyMut.isPending}
+            onClick={() => {
+              const now = new Date();
+              generateMonthlyMut.mutate({ period_year: now.getFullYear(), period_month: now.getMonth() + 1 });
+            }}
+          >
+            <Send className="w-3 h-3 mr-1" /> {generateMonthlyMut.isPending ? 'Generating…' : 'Send Monthly JVs'}
+          </Button>
+        </div>
       </div>
 
       {/* Schedule table */}
