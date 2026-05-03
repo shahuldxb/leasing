@@ -73,8 +73,13 @@ export const journalVoucherRouter = router({
       req.input("period_year", input.period_year);
       req.input("period_month", input.period_month);
       req.input("created_by", ctx.user.name ?? ctx.user.email);
-      const result = await req.execute("accounting.sp_GenerateMonthlyJVs");
-      return (result.recordset as any[])?.[0] ?? { generated_count: 0 };
+      try {
+        const result = await req.execute("accounting.sp_GenerateMonthlyJVs");
+        return (result.recordset as any[])?.[0] ?? { generated_count: 0 };
+      } catch (e: any) {
+        const msg = e.precedingErrors?.[0]?.originalError?.info?.message || e.message || 'Unknown SP error';
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+      }
     }),
 
   // ── Generate Remeasurement JV ─────────────────────────────────────────────
@@ -98,8 +103,13 @@ export const journalVoucherRouter = router({
       req.input("period_year", input.period_year);
       req.input("period_month", input.period_month);
       req.input("created_by", ctx.user.name ?? ctx.user.email);
-      const result = await req.execute("accounting.sp_GenerateMonthlyJVs");
-      return (result.recordset as any[])?.[0] ?? { generated_count: 0 };
+      try {
+        const result = await req.execute("accounting.sp_GenerateMonthlyJVs");
+        return (result.recordset as any[])?.[0] ?? { generated_count: 0 };
+      } catch (e: any) {
+        const msg = e.precedingErrors?.[0]?.originalError?.info?.message || e.message || 'Unknown SP error';
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+      }
     }),
 
   // ── Post JV ───────────────────────────────────────────────────────────────
