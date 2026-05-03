@@ -166,7 +166,7 @@ const remeasurementRouter = router({
       if (input.contractId) { req.input("contractId", input.contractId); where += " AND r.contract_id=@contractId"; }
       if (input.status) { req.input("status", input.status); where += " AND r.status=@status"; }
       const r = await req.query(`
-        SELECT r.*, c.contract_ref, c.asset_description
+        SELECT r.*, c.contract_ref, c.asset_description, c.monthly_payment
         FROM lease.remeasurement_events r
         JOIN lease.contracts c ON c.contract_id=r.contract_id
         ${where} ORDER BY r.event_date DESC
@@ -174,6 +174,62 @@ const remeasurementRouter = router({
       return r.recordset;
     }),
 
+  // Preview: Calculate remeasurement without posting
+  calculate: protectedProcedure
+    .input(z.object({
+      contract_id: z.number(),
+      event_type: z.string(),
+      event_date: z.string(),
+      trigger_description: z.string().optional().default(''),
+      new_ibr: z.number().nullable().optional(),
+      new_remaining_term: z.number().nullable().optional(),
+      new_monthly_payment: z.number().nullable().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", sql.Int, input.contract_id);
+      req.input("event_type", sql.NVarChar(50), input.event_type);
+      req.input("event_date", sql.Date, input.event_date);
+      req.input("trigger_description", sql.NVarChar(500), input.trigger_description || '');
+      req.input("new_ibr", sql.Decimal(8,6), input.new_ibr ?? null);
+      req.input("new_remaining_term", sql.Int, input.new_remaining_term ?? null);
+      req.input("new_monthly_payment", sql.Decimal(18,4), input.new_monthly_payment ?? null);
+      req.input("created_by", sql.NVarChar(200), ctx.user.name ?? ctx.user.email);
+      const result = await req.execute("accounting.sp_CalculateRemeasurement");
+      return {
+        summary: result.recordsets[0]?.[0] ?? null,
+        schedule: result.recordsets[1] ?? [],
+      };
+    }),
+
+  // Execute: Confirm & Post the remeasurement (generates JV + regenerates schedule)
+  execute: protectedProcedure
+    .input(z.object({
+      contract_id: z.number(),
+      event_type: z.string(),
+      event_date: z.string(),
+      trigger_description: z.string().optional().default(''),
+      new_ibr: z.number().nullable().optional(),
+      new_remaining_term: z.number().nullable().optional(),
+      new_monthly_payment: z.number().nullable().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("contract_id", sql.Int, input.contract_id);
+      req.input("event_type", sql.NVarChar(50), input.event_type);
+      req.input("event_date", sql.Date, input.event_date);
+      req.input("trigger_description", sql.NVarChar(500), input.trigger_description || '');
+      req.input("new_ibr", sql.Decimal(8,6), input.new_ibr ?? null);
+      req.input("new_remaining_term", sql.Int, input.new_remaining_term ?? null);
+      req.input("new_monthly_payment", sql.Decimal(18,4), input.new_monthly_payment ?? null);
+      req.input("created_by", sql.NVarChar(200), ctx.user.name ?? ctx.user.email);
+      const result = await req.execute("accounting.sp_ExecuteRemeasurement");
+      return result.recordset?.[0] ?? { success: true };
+    }),
+
+  // Legacy: keep old create for backward compat
   create: protectedProcedure
     .input(z.object({
       contract_id: z.number(),
@@ -184,50 +240,18 @@ const remeasurementRouter = router({
       new_remaining_term: z.number(),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Fetch current contract values
       const pool = await getPool();
       const req = pool.request();
-      req.input("contract_id", input.contract_id);
-      const contractRes = await req.query(`
-        SELECT rou_asset_value, lease_liability_commence, ibr, 
-               DATEDIFF(MONTH, GETDATE(), expiry_date) AS remaining_term
-        FROM lease.contracts WHERE contract_id=@contract_id
-      `);
-      if (!contractRes.recordset[0]) throw new TRPCError({ code: "NOT_FOUND" });
-      const c = contractRes.recordset[0];
-
-      // Calculate new liability using PV formula (simplified)
-      const monthlyRate = input.new_ibr / 100 / 12;
-      const n = input.new_remaining_term;
-      const payment = c.lease_liability_commence / (c.remaining_term > 0 ? c.remaining_term : 1);
-      const newLiability = monthlyRate > 0
-        ? payment * (1 - Math.pow(1 + monthlyRate, -n)) / monthlyRate
-        : payment * n;
-      const liabilityAdj = newLiability - (c.lease_liability_commence || 0);
-      const rouAdj = liabilityAdj; // simplified: ROU = liability adjustment
-      const newROU = (c.rou_asset_value || 0) + rouAdj;
-
-      const req2 = pool.request();
-      req2.input("contract_id", input.contract_id);
-      req2.input("event_type", input.event_type);
-      req2.input("event_date", input.event_date);
-      req2.input("trigger_description", input.trigger_description);
-      req2.input("old_liability", c.lease_liability_commence);
-      req2.input("old_rou_asset", c.rou_asset_value);
-      req2.input("old_ibr", c.ibr);
-      req2.input("old_remaining_term", c.remaining_term);
-      req2.input("new_liability", newLiability);
-      req2.input("new_rou_asset", newROU);
-      req2.input("new_ibr", input.new_ibr);
-      req2.input("new_remaining_term", input.new_remaining_term);
-      req2.input("liability_adjustment", liabilityAdj);
-      req2.input("rou_adjustment", rouAdj);
-      req2.input("created_by", ctx.user.id);
-      await req2.query(`
-        INSERT INTO lease.remeasurement_events (contract_id,event_type,event_date,trigger_description,old_liability,old_rou_asset,old_ibr,old_remaining_term,new_liability,new_rou_asset,new_ibr,new_remaining_term,liability_adjustment,rou_adjustment,status,created_by)
-        VALUES (@contract_id,@event_type,@event_date,@trigger_description,@old_liability,@old_rou_asset,@old_ibr,@old_remaining_term,@new_liability,@new_rou_asset,@new_ibr,@new_remaining_term,@liability_adjustment,@rou_adjustment,'PENDING',@created_by)
-      `);
-      return { success: true, newLiability: Math.round(newLiability), liabilityAdj: Math.round(liabilityAdj) };
+      req.input("contract_id", sql.Int, input.contract_id);
+      req.input("event_type", sql.NVarChar(50), input.event_type);
+      req.input("event_date", sql.Date, input.event_date);
+      req.input("trigger_description", sql.NVarChar(500), input.trigger_description);
+      req.input("new_ibr", sql.Decimal(8,6), input.new_ibr);
+      req.input("new_remaining_term", sql.Int, input.new_remaining_term);
+      req.input("new_monthly_payment", sql.Decimal(18,4), null);
+      req.input("created_by", sql.NVarChar(200), ctx.user.name ?? ctx.user.email);
+      const result = await req.execute("accounting.sp_ExecuteRemeasurement");
+      return result.recordset?.[0] ?? { success: true };
     }),
 
   post: protectedProcedure
@@ -236,18 +260,16 @@ const remeasurementRouter = router({
       const pool = await getPool();
       const req = pool.request();
       req.input("remeasurement_id", input.remeasurement_id);
-      // Get remeasurement
       const remRes = await req.query(`SELECT * FROM lease.remeasurement_events WHERE remeasurement_id=@remeasurement_id`);
       if (!remRes.recordset[0]) throw new TRPCError({ code: "NOT_FOUND" });
       const rem = remRes.recordset[0];
-      // Update contract
+      if (rem.status === 'POSTED') return { success: true, message: 'Already posted' };
       const req2 = pool.request();
       req2.input("contract_id", rem.contract_id);
       req2.input("new_liability", rem.new_liability);
       req2.input("new_rou", rem.new_rou_asset);
       req2.input("new_ibr", rem.new_ibr);
       await req2.query(`UPDATE lease.contracts SET lease_liability_commence=@new_liability, rou_asset_value=@new_rou, ibr=@new_ibr WHERE contract_id=@contract_id`);
-      // Mark as posted
       const req3 = pool.request();
       req3.input("remeasurement_id", input.remeasurement_id);
       await req3.query(`UPDATE lease.remeasurement_events SET status='POSTED' WHERE remeasurement_id=@remeasurement_id`);

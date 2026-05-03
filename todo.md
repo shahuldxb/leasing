@@ -1510,3 +1510,21 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 ## Lease Classification Bug Fix (May 2026)
 - [x] Fix Classify Lease button/form - no leases showing for classification (removed Active status filter, all leases now appear in dropdown)
 - [x] Verified full classification flow: select contract → check criteria → save → appears in register
+
+## Remeasurement Engine Enhancement (May 2026)
+- [ ] Review current Remeasurement page and backend logic
+- [ ] Create SP: sp_ExecuteRemeasurement — calculates new liability, generates adjustment JV, regenerates amortisation schedule prospectively
+- [ ] Ensure old JVs are never reversed/deleted — remeasurement is prospective only
+- [ ] Generate single adjustment JV on remeasurement date (Dr/Cr ROU Asset vs Lease Liability)
+- [ ] Regenerate amortisation schedule from remeasurement date forward with revised terms
+- [ ] Handle edge case: if ROU Asset goes to zero, excess goes to P&L
+- [ ] Update Remeasurement UI: lease selector, trigger type, revised inputs, preview of adjustment JV, confirm & post
+- [ ] Add calculation explanation showing old vs new liability, adjustment amount, and new schedule parameters
+- [ ] Full audit trail and error logging integration
+- [ ] Test end-to-end remeasurement flow with contract 43
+
+## Remeasurement - Show All Lease Details (May 2026)
+- [x] Fix Current Liability, ROU Asset, IBR showing dashes when contract selected
+- [x] Fix IBR placeholder showing "undefined"
+- [x] Show comprehensive lease details: lessor, commencement, expiry, term, asset type, currency, etc.
+- [x] Ensure all values from the contract are displayed in the contract info panel
