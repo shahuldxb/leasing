@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ScreenHeader from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,24 @@ export default function RemeasurementEngine() {
     { enabled: !!filterContractId }
   );
   const listSelectedContract = listContractDetails as any;
+
+  // Fetch JV entries for the selected lease
+  const { data: leaseJVs } = trpc.journalVoucher.list.useQuery(
+    { contract_id: Number(filterContractId), page: 1, page_size: 100 },
+    { enabled: !!filterContractId }
+  );
+
+  // Fetch amortisation schedule for the selected lease
+  const { data: leaseScheduleData } = trpc.lease.getAmortisationSchedule.useQuery(
+    { contractId: Number(filterContractId) },
+    { enabled: !!filterContractId }
+  );
+
+  // State for expanded remeasurement row (radio button)
+  const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
+  // Fetch JV details for the expanded remeasurement event
+  const expandedEvent = (events as any[]).find((e: any) => e.remeasurement_id === expandedEventId);
+
 
   const calculateMut = trpc.accounting.remeasurement.calculate.useMutation({
     onSuccess: (data) => {
@@ -448,6 +466,9 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
     const d = selectedContract || {};
     const remainingMonths = d.expiry_date ? Math.max(0, Math.ceil((new Date(d.expiry_date).getTime() - Date.now()) / (1000*60*60*24*30.44))) : null;
 
+    const FORM_STEPS = ["Select Lease", "Scope of Change", "Review & Calculate"];
+    const currentFormStep = !form.contractId ? 0 : (!scope.ibr && !scope.term && !scope.payment && !scope.renewal && !scope.purchase) ? 1 : 2;
+
     return (
       <DashboardLayout>
         <div className="flex flex-col h-full">
@@ -460,6 +481,22 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
               <h2 className="font-semibold text-lg">New Remeasurement</h2>
               <p className="text-sm text-muted-foreground">Select lease → Check scope of change → Review & Calculate</p>
             </div>
+          </div>
+
+          {/* Step Indicator */}
+          <div className="flex items-center gap-2 px-6 pt-4">
+            {FORM_STEPS.map((s, i) => (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  i === currentFormStep ? "bg-[#e60000] text-white" :
+                  i < currentFormStep ? "bg-green-600 text-white" : "bg-muted text-muted-foreground"
+                }`}>
+                  {i < currentFormStep ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">{i + 1}</span>}
+                  {s}
+                </div>
+                {i < FORM_STEPS.length - 1 && <span className="text-muted-foreground text-xs">→</span>}
+              </div>
+            ))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -723,105 +760,483 @@ ${Number(s.pnl_adjustment) !== 0 ? `  Cr.  Gain on Remeasurement (40500)   ${fmt
           )}
         </div>
 
-        {/* Lease Details Panel - shown when a lease is selected in filter */}
+        {/* ═══ WHEN LEASE SELECTED: Show Full Origination Details ═══ */}
         {listSelectedContract && (
-          <div className="rounded-xl border border-border overflow-hidden">
-            <div className="bg-muted/30 px-4 py-2 border-b border-border">
-              <span className="text-sm font-semibold">Lease Details — {listSelectedContract.contract_ref}</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-3 p-4 text-sm">
-              <div><span className="text-muted-foreground block text-xs">Lease Liability</span><span className="font-mono font-semibold">{fmt(listSelectedContract.lease_liability_commence)}</span></div>
-              <div><span className="text-muted-foreground block text-xs">ROU Asset</span><span className="font-mono font-semibold">{fmt(listSelectedContract.rou_asset_value)}</span></div>
-              <div><span className="text-muted-foreground block text-xs">IBR</span><span className="font-mono font-semibold">{listSelectedContract.ibr != null ? fmtPct(listSelectedContract.ibr) : '—'}</span></div>
-              <div><span className="text-muted-foreground block text-xs">Monthly Payment</span><span className="font-mono font-semibold">{fmt(listSelectedContract.monthly_payment)} {listSelectedContract.currency}</span></div>
-              <div><span className="text-muted-foreground block text-xs">Classification</span><Badge variant="outline">{listSelectedContract.ifrs16_classification ?? '—'}</Badge></div>
-              <div><span className="text-muted-foreground block text-xs">Commencement</span><span className="font-mono">{fmtDate(listSelectedContract.commencement_date)}</span></div>
-              <div><span className="text-muted-foreground block text-xs">Expiry</span><span className="font-mono">{fmtDate(listSelectedContract.expiry_date)}</span></div>
-              <div><span className="text-muted-foreground block text-xs">Term</span><span className="font-mono">{listSelectedContract.term_months ?? '—'} months</span></div>
-              <div><span className="text-muted-foreground block text-xs">Lessor</span><span>{listSelectedContract.lessor_name ?? '—'}</span></div>
-              <div><span className="text-muted-foreground block text-xs">Asset</span><span className="text-xs">{listSelectedContract.asset_description ?? '—'}</span></div>
-            </div>
-          </div>
+          <Tabs defaultValue="details" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="details">Lease Details</TabsTrigger>
+              <TabsTrigger value="jv_entries">Original JV Entries ({(leaseJVs as any)?.rows?.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="schedule">Amortisation Schedule ({(leaseScheduleData as any)?.schedule?.length ?? 0})</TabsTrigger>
+              <TabsTrigger value="remeasurements">Remeasurement Events ({(events as any[]).filter(e => String(e.contract_id) === filterContractId).length})</TabsTrigger>
+            </TabsList>
+
+            {/* Tab 1: Full Lease Details */}
+            <TabsContent value="details">
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="bg-muted/30 px-4 py-2 border-b border-border">
+                  <span className="text-sm font-semibold">Lease Details — {listSelectedContract.contract_ref}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-4 p-4 text-sm">
+                  <div><span className="text-muted-foreground block text-xs">Lease Liability</span><span className="font-mono font-semibold">{fmt(listSelectedContract.lease_liability_commence)}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">ROU Asset</span><span className="font-mono font-semibold">{fmt(listSelectedContract.rou_asset_value)}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">IBR</span><span className="font-mono font-semibold">{listSelectedContract.ibr != null ? fmtPct(listSelectedContract.ibr) : '—'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Monthly Payment</span><span className="font-mono font-semibold">{fmt(listSelectedContract.monthly_payment)} {listSelectedContract.currency}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Classification</span><Badge variant="outline">{listSelectedContract.ifrs16_classification ?? '—'}</Badge></div>
+                  <div><span className="text-muted-foreground block text-xs">Commencement</span><span className="font-mono">{fmtDate(listSelectedContract.commencement_date)}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Expiry</span><span className="font-mono">{fmtDate(listSelectedContract.expiry_date)}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Term</span><span className="font-mono">{listSelectedContract.term_months ?? '—'} months</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Lessor</span><span>{listSelectedContract.lessor_name ?? '—'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Asset</span><span className="text-xs">{listSelectedContract.asset_description ?? '—'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Currency</span><span className="font-mono">{listSelectedContract.currency ?? '—'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Escalation Rate</span><span className="font-mono">{listSelectedContract.escalation_rate != null ? `${(Number(listSelectedContract.escalation_rate) * 100).toFixed(2)}%` : '—'}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Deposit</span><span className="font-mono">{fmt(listSelectedContract.deposit_amount)}</span></div>
+                  <div><span className="text-muted-foreground block text-xs">Renewal Option</span><Badge variant="outline">{listSelectedContract.renewal_option ? 'Yes' : 'No'}</Badge></div>
+                  <div><span className="text-muted-foreground block text-xs">Status</span><Badge variant="outline">{listSelectedContract.status ?? '—'}</Badge></div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Tab 2: Original JV Entries */}
+            <TabsContent value="jv_entries">
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="bg-muted/30 px-4 py-2 border-b border-border">
+                  <span className="text-sm font-semibold">Journal Voucher Entries — {listSelectedContract.contract_ref}</span>
+                </div>
+                {(leaseJVs as any)?.rows?.length > 0 ? (
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>JV Number</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Total Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Posted Date</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {(leaseJVs as any).rows.map((jv: any) => (
+                        <TableRow key={jv.jv_id}>
+                          <TableCell className="font-mono text-xs font-semibold">{jv.jv_number}</TableCell>
+                          <TableCell><Badge variant="outline" className="text-xs">{jv.jv_type}</Badge></TableCell>
+                          <TableCell className="text-xs">{jv.period_year}/{String(jv.period_month).padStart(2, '0')}</TableCell>
+                          <TableCell className="text-xs max-w-[200px] truncate">{jv.description}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">{fmt(jv.total_amount)}</TableCell>
+                          <TableCell>
+                            <Badge className={jv.status === 'POSTED' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}>{jv.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">{jv.posted_at ? new Date(jv.posted_at).toLocaleDateString() : jv.created_at ? new Date(jv.created_at).toLocaleDateString() : '—'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground text-sm">No journal entries posted for this lease yet. Generate inception JV from the Lease Transaction Centre.</div>
+                )}
+                {/* JV Lines detail */}
+                {(leaseJVs as any)?.allLines?.length > 0 && (
+                  <div className="border-t border-border">
+                    <div className="bg-muted/20 px-4 py-2 border-b border-border">
+                      <span className="text-xs font-semibold">All JV Lines (Dr/Cr Detail)</span>
+                    </div>
+                    <div className="max-h-[400px] overflow-auto">
+                      <Table>
+                        <TableHeader><TableRow>
+                          <TableHead className="text-xs">JV#</TableHead>
+                          <TableHead className="text-xs">Account</TableHead>
+                          <TableHead className="text-xs">Account Name</TableHead>
+                          <TableHead className="text-xs">Dr/Cr</TableHead>
+                          <TableHead className="text-xs text-right">Amount</TableHead>
+                          <TableHead className="text-xs">Description</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                          {(leaseJVs as any).allLines.map((line: any, idx: number) => (
+                            <TableRow key={idx} className={line.dr_cr === 'DR' ? 'bg-red-500/5' : 'bg-green-500/5'}>
+                              <TableCell className="font-mono text-xs">{line.jv_number ?? ''}</TableCell>
+                              <TableCell className="font-mono text-xs font-semibold">{line.account_code}</TableCell>
+                              <TableCell className="text-xs">{line.account_name ?? line.description ?? ''}</TableCell>
+                              <TableCell>
+                                <Badge className={line.dr_cr === 'DR' ? 'bg-red-500/20 text-red-400 text-xs' : 'bg-green-500/20 text-green-400 text-xs'}>
+                                  {line.dr_cr}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs font-semibold">{fmt(line.amount)}</TableCell>
+                              <TableCell className="text-xs max-w-[200px] truncate">{line.line_description ?? ''}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Tab 3: Amortisation Schedule */}
+            <TabsContent value="schedule">
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="bg-muted/30 px-4 py-2 border-b border-border">
+                  <span className="text-sm font-semibold">Amortisation Schedule — {listSelectedContract.contract_ref}</span>
+                </div>
+                {(leaseScheduleData as any)?.schedule?.length > 0 ? (
+                  <div className="max-h-[500px] overflow-auto">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">#</TableHead>
+                        <TableHead className="text-xs">Period</TableHead>
+                        <TableHead className="text-xs text-right">Opening Liability</TableHead>
+                        <TableHead className="text-xs text-right">Interest</TableHead>
+                        <TableHead className="text-xs text-right">Payment</TableHead>
+                        <TableHead className="text-xs text-right">Principal</TableHead>
+                        <TableHead className="text-xs text-right">Closing Liability</TableHead>
+                        <TableHead className="text-xs text-right">ROU NBV</TableHead>
+                        <TableHead className="text-xs text-right">Depreciation</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {(leaseScheduleData as any).schedule.map((row: any, idx: number) => (
+                          <TableRow key={idx}>
+                            <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                            <TableCell className="text-xs font-mono">{row.period_date ? new Date(row.period_date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : `Month ${idx + 1}`}</TableCell>
+                            <TableCell className="text-right font-mono text-xs">{fmt(row.opening_liability)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs text-amber-400">{fmt(row.interest_expense)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs">{fmt(row.payment)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs">{fmt(row.principal)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs font-semibold">{fmt(row.closing_liability)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs">{fmt(row.rou_nbv)}</TableCell>
+                            <TableCell className="text-right font-mono text-xs text-blue-400">{fmt(row.depreciation)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground text-sm">No amortisation schedule generated for this lease yet. Run amortisation from the Lease Transaction Centre.</div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Tab 4: Remeasurement Events */}
+            <TabsContent value="remeasurements">
+              <div className="rounded-xl border border-border overflow-hidden">
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead className="w-10"></TableHead>
+                    <TableHead>Contract</TableHead>
+                    <TableHead>Trigger</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Old Liability</TableHead>
+                    <TableHead className="text-right">New Liability</TableHead>
+                    <TableHead className="text-right">Adjustment</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {(events as any[]).filter(e => String(e.contract_id) === filterContractId).map((e: any) => (
+                      <React.Fragment key={e.remeasurement_id}>
+                        <TableRow className={expandedEventId === e.remeasurement_id ? 'bg-muted/30' : ''}>
+                          <TableCell>
+                            <input
+                              type="radio"
+                              name="remeasurement_select"
+                              checked={expandedEventId === e.remeasurement_id}
+                              onChange={() => setExpandedEventId(expandedEventId === e.remeasurement_id ? null : e.remeasurement_id)}
+                              className="w-4 h-4 accent-[#ffd700]"
+                            />
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{e.contract_ref || e.contract_id}</TableCell>
+                          <TableCell><Badge variant="outline" className="text-xs">{e.event_type}</Badge></TableCell>
+                          <TableCell>{e.event_date ? new Date(e.event_date).toLocaleDateString() : "—"}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">{fmt(e.old_liability)}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">{fmt(e.new_liability)}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">{fmt(e.liability_adjustment)}</TableCell>
+                          <TableCell>
+                            <Badge className={e.status === "POSTED" ? "bg-green-500/20 text-green-400" : e.status === "CALCULATED" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}>
+                              {e.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {e.status === "CALCULATED" && (
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => sendToJvMut.mutate({ remeasurement_id: e.remeasurement_id })}>
+                                  <BookOpen className="w-3 h-3 mr-1" />Post
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-[#ffd700] hover:bg-[#e6c200] text-black font-semibold gap-1"
+                                onClick={() => {
+                                  const explanation = {
+                                    summary: {
+                                      contract_ref: e.contract_ref,
+                                      event_type: e.event_type,
+                                      event_date: e.event_date,
+                                      currency: e.currency || "QAR",
+                                      old_liability: e.old_liability,
+                                      new_liability: e.new_liability,
+                                      liability_adjustment: e.liability_adjustment,
+                                      old_rou_asset: e.old_rou_asset,
+                                      new_rou_asset: e.new_rou_asset,
+                                      rou_adjustment: e.rou_adjustment,
+                                      pnl_adjustment: e.pnl_adjustment || 0,
+                                      old_ibr: e.old_ibr,
+                                      new_ibr: e.new_ibr,
+                                      old_monthly_payment: e.old_monthly_payment,
+                                      new_monthly_payment: e.new_monthly_payment,
+                                      old_remaining_term: e.old_remaining_term,
+                                      new_remaining_term: e.new_remaining_term,
+                                      months_already_posted: e.months_already_posted || 0,
+                                      jv_description: e.jv_description || "",
+                                    },
+                                    schedule: [],
+                                  };
+                                  setPreview(explanation);
+                                  setShowCalcExplanation(true);
+                                }}
+                              >
+                                <Calculator className="w-3 h-3" />Calc
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {/* Expanded row: Show old JV vs new adjustment JV */}
+                        {expandedEventId === e.remeasurement_id && (
+                          <TableRow>
+                            <TableCell colSpan={9} className="p-0">
+                              <div className="bg-muted/20 p-4 border-t border-border space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* Old Entries (Before) */}
+                                  <div className="rounded-lg border border-border overflow-hidden">
+                                    <div className="bg-red-500/10 px-3 py-2 border-b border-border">
+                                      <span className="text-xs font-semibold text-red-400">OLD ENTRIES (Before Remeasurement)</span>
+                                    </div>
+                                    <div className="p-3 space-y-2 text-xs">
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <div><span className="text-muted-foreground block">Lease Liability</span><span className="font-mono font-semibold">{fmt(e.old_liability)}</span></div>
+                                        <div><span className="text-muted-foreground block">ROU Asset</span><span className="font-mono font-semibold">{fmt(e.old_rou_asset)}</span></div>
+                                        <div><span className="text-muted-foreground block">IBR</span><span className="font-mono font-semibold">{e.old_ibr != null ? fmtPct(e.old_ibr) : '—'}</span></div>
+                                        <div><span className="text-muted-foreground block">Monthly Payment</span><span className="font-mono">{fmt(e.old_monthly_payment)}</span></div>
+                                        <div><span className="text-muted-foreground block">Remaining Term</span><span className="font-mono">{e.old_remaining_term ?? '—'} months</span></div>
+                                        <div><span className="text-muted-foreground block">Months Posted</span><span className="font-mono">{e.months_already_posted ?? '—'}</span></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {/* New Entries (After) */}
+                                  <div className="rounded-lg border border-border overflow-hidden">
+                                    <div className="bg-green-500/10 px-3 py-2 border-b border-border">
+                                      <span className="text-xs font-semibold text-green-400">NEW ADJUSTED ENTRIES (After Remeasurement)</span>
+                                    </div>
+                                    <div className="p-3 space-y-2 text-xs">
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <div><span className="text-muted-foreground block">Lease Liability</span><span className="font-mono font-semibold">{fmt(e.new_liability)}</span></div>
+                                        <div><span className="text-muted-foreground block">ROU Asset</span><span className="font-mono font-semibold">{fmt(e.new_rou_asset)}</span></div>
+                                        <div><span className="text-muted-foreground block">IBR</span><span className="font-mono font-semibold">{e.new_ibr != null ? fmtPct(e.new_ibr) : '—'}</span></div>
+                                        <div><span className="text-muted-foreground block">Monthly Payment</span><span className="font-mono">{fmt(e.new_monthly_payment)}</span></div>
+                                        <div><span className="text-muted-foreground block">Remaining Term</span><span className="font-mono">{e.new_remaining_term ?? '—'} months</span></div>
+                                        <div><span className="text-muted-foreground block">Adjustment</span><span className="font-mono font-semibold text-amber-400">{fmt(e.liability_adjustment)}</span></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                {/* Adjustment JV */}
+                                <div className="rounded-lg border border-amber-500/30 overflow-hidden">
+                                  <div className="bg-amber-500/10 px-3 py-2 border-b border-amber-500/30">
+                                    <span className="text-xs font-semibold text-amber-400">ADJUSTMENT JOURNAL VOUCHER — {e.jv_number ?? 'Pending'}</span>
+                                  </div>
+                                  <div className="p-3">
+                                    <Table>
+                                      <TableHeader><TableRow>
+                                        <TableHead className="text-xs">Account</TableHead>
+                                        <TableHead className="text-xs">Description</TableHead>
+                                        <TableHead className="text-xs text-right">Debit</TableHead>
+                                        <TableHead className="text-xs text-right">Credit</TableHead>
+                                      </TableRow></TableHeader>
+                                      <TableBody>
+                                        {Number(e.liability_adjustment) < 0 ? (
+                                          <>
+                                            <TableRow>
+                                              <TableCell className="font-mono text-xs">21020</TableCell>
+                                              <TableCell className="text-xs">Lease Liability</TableCell>
+                                              <TableCell className="text-right font-mono text-xs text-red-400">{fmt(Math.abs(Number(e.liability_adjustment)))}</TableCell>
+                                              <TableCell className="text-right">—</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                              <TableCell className="font-mono text-xs">10100</TableCell>
+                                              <TableCell className="text-xs">Right-of-Use Asset</TableCell>
+                                              <TableCell className="text-right">—</TableCell>
+                                              <TableCell className="text-right font-mono text-xs text-green-400">{fmt(Math.abs(Number(e.liability_adjustment)))}</TableCell>
+                                            </TableRow>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <TableRow>
+                                              <TableCell className="font-mono text-xs">10100</TableCell>
+                                              <TableCell className="text-xs">Right-of-Use Asset</TableCell>
+                                              <TableCell className="text-right font-mono text-xs text-red-400">{fmt(Math.abs(Number(e.liability_adjustment)))}</TableCell>
+                                              <TableCell className="text-right">—</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                              <TableCell className="font-mono text-xs">21020</TableCell>
+                                              <TableCell className="text-xs">Lease Liability</TableCell>
+                                              <TableCell className="text-right">—</TableCell>
+                                              <TableCell className="text-right font-mono text-xs text-green-400">{fmt(Math.abs(Number(e.liability_adjustment)))}</TableCell>
+                                            </TableRow>
+                                          </>
+                                        )}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground italic">Old JVs remain untouched. This is a prospective adjustment per IFRS 16.45.</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))}
+                    {(events as any[]).filter(e => String(e.contract_id) === filterContractId).length === 0 && (
+                      <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No remeasurement events for this lease — click "New Remeasurement" to begin</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
 
-        {/* Register Table */}
-        <div className="rounded-xl border border-border overflow-hidden">
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>Contract</TableHead>
-              <TableHead>Trigger</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Old Liability</TableHead>
-              <TableHead className="text-right">New Liability</TableHead>
-              <TableHead className="text-right">Adjustment</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {(events as any[]).filter(e => !filterContractId || String(e.contract_id) === filterContractId).map((e: any) => (
-                <TableRow key={e.remeasurement_id}>
-                  <TableCell className="font-mono text-xs">{e.contract_ref || e.contract_id}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-xs">{e.event_type}</Badge></TableCell>
-                  <TableCell>{e.event_date ? new Date(e.event_date).toLocaleDateString() : "—"}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{fmt(e.old_liability)}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{fmt(e.new_liability)}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{fmt(e.liability_adjustment)}</TableCell>
-                  <TableCell>
-                    <Badge className={e.status === "POSTED" ? "bg-green-500/20 text-green-400" : e.status === "CALCULATED" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}>
-                      {e.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {e.status === "CALCULATED" && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => sendToJvMut.mutate({ remeasurement_id: e.remeasurement_id })}>
-                          <BookOpen className="w-3 h-3 mr-1" />Post
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs bg-[#ffd700] hover:bg-[#e6c200] text-black font-semibold gap-1"
-                        onClick={() => {
-                          const explanation = {
-                            summary: {
-                              contract_ref: e.contract_ref,
-                              event_type: e.event_type,
-                              event_date: e.event_date,
-                              currency: e.currency || "QAR",
-                              old_liability: e.old_liability,
-                              new_liability: e.new_liability,
-                              liability_adjustment: e.liability_adjustment,
-                              old_rou_asset: e.old_rou_asset,
-                              new_rou_asset: e.new_rou_asset,
-                              rou_adjustment: e.rou_adjustment,
-                              pnl_adjustment: e.pnl_adjustment || 0,
-                              old_ibr: e.old_ibr,
-                              new_ibr: e.new_ibr,
-                              old_monthly_payment: e.old_monthly_payment,
-                              new_monthly_payment: e.new_monthly_payment,
-                              old_remaining_term: e.old_remaining_term,
-                              new_remaining_term: e.new_remaining_term,
-                              months_already_posted: e.months_already_posted || 0,
-                              jv_description: e.jv_description || "",
-                            },
-                            schedule: [],
-                          };
-                          setPreview(explanation);
-                          setShowCalcExplanation(true);
-                        }}
-                      >
-                        <Calculator className="w-3 h-3" />Calc
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(events as any[]).filter(e => !filterContractId || String(e.contract_id) === filterContractId).length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No remeasurement events — click "New Remeasurement" to begin</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {/* When no lease selected: show all remeasurement events */}
+        {!filterContractId && (
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead className="w-10"></TableHead>
+                <TableHead>Contract</TableHead>
+                <TableHead>Trigger</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Old Liability</TableHead>
+                <TableHead className="text-right">New Liability</TableHead>
+                <TableHead className="text-right">Adjustment</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {(events as any[]).map((e: any) => (
+                  <React.Fragment key={e.remeasurement_id}>
+                    <TableRow className={expandedEventId === e.remeasurement_id ? 'bg-muted/30' : ''}>
+                      <TableCell>
+                        <input
+                          type="radio"
+                          name="remeasurement_select_all"
+                          checked={expandedEventId === e.remeasurement_id}
+                          onChange={() => setExpandedEventId(expandedEventId === e.remeasurement_id ? null : e.remeasurement_id)}
+                          className="w-4 h-4 accent-[#ffd700]"
+                        />
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{e.contract_ref || e.contract_id}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-xs">{e.event_type}</Badge></TableCell>
+                      <TableCell>{e.event_date ? new Date(e.event_date).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{fmt(e.old_liability)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{fmt(e.new_liability)}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{fmt(e.liability_adjustment)}</TableCell>
+                      <TableCell>
+                        <Badge className={e.status === "POSTED" ? "bg-green-500/20 text-green-400" : e.status === "CALCULATED" ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"}>
+                          {e.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {e.status === "CALCULATED" && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => sendToJvMut.mutate({ remeasurement_id: e.remeasurement_id })}>
+                              <BookOpen className="w-3 h-3 mr-1" />Post
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-[#ffd700] hover:bg-[#e6c200] text-black font-semibold gap-1"
+                            onClick={() => {
+                              const explanation = {
+                                summary: {
+                                  contract_ref: e.contract_ref,
+                                  event_type: e.event_type,
+                                  event_date: e.event_date,
+                                  currency: e.currency || "QAR",
+                                  old_liability: e.old_liability,
+                                  new_liability: e.new_liability,
+                                  liability_adjustment: e.liability_adjustment,
+                                  old_rou_asset: e.old_rou_asset,
+                                  new_rou_asset: e.new_rou_asset,
+                                  rou_adjustment: e.rou_adjustment,
+                                  pnl_adjustment: e.pnl_adjustment || 0,
+                                  old_ibr: e.old_ibr,
+                                  new_ibr: e.new_ibr,
+                                  old_monthly_payment: e.old_monthly_payment,
+                                  new_monthly_payment: e.new_monthly_payment,
+                                  old_remaining_term: e.old_remaining_term,
+                                  new_remaining_term: e.new_remaining_term,
+                                  months_already_posted: e.months_already_posted || 0,
+                                  jv_description: e.jv_description || "",
+                                },
+                                schedule: [],
+                              };
+                              setPreview(explanation);
+                              setShowCalcExplanation(true);
+                            }}
+                          >
+                            <Calculator className="w-3 h-3" />Calc
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {/* Expanded row: Show old JV vs new adjustment JV */}
+                    {expandedEventId === e.remeasurement_id && (
+                      <TableRow>
+                        <TableCell colSpan={9} className="p-0">
+                          <div className="bg-muted/20 p-4 border-t border-border space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Old Entries */}
+                              <div className="rounded-lg border border-border overflow-hidden">
+                                <div className="bg-red-500/10 px-3 py-2 border-b border-border">
+                                  <span className="text-xs font-semibold text-red-400">OLD ENTRIES (Before)</span>
+                                </div>
+                                <div className="p-3 text-xs">
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div><span className="text-muted-foreground block">Liability</span><span className="font-mono font-semibold">{fmt(e.old_liability)}</span></div>
+                                    <div><span className="text-muted-foreground block">ROU Asset</span><span className="font-mono font-semibold">{fmt(e.old_rou_asset)}</span></div>
+                                    <div><span className="text-muted-foreground block">IBR</span><span className="font-mono">{e.old_ibr != null ? fmtPct(e.old_ibr) : '—'}</span></div>
+                                    <div><span className="text-muted-foreground block">Payment</span><span className="font-mono">{fmt(e.old_monthly_payment)}</span></div>
+                                    <div><span className="text-muted-foreground block">Term</span><span className="font-mono">{e.old_remaining_term ?? '—'} mo</span></div>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* New Entries */}
+                              <div className="rounded-lg border border-border overflow-hidden">
+                                <div className="bg-green-500/10 px-3 py-2 border-b border-border">
+                                  <span className="text-xs font-semibold text-green-400">NEW ENTRIES (After)</span>
+                                </div>
+                                <div className="p-3 text-xs">
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div><span className="text-muted-foreground block">Liability</span><span className="font-mono font-semibold">{fmt(e.new_liability)}</span></div>
+                                    <div><span className="text-muted-foreground block">ROU Asset</span><span className="font-mono font-semibold">{fmt(e.new_rou_asset)}</span></div>
+                                    <div><span className="text-muted-foreground block">IBR</span><span className="font-mono">{e.new_ibr != null ? fmtPct(e.new_ibr) : '—'}</span></div>
+                                    <div><span className="text-muted-foreground block">Payment</span><span className="font-mono">{fmt(e.new_monthly_payment)}</span></div>
+                                    <div><span className="text-muted-foreground block">Term</span><span className="font-mono">{e.new_remaining_term ?? '—'} mo</span></div>
+                                    <div><span className="text-muted-foreground block">Adjustment</span><span className="font-mono font-semibold text-amber-400">{fmt(e.liability_adjustment)}</span></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground italic">Old JVs preserved. Prospective adjustment per IFRS 16.45.</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                ))}
+                {(events as any[]).length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No remeasurement events — click "New Remeasurement" to begin</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* IFRS 16 Reference */}
         <div className="rounded-xl border border-border/50 p-4 bg-muted/20">

@@ -1561,3 +1561,16 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Update SP sp_ExecuteRemeasurement to generate separate Dr/Cr explanations for future events
 - [x] Update existing 4 JV lines in database with corrected explanations
 - [ ] Ensure left and right cards show different, contextually appropriate text
+
+## Remeasurement Register - Show All Origination Details for Selected Lease (May 2026)
+- [ ] When lease is selected in dropdown, show ALL details from origination:
+- [ ] Section 1: Full Lease Details (all contract fields)
+- [ ] Section 2: Original JV Entries (Day-1 recognition: Dr ROU Asset / Cr Lease Liability, IDC, deposit)
+- [ ] Section 3: Original Amortisation Schedule (monthly breakdown: interest, principal, depreciation)
+- [ ] Section 4: Remeasurement Events table (any changes made after origination)
+- [ ] Add radio button on first column of remeasurement events to select/expand a row with old vs new JVs
+
+## Remeasurement Engine - Clean Starting Screen (May 2026)
+- [x] Revise New Remeasurement form: starting screen shows clean Step 1 with just lease dropdown and stepper breadcrumb
+- [x] Progressive reveal: details/steps only appear after lease is selected
+- [x] Match LeaseModificationWizard.tsx pattern: gated advancement, simple initial state
