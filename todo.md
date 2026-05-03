@@ -1533,3 +1533,11 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add lease dropdown filter at top of register list view
 - [x] When a lease is selected in dropdown, show full contract details panel above the table
 - [x] Show all key lease info: liability, ROU, IBR, term, dates, lessor, asset, classification
+
+## Remeasurement Engine Redesign - Full Form (May 2026)
+- [x] Lease dropdown at top, when selected show ALL lease details in editable table format
+- [x] Editable fields in the lease details table so user can review/modify before remeasurement
+- [x] Remeasurement option/trigger selection step (Modification, Renewal, Index/Rate, etc.)
+- [x] Revised parameters section with new IBR, term, payment
+- [x] Yellow Calc button that shows full calculation logic in blackboard style
+- [x] Full-screen layout, no modals (except calc explanation which covers whole screen)
