@@ -554,7 +554,7 @@ export const bulkImportRouter = router({
     const r = await pool.request().query(`
       SELECT bl.*, u.name AS initiated_by_name
       FROM lease.bulk_operation_log bl
-      LEFT JOIN [user] u ON u.id = bl.initiated_by
+      LEFT JOIN dbo.[user] u ON u.id = bl.initiated_by
       ORDER BY bl.started_at DESC
     `);
     return r.recordset;
