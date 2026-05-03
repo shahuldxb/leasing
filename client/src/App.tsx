@@ -161,6 +161,10 @@ import MaturityLadder            from "./pages/MaturityLadder";
 import MultiStandardComparison   from "./pages/MultiStandardComparison";
 import LeaseModificationWizard   from "./pages/LeaseModificationWizard";
 
+// Configuration Centre
+import ChartOfAccounts     from "./pages/ChartOfAccounts";
+import GLMappingRules      from "./pages/GLMappingRules";
+
 // Accounting Standards Paper
 
 function Router() {
@@ -335,6 +339,11 @@ function Router() {
       {/* Phase 8: Features 15, 17 */}
       <Route path="/accounting/multi-standard"    component={MultiStandardComparison} />
       <Route path="/admin/business-rules"         component={BusinessRulesManager} />
+
+      {/* Configuration Centre */}
+      <Route path="/config/coa"                    component={ChartOfAccounts} />
+      <Route path="/config/gl-mappings"             component={GLMappingRules} />
+      <Route path="/config/business-rules"          component={BusinessRulesManager} />
       <Route path="/leases/modification-wizard"   component={LeaseModificationWizard} />
       {/* Accounting Standards Reference Paper */}
       {/* 404 */}

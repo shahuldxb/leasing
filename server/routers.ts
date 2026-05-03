@@ -23,6 +23,7 @@ import { journalVoucherRouter } from "./routers/journalVoucher";
 import { esgRouter }            from "./routers/esg";
 import { transactionEngineRouter } from "./routers/transactionEngine";
 import { businessRulesRouter } from "./routers/businessRules";
+import { glConfigurationRouter } from "./routers/glConfiguration";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
 import { getPool }              from "./db-sqlserver";
@@ -119,6 +120,7 @@ export const appRouter = router({
   screenMeta:   screenMetaRouter,
   staff:        staffRouter,
   businessRules: businessRulesRouter,
+  glConfiguration: glConfigurationRouter,
 });
 
 export type AppRouter = typeof appRouter;

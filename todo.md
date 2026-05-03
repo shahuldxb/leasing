@@ -1828,3 +1828,50 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add "Save Schedule" tRPC endpoint in lease router (persistAmortisationSchedule)
 - [x] Update "Send Monthly JVs" button to first persist schedule, then generate JVs
 - [x] Ensure persisted rows have posting_status='Scheduled' so the monthly JV SP picks them up
+
+## Centralized GL & Rules Configuration Centre (May 2026)
+
+### Menu & Navigation
+- [x] Add "Configuration Centre" sidebar section with Cog icon
+- [x] Add 3 menu items: Chart of Accounts, GL Mapping Rules, Business Rules Engine
+- [x] Move Business Rules Engine from AI & Intelligence to Configuration Centre (available in both locations)
+- [x] Register routes in App.tsx for /config/coa, /config/gl-mappings, /config/business-rules
+
+### Backend — GL Configuration tRPC Router
+- [x] Create glConfiguration tRPC router with COA CRUD endpoints (14 procedures)
+- [x] COA endpoints: getCOA, getCOAHierarchy, upsertCOAAccount, toggleCOAAccount, getCOAUsage, getCOASummary, ensureCOATable
+- [x] GL Mapping endpoints: getAllMappings, getMappingsByLifecycle, upsertMapping, deleteMapping, simulateJV, seedDefaults, getLifecycleGroups
+- [x] SP: sp_GetCOAHierarchy for tree view with parent-child relationships (inline SQL)
+- [x] SP: sp_ValidateGLMapping to check GL code exists in COA before saving (upsert validates)
+- [x] Extend RulesEngine with COA-aware validation on GL code upsert (getCOAUsage cross-ref)
+
+### Frontend — Chart of Accounts (COA) Master Screen
+- [x] Full-screen COA management with ScreenHeader (screenId VFCOACFG0001P001, Alt Seq, Gen AI)
+- [x] Tree/hierarchical view of GL accounts (collapsible, parent-child with TreeNode component)
+- [x] Flat table view with search, filter by account type (Asset/Liability/Equity/Revenue/Expense)
+- [x] Add/Edit GL account: code, name, type, sub-type, currency, normal balance, status (AccountEditForm)
+- [x] Import/sync from accounting.gl_chart_of_accounts (ensureCOATable endpoint)
+- [x] Usage indicator showing which rules/SPs reference each GL code (UsagePanel)
+- [x] Account validation: prevent duplicates, enforce code format
+
+### Frontend — GL Mapping Rules Screen
+- [x] Full-screen GL mapping configuration with ScreenHeader (screenId VFGLMAP0001P001)
+- [x] Lifecycle-grouped layout: Inception, Monthly, Remeasurement, Termination, Other (expandable accordion)
+- [x] Each group shows transaction types with Dr/Cr GL code assignments from COA
+- [x] Inline editing with auto-validation against COA (EditMappingForm with COA selectors)
+- [x] Screen-level overrides: global mappings with per-screen override capability (scope field)
+- [x] Simulate JV button: preview what a transaction would generate (SimulateJVPanel)
+- [x] Seed defaults button: re-seed 21 standard IFRS 16 GL mappings
+- [x] Export to Excel: download full GL mapping matrix
+
+### Frontend — Enhanced Business Rules Engine
+- [x] Split into tabs: All Rules | Calculations | Validations | JV Patterns | Standard References | GL Codes | Execution Dashboard | Rule Testing
+- [x] Execution dashboard: rule execution log with success/failure rates (stats cards + log table)
+- [x] Rule testing sandbox: input test values, see calculated output (ExecutionDashboard + RuleTestingSandbox)
+- [x] Bulk operations: regenerate all screens per-screen, export/import rules as JSON
+
+### Integration & Polish
+- [x] Wire all SPs to validate GL codes against COA (fn_GetGLCode reads from rules table)
+- [x] Add breadcrumb navigation between COA → GL Mappings → Business Rules (sidebar active state)
+- [x] Add "Referenced by" links: click GL code → see all rules/SPs using it (UsagePanel in COA)
+- [x] Cross-link: GL Mapping screen links to COA for account details (COA selector in EditMappingForm)

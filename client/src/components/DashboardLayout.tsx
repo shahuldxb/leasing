@@ -25,7 +25,7 @@ import {
   AlertTriangle, LayoutDashboard, LogOut, PanelLeft, FileText,
   BarChart3, Settings, Bell,
   FileCheck, TrendingUp, ChevronDown, ChevronRight,
-  Sparkles, Calculator, Calendar
+  Sparkles, Calculator, Calendar, Cog
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -146,10 +146,17 @@ const menuItems: NavItem[] = [
     ],
   },
   {
+    icon: Cog, label: "Configuration Centre",
+    children: [
+      { label: "Chart of Accounts",     path: "/config/coa" },
+      { label: "GL Mapping Rules",       path: "/config/gl-mappings" },
+      { label: "Business Rules Engine",  path: "/config/business-rules" },
+    ],
+  },
+  {
     icon: Sparkles, label: "AI & Intelligence",
     children: [
       { label: "AI Lease Analytics",   path: "/ai-analytics" },
-      { label: "Business Rules Engine", path: "/admin/business-rules" },
     ],
   },
 
