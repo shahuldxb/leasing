@@ -528,6 +528,14 @@ export default function JournalVoucher() {
                                     <span className="text-[10px] text-gray-400">Posted: <span className="text-gray-200">{postingDateStr}</span></span>
                                     <span className="text-[10px] text-gray-500">|</span>
                                     <span className="text-[10px] text-gray-400">Created: <span className="text-gray-200">{createdDateStr}</span></span>
+                                    {r.lessor_name && (
+                                      <><span className="text-[10px] text-gray-500">|</span>
+                                      <span className="text-[10px] text-gray-400">Lessor: <span className="text-gray-200">{r.lessor_name}</span></span></>
+                                    )}
+                                    {r.staff_name && (
+                                      <><span className="text-[10px] text-gray-500">|</span>
+                                      <span className="text-[10px] text-gray-400">By: <span className="text-cyan-400">{r.staff_name}</span></span></>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <span className={`px-2 py-0.5 rounded text-[10px] border ${STATUS_COLORS[r.status] ?? 'bg-gray-700 text-gray-300'}`}>

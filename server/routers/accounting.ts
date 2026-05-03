@@ -736,10 +736,18 @@ const erpExportRouter = router({
       const result = await req.query(`
         SELECT jv.jv_id, jv.jv_number, jv.jv_type, jv.posting_date, jv.description AS jv_description,
                jv.period_year, jv.period_month, jv.currency, jv.status, jv.source_ref,
+               COALESCE(s.full_name, jv.created_by) AS staff_name, jv.posted_by,
+               c.contract_ref AS lease_reference, c.commencement_date AS lease_start,
+               c.expiry_date AS lease_end, c.asset_description,
+               ls.legal_name AS lessor_name,
+               CONCAT(jv.period_year, '-', RIGHT('0'+CAST(jv.period_month AS VARCHAR),2)) AS accounting_period,
                l.line_id, l.line_seq, l.account_code, l.account_name, l.dr_cr, l.amount,
                l.description AS line_description, l.cost_centre, l.contract_ref
         FROM accounting.journal_vouchers jv
         JOIN accounting.jv_lines l ON l.jv_id = jv.jv_id
+        LEFT JOIN lease.contracts c ON c.contract_id = jv.contract_id
+        LEFT JOIN lease.lessors ls ON ls.lessor_id = c.lessor_id
+        LEFT JOIN hr.staff s ON s.staff_id = jv.staff_id
         WHERE jv.posting_date BETWEEN @from AND @to AND jv.status = 'Posted'
         ORDER BY jv.posting_date, jv.jv_number, l.line_seq
       `);
@@ -760,22 +768,29 @@ const erpExportRouter = router({
       const result = await req.query(`
         SELECT jv.jv_number, jv.jv_type, jv.posting_date, jv.description AS jv_description,
                jv.period_year, jv.period_month, jv.currency, jv.source_ref,
+               COALESCE(s.full_name, jv.created_by) AS staff_name,
+               c.contract_ref AS lease_reference, ls.legal_name AS lessor_name,
                l.account_code, l.account_name, l.dr_cr, l.amount,
                l.description AS line_description, l.cost_centre, l.contract_ref
         FROM accounting.journal_vouchers jv
         JOIN accounting.jv_lines l ON l.jv_id = jv.jv_id
+        LEFT JOIN lease.contracts c ON c.contract_id = jv.contract_id
+        LEFT JOIN lease.lessors ls ON ls.lessor_id = c.lessor_id
+        LEFT JOIN hr.staff s ON s.staff_id = jv.staff_id
         WHERE jv.posting_date BETWEEN @from AND @to AND jv.status = 'Posted'
         ORDER BY jv.posting_date, jv.jv_number, l.line_seq
       `);
       const rows = result.recordset;
       const uniqueJVs = new Set(rows.map((r: any) => r.jv_number)).size;
-      const headers = ['JV Number','JV Type','Posting Date','Period','Account Code','Account Name','Dr/Cr','Amount','Currency','Cost Centre','Contract Ref','Description'];
+      const headers = ['JV Number','JV Type','Posting Date','Period','Lease Reference','Lessor','Staff Name','Account Code','Account Name','Dr/Cr','Amount','Currency','Cost Centre','Contract Ref','Description'];
       const csvLines = [headers.join(',')];
       for (const r of rows) {
         csvLines.push([
           r.jv_number, r.jv_type,
           new Date(r.posting_date).toISOString().split('T')[0],
           `${r.period_year}-${String(r.period_month).padStart(2,'0')}`,
+          r.lease_reference||'', `"${(r.lessor_name||'').replace(/"/g,'""')}"`,
+          `"${(r.staff_name||'').replace(/"/g,'""')}"`,
           r.account_code, `"${(r.account_name||'').replace(/"/g,'""')}"`,
           r.dr_cr, r.amount, r.currency||'QAR',
           r.cost_centre||'', r.contract_ref||'',

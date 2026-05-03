@@ -1702,26 +1702,57 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## ERP Export — Empty Results Bug
 - [x] Diagnose why ERP Export returns empty — was querying wrong tables (finance.gl_journals instead of accounting.journal_vouchers) data
-- [ ] Fix ERP Export to return posted JV data correctly
+- [x] Fix ERP Export to return posted JV data correctly
 
 ## Duplicate Control — JV Generation & Posting
-- [ ] Audit all JV generation SPs for duplicate prevention
-- [ ] Implement idempotency checks in sp_GenerateInceptionJV
-- [ ] Implement idempotency checks in sp_GenerateMonthlyJVs
-- [ ] Implement idempotency checks in sp_GenerateRemeasurementJV
-- [ ] Implement idempotency checks in sp_GeneratePeriodCloseJV
-- [ ] Add duplicate detection on JV posting (prevent double-post)
-- [ ] Record duplicate control design decision in DESIGN_DECISIONS.md
+- [x] Audit all JV generation SPs for duplicate prevention
+- [x] Implement idempotency checks in sp_GenerateInceptionJV
+- [x] Implement idempotency checks in sp_GenerateMonthlyJVs
+- [x] Implement idempotency checks in sp_GenerateRemeasurementJV
+- [x] Implement idempotency checks in sp_GeneratePeriodCloseJV
+- [x] Add duplicate detection on JV posting (prevent double-post)
+- [x] Record duplicate control design decision in DESIGN_DECISIONS.md
 
 ## JV Unique Serial Number & Duplicate Control
-- [ ] Audit current JV table schema (accounting.journal_vouchers, accounting.jv_lines)
-- [ ] Add/verify unique serial number column with auto-increment format (JV-YYYYMM-NNNNN)
-- [ ] Add/verify primary key constraint on jv_id
+- [x] Audit current JV table schema (accounting.journal_vouchers, accounting.jv_lines)
+- [x] Add/verify unique serial number column with auto-increment format (JV-YYYYMM-NNNNN)
+- [x] Add/verify primary key constraint on jv_id
 - [x] Add UQ_jv_contract_period_type composite unique constraint (contract_id + period_year + period_month + jv_type) to prevent duplicates
-- [ ] Add unique index on jv_number to prevent duplicate serial numbers
-- [ ] Update sp_GenerateInceptionJV with duplicate check (IF EXISTS → skip or return error)
-- [ ] Update sp_GenerateMonthlyJVs with duplicate check
-- [ ] Update sp_GenerateRemeasurementJV with duplicate check
-- [ ] Update sp_GeneratePeriodCloseJV with duplicate check
-- [ ] Add duplicate detection on JV posting (prevent double-post of same JV)
+- [x] Add unique index on jv_number to prevent duplicate serial numbers
+- [x] Update sp_GenerateInceptionJV with duplicate check (IF EXISTS → skip or return error)
+- [x] Update sp_GenerateMonthlyJVs with duplicate check
+- [x] Update sp_GenerateRemeasurementJV with duplicate check
+- [x] Update sp_GeneratePeriodCloseJV with duplicate check
+- [x] Add duplicate detection on JV posting (prevent double-post of same JV)
 - [x] Record design decision in DESIGN_DECISIONS.md
+
+## JV Lines — Add Lease Reference, Dates, and Accounting Period for Intelligent Reporting
+- [x] Update ERP Export backend query to JOIN lease data (contract_id, lease_start, lease_end, lessor_name, property)
+- [x] Update ERP Export frontend to display lease reference, dates, lessor, accounting period per line
+- [x] Update Journal Voucher detail view with same additional fields
+- [x] Ensure all future JV displays include lease reference and accounting period
+
+## JV Lines — Add Lease Reference, Dates, Accounting Period, and Staff Name for Intelligent Reporting
+- [x] Update ERP Export backend query to JOIN lease data (contract_id, lease_start, lease_end, lessor_name, property, staff/created_by)
+- [x] Update ERP Export frontend to display lease reference, dates, lessor, accounting period, staff name per JV
+- [x] Update Journal Voucher detail view with same additional fields (lease ref, dates, period, staff)
+- [x] Ensure all future JV displays include lease reference, accounting period, and staff name
+
+## Staff/Employee Name in JV — Full Resolution via hr.staff
+- [x] Add staff_id column to accounting.journal_vouchers
+- [x] Create security.user_staff_mapping table (links OAuth username → hr.staff)
+- [x] Create security.fn_ResolveStaffId(@oauth_username) function
+- [x] Seed mapping: saleellzy → staff_id 3 (Ahmed Al-Subaie, Finance Director)
+- [x] Backfill existing JVs with staff_id
+- [x] Update sp_GenerateInceptionJV to call fn_ResolveStaffId after INSERT
+- [x] Update sp_GenerateMonthlyJVs to call fn_ResolveStaffId after INSERT
+- [x] Update sp_GenerateRemeasurementJV to call fn_ResolveStaffId after INSERT
+- [x] Update sp_GeneratePeriodCloseJV to call fn_ResolveStaffId after INSERT
+- [x] Update sp_ListJournalVouchers to JOIN hr.staff for staff_name
+- [x] Update sp_GetJournalVoucher to JOIN hr.staff for staff_name, lessor_name, lease dates
+- [x] Update JournalVoucher.tsx to display staff_name and lessor_name in JV header row
+- [x] Update ERP Export backend preview query to resolve staff_name from hr.staff
+- [x] Update ERP Export CSV to include Lease Reference, Lessor, Staff Name columns
+- [x] Update ERPExport.tsx to display enriched JV header (lease ref, lessor, asset, staff, currency)
+- [x] Fix LeaseTransactionCentre.tsx TS error (inline type import syntax)
+- [x] Clean up temporary update_jv_sps.cjs script

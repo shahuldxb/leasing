@@ -53,7 +53,7 @@ export default function ERPExport() {
       const key = row.jv_number;
       if (!map.has(key)) {
         map.set(key, {
-          jv: { jv_number: row.jv_number, jv_type: row.jv_type, posting_date: row.posting_date, jv_description: row.jv_description, period_year: row.period_year, period_month: row.period_month, currency: row.currency },
+          jv: { jv_number: row.jv_number, jv_type: row.jv_type, posting_date: row.posting_date, jv_description: row.jv_description, period_year: row.period_year, period_month: row.period_month, currency: row.currency, staff_name: row.staff_name, lease_reference: row.lease_reference, lessor_name: row.lessor_name, lease_start: row.lease_start, lease_end: row.lease_end, asset_description: row.asset_description, accounting_period: row.accounting_period },
           lines: [],
         });
       }
@@ -245,13 +245,31 @@ export default function ERPExport() {
 
                     return (
                       <div key={jv.jv_number} className="border border-slate-700 rounded-lg overflow-hidden">
-                        {/* JV Header */}
-                        <div className="bg-slate-900/80 px-4 py-2 flex items-center gap-4 text-sm">
+                        {/* JV Header — Row 1: Core identifiers */}
+                        <div className="bg-slate-900/80 px-4 py-2 flex items-center gap-4 text-sm border-b border-slate-700/50">
                           <Badge variant="outline" className="text-blue-400 border-blue-500/40 font-mono">{jv.jv_number}</Badge>
                           <Badge className="bg-violet-500/20 text-violet-300 text-xs">{jv.jv_type}</Badge>
-                          <span className="text-slate-400">Period: {jv.period_year}-{String(jv.period_month).padStart(2, '0')}</span>
+                          <span className="text-slate-400">Period: {jv.accounting_period || `${jv.period_year}-${String(jv.period_month).padStart(2, '0')}`}</span>
                           <span className="text-slate-400">Posted: {new Date(jv.posting_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                           <span className="text-slate-300 flex-1 truncate">{jv.jv_description}</span>
+                        </div>
+                        {/* JV Header — Row 2: Lease & Staff details */}
+                        <div className="bg-slate-900/60 px-4 py-1.5 flex items-center gap-6 text-xs flex-wrap">
+                          {jv.lease_reference && (
+                            <span className="text-slate-400">Lease: <span className="text-amber-400 font-mono">{jv.lease_reference}</span></span>
+                          )}
+                          {jv.lessor_name && (
+                            <span className="text-slate-400">Lessor: <span className="text-slate-300">{jv.lessor_name}</span></span>
+                          )}
+                          {jv.asset_description && (
+                            <span className="text-slate-400">Asset: <span className="text-slate-300">{jv.asset_description}</span></span>
+                          )}
+                          {jv.staff_name && (
+                            <span className="text-slate-400">Prepared by: <span className="text-cyan-400">{jv.staff_name}</span></span>
+                          )}
+                          {jv.currency && (
+                            <span className="text-slate-400">Currency: <span className="text-slate-300">{jv.currency}</span></span>
+                          )}
                         </div>
                         {/* Grouped Dr/Cr Lines */}
                         <Table>
