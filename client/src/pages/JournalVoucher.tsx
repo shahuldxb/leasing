@@ -65,26 +65,34 @@ function CalcExplanationModal({ jvNumber, lines, open, onClose }: { jvNumber: st
   }));
   if (allLines.length === 0) return null;
 
-  // Group into Dr/Cr pairs — generic approach that works for all JV types
-  const drLines = allLines.filter((l: any) => l.drCr === 'Dr');
-  const crLines = allLines.filter((l: any) => l.drCr === 'Cr');
-  const pairs: { dr: any; cr: any; label: string }[] = [];
+  // Use groupDrCrByAmount for proper amount-based matching
+  const jvLinesForGrouping: JVLine[] = allLines.map((l: any) => ({
+    dr_cr: l.drCr as 'Dr' | 'Cr',
+    account_code: l.code,
+    account_name: l.name,
+    amount: Math.abs(Number(l.amount ?? 0)),
+    calc_explanation: l.explanation,
+  }));
+  const groups = groupDrCrByAmount(jvLinesForGrouping);
 
-  // Build pairs: match Dr and Cr lines sequentially
-  const maxLen = Math.max(drLines.length, crLines.length);
-  for (let i = 0; i < maxLen; i++) {
-    const dr = drLines[i] ?? null;
-    const cr = crLines[i] ?? null;
-    // Generate a meaningful label from the line names
-    const label = dr && cr
-      ? `${dr.name} / ${cr.name}`
-      : dr ? dr.name : cr ? cr.name : `Entry ${i + 1}`;
-    pairs.push({ dr, cr, label });
+  // Build pairs from groups for display (each group becomes a pair card)
+  const pairs: { dr: any; cr: any; label: string }[] = [];
+  for (const group of groups) {
+    // For each group, pair Dr and Cr lines side by side
+    const maxLen = Math.max(group.drLines.length, group.crLines.length);
+    for (let i = 0; i < maxLen; i++) {
+      const drLine = group.drLines[i] ?? null;
+      const crLine = group.crLines[i] ?? null;
+      const dr = drLine ? { drCr: 'Dr', code: drLine.account_code, name: drLine.account_name, amount: drLine.amount, explanation: drLine.calc_explanation } : null;
+      const cr = crLine ? { drCr: 'Cr', code: crLine.account_code, name: crLine.account_name, amount: crLine.amount, explanation: crLine.calc_explanation } : null;
+      const label = dr && cr ? `${dr.name} / ${cr.name}` : dr ? dr.name : cr ? cr.name : `Entry`;
+      pairs.push({ dr, cr, label });
+    }
   }
 
   // Totals
-  const totalDr = allLines.filter((l: any) => l.drCr === 'Dr').reduce((s: number, l: any) => s + (l.amount || 0), 0);
-  const totalCr = allLines.filter((l: any) => l.drCr === 'Cr').reduce((s: number, l: any) => s + (l.amount || 0), 0);
+  const totalDr = allLines.filter((l: any) => l.drCr === 'Dr').reduce((s: number, l: any) => s + (Math.abs(l.amount) || 0), 0);
+  const totalCr = allLines.filter((l: any) => l.drCr === 'Cr').reduce((s: number, l: any) => s + (Math.abs(l.amount) || 0), 0);
 
   return (
     <div className="fixed inset-0 z-[9999]" onClick={onClose}>

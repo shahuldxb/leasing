@@ -12,7 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Lock, Unlock, CheckCircle, AlertTriangle, Calendar, BookOpen, X } from "lucide-react";
+import { Lock, Unlock, CheckCircle, AlertTriangle, Calendar, BookOpen, X, ChevronDown, ChevronRight } from "lucide-react";
+import { groupDrCrByAmount, type JVLine, type JVGroup } from "@/lib/jvGrouping";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from 'sonner';
 
 type PeriodRow = {
@@ -56,10 +58,36 @@ export default function PeriodClose() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [previewMonth, setPreviewMonth] = useState<number | null>(null);
   const sendToJvMut = trpc.journalVoucher.generatePeriodClose.useMutation({
-    onSuccess: (r: any) => toast.success(`JV ${r?.jv_number} created — open Journal Voucher Register to review and post`),
+    onSuccess: (r: any) => {
+      toast.success(`JV ${r?.jv_number ?? ''} created — open Journal Voucher Register to review and post`);
+      // Show preview for the month that was just generated
+      utils.journalVoucher.list.invalidate();
+    },
     onError: (e: any) => toast.error(`JV generation failed: ${e.message}`),
   });
+
+  // Fetch JV lines for the preview month to show Dr/Cr grouping
+  const { data: periodJvData } = trpc.journalVoucher.list.useQuery(
+    { period_year: year, period_month: previewMonth ?? 1, page: 1, page_size: 50 },
+    { enabled: previewMonth != null }
+  );
+  const periodJvLines = (periodJvData as any)?.allLines ?? [];
+  const periodJvRows = (periodJvData as any)?.rows ?? [];
+
+  // Group lines for preview
+  const previewGroups: JVGroup[] = (() => {
+    if (!previewMonth || periodJvLines.length === 0) return [];
+    const mapped: JVLine[] = periodJvLines.map((l: any) => ({
+      dr_cr: l.dr_cr?.toUpperCase() === 'DR' ? 'Dr' as const : 'Cr' as const,
+      account_code: l.account_code ?? '',
+      account_name: l.account_name ?? l.description ?? '',
+      amount: Math.abs(Number(l.amount ?? 0)),
+      description: l.line_description ?? l.description ?? '',
+    }));
+    return groupDrCrByAmount(mapped);
+  })();
   const reopenMut = trpc.lease.reopenPeriod.useMutation({
     onSuccess: () => {
       toast.success(`Period reopened — Locked rows restored to Posted`);
@@ -84,6 +112,7 @@ export default function PeriodClose() {
       <div className="p-6 space-y-6">
         <ScreenHeader
           screenId="VFACC-PERDCLOSE-001" screenType="period_close"
+          onAIData={(rows) => { /* Period close AI data handler */ }}
           title="Period-End Close Lock"
           subtitle="Lock Posted periods to prevent re-posting — essential for audit integrity"
           icon={<Lock className="h-6 w-6 text-violet-400" />}
@@ -183,10 +212,19 @@ export default function PeriodClose() {
                           size="sm"
                           variant="outline"
                           className="flex-1 h-7 text-xs border-purple-700 text-purple-400 hover:bg-purple-900/30"
-                          onClick={() => sendToJvMut.mutate({ period_year: row.period_year, period_month: row.period_month })}
+                          onClick={() => { sendToJvMut.mutate({ period_year: row.period_year, period_month: row.period_month }); setPreviewMonth(row.period_month); }}
                           disabled={sendToJvMut.isPending}
                         >
                           <BookOpen className="h-3 w-3 mr-1" /> Send to JV
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => setPreviewMonth(previewMonth === row.period_month ? null : row.period_month)}
+                          title="View JV lines"
+                        >
+                          {previewMonth === row.period_month ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                         </Button>
                       </div>
                       <div className="flex gap-2">
@@ -221,6 +259,54 @@ export default function PeriodClose() {
           </CardContent>
         </Card>
       </div>
+
+      {/* JV Lines Preview with Dr/Cr Grouping */}
+      {previewMonth != null && previewGroups.length > 0 && (
+        <div className="mx-6 mb-4 rounded-xl border border-purple-500/40 bg-purple-500/5 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-purple-400" />
+              JV Lines — {MONTH_NAMES[previewMonth]} {year} ({periodJvRows.length} JVs, {periodJvLines.length} lines)
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setPreviewMonth(null)}><X className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="space-y-3">
+            {previewGroups.map((group, gIdx) => (
+              <div key={group.id} className={gIdx > 0 ? 'border-t border-purple-500/20 pt-3' : ''}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs font-mono">Group {gIdx + 1}</Badge>
+                  <span className="text-xs text-muted-foreground">{group.label}</span>
+                  {group.balanced && <Badge className="text-xs bg-emerald-500/20 text-emerald-400">Balanced</Badge>}
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs w-12">Dr/Cr</TableHead>
+                      <TableHead className="text-xs w-20">Account</TableHead>
+                      <TableHead className="text-xs">Account Name</TableHead>
+                      <TableHead className="text-xs text-right w-28">Debit</TableHead>
+                      <TableHead className="text-xs text-right w-28">Credit</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...group.drLines, ...group.crLines].map((line, lIdx) => (
+                      <TableRow key={lIdx} className={line.dr_cr === 'Dr' ? 'bg-emerald-500/5' : 'bg-rose-500/5'}>
+                        <TableCell>
+                          <Badge className={line.dr_cr === 'Dr' ? 'bg-emerald-500/20 text-emerald-400 text-xs' : 'bg-rose-500/20 text-rose-400 text-xs'}>{line.dr_cr}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-semibold">{line.account_code}</TableCell>
+                        <TableCell className="text-xs">{line.account_name}</TableCell>
+                        <TableCell className="text-right font-mono text-xs text-emerald-500">{line.dr_cr === 'Dr' ? Number(line.amount).toLocaleString('en-QA', { minimumFractionDigits: 2 }) : '—'}</TableCell>
+                        <TableCell className="text-right font-mono text-xs text-rose-500">{line.dr_cr === 'Cr' ? Number(line.amount).toLocaleString('en-QA', { minimumFractionDigits: 2 }) : '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Confirm Close — inline panel */}
       {confirmClose && (

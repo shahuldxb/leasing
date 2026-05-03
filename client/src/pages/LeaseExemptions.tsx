@@ -44,6 +44,7 @@ const EXEMPTION_LABELS: Record<string, string> = {
 export default function LeaseExemptions() {
   const [filterType, setFilterType] = useState<string>('all');
   const [editRow, setEditRow] = useState<ExRow | null>(null);
+  const [aiRows, setAiRows] = useState<Record<string, unknown>[]>([]);
   const [editType, setEditType] = useState<'None' | 'ShortTerm' | 'LowValue'>('None');
   const [editReason, setEditReason] = useState('');
   const utils = trpc.useUtils();
@@ -69,6 +70,7 @@ export default function LeaseExemptions() {
         <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-6">
           <ScreenHeader
             screenId="VFLSE-EXEMPT-001" screenType="lease_exemptions"
+            onAIData={(rows) => setAiRows(rows)}
             title="Exemption Register"
             subtitle="Short-term and low-value lease exemptions — straight-line expense recognition"
             icon={<Clock className="h-6 w-6 text-blue-400" />}

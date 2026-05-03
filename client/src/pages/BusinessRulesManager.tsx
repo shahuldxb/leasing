@@ -59,6 +59,11 @@ export default function BusinessRulesManager() {
     onError: (e) => toast.error(e.message),
   });
 
+  const regenerateMutation = trpc.genai.generateBusinessRules.useMutation({
+    onSuccess: () => { refetch(); toast.success("Business rules regenerated from AI"); },
+    onError: (e) => toast.error(`Regeneration failed: ${e.message}`),
+  });
+
   // Group rules by screen_id
   const groupedRules = useMemo(() => {
     if (!allRules) return {};
@@ -247,6 +252,21 @@ export default function BusinessRulesManager() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-6 px-2 text-xs text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Regenerate all rules for ${sid} from AI? This will replace existing rules.`)) {
+                          regenerateMutation.mutate({ screenId: sid });
+                        }
+                      }}
+                      disabled={regenerateMutation.isPending}
+                      title="Regenerate rules from AI"
+                    >
+                      {regenerateMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-6 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -272,6 +292,7 @@ export default function BusinessRulesManager() {
                           <th className="text-left px-4 py-2 font-medium">IFRS Ref</th>
                           <th className="text-left px-4 py-2 font-medium">Formula</th>
                           <th className="text-center px-4 py-2 font-medium w-16">Active</th>
+                          <th className="text-left px-4 py-2 font-medium w-20">Version</th>
                           <th className="text-center px-4 py-2 font-medium w-20">Actions</th>
                         </tr>
                       </thead>
@@ -309,6 +330,9 @@ export default function BusinessRulesManager() {
                                     <ToggleLeft className="w-5 h-5 text-muted-foreground" />
                                   )}
                                 </button>
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground font-mono">
+                                v{rule.version ?? 1}
                               </td>
                               <td className="px-4 py-2 text-center">
                                 <Button

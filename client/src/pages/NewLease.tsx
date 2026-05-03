@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft, CheckCircle2, Building2, FileText, DollarSign, Upload, Eye, Package, X, ChevronDown, User, Briefcase, Phone, Mail, IdCard, MapPin, CreditCard, Plus, Trash2, Calculator } from "lucide-react";
+import { groupDrCrByAmount, type JVLine } from "@/lib/jvGrouping";
 
 // Right-side slide-in full-height calculation explanation panel for JV lines
 function CalcExplanationInline({ explanation }: { explanation: string | null }) {
@@ -1321,18 +1322,7 @@ export default function NewLease() {
                   <span className="text-xs bg-[#e60000]/20 text-[#e60000] px-2 py-0.5 rounded-full">Initial Recognition</span>
                 </div>
                 <p className="text-xs text-muted-foreground">The following journal entry will be automatically created in the JV Register when this lease is submitted.</p>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-xs text-muted-foreground">
-                      <th className="text-left py-1.5 w-8"></th>
-                      <th className="text-left py-1.5 pr-4">Account Code</th>
-                      <th className="text-left py-1.5 pr-4">Account Name</th>
-                      <th className="text-right py-1.5 pr-4">Debit</th>
-                      <th className="text-right py-1.5">Credit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-xs">
-                    {(() => {
+                {(() => {
                       const assetType = asset.assetType;
                       const rouCode = VEHICLE_ASSET_TYPES.has(assetType) ? '10110' : assetType.includes('Tower') ? '10140' : assetType.includes('Equipment') ? '10120' : '10100';
                       const liabCode = VEHICLE_ASSET_TYPES.has(assetType) ? '21030' : assetType.includes('Tower') ? '21060' : assetType.includes('Equipment') ? '21040' : '21020';
@@ -1352,55 +1342,76 @@ export default function NewLease() {
                       const monthlyRateStr = monthlyRate.toFixed(6);
                       const n = termMonths;
 
-                      // Build blackboard-style calculation explanations
                       const pvFormula = `PV = Monthly Payment × [(1 − (1 + r)⁻ⁿ) / r]\nPV = ${fmtN(monthlyPayment)} × [(1 − (1 + ${monthlyRateStr})⁻${n}) / ${monthlyRateStr}]\nPV = ${fmtN(liability)}`;
-
                       const rouCalc = `ROU Asset = PV of Lease Payments + IDC − Lease Incentives\nROU Asset = ${fmtN(liability)} + ${fmtN(idc)} − ${fmtN(incentives)}\nROU Asset = ${fmtN(rouDebit)}\n\nWhere:\n  Monthly Payment = ${fmtN(monthlyPayment)} ${cur}\n  IBR (annual) = ${ibrAnnual}%\n  Monthly Rate (r) = ${ibrAnnual}% / 12 = ${monthlyRateStr}%\n  Lease Term (n) = ${n} months\n\n${pvFormula}`;
-
                       const liabCalc = `Lease Liability = PV of future lease payments discounted at IBR\n\n${pvFormula}\n\nWhere:\n  Monthly Payment = ${fmtN(monthlyPayment)} ${cur}\n  IBR (annual) = ${ibrAnnual}%\n  Monthly Rate (r) = ${monthlyRateStr}%\n  Lease Term (n) = ${n} months`;
-
                       const idcCalc = `Initial Direct Costs (IDC)\n= Legal fees + Broker commissions + Registration costs\n= ${fmtN(idc)} ${cur}\n\nThese costs are capitalised into the ROU Asset\nand accrued as a liability until paid.\n\nImpact on ROU: ROU = PV + IDC − Incentives\n             = ${fmtN(liability)} + ${fmtN(idc)} − ${fmtN(incentives)}\n             = ${fmtN(rouDebit)}`;
-
                       const incentiveCalc = `Lease Incentives Received\n= Cash or rent-free periods received from lessor\n= ${fmtN(incentives)} ${cur}\n\nIncentives reduce the ROU Asset carrying value.\n\nImpact on ROU: ROU = PV + IDC − Incentives\n             = ${fmtN(liability)} + ${fmtN(idc)} − ${fmtN(incentives)}\n             = ${fmtN(rouDebit)}`;
-
                       const depositDrCalc = `Security Deposit = Refundable deposit paid to lessor\nDeposit = ${fmtN(deposit)} ${cur}\n\nRecognised as a non-current asset (receivable).\nRefundable at lease end or early termination.\n\nDefault = 1 month rent = ${fmtN(monthlyPayment)} ${cur}`;
-
                       const depositCrCalc = `Bank Payment for Security Deposit\nAmount = ${fmtN(deposit)} ${cur}\n\nCash outflow from operating bank account\nto lessor for refundable security deposit.`;
 
-                      // Helper to render a JV line row with calc button
-                      const JVRow = ({ code, name, debit, credit, calc, bgClass }: { code: string; name: string; debit: number; credit: number; calc: string; bgClass?: string }) => (
-                        <>
-                          <tr className={`border-b border-border/50 ${bgClass || ''}`}>
-                            <td className="py-1.5 pl-1">
-                              <CalcExplanationInline explanation={calc} />
-                            </td>
-                            <td className="py-1.5 pr-4 font-mono text-[#e60000]">{code}</td>
-                            <td className="py-1.5 pr-4">{name}</td>
-                            <td className="py-1.5 pr-4 text-right font-medium">{debit > 0 ? fmt(debit) : '—'}</td>
-                            <td className="py-1.5 text-right font-medium">{credit > 0 ? fmt(credit) : '—'}</td>
-                          </tr>
-                        </>
-                      );
+                      // Build JV lines for grouping
+                      const jvLines: JVLine[] = [];
+                      jvLines.push({ dr_cr: 'Dr', account_code: rouCode, account_name: rouName, amount: rouDebit, calc_explanation: rouCalc });
+                      jvLines.push({ dr_cr: 'Cr', account_code: liabCode, account_name: liabName, amount: liability, calc_explanation: liabCalc });
+                      if (idc > 0) jvLines.push({ dr_cr: 'Cr', account_code: '20020', account_name: 'Accrued Initial Direct Costs', amount: idc, calc_explanation: idcCalc });
+                      if (incentives > 0) jvLines.push({ dr_cr: 'Dr', account_code: '11000', account_name: 'Bank Account — Incentive Received', amount: incentives, calc_explanation: incentiveCalc });
+                      if (deposit > 0) {
+                        jvLines.push({ dr_cr: 'Dr', account_code: '12020', account_name: 'Security Deposit — Lease', amount: deposit, calc_explanation: depositDrCalc });
+                        jvLines.push({ dr_cr: 'Cr', account_code: '11000', account_name: 'Bank Account — QAR Operating', amount: deposit, calc_explanation: depositCrCalc });
+                      }
 
-                      return (<>
-                        <JVRow code={rouCode} name={rouName} debit={rouDebit} credit={0} calc={rouCalc} />
-                        <JVRow code={liabCode} name={liabName} debit={0} credit={liability} calc={liabCalc} />
-                        {idc > 0 && <JVRow code="20020" name="Accrued Initial Direct Costs" debit={0} credit={idc} calc={idcCalc} />}
-                        {incentives > 0 && <JVRow code="11000" name="Bank Account — Incentive Received" debit={incentives} credit={0} calc={incentiveCalc} />}
-                        {deposit > 0 && (<>
-                          <JVRow code="12020" name="Security Deposit — Lease" debit={deposit} credit={0} calc={depositDrCalc} />
-                          <JVRow code="11000" name="Bank Account — QAR Operating" debit={0} credit={deposit} calc={depositCrCalc} />
-                        </>)}
-                        <tr className="bg-muted/30 font-semibold">
-                          <td className="py-1.5" />
-                          <td className="py-1.5 pr-4 text-xs text-muted-foreground" colSpan={2}>Total</td>
-                          <td className="py-1.5 pr-4 text-right">{fmt(rouDebit + (incentives > 0 ? incentives : 0) + deposit)}</td>
-                          <td className="py-1.5 text-right">{fmt(liability + idc + deposit)}</td>
-                        </tr>
-                      </>);
+                      const groups = groupDrCrByAmount(jvLines);
+                      const totalDr = jvLines.filter(l => l.dr_cr === 'Dr').reduce((s, l) => s + l.amount, 0);
+                      const totalCr = jvLines.filter(l => l.dr_cr === 'Cr').reduce((s, l) => s + l.amount, 0);
+
+                      return (
+                        <div className="space-y-3">
+                          {groups.map((group, gIdx) => (
+                            <div key={group.id} className={gIdx > 0 ? 'border-t border-amber-500/20 pt-3' : ''}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">Group {gIdx + 1}</span>
+                                <span className="text-[10px] text-muted-foreground">{group.label}</span>
+                                {group.balanced && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">Balanced</span>}
+                              </div>
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-border text-xs text-muted-foreground">
+                                    <th className="text-left py-1 w-8"></th>
+                                    <th className="text-left py-1 w-10">Dr/Cr</th>
+                                    <th className="text-left py-1 pr-4">Account Code</th>
+                                    <th className="text-left py-1 pr-4">Account Name</th>
+                                    <th className="text-right py-1 pr-4">Debit</th>
+                                    <th className="text-right py-1">Credit</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="text-xs">
+                                  {[...group.drLines, ...group.crLines].map((line, lIdx) => (
+                                    <tr key={lIdx} className={`border-b border-border/30 ${line.dr_cr === 'Dr' ? 'bg-emerald-500/5' : 'bg-rose-500/5'}`}>
+                                      <td className="py-1.5 pl-1">
+                                        <CalcExplanationInline explanation={line.calc_explanation ?? null} />
+                                      </td>
+                                      <td className="py-1.5">
+                                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${line.dr_cr === 'Dr' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{line.dr_cr}</span>
+                                      </td>
+                                      <td className="py-1.5 pr-4 font-mono text-[#e60000]">{line.account_code}</td>
+                                      <td className="py-1.5 pr-4">{line.account_name}</td>
+                                      <td className="py-1.5 pr-4 text-right font-medium font-mono text-emerald-500">{line.dr_cr === 'Dr' ? fmt(line.amount) : '—'}</td>
+                                      <td className="py-1.5 text-right font-medium font-mono text-rose-500">{line.dr_cr === 'Cr' ? fmt(line.amount) : '—'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ))}
+                          {/* Grand Total */}
+                          <div className="border-t-2 border-border pt-2 flex justify-end gap-8 text-xs font-semibold">
+                            <span>Total Debit: <span className="font-mono text-emerald-500">{fmt(totalDr)}</span></span>
+                            <span>Total Credit: <span className="font-mono text-rose-500">{fmt(totalCr)}</span></span>
+                          </div>
+                        </div>
+                      );
                     })()}
-                  </tbody>
-                </table>
                 {!ifrs16Result && (
                   <p className="text-xs text-amber-500">Note: IFRS 16 computation not yet run — go back to Step 4 and click Next to compute lease liability before reviewing.</p>
                 )}
