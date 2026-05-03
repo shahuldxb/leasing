@@ -1506,3 +1506,7 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## Sidebar Cleanup (May 2026)
 - [x] Remove Payables from sidebar menu
+
+## Lease Classification Bug Fix (May 2026)
+- [x] Fix Classify Lease button/form - no leases showing for classification (removed Active status filter, all leases now appear in dropdown)
+- [x] Verified full classification flow: select contract → check criteria → save → appears in register
