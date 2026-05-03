@@ -1818,3 +1818,13 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 
 ## Bug: Delete Lease does not delete related Journal Vouchers
 - [x] Update lease delete SP/logic to cascade-delete JV lines, JVs, and amortisation for the contract
+
+## Bug: Send Monthly JVs generates 0 JVs despite amortisation entries existing
+- [x] Investigate why sp_GenerateMonthlyJVs returns 0 when called from amortisation tab (schedule computed on-the-fly, not persisted to DB)
+- [x] Fix the SP or the frontend call to correctly generate JVs for the contract's scheduled entries
+
+## Fix: Persist amortisation schedule to DB so Send Monthly JVs works
+- [x] Create SP sp_PersistAmortisationSchedule that saves computed schedule rows to lease.amortisation_schedule
+- [x] Add "Save Schedule" tRPC endpoint in lease router (persistAmortisationSchedule)
+- [x] Update "Send Monthly JVs" button to first persist schedule, then generate JVs
+- [x] Ensure persisted rows have posting_status='Scheduled' so the monthly JV SP picks them up

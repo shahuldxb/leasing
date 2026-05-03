@@ -323,10 +323,12 @@ function AmortisationTab({ contractId }: { contractId: number }) {
     onSuccess: (r: any) => toast.success(`JV ${r?.jv_number ?? ''} created for this lease — check Journal Voucher Register`),
     onError: (e: any) => toast.error(`JV generation failed: ${e.message}`),
   });
+  const persistScheduleMut = trpc.lease.persistAmortisationSchedule.useMutation();
   const generateMonthlyMut = trpc.journalVoucher.generateMonthly.useMutation({
     onSuccess: (r: any) => toast.success(`${r?.generated_count ?? 0} monthly JV(s) generated — check Journal Voucher Register`),
     onError: (e: any) => toast.error(`Monthly JV generation failed: ${e.message}`),
   });
+  const [monthlyBusy, setMonthlyBusy] = useState(false);
 
   if (isLoading) return <p className="text-sm text-muted-foreground animate-pulse p-4">Loading schedule…</p>;
 
@@ -391,13 +393,23 @@ function AmortisationTab({ contractId }: { contractId: number }) {
             size="sm"
             variant="outline"
             className="h-7 text-xs border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
-            disabled={generateMonthlyMut.isPending}
-            onClick={() => {
-              const now = new Date();
-              generateMonthlyMut.mutate({ period_year: now.getFullYear(), period_month: now.getMonth() + 1 });
+            disabled={monthlyBusy}
+            onClick={async () => {
+              setMonthlyBusy(true);
+              try {
+                // Step 1: persist schedule to DB if not already there
+                await persistScheduleMut.mutateAsync({ contractId });
+                // Step 2: generate monthly JVs
+                const now = new Date();
+                generateMonthlyMut.mutate({ period_year: now.getFullYear(), period_month: now.getMonth() + 1 });
+              } catch (e: any) {
+                toast.error(`Failed to persist schedule: ${e.message}`);
+              } finally {
+                setMonthlyBusy(false);
+              }
             }}
           >
-            <Send className="w-3 h-3 mr-1" /> {generateMonthlyMut.isPending ? 'Generating…' : 'Send Monthly JVs'}
+            <Send className="w-3 h-3 mr-1" /> {monthlyBusy ? 'Generating…' : 'Send Monthly JVs'}
           </Button>
         </div>
       </div>
