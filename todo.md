@@ -1962,3 +1962,11 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 ## Bug Fix: Delete Lease & Lease Reference (May 2026)
 - [x] Fix: Delete lease not refreshing the screen — added server-side cache auto-invalidation (queryCache.onWriteProcedure) + explicit invalidation in hardDeleteLease mutation
 - [x] Fix: Lease reference is not correct in the history — added contract_ref via JOIN in getContractHistory query, updated ContractHistory.tsx to show contract_ref instead of contract_id
+
+## JV Send to ERP Enhancement (May 2026)
+- [x] When JV is sent, update status to 'ERP' (instead of current status)
+- [x] Prevent duplicate sends: if JV already has status 'ERP', block re-send with appropriate message
+- [x] Preview shows both Posted and ERP JVs with status badge
+- [x] KPI cards show breakdown: Ready to Export (Posted) vs Already Sent to ERP
+- [x] Frontend guard prevents export when all JVs already in ERP status
+- [x] 5 vitest tests passing (server/erp_export.test.ts)

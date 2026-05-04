@@ -32,7 +32,12 @@ export default function ERPExport() {
   const generate = trpc.accounting.erpExport.generateExport.useMutation({
     onSuccess: (data: any) => {
       refetchLog();
-      toast.success(`Export generated: ${data.journalCount} JVs, ${data.rowCount} lines`);
+      refetchPreview();
+      let msg = `Export generated: ${data.journalCount} JVs, ${data.rowCount} lines — status updated to ERP`;
+      if (data.alreadyExportedCount > 0) {
+        msg += `. Note: ${data.alreadyExportedCount} JV(s) were already in ERP status and were skipped.`;
+      }
+      toast.success(msg);
       // Trigger CSV download
       const blob = new Blob([data.csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -53,7 +58,7 @@ export default function ERPExport() {
       const key = row.jv_number;
       if (!map.has(key)) {
         map.set(key, {
-          jv: { jv_number: row.jv_number, jv_type: row.jv_type, posting_date: row.posting_date, jv_description: row.jv_description, period_year: row.period_year, period_month: row.period_month, currency: row.currency, staff_name: row.staff_name, lease_reference: row.lease_reference, lessor_name: row.lessor_name, lease_start: row.lease_start, lease_end: row.lease_end, asset_description: row.asset_description, accounting_period: row.accounting_period },
+          jv: { jv_number: row.jv_number, jv_type: row.jv_type, posting_date: row.posting_date, jv_description: row.jv_description, period_year: row.period_year, period_month: row.period_month, currency: row.currency, status: row.status, staff_name: row.staff_name, lease_reference: row.lease_reference, lessor_name: row.lessor_name, lease_start: row.lease_start, lease_end: row.lease_end, asset_description: row.asset_description, accounting_period: row.accounting_period },
           lines: [],
         });
       }
@@ -64,6 +69,8 @@ export default function ERPExport() {
 
   // Summary stats
   const totalJVs = groupedPreview.length;
+  const postedJVs = groupedPreview.filter(g => g.jv.status === 'Posted').length;
+  const erpJVs = groupedPreview.filter(g => g.jv.status === 'ERP').length;
   const totalLines = previewData?.length ?? 0;
   const totalDebit = previewData?.filter((r: any) => r.dr_cr === 'Dr').reduce((s: number, r: any) => s + Number(r.amount || 0), 0) ?? 0;
   const totalCredit = previewData?.filter((r: any) => r.dr_cr === 'Cr').reduce((s: number, r: any) => s + Number(r.amount || 0), 0) ?? 0;
@@ -84,6 +91,10 @@ export default function ERPExport() {
   const handleExport = () => {
     if (!selectedConfigId) {
       toast.error("Please select an ERP system first");
+      return;
+    }
+    if (showPreview && postedJVs === 0 && erpJVs > 0) {
+      toast.error(`All ${erpJVs} JV(s) in this period have already been sent to ERP. Nothing to export.`);
       return;
     }
     generate.mutate({
@@ -182,11 +193,23 @@ export default function ERPExport() {
 
         {/* Summary KPIs */}
         {showPreview && previewData && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Card className="border-slate-700 bg-slate-800/60">
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-blue-400">{totalJVs}</div>
-                <div className="text-xs text-slate-400">Journal Vouchers</div>
+                <div className="text-xs text-slate-400">Total JVs</div>
+              </CardContent>
+            </Card>
+            <Card className={`border-slate-700 ${postedJVs > 0 ? 'bg-emerald-900/30 border-emerald-700/50' : 'bg-slate-800/60'}`}>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-emerald-400">{postedJVs}</div>
+                <div className="text-xs text-slate-400">Ready to Export</div>
+              </CardContent>
+            </Card>
+            <Card className={`border-slate-700 ${erpJVs > 0 ? 'bg-amber-900/30 border-amber-700/50' : 'bg-slate-800/60'}`}>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-amber-400">{erpJVs}</div>
+                <div className="text-xs text-slate-400">Already Sent to ERP</div>
               </CardContent>
             </Card>
             <Card className="border-slate-700 bg-slate-800/60">
@@ -216,7 +239,7 @@ export default function ERPExport() {
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
                 <Database className="w-5 h-5 text-violet-400" />
-                Posted JV Lines — Preview ({fromDate} to {toDate})
+                JV Lines — Preview ({fromDate} to {toDate})
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={() => refetchPreview()}>
                 <RefreshCw className="w-4 h-4" />
@@ -246,9 +269,10 @@ export default function ERPExport() {
                     return (
                       <div key={jv.jv_number} className="border border-slate-700 rounded-lg overflow-hidden">
                         {/* JV Header — Row 1: Core identifiers */}
-                        <div className="bg-slate-900/80 px-4 py-2 flex items-center gap-4 text-sm border-b border-slate-700/50">
+                        <div className={`px-4 py-2 flex items-center gap-4 text-sm border-b border-slate-700/50 ${jv.status === 'ERP' ? 'bg-amber-900/20' : 'bg-slate-900/80'}`}>
                           <Badge variant="outline" className="text-blue-400 border-blue-500/40 font-mono">{jv.jv_number}</Badge>
                           <Badge className="bg-violet-500/20 text-violet-300 text-xs">{jv.jv_type}</Badge>
+                          {jv.status === 'ERP' && <Badge className="bg-amber-500/20 text-amber-300 text-xs border border-amber-500/40">Sent to ERP</Badge>}
                           <span className="text-slate-400">Period: {jv.accounting_period || `${jv.period_year}-${String(jv.period_month).padStart(2, '0')}`}</span>
                           <span className="text-slate-400">Posted: {new Date(jv.posting_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                           <span className="text-slate-300 flex-1 truncate">{jv.jv_description}</span>

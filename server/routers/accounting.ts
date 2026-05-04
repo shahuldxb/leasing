@@ -749,8 +749,8 @@ const erpExportRouter = router({
         LEFT JOIN lease.contracts c ON c.contract_id = jv.contract_id
         LEFT JOIN lease.lessors ls ON ls.lessor_id = c.lessor_id
         LEFT JOIN hr.staff s ON s.staff_id = jv.staff_id
-        WHERE jv.posting_date BETWEEN @from AND @to AND jv.status = 'Posted'
-        ORDER BY jv.posting_date, jv.jv_number, l.line_seq
+        WHERE jv.posting_date BETWEEN @from AND @to AND jv.status IN ('Posted', 'ERP')
+        ORDER BY jv.status, jv.posting_date, jv.jv_number, l.line_seq
       `);
       return result.recordset;
     }),
@@ -763,11 +763,24 @@ const erpExportRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const pool = await getPool();
+
+      // First check how many JVs are already in 'ERP' status for this date range
+      const checkReq = pool.request();
+      checkReq.input("from", input.period_from);
+      checkReq.input("to", input.period_to);
+      const alreadyExported = await checkReq.query(`
+        SELECT COUNT(DISTINCT jv_id) AS cnt
+        FROM accounting.journal_vouchers
+        WHERE posting_date BETWEEN @from AND @to AND status = 'ERP'
+      `);
+      const alreadyExportedCount: number = alreadyExported.recordset[0]?.cnt ?? 0;
+
+      // Fetch only 'Posted' JVs (not already sent to ERP)
       const req = pool.request();
       req.input("from", input.period_from);
       req.input("to", input.period_to);
       const result = await req.query(`
-        SELECT jv.jv_number, jv.jv_type, jv.posting_date, jv.description AS jv_description,
+        SELECT jv.jv_id, jv.jv_number, jv.jv_type, jv.posting_date, jv.description AS jv_description,
                jv.period_year, jv.period_month, jv.currency, jv.source_ref,
                COALESCE(s.full_name, jv.created_by) AS staff_name,
                c.contract_ref AS lease_reference, ls.legal_name AS lessor_name,
@@ -782,7 +795,25 @@ const erpExportRouter = router({
         ORDER BY jv.posting_date, jv.jv_number, l.line_seq
       `);
       const rows = result.recordset;
-      const uniqueJVs = new Set(rows.map((r: any) => r.jv_number)).size;
+
+      // If no Posted JVs found, return early with info about already-exported ones
+      if (rows.length === 0) {
+        if (alreadyExportedCount > 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `No new JVs to export. ${alreadyExportedCount} JV(s) in this period have already been sent to ERP.`,
+          });
+        }
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No Posted JVs found for the selected date range.',
+        });
+      }
+
+      // Collect unique JV IDs for status update
+      const uniqueJVIds = Array.from(new Set(rows.map((r: any) => r.jv_id as number)));
+      const uniqueJVs = uniqueJVIds.length;
+
       const headers = ['JV Number','JV Type','Posting Date','Period','Lease Reference','Lessor','Staff Name','Account Code','Account Name','Dr/Cr','Amount','Currency','Cost Centre','Contract Ref','Description'];
       const csvLines = [headers.join(',')];
       for (const r of rows) {
@@ -800,6 +831,23 @@ const erpExportRouter = router({
       }
       const csvContent = csvLines.join('\n');
       const filename = `VodaLease_${input.erp_type}_${input.period_from}_to_${input.period_to}.csv`;
+
+      // Update JV status to 'ERP' for all exported JVs (batch to avoid query size limits)
+      const batchSize = 500;
+      for (let i = 0; i < uniqueJVIds.length; i += batchSize) {
+        const batch = uniqueJVIds.slice(i, i + batchSize);
+        const updateReq = pool.request();
+        updateReq.input("exported_by_user", ctx.user.name ?? ctx.user.email);
+        const idList = batch.join(',');
+        await updateReq.query(`
+          UPDATE accounting.journal_vouchers
+          SET status = 'ERP',
+              notes = COALESCE(notes + '; ', '') + 'Sent to ERP on ' + CONVERT(VARCHAR, GETUTCDATE(), 120) + ' by ' + @exported_by_user
+          WHERE jv_id IN (${idList}) AND status = 'Posted'
+        `);
+      }
+
+      // Log the export
       const req2 = pool.request();
       req2.input("config_id", input.config_id);
       req2.input("period_from", input.period_from);
@@ -808,7 +856,8 @@ const erpExportRouter = router({
       req2.input("line_count", rows.length);
       req2.input("exported_by", ctx.user.id);
       await req2.query(`INSERT INTO finance.erp_export_log (config_id,period_from,period_to,journal_count,line_count,status,exported_by) VALUES (@config_id,@period_from,@period_to,@journal_count,@line_count,'COMPLETED',@exported_by)`);
-      return { success: true, rowCount: rows.length, journalCount: uniqueJVs, csvContent, filename, rows };
+
+      return { success: true, rowCount: rows.length, journalCount: uniqueJVs, csvContent, filename, rows, alreadyExportedCount };
     }),
 });
 
