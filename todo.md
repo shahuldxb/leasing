@@ -1970,3 +1970,16 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] KPI cards show breakdown: Ready to Export (Posted) vs Already Sent to ERP
 - [x] Frontend guard prevents export when all JVs already in ERP status
 - [x] 5 vitest tests passing (server/erp_export.test.ts)
+
+## Send Monthly JVs — Checkbox Selection & ERP Status (May 2026)
+- [x] Fix: Send Monthly JVs returns generated_count=0 because it uses current month instead of selected periods
+- [x] Add posting_status column to lease.amortisation_schedule (if not already present) to track ERP status per row
+- [x] Create/update SP: sp_GenerateMonthlyJVsForSelected — accepts specific schedule_ids, generates JVs, marks rows as 'ERP'
+- [x] Update SP: dbo.sp_GetAmortisationSchedule — returns 2 result sets with schedule_id & posting_status
+- [x] Add tRPC mutation: journalVoucher.generateMonthlySelected — accepts array of schedule_ids
+- [x] Frontend: Add checkbox column to amortisation schedule table (with Select All)
+- [x] Frontend: Disable checkbox for rows already in 'ERP' status (greyed out, opacity-60)
+- [x] Frontend: Show status badge (ERP/Posted/Pending) on each row
+- [x] Frontend: "Send Monthly JVs" button only active when rows are selected, shows count
+- [x] Frontend: After successful send, refresh data and show updated ERP status
+- [x] 5 vitest tests passing (server/monthly_selected.test.ts)

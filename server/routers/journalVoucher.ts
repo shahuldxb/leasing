@@ -82,6 +82,27 @@ export const journalVoucherRouter = router({
       }
     }),
 
+  // ── Generate Monthly JVs for Selected Schedule Rows ────────────────────────
+  generateMonthlySelected: protectedProcedure
+    .input(z.object({
+      schedule_ids: z.array(z.number().int()).min(1).max(100),
+      contract_id: z.number().int(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const pool = await getPool();
+      const req = pool.request();
+      req.input("schedule_ids_csv", input.schedule_ids.join(","));
+      req.input("contract_id", input.contract_id);
+      req.input("created_by", ctx.user.name ?? ctx.user.email);
+      try {
+        const result = await req.execute("accounting.sp_GenerateMonthlyJVsForSelected");
+        return (result.recordset as any[])?.[0] ?? { generated_count: 0, skipped_count: 0 };
+      } catch (e: any) {
+        const msg = e.precedingErrors?.[0]?.originalError?.info?.message || e.message || 'Unknown SP error';
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: msg });
+      }
+    }),
+
   // ── Generate Remeasurement JV ─────────────────────────────────────────────
   generateRemeasurement: protectedProcedure
     .input(z.object({ remeasurement_id: z.number().int() }))

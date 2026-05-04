@@ -318,6 +318,8 @@ function AmortisationTab({ contractId }: { contractId: number }) {
   const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
   const [blackboardRow, setBlackboardRow] = useState<Record<string, unknown> | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const utils = trpc.useUtils();
   const { data, isLoading } = trpc.lease.getAmortisationSchedule.useQuery({ contractId });
   const generateJvMut = trpc.journalVoucher.generateInception.useMutation({
     onSuccess: (r: any) => toast.success(`JV ${r?.jv_number ?? ''} created for this lease — check Journal Voucher Register`),
@@ -326,6 +328,17 @@ function AmortisationTab({ contractId }: { contractId: number }) {
   const persistScheduleMut = trpc.lease.persistAmortisationSchedule.useMutation();
   const generateMonthlyMut = trpc.journalVoucher.generateMonthly.useMutation({
     onSuccess: (r: any) => toast.success(`${r?.generated_count ?? 0} monthly JV(s) generated — check Journal Voucher Register`),
+    onError: (e: any) => toast.error(`Monthly JV generation failed: ${e.message}`),
+  });
+  const generateMonthlySelectedMut = trpc.journalVoucher.generateMonthlySelected.useMutation({
+    onSuccess: (r: any) => {
+      const gen = r?.generated_count ?? 0;
+      const skip = r?.skipped_count ?? 0;
+      if (gen > 0) toast.success(`${gen} monthly JV(s) generated & marked ERP.${skip > 0 ? ` ${skip} skipped (already ERP).` : ''}`);
+      else toast.info(`No new JVs generated. ${skip} row(s) were already in ERP status.`);
+      setSelectedIds(new Set());
+      utils.lease.getAmortisationSchedule.invalidate({ contractId });
+    },
     onError: (e: any) => toast.error(`Monthly JV generation failed: ${e.message}`),
   });
   const [monthlyBusy, setMonthlyBusy] = useState(false);
@@ -393,15 +406,19 @@ function AmortisationTab({ contractId }: { contractId: number }) {
             size="sm"
             variant="outline"
             className="h-7 text-xs border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
-            disabled={monthlyBusy}
+            disabled={monthlyBusy || (viewMode === 'monthly' && selectedIds.size === 0)}
             onClick={async () => {
+              if (viewMode === 'monthly' && selectedIds.size === 0) {
+                toast.error('Please select at least one period row to send.');
+                return;
+              }
               setMonthlyBusy(true);
               try {
                 // Step 1: persist schedule to DB if not already there
                 await persistScheduleMut.mutateAsync({ contractId });
-                // Step 2: generate monthly JVs
-                const now = new Date();
-                generateMonthlyMut.mutate({ period_year: now.getFullYear(), period_month: now.getMonth() + 1 });
+                // Step 2: generate monthly JVs for selected rows
+                const ids = Array.from(selectedIds);
+                generateMonthlySelectedMut.mutate({ schedule_ids: ids, contract_id: contractId });
               } catch (e: any) {
                 toast.error(`Failed to persist schedule: ${e.message}`);
               } finally {
@@ -409,7 +426,7 @@ function AmortisationTab({ contractId }: { contractId: number }) {
               }
             }}
           >
-            <Send className="w-3 h-3 mr-1" /> {monthlyBusy ? 'Generating…' : 'Send Monthly JVs'}
+            <Send className="w-3 h-3 mr-1" /> {monthlyBusy ? 'Generating…' : `Send Monthly JVs${viewMode === 'monthly' && selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`}
           </Button>
         </div>
       </div>
@@ -419,9 +436,29 @@ function AmortisationTab({ contractId }: { contractId: number }) {
         <table className="w-full text-xs">
           <thead className="bg-muted/50 sticky top-0">
             <tr>
+              {viewMode === 'monthly' && (
+                <th className="px-2 py-2.5 text-center w-8">
+                  <Checkbox
+                    checked={(() => {
+                      const selectable = allRows.filter(r => String(r.posting_status ?? '') !== 'ERP' && r.schedule_id);
+                      return selectable.length > 0 && selectable.every(r => selectedIds.has(Number(r.schedule_id)));
+                    })()}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        const newSet = new Set(selectedIds);
+                        allRows.forEach(r => { if (String(r.posting_status ?? '') !== 'ERP' && r.schedule_id) newSet.add(Number(r.schedule_id)); });
+                        setSelectedIds(newSet);
+                      } else {
+                        setSelectedIds(new Set());
+                      }
+                    }}
+                  />
+                </th>
+              )}
               <th className="px-2 py-2.5 text-left text-muted-foreground font-semibold w-8"></th>
               <th className="px-3 py-2.5 text-left text-muted-foreground font-semibold">{viewMode === 'monthly' ? 'Period' : 'Year'}</th>
               <th className="px-3 py-2.5 text-left text-muted-foreground font-semibold">Date</th>
+              {viewMode === 'monthly' && <th className="px-3 py-2.5 text-center text-muted-foreground font-semibold">Status</th>}
               <th className="px-3 py-2.5 text-right text-muted-foreground font-semibold">Opening Liability</th>
               <th className="px-3 py-2.5 text-right text-muted-foreground font-semibold">Interest</th>
               <th className="px-3 py-2.5 text-right text-muted-foreground font-semibold">Payment</th>
@@ -435,6 +472,10 @@ function AmortisationTab({ contractId }: { contractId: number }) {
             {schedule.map((r, i) => {
               const rowKey = Number(r.period_no ?? i);
               const isExpanded = expandedRows.has(rowKey);
+              const schedId = Number(r.schedule_id ?? 0);
+              const rowStatus = String(r.posting_status ?? '');
+              const isERP = rowStatus === 'ERP';
+              const isSelected = selectedIds.has(schedId);
               // GL entries for this row
               const glEntries = [
                 { ledger: '1600', account: 'Right-of-Use Asset', drCr: 'CR', amount: Number(r.depreciation ?? 0) },
@@ -444,7 +485,21 @@ function AmortisationTab({ contractId }: { contractId: number }) {
               ];
               return (
                 <Fragment key={`period-${rowKey}`}>
-                  <tr className="border-t border-border hover:bg-muted/20">
+                  <tr className={`border-t border-border hover:bg-muted/20 ${isERP ? 'opacity-60' : ''}`}>
+                    {viewMode === 'monthly' && (
+                      <td className="px-2 py-2 text-center">
+                        <Checkbox
+                          checked={isSelected}
+                          disabled={isERP}
+                          onCheckedChange={(checked) => {
+                            const newSet = new Set(selectedIds);
+                            if (checked) newSet.add(schedId);
+                            else newSet.delete(schedId);
+                            setSelectedIds(newSet);
+                          }}
+                        />
+                      </td>
+                    )}
                     <td className="px-2 py-2">
                       <Button
                         variant="ghost" size="icon"
@@ -457,6 +512,17 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                     </td>
                     <td className="px-3 py-2">{String(r.period_no ?? i + 1)}</td>
                     <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.period_date)}</td>
+                    {viewMode === 'monthly' && (
+                      <td className="px-3 py-2 text-center">
+                        {isERP ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">ERP</span>
+                        ) : rowStatus === 'Posted' ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Posted</span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground">Pending</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-3 py-2 text-right font-mono">{fmt(r.opening_liability)}</td>
                     <td className="px-3 py-2 text-right font-mono text-amber-400">{fmt(r.interest_expense)}</td>
                     <td className="px-3 py-2 text-right font-mono">{fmt(r.payment)}</td>
@@ -478,7 +544,7 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                   </tr>
                   {isExpanded && (
                     <tr key={`gl-${i}`} className="bg-muted/10 border-t border-dashed border-border/50">
-                      <td colSpan={10} className="px-6 py-3">
+                      <td colSpan={viewMode === 'monthly' ? 12 : 10} className="px-6 py-3">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 font-semibold">GL Accounting Entries — Period {String(r.period_no)}</p>
                         <div className="grid grid-cols-4 gap-2 text-xs">
                           {glEntries.map((e, ei) => (
