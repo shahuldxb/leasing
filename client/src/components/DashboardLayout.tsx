@@ -170,6 +170,7 @@ const menuItems: NavItem[] = [
       { label: "Audit Log",            path: "/compliance/audit" },
       { label: "Error Log",            path: "/compliance/errors" },
       { label: "Administration",       path: "/admin" },
+      { label: "DB Performance",       path: "/system/performance" },
     ],
   },
 ];

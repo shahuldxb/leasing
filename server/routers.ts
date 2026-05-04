@@ -24,6 +24,7 @@ import { esgRouter }            from "./routers/esg";
 import { transactionEngineRouter } from "./routers/transactionEngine";
 import { businessRulesRouter } from "./routers/businessRules";
 import { glConfigurationRouter } from "./routers/glConfiguration";
+import { performanceRouter } from "./routers/performance";
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
 import { getPool }              from "./db-sqlserver";
@@ -121,6 +122,7 @@ export const appRouter = router({
   staff:        staffRouter,
   businessRules: businessRulesRouter,
   glConfiguration: glConfigurationRouter,
+  performance: performanceRouter,
 });
 
 export type AppRouter = typeof appRouter;

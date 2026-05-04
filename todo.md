@@ -1918,3 +1918,12 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Added /api/* guard route to return JSON 404 instead of HTML for unmatched API routes
 - [x] Added retry logic in QueryClient for transient 'not valid JSON' errors
 - [x] Added HTML content-type detection in tRPC fetch to trigger retry instead of parse failure
+
+## Database Performance Optimization (May 2026)
+- [x] Create slow_queries persistent table via stored procedure (sp_LogSlowQuery, sp_GetSlowQueries, sp_GetSlowQueryStats, sp_ResolveSlowQuery, sp_PurgeOldSlowQueries, sp_GetIndexRecommendations)
+- [x] Implement optimized connection pool (max:30, min:5, idleTimeout:30s, acquireTimeout:15s, 2min keep-alive ping)
+- [x] Add query timing wrapper that logs queries exceeding 500ms to slow_queries table (batch flush, non-blocking)
+- [x] Add automatic index recommendation logic via SQL Server DMVs (sys.dm_db_missing_index_*)
+- [x] Add admin UI page /system/performance with 4 tabs (Slow Queries, By Procedure, Real-time Stats, Index Recommendations)
+- [x] In-memory query stats tracking (per-procedure call count, avg/max/min duration, slow count)
+- [x] Vitest tests for performance monitoring infrastructure (11 tests passing)

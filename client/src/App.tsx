@@ -164,6 +164,7 @@ import LeaseModificationWizard   from "./pages/LeaseModificationWizard";
 // Configuration Centre
 import ChartOfAccounts     from "./pages/ChartOfAccounts";
 import GLMappingRules      from "./pages/GLMappingRules";
+import PerformanceMonitor  from "./pages/PerformanceMonitor";
 
 // Accounting Standards Paper
 
@@ -344,6 +345,7 @@ function Router() {
       <Route path="/config/coa"                    component={ChartOfAccounts} />
       <Route path="/config/gl-mappings"             component={GLMappingRules} />
       <Route path="/config/business-rules"          component={BusinessRulesManager} />
+      <Route path="/system/performance"              component={PerformanceMonitor} />
       <Route path="/leases/modification-wizard"   component={LeaseModificationWizard} />
       {/* Accounting Standards Reference Paper */}
       {/* 404 */}
