@@ -1983,3 +1983,8 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Frontend: "Send Monthly JVs" button only active when rows are selected, shows count
 - [x] Frontend: After successful send, refresh data and show updated ERP status
 - [x] 5 vitest tests passing (server/monthly_selected.test.ts)
+
+## Remove Generate Monthly Button from JV Screen (May 2026)
+- [x] Remove "Generate Monthly" button from JournalVoucher.tsx toolbar
+- [x] Remove the associated dialog, state, and mutation
+- [x] Update empty state help text to reference Lease Register instead
