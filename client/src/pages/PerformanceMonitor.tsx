@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, Database, AlertTriangle, TrendingUp, RefreshCw, CheckCircle, Trash2 } from 'lucide-react';
+import { Activity, Database, AlertTriangle, TrendingUp, RefreshCw, CheckCircle, Trash2, Zap } from 'lucide-react';
+import { toast } from 'sonner';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 const SCREEN_ID = 'VFRSYSPERF001P001';
@@ -24,6 +25,15 @@ export default function PerformanceMonitor() {
   });
   const purgeMutation = trpc.performance.purgeOldRecords.useMutation({
     onSuccess: () => { slowQueries.refetch(); stats.refetch(); },
+  });
+  const applyIndexMutation = trpc.performance.applyIndex.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message || 'Index created successfully');
+      indexRecs.refetch();
+    },
+    onError: (err) => {
+      toast.error(`Failed to apply index: ${err.message}`);
+    },
   });
 
   const summary = stats.data?.summary;
@@ -281,6 +291,65 @@ export default function PerformanceMonitor() {
               )}
             </CardContent>
           </Card>
+
+          {/* Cache Stats Card */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-base">Server-Side Query Cache</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {realtimeStats.data?.cache ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-green-500">{realtimeStats.data.cache.hits}</div>
+                      <div className="text-xs text-muted-foreground">Cache Hits</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-amber-500">{realtimeStats.data.cache.misses}</div>
+                      <div className="text-xs text-muted-foreground">Cache Misses</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold">{realtimeStats.data.cache.hitRate}</div>
+                      <div className="text-xs text-muted-foreground">Hit Rate</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold">{realtimeStats.data.cache.size}</div>
+                      <div className="text-xs text-muted-foreground">Cached Entries</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-red-400">{realtimeStats.data.cache.evictions}</div>
+                      <div className="text-xs text-muted-foreground">Evictions</div>
+                    </div>
+                  </div>
+                  {realtimeStats.data.cache.entries?.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left">
+                            <th className="p-2">Cached Query</th>
+                            <th className="p-2">Hits</th>
+                            <th className="p-2">TTL Remaining</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {realtimeStats.data.cache.entries.map((entry: any, i: number) => (
+                            <tr key={i} className="border-b hover:bg-muted/50">
+                              <td className="p-2 font-mono text-xs">{entry.key}</td>
+                              <td className="p-2">{entry.hitCount}</td>
+                              <td className="p-2">{entry.ttlRemaining}s</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">Cache not initialized</div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Index Recommendations Tab */}
@@ -300,7 +369,23 @@ export default function PerformanceMonitor() {
                     <div key={i} className="border rounded-lg p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold">{rec.table_name}</span>
-                        <Badge variant="default">Impact: {Math.round(rec.avg_user_impact)}%</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="default">Impact: {Math.round(rec.avg_user_impact)}%</Badge>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-7 px-2 text-xs"
+                            disabled={applyIndexMutation.isPending}
+                            onClick={() => {
+                              if (rec.create_index_statement) {
+                                applyIndexMutation.mutate({ createStatement: rec.create_index_statement });
+                              }
+                            }}
+                          >
+                            <Zap className="h-3 w-3 mr-1" />
+                            {applyIndexMutation.isPending ? 'Applying...' : 'Run Index'}
+                          </Button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                         <div>Equality: {rec.equality_columns || 'None'}</div>

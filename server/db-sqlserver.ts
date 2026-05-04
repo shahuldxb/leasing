@@ -14,12 +14,15 @@
  *  - In-memory query stats for real-time monitoring
  */
 import sql from 'mssql';
+import { queryCache } from './query-cache';
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION — Optimized for high-throughput lease operations
 // ═══════════════════════════════════════════════════════════════
 
 const SLOW_QUERY_THRESHOLD_MS = 500;  // Log queries slower than this
+const CRITICAL_THRESHOLD_MS = 5000;   // Notify owner for queries slower than this
+const HOURLY_SLOW_THRESHOLD = 10;     // Notify if more than this many slow queries per hour
 
 const config: sql.config = {
   server: process.env.MSSQL_HOST || process.env.SQLSERVER_HOST || '',
@@ -66,10 +69,10 @@ const queryStats = new Map<string, QueryStat>();
 let totalQueriesExecuted = 0;
 let totalSlowQueries = 0;
 
-export function getQueryStats(): { stats: QueryStat[]; totalExecuted: number; totalSlow: number } {
+export function getQueryStats(): { stats: QueryStat[]; totalExecuted: number; totalSlow: number; cache: ReturnType<typeof queryCache.getStats> } {
   const stats = Array.from(queryStats.values())
     .sort((a, b) => b.avgDurationMs - a.avgDurationMs);
-  return { stats, totalExecuted: totalQueriesExecuted, totalSlow: totalSlowQueries };
+  return { stats, totalExecuted: totalQueriesExecuted, totalSlow: totalSlowQueries, cache: queryCache.getStats() };
 }
 
 export function getPoolStatus(): { connected: boolean; size: number; available: number; pending: number; borrowed: number } {
@@ -208,6 +211,52 @@ let _slowQueryLogQueue: Array<{
 }> = [];
 
 let _flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ═══════════════════════════════════════════════════════════════
+// CRITICAL SLOW QUERY NOTIFICATION SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+let _hourlySlowCount = 0;
+let _hourlyResetTimer: ReturnType<typeof setInterval> | null = null;
+let _lastCriticalNotificationAt = 0; // Prevent notification spam (5 min cooldown)
+const NOTIFICATION_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes between notifications
+
+// Reset hourly counter every hour
+if (!_hourlyResetTimer) {
+  _hourlyResetTimer = setInterval(() => {
+    if (_hourlySlowCount > 0) {
+      console.log(`[PerfMonitor] Hourly slow query count reset (was ${_hourlySlowCount})`);
+    }
+    _hourlySlowCount = 0;
+  }, 60 * 60 * 1000);
+}
+
+async function sendCriticalSlowQueryAlert(procedureName: string, durationMs: number, reason: 'critical_duration' | 'hourly_threshold') {
+  const now = Date.now();
+  if (now - _lastCriticalNotificationAt < NOTIFICATION_COOLDOWN_MS) {
+    console.warn(`[PerfMonitor] Skipping notification (cooldown active)`);
+    return;
+  }
+  _lastCriticalNotificationAt = now;
+
+  try {
+    // Dynamic import to avoid circular dependency
+    const { notifyOwner } = await import('./_core/notification');
+    const title = reason === 'critical_duration'
+      ? `⚠️ Critical Slow Query: ${procedureName} (${(durationMs / 1000).toFixed(1)}s)`
+      : `⚠️ High Slow Query Rate: ${_hourlySlowCount} slow queries this hour`;
+    const content = reason === 'critical_duration'
+      ? `The stored procedure \`${procedureName}\` took ${durationMs}ms to execute, exceeding the critical threshold of ${CRITICAL_THRESHOLD_MS}ms.\n\nThis may indicate missing indexes, table locks, or excessive data volume. Check the Performance Monitor at /system/performance for details and index recommendations.`
+      : `${_hourlySlowCount} queries exceeded the ${SLOW_QUERY_THRESHOLD_MS}ms threshold in the last hour. The most recent offender was \`${procedureName}\` at ${durationMs}ms.\n\nReview the Performance Monitor at /system/performance for the full list and apply recommended indexes.`;
+
+    const sent = await notifyOwner({ title, content });
+    if (sent) {
+      console.log(`[PerfMonitor] Owner notified: ${title}`);
+    }
+  } catch (e: any) {
+    console.warn(`[PerfMonitor] Failed to send notification: ${e.message}`);
+  }
+}
 
 function enqueueSlowQueryLog(entry: typeof _slowQueryLogQueue[0]) {
   _slowQueryLogQueue.push(entry);
@@ -352,6 +401,7 @@ async function execWithRetry<T>(
       // Log slow query to persistent table (non-blocking)
       if (isSlow) {
         console.warn(`[SlowQuery] ${procedureName} took ${durationMs}ms (threshold: ${SLOW_QUERY_THRESHOLD_MS}ms)`);
+        _hourlySlowCount++;
         enqueueSlowQueryLog({
           procedureName,
           paramsJson: serializeParams(params),
@@ -360,6 +410,15 @@ async function execWithRetry<T>(
           rowCount: Array.isArray(result) ? (result as any[]).length : null,
           errorMessage: null,
         });
+
+        // Critical alert: query exceeded 5000ms
+        if (durationMs > CRITICAL_THRESHOLD_MS) {
+          sendCriticalSlowQueryAlert(procedureName, durationMs, 'critical_duration');
+        }
+        // Hourly threshold alert
+        if (_hourlySlowCount === HOURLY_SLOW_THRESHOLD) {
+          sendCriticalSlowQueryAlert(procedureName, durationMs, 'hourly_threshold');
+        }
       }
 
       return { result, durationMs };
@@ -396,16 +455,32 @@ async function execWithRetry<T>(
 /**
  * Execute a stored procedure and return the first recordset.
  * This is the ONLY way to access the database in VodaLease Enterprise.
+ * Includes server-side caching for read-heavy queries.
  */
 export async function execSPP<T = Record<string, any>>(
   procedureName: string,
   params: SPPParam[] = []
 ): Promise<T[]> {
+  // Check cache first for cacheable procedures
+  const cacheStart = performance.now();
+  const cached = queryCache.get<T[]>(procedureName, params);
+  if (cached !== null) {
+    const cacheMs = Math.round(performance.now() - cacheStart);
+    if (cacheMs < 5) { // Only log periodically to avoid spam
+      // Cache hit — sub-millisecond response
+    }
+    return cached;
+  }
+
   const { result } = await execWithRetry(async (pool) => {
     const request = buildRequest(pool, params);
     const res = await request.execute(procedureName);
     return (res.recordset || []) as T[];
   }, procedureName, params);
+
+  // Store in cache
+  queryCache.set(procedureName, params, result);
+
   return result;
 }
 

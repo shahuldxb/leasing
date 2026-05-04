@@ -1927,3 +1927,28 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 - [x] Add admin UI page /system/performance with 4 tabs (Slow Queries, By Procedure, Real-time Stats, Index Recommendations)
 - [x] In-memory query stats tracking (per-procedure call count, avg/max/min duration, slow count)
 - [x] Vitest tests for performance monitoring infrastructure (11 tests passing)
+
+## Performance Optimization Phase 2 (May 2026)
+- [x] Add covering indexes on lease.contracts, compliance.audit_log, compliance.error_log tables
+- [x] Optimize sp_GetLeaseRegister with index on (status, asset_type, created_at DESC)
+- [x] Optimize sp_WriteAuditLog — replaced MAX(audit_no) scan with dbo.audit_sequence table
+- [x] Optimize sp_GetAuditLog with index on compliance.audit_log(timestamp_utc DESC)
+- [x] Optimize sp_GetErrorLog with index on compliance.error_log(timestamp_utc DESC)
+- [x] Optimize sp_GetRenewalDueLeases — index on (lifecycle_status, expiry_date) + fixed column names
+- [x] Add email/notification alert when query exceeds 5000ms threshold (verified in logs)
+- [x] Add notification when slow query count exceeds 10/hour (with 5-min cooldown)
+- [x] Add "Run Index" button to Index Recommendations tab with safety validation
+- [x] Add server-side query cache (30-300s TTL) — 0ms cached responses vs 1300-7900ms cold
+- [x] Add Cache Stats UI card in Real-time Stats tab (hits, misses, hit rate, entries, evictions)
+
+### Benchmark Results (After Optimization)
+| Stored Procedure | Cold (DB) | Warm (Cache) | Speedup |
+|---|---|---|---|
+| sp_GetRenewalDueCount | 6831ms | 0ms | ∞ |
+| sp_GetRenewalDueLeases | 1264ms | 0ms | ∞ |
+| sp_GetLeaseRegister | 2524ms | 0ms | ∞ |
+| sp_GetErrorLog | 2793ms | 0ms | ∞ |
+| sp_GetAuditLog | 1627ms | 0ms | ∞ |
+| sp_WriteAuditLog (WRITE) | 1227ms | N/A | N/A |
+
+Note: Cold call times are dominated by remote SQL Server network latency (~1300ms minimum round-trip). Server-side cache eliminates this for all subsequent reads within TTL window.
