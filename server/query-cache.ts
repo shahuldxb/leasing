@@ -68,7 +68,32 @@ const NO_CACHE_PROCEDURES = new Set([
   'sp_CreateLease',
   'sp_UpdateLease',
   'sp_ApproveLease',
+  'sp_HardDeleteLease',
+  'lease.sp_HardDeleteLease',
+  'sp_PostMonthlyEntry',
+  'sp_GenerateInceptionJV',
+  'sp_GenerateMonthlyJVs',
+  'sp_GenerateRemeasurementJV',
+  'sp_GeneratePeriodCloseJV',
+  'sp_CalculateAmortisationAll',
 ]);
+
+// Write procedure → tables it modifies (for auto-invalidation)
+const WRITE_INVALIDATION: Record<string, string[]> = {
+  'sp_CreateLease': ['lease.contracts'],
+  'sp_UpdateLease': ['lease.contracts'],
+  'sp_ApproveLease': ['lease.contracts'],
+  'sp_HardDeleteLease': ['lease.contracts'],
+  'lease.sp_HardDeleteLease': ['lease.contracts'],
+  'sp_PostMonthlyEntry': ['lease.contracts'],
+  'sp_GenerateInceptionJV': ['lease.contracts'],
+  'sp_GenerateMonthlyJVs': ['lease.contracts'],
+  'sp_CalculateAmortisationAll': ['lease.contracts'],
+  'sp_UpsertGLCodeRule': ['compliance.gl_code_rules'],
+  'sp_UpsertBusinessRule': ['compliance.business_rules'],
+  'sp_WriteAuditLog': ['compliance.audit_log'],
+  'sp_WriteErrorLog': ['compliance.error_log'],
+};
 
 // Table → procedure mapping for invalidation
 const TABLE_INVALIDATION: Record<string, string[]> = {
@@ -150,6 +175,18 @@ class QueryCache {
       createdAt: Date.now(),
     });
     this.stats.size = this.cache.size;
+  }
+
+  /**
+   * Called after a write procedure executes — auto-invalidates related read caches
+   */
+  onWriteProcedure(procedureName: string): void {
+    const tables = WRITE_INVALIDATION[procedureName];
+    if (tables) {
+      for (const table of tables) {
+        this.invalidateTable(table);
+      }
+    }
   }
 
   /**

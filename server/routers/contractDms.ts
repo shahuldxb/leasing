@@ -1156,9 +1156,10 @@ signatory_company, jurisdiction, confidentiality_level, retention_years.`,
       const where = cond.length ? "WHERE " + cond.join(" AND ") : "";
       params.push({ name: "limit", type: sql.Int, value: input.limit });
       return q(
-        `SELECT TOP (@limit) h.*, u.name AS changed_by_name
+        `SELECT TOP (@limit) h.*, u.name AS changed_by_name, c.contract_ref
          FROM lease.contract_modification_history h
          LEFT JOIN dbo.user u ON u.id = h.changed_by
+         LEFT JOIN lease.contracts c ON c.contract_id = h.contract_id
          ${where}
          ORDER BY h.event_date DESC`,
         params

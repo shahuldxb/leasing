@@ -1958,3 +1958,7 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Added DEFAULT constraint DF_jv_created_at on accounting.journal_vouchers.created_at
 - [x] Fixed 3 SPs (sp_GenerateInceptionJV, sp_GenerateRemeasurementJV, sp_GeneratePeriodCloseJV) to explicitly include created_at = GETUTCDATE()
 - [x] Verified all 15 SPs that INSERT into journal_vouchers now have created_at
+
+## Bug Fix: Delete Lease & Lease Reference (May 2026)
+- [x] Fix: Delete lease not refreshing the screen — added server-side cache auto-invalidation (queryCache.onWriteProcedure) + explicit invalidation in hardDeleteLease mutation
+- [x] Fix: Lease reference is not correct in the history — added contract_ref via JOIN in getContractHistory query, updated ContractHistory.tsx to show contract_ref instead of contract_id

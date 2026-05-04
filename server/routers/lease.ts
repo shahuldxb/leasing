@@ -8,6 +8,7 @@ import { execSPP, execSPPOne, execSPPMulti, sql, getPool } from '../db-sqlserver
 import { writeAuditLog, writeErrorLog, extractClientInfo } from '../audit';
 import { TRPCError } from '@trpc/server';
 import { notifyOwner } from '../_core/notification';
+import { queryCache } from '../query-cache';
 
 export const leaseRouter = router({
 
@@ -495,11 +496,19 @@ export const leaseRouter = router({
   hardDeleteLease: protectedProcedure
     .input(z.object({ contractId: z.number() }))
     .mutation(async ({ input }) => {
-      const pool = await (await import("../db-sqlserver")).getPool();
+      const pool = await getPool();
       const req = pool.request();
       req.input("contract_id", input.contractId);
       const result = await req.execute("lease.sp_HardDeleteLease");
       const row = (result.recordset as any[])?.[0] ?? null;
+      // Invalidate all lease-related caches so the UI refreshes immediately
+      queryCache.invalidateProcedure('sp_GetLeaseRegister');
+      queryCache.invalidateProcedure('sp_GetLeaseById');
+      queryCache.invalidateProcedure('sp_GetRenewalDueCount');
+      queryCache.invalidateProcedure('sp_GetRenewalDueLeases');
+      queryCache.invalidateProcedure('sp_GetDashboardInsights');
+      queryCache.invalidateProcedure('sp_GetMISLeasePortfolio');
+      queryCache.invalidateProcedure('sp_GetLeaseTransactionHistory');
       return row;
     }),
 

@@ -478,8 +478,13 @@ export async function execSPP<T = Record<string, any>>(
     return (res.recordset || []) as T[];
   }, procedureName, params);
 
-  // Store in cache
-  queryCache.set(procedureName, params, result);
+  // Auto-invalidate related caches if this was a write procedure
+  if (!queryCache.shouldCache(procedureName)) {
+    queryCache.onWriteProcedure(procedureName);
+  } else {
+    // Store in cache (read procedures only)
+    queryCache.set(procedureName, params, result);
+  }
 
   return result;
 }

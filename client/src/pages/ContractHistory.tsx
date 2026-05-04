@@ -109,7 +109,7 @@ export default function ContractHistory() {
                           <Badge variant="outline" className={`text-xs shrink-0 ${EVENT_COLORS[h.event_type]??"bg-muted text-muted-foreground"}`}>{formatEventType(h.event_type)}</Badge>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              {h.contract_id&&<span className="text-xs font-mono text-primary">#{h.contract_id}</span>}
+                              {(h.contract_ref||h.contract_id)&&<span className="text-xs font-mono text-primary">{h.contract_ref??`#${h.contract_id}`}</span>}
                               {h.field_name&&<span className="text-xs text-muted-foreground">· {h.field_name}</span>}
                               {h.new_value&&<span className="text-xs text-foreground truncate max-w-[200px]">{h.new_value}</span>}
                             </div>
@@ -124,7 +124,7 @@ export default function ContractHistory() {
                         {expandedId===h.history_id&&(
                           <div className="border-t border-border bg-muted/20 px-4 py-3">
                             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
-                              {[{label:"History ID",value:h.history_id},{label:"Contract ID",value:h.contract_id??"—"},{label:"Modification ID",value:h.modification_id??"—"},{label:"Event Type",value:formatEventType(h.event_type)},{label:"Field",value:h.field_name??"—"},{label:"Old Value",value:h.old_value??"—"},{label:"New Value",value:h.new_value??"—"},{label:"Changed By",value:h.changed_by_name??"System"},{label:"Change Reason",value:h.change_reason??"—"},{label:"Notes",value:h.notes??"—"},{label:"Date",value:h.event_date?new Date(h.event_date).toLocaleString():"—"}].map(row=>(
+                              {[{label:"History ID",value:h.history_id},{label:"Lease Ref",value:h.contract_ref??`Contract-${h.contract_id}`},{label:"Modification ID",value:h.modification_id??"—"},{label:"Event Type",value:formatEventType(h.event_type)},{label:"Field",value:h.field_name??"—"},{label:"Old Value",value:h.old_value??"—"},{label:"New Value",value:h.new_value??"—"},{label:"Changed By",value:h.changed_by_name??"System"},{label:"Change Reason",value:h.change_reason??"—"},{label:"Notes",value:h.notes??"—"},{label:"Date",value:h.event_date?new Date(h.event_date).toLocaleString():"—"}].map(row=>(
                                 <div key={row.label} className="flex gap-2"><span className="text-muted-foreground w-[110px] shrink-0">{row.label}:</span><span className="text-foreground break-all">{String(row.value)}</span></div>
                               ))}
                             </div>
