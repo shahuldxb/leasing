@@ -1952,3 +1952,9 @@ All data screens must follow: Left = Menu | Right = Full UI Screen. No modal win
 | sp_WriteAuditLog (WRITE) | 1227ms | N/A | N/A |
 
 Note: Cold call times are dominated by remote SQL Server network latency (~1300ms minimum round-trip). Server-side cache eliminates this for all subsequent reads within TTL window.
+
+## Bug Fix: JV Generation NULL created_at (May 2026)
+- [x] Fix: Cannot insert NULL into 'created_at' column in leasing.accounting.journal_vouchers
+- [x] Added DEFAULT constraint DF_jv_created_at on accounting.journal_vouchers.created_at
+- [x] Fixed 3 SPs (sp_GenerateInceptionJV, sp_GenerateRemeasurementJV, sp_GeneratePeriodCloseJV) to explicitly include created_at = GETUTCDATE()
+- [x] Verified all 15 SPs that INSERT into journal_vouchers now have created_at
