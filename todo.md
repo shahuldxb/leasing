@@ -2002,3 +2002,8 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
   - Includes posting_status='Pending' for new rows
   - Preserves rows already marked 'ERP'
   - Tested: 36 rows generated for contract 58
+
+## Fix: Amortisation Tab Not Showing Schedule / Loading Slow (May 2026)
+- [x] Auto-persist amortisation schedule when Amortisation tab is opened (if not already in DB)
+- [x] Fix the "No amortisation schedule generated yet" message for contracts that have valid data
+- [x] Backfilled all existing contracts (contract 58: 36 rows, contract 59: 48 rows, all others already had schedules)

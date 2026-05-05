@@ -107,11 +107,29 @@ export const leaseRouter = router({
     .input(z.object({ contractId: z.number() }))
     .query(async ({ input }) => {
       // SP returns 2 result sets: [0] contract header, [1] schedule rows
-      const sets = await execSPPMulti('sp_GetAmortisationSchedule', [
+      let sets = await execSPPMulti('sp_GetAmortisationSchedule', [
         { name: 'ContractId', type: sql.Int, value: input.contractId },
       ]);
-      const header   = sets[0]?.[0] ?? null;
-      const schedule = sets[1] ?? [];
+      let header   = sets[0]?.[0] ?? null;
+      let schedule = sets[1] ?? [];
+      // Auto-persist schedule if empty (contract has data but schedule not yet in DB)
+      if (schedule.length === 0) {
+        try {
+          const pool = await getPool();
+          const req = pool.request();
+          req.input('ContractId', sql.Int, input.contractId);
+          await req.execute('lease.sp_PersistAmortisationSchedule');
+          // Re-fetch after persisting
+          sets = await execSPPMulti('sp_GetAmortisationSchedule', [
+            { name: 'ContractId', type: sql.Int, value: input.contractId },
+          ]);
+          header   = sets[0]?.[0] ?? null;
+          schedule = sets[1] ?? [];
+        } catch (e) {
+          // If persist fails (e.g. no contract data), just return empty
+          console.warn('[getAmortisationSchedule] Auto-persist failed:', (e as Error).message);
+        }
+      }
       return { header, schedule };
     }),
 
