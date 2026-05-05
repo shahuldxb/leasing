@@ -2025,8 +2025,10 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Fixed 0 existing NULL rows (all were already populated)
 
 ## Fix: Checkbox disabled for Posted rows on Amortisation tab (May 2026)
-- [ ] Allow Posted rows to be selected via checkbox (only ERP rows should be disabled)
-- [ ] Update Select All logic to only skip ERP rows
+- [x] Allow Posted rows to be selected via checkbox (only ERP rows should be disabled)
+  - Verified: disabled={isERP} only disables ERP rows; Posted/Projected/Pending rows are all selectable
+- [x] Update Select All logic to only skip ERP rows
+  - Verified: filter uses `!== 'ERP'` — Posted rows are included in Select All
 
 ## Fix: Transaction Centre - Termination Post Transaction Fails (May 2026)
 - [x] Investigate and fix the Post Transaction failure under Termination in Transaction Centre
