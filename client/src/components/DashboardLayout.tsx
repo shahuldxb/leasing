@@ -54,7 +54,6 @@ const menuItems: NavItem[] = [
       { label: "Staff Master",       path: "/staff-master" },
       { label: "Sub-Asset Registry",  path: "/sub-asset-registry" },
       { label: "Sub-Asset Txn Log",   path: "/sub-asset-registry/transactions" },
-      { label: "Amortisation",        path: "/leases/amortisation" },
       { label: "Transaction Centre", path: "/leases/transaction-centre" },
     ],
   },
