@@ -2027,3 +2027,11 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 ## Fix: Checkbox disabled for Posted rows on Amortisation tab (May 2026)
 - [ ] Allow Posted rows to be selected via checkbox (only ERP rows should be disabled)
 - [ ] Update Select All logic to only skip ERP rows
+
+## Fix: Transaction Centre - Termination Post Transaction Fails (May 2026)
+- [x] Investigate and fix the Post Transaction failure under Termination in Transaction Centre
+- [x] Root cause: sp_PostLeaseTransaction INSERT INTO lease.gl_postings missing posted_at column; also transaction_drafts INSERT missing created_at/updated_at
+- [x] Fix: Recreated SP with explicit posted_at = GETUTCDATE() in all 8 INSERT statements + explicit created_at/updated_at in transaction_drafts INSERT
+- [x] Added DEFAULT constraint DF_gl_postings_posted_at on lease.gl_postings.posted_at
+- [x] Added DEFAULT constraints DF_transaction_drafts_created_at and DF_transaction_drafts_updated_at
+- [x] Tested: Contract 61 Termination posted successfully (JE-LTC-61-1, 3 GL postings, status changed to Terminated/Closed)
