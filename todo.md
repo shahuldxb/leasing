@@ -2007,3 +2007,19 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Auto-persist amortisation schedule when Amortisation tab is opened (if not already in DB)
 - [x] Fix the "No amortisation schedule generated yet" message for contracts that have valid data
 - [x] Backfilled all existing contracts (contract 58: 36 rows, contract 59: 48 rows, all others already had schedules)
+
+## Refactor Teller Roles (May 2026)
+- [ ] Update tellerRole values to: BOM (Branch Operation Manager), AM (Assistant Manager), CTL (Chief Teller), TLR (Teller)
+- [ ] Branch structure: 1 BOM, 1 AM, 1 CTL, 4 TLR per branch
+- [ ] user_id: unique integer code
+- [ ] Add name column (32 characters)
+- [ ] Add status column (9 characters)
+- [ ] Refactor all dependent backend code (routers, SPs)
+- [ ] Refactor all dependent frontend code (forms, tables, dropdowns)
+
+## Fix: posting_status NULL error (May 2026)
+- [x] Root cause: posting_status column is NOT NULL with CHECK constraint (Projected/Posted/Locked) but sp_SaveAmortisationSchedule didn't include it in INSERT
+- [x] Dropped old CHECK constraint, added new one allowing: Projected, Posted, Locked, ERP, Pending
+- [x] Updated sp_SaveAmortisationSchedule to include posting_status='Projected' in INSERT
+- [x] SP now preserves ERP rows (doesn't delete/overwrite them)
+- [x] Fixed 0 existing NULL rows (all were already populated)
