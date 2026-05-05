@@ -1988,3 +1988,17 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Remove "Generate Monthly" button from JournalVoucher.tsx toolbar
 - [x] Remove the associated dialog, state, and mutation
 - [x] Update empty state help text to reference Lease Register instead
+
+## Fix: Initial Entry + Amortisation JVs not created in JV Register from Lease Master (May 2026)
+- [x] Investigate why inception JV is not appearing in Journal Voucher register
+  - Finding: Inception JV works fine (postInitialRecognitionJV created JV-202608-00001 for contract 58)
+  - The "Send Inception JV" button on Amortisation tab also works (uses generateInception SP)
+- [x] Investigate why amortisation/monthly JVs are not appearing in Journal Voucher register
+  - Root cause: lease.sp_PersistAmortisationSchedule SP was missing from the database
+  - The persist step is required before generating monthly JVs (schedule must be in DB first)
+- [x] Fix: Created lease.sp_PersistAmortisationSchedule SP
+  - Computes full schedule from contract params (PV, IBR, term, payment, ROU, commencement_date)
+  - Uses correct column names from lease.contracts table
+  - Includes posting_status='Pending' for new rows
+  - Preserves rows already marked 'ERP'
+  - Tested: 36 rows generated for contract 58
