@@ -2023,3 +2023,7 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Updated sp_SaveAmortisationSchedule to include posting_status='Projected' in INSERT
 - [x] SP now preserves ERP rows (doesn't delete/overwrite them)
 - [x] Fixed 0 existing NULL rows (all were already populated)
+
+## Fix: Checkbox disabled for Posted rows on Amortisation tab (May 2026)
+- [ ] Allow Posted rows to be selected via checkbox (only ERP rows should be disabled)
+- [ ] Update Select All logic to only skip ERP rows

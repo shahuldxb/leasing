@@ -437,8 +437,19 @@ function AmortisationTab({ contractId }: { contractId: number }) {
           <thead className="bg-muted/50 sticky top-0">
             <tr>
               {viewMode === 'monthly' && (
-                <th className="px-2 py-2.5 text-center w-8">
+                <th className="px-3 py-2.5 text-center w-12 cursor-pointer" onClick={() => {
+                      const selectable = allRows.filter(r => String(r.posting_status ?? '') !== 'ERP' && r.schedule_id);
+                      const allSelected = selectable.length > 0 && selectable.every(r => selectedIds.has(Number(r.schedule_id)));
+                      if (allSelected) {
+                        setSelectedIds(new Set());
+                      } else {
+                        const newSet = new Set(selectedIds);
+                        allRows.forEach(r => { if (String(r.posting_status ?? '') !== 'ERP' && r.schedule_id) newSet.add(Number(r.schedule_id)); });
+                        setSelectedIds(newSet);
+                      }
+                    }}>
                   <Checkbox
+                    className="h-5 w-5"
                     checked={(() => {
                       const selectable = allRows.filter(r => String(r.posting_status ?? '') !== 'ERP' && r.schedule_id);
                       return selectable.length > 0 && selectable.every(r => selectedIds.has(Number(r.schedule_id)));
@@ -487,8 +498,15 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                 <Fragment key={`period-${rowKey}`}>
                   <tr className={`border-t border-border hover:bg-muted/20 ${isERP ? 'opacity-60' : ''}`}>
                     {viewMode === 'monthly' && (
-                      <td className="px-2 py-2 text-center">
+                      <td className="px-3 py-2 text-center cursor-pointer" onClick={() => {
+                            if (isERP) return;
+                            const newSet = new Set(selectedIds);
+                            if (isSelected) newSet.delete(schedId);
+                            else newSet.add(schedId);
+                            setSelectedIds(newSet);
+                          }}>
                         <Checkbox
+                          className="h-5 w-5"
                           checked={isSelected}
                           disabled={isERP}
                           onCheckedChange={(checked) => {
