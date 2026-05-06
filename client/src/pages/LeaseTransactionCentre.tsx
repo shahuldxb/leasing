@@ -1280,6 +1280,7 @@ export default function LeaseTransactionCentre() {
   const [trmDate, setTrmDate]   = useState(today());
   const [trmNotes, setTrmNotes] = useState('');
   const [trmCalcOpen, setTrmCalcOpen] = useState(false);
+  const [modCalcOpen, setModCalcOpen] = useState(false);
 
   // Renewal inputs
   const [renPayment, setRenPayment]         = useState('');
@@ -1500,7 +1501,20 @@ export default function LeaseTransactionCentre() {
                 {modFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating remeasurement…</p>}
                 {modPreview?.summary && (
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 space-y-4">
-                    <h4 className="text-sm font-semibold text-amber-400">Remeasurement Preview (IFRS 16 Para 45)</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-amber-400">
+                        {modPreview.summary.is_decrease
+                          ? 'Partial Termination Preview (IFRS 16 Para 46a) — Rent Decrease'
+                          : 'Remeasurement Preview (IFRS 16 Para 45) — Rent Increase'}
+                      </h4>
+                      <button
+                        onClick={() => setModCalcOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-xs font-bold hover:bg-yellow-500/30 transition-colors"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                        Calc
+                      </button>
+                    </div>
                     <KPIRow items={[
                       { label: 'Current Liability',   value: fmt(modPreview.summary.current_liability) },
                       { label: 'New PV',              value: fmt(modPreview.summary.new_pv), highlight: true },
@@ -1521,6 +1535,109 @@ export default function LeaseTransactionCentre() {
                         <SchedulePreview rows={modPreview.schedule} />
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* ── Modification Calc Explanation Modal (full-screen blackboard) ── */}
+                {modCalcOpen && modPreview?.summary && (
+                  <div className="fixed inset-0 z-[9999] bg-gray-950/98 flex flex-col overflow-y-auto">
+                    <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
+                      <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                        <Calculator className="w-5 h-5" />
+                        Calculation Explanation — Lease Modification ({modPreview.summary.is_decrease ? 'IFRS 16 Para 46a — Partial Termination' : 'IFRS 16 Para 45 — Remeasurement'})
+                      </h2>
+                      <button onClick={() => setModCalcOpen(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
+                    </div>
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-green-300 max-w-4xl mx-auto w-full space-y-6">
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 1: Identify Current Balances ═══</p>
+                        <p>Effective Date: <span className="text-white">{modDate}</span></p>
+                        <p>Current Lease Liability: <span className="text-cyan-300">{fmt(modPreview.summary.current_liability)} {modPreview.summary.currency as string}</span></p>
+                        <p>Current ROU NBV: <span className="text-cyan-300">{fmt(modPreview.summary.current_rou_nbv)} {modPreview.summary.currency as string}</span></p>
+                        <p>Remaining Months: <span className="text-white">{String(modPreview.summary.remaining_months)}</span></p>
+                        <p>IBR Used: <span className="text-white">{String(modPreview.summary.ibr_used)}</span> (monthly: {(Number(modPreview.summary.ibr_used) / 12).toFixed(6)})</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 2: Calculate New Present Value ═══</p>
+                        <p>New Monthly Payment: <span className="text-white">{fmt(modPreview.summary.new_monthly_payment)} {modPreview.summary.currency as string}</span></p>
+                        <p>Formula: PV = PMT × [(1 − (1 + r)^−n) / r]</p>
+                        <p className="ml-4">= {fmt(modPreview.summary.new_monthly_payment)} × [(1 − (1 + {(Number(modPreview.summary.ibr_used) / 12).toFixed(6)})^−{String(modPreview.summary.remaining_months)}) / {(Number(modPreview.summary.ibr_used) / 12).toFixed(6)}]</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(modPreview.summary.new_pv)} {modPreview.summary.currency as string}</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 3: Calculate Liability Delta ═══</p>
+                        <p>Liability Δ = New PV − Current Liability</p>
+                        <p className="ml-4">= {fmt(modPreview.summary.new_pv)} − {fmt(modPreview.summary.current_liability)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(modPreview.summary.liability_delta)} {modPreview.summary.currency as string}</p>
+                        <p className="mt-2 text-gray-400 text-xs">{Number(modPreview.summary.liability_delta) >= 0 ? 'Positive → Rent Increase → No P&L impact' : 'Negative → Rent Decrease → Partial Termination with P&L impact'}</p>
+                      </div>
+
+                      {modPreview.summary.is_decrease ? (
+                        <>
+                          <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                            <p className="text-yellow-400 font-bold mb-3">═══ STEP 4: Proportional ROU Reduction (Partial Termination) ═══</p>
+                            <p>Proportional Ratio = |Liability Δ| / Current Liability</p>
+                            <p className="ml-4">= {fmt(Math.abs(Number(modPreview.summary.liability_delta)))} / {fmt(modPreview.summary.current_liability)}</p>
+                            <p className="ml-4 text-white font-bold">= {(Number(modPreview.summary.proportional_ratio) * 100).toFixed(4)}%</p>
+                            <p className="mt-3">ROU Reduction = Current ROU NBV × Proportional Ratio</p>
+                            <p className="ml-4">= {fmt(modPreview.summary.current_rou_nbv)} × {(Number(modPreview.summary.proportional_ratio) * 100).toFixed(4)}%</p>
+                            <p className="ml-4 text-white font-bold">= {fmt(Math.abs(Number(modPreview.summary.rou_delta)))} {modPreview.summary.currency as string}</p>
+                          </div>
+
+                          <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                            <p className="text-yellow-400 font-bold mb-3">═══ STEP 5: Calculate Gain/Loss ═══</p>
+                            <p>Gain/Loss = |Liability Δ| − |ROU Δ|</p>
+                            <p className="ml-4">= {fmt(Math.abs(Number(modPreview.summary.liability_delta)))} − {fmt(Math.abs(Number(modPreview.summary.rou_delta)))}</p>
+                            <p className="ml-4 text-white font-bold">= {fmt(modPreview.summary.remeasurement_gain_loss)} {modPreview.summary.currency as string} ({Number(modPreview.summary.remeasurement_gain_loss) >= 0 ? 'Loss' : 'Gain'})</p>
+                            <p className="mt-2 text-gray-400 text-xs">This amount is recognised in Profit & Loss (unlike rent increase which goes to asset)</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                          <p className="text-yellow-400 font-bold mb-3">═══ STEP 4: Adjust ROU Asset ═══</p>
+                          <p>ROU Δ = Liability Δ (no P&L impact for increase)</p>
+                          <p className="ml-4">= {fmt(modPreview.summary.liability_delta)} {modPreview.summary.currency as string}</p>
+                          <p className="mt-2">New ROU NBV = Current ROU NBV + ROU Δ</p>
+                          <p className="ml-4">= {fmt(modPreview.summary.current_rou_nbv)} + {fmt(modPreview.summary.liability_delta)}</p>
+                          <p className="ml-4 text-white font-bold">= {fmt(modPreview.summary.new_rou_nbv)} {modPreview.summary.currency as string}</p>
+                        </div>
+                      )}
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ {modPreview.summary.is_decrease ? 'STEP 6' : 'STEP 5'}: Journal Entry (JE-4) ═══</p>
+                        <table className="w-full text-xs border border-gray-700">
+                          <thead><tr className="bg-gray-800"><th className="px-3 py-2 text-left">Dr/Cr</th><th className="px-3 py-2 text-left">Account</th><th className="px-3 py-2 text-right">Amount</th><th className="px-3 py-2 text-left">Explanation</th></tr></thead>
+                          <tbody>
+                            {(modPreview.jeLines as any[]).map((line: any, i: number) => (
+                              <tr key={i} className="border-t border-gray-700">
+                                <td className={`px-3 py-2 font-bold ${line.dr_cr === 'Dr' ? 'text-emerald-400' : 'text-rose-400'}`}>{line.dr_cr as string}</td>
+                                <td className="px-3 py-2">{line.account_code as string} — {line.account_name as string}</td>
+                                <td className={`px-3 py-2 text-right ${line.dr_cr === 'Dr' ? 'text-emerald-300' : 'text-rose-300'}`}>{fmt(line.amount)}</td>
+                                <td className="px-3 py-2 text-gray-400">{line.description as string}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ New Depreciation ═══</p>
+                        <p>New Depreciation = New ROU NBV / Remaining Months</p>
+                        <p className="ml-4">= {fmt(modPreview.summary.new_rou_nbv)} / {String(modPreview.summary.remaining_months)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(Number(modPreview.summary.new_rou_nbv) / Number(modPreview.summary.remaining_months))} per month</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ IFRS 16 Reference ═══</p>
+                        {modPreview.summary.is_decrease ? (
+                          <p className="text-gray-300">Para 46(a): "For a decrease in scope, the lessee shall decrease the carrying amount of the right-of-use asset to reflect the partial or full termination of the lease, and recognise in profit or loss any gain or loss relating to the partial or full termination."</p>
+                        ) : (
+                          <p className="text-gray-300">Para 45: "A lessee shall remeasure the lease liability by discounting the revised lease payments using a revised discount rate... The lessee shall recognise the amount of the remeasurement of the lease liability as an adjustment to the right-of-use asset."</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 

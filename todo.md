@@ -2110,3 +2110,10 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Insert Remeasurement JV (JE-4) into journal_vouchers + jv_lines tables
 - [x] Regenerate new monthly amortisation JVs for remaining periods with new terms (new payment, new PV, new depreciation)
 - [x] Renumber period_seq after modification (past JVs keep original seq, new JVs get sequential numbering)
+
+## Feature: Rent Decrease / Partial Termination in Modification tab (May 2026)
+- [x] Update sp_PreviewModification to detect rent decrease and calculate proportional ROU reduction + G/L
+- [x] Update sp_ApplyLeaseModification to handle rent decrease: 4-line JV (Dr Liability, Dr Accum Depr, Cr ROU at proportional cost, Cr Gain/Dr Loss)
+- [x] Frontend: show Remeasurement G/L as non-zero for rent decrease, display 4-line JV preview
+- [x] Delete future JVs, insert modification JV, regenerate new monthly JVs (same as rent increase flow)
+- [x] Add Calc explanation for rent decrease showing proportional reduction formula (full-screen blackboard modal with step-by-step IFRS 16 Para 45/46a calculation)
