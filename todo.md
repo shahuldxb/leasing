@@ -2094,3 +2094,9 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Print loads ALL entries (no pagination) with big heading showing LSE-2026-000001
 - [x] Print CSS scales/squeezes content to fit A4 portrait pages with heading on every page
 - [x] Fix Calc button not working in JV Register (clicking does nothing) — populated calc_explanation for all 192 monthly JV lines and updated SP for future generation
+
+## Fix: Lease Termination JV (May 2026)
+- [x] Add missing Accumulated Depreciation Dr line to termination JV (4 lines instead of 3)
+- [x] Credit ROU Asset at original cost (not NBV)
+- [x] Recalculate Gain/Loss as balancing figure: Liability - (ROU Cost - Accum Depr) = Liability - NBV
+- [x] Add Calc explanation button (yellow, full-screen blackboard style) to Derecognition Preview

@@ -24,7 +24,7 @@ import {
   Building2, DollarSign, FileText, RefreshCw, XCircle, History,
   ChevronRight, CheckCircle2, AlertTriangle, Info, Package,
   ChevronDown, Search, X, User, Layers, MapPin, Phone, Mail, CreditCard, Hash,
-  GitBranch, Scissors, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Zap, ExternalLink,
+  GitBranch, Scissors, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Zap, ExternalLink, Calculator,
 } from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -1279,6 +1279,7 @@ export default function LeaseTransactionCentre() {
   // Termination inputs
   const [trmDate, setTrmDate]   = useState(today());
   const [trmNotes, setTrmNotes] = useState('');
+  const [trmCalcOpen, setTrmCalcOpen] = useState(false);
 
   // Renewal inputs
   const [renPayment, setRenPayment]         = useState('');
@@ -1570,10 +1571,21 @@ export default function LeaseTransactionCentre() {
                 {trmFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating derecognition…</p>}
                 {trmPreview?.summary && (
                   <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-6 space-y-4">
-                    <h4 className="text-sm font-semibold text-red-400">Derecognition Preview (IFRS 16 Para 46)</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-red-400">Derecognition Preview (IFRS 16 Para 46)</h4>
+                      <button
+                        onClick={() => setTrmCalcOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-xs font-bold hover:bg-yellow-500/30 transition-colors"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                        Calc
+                      </button>
+                    </div>
                     <KPIRow items={[
                       { label: 'Lease Liability Derecognised', value: fmt(trmPreview.summary.lease_liability_derecognised) },
-                      { label: 'ROU Asset Derecognised',       value: fmt(trmPreview.summary.rou_asset_derecognised) },
+                      { label: 'ROU Asset (Cost)',             value: fmt(trmPreview.summary.rou_asset_cost) },
+                      { label: 'Accum. Depreciation',          value: fmt(trmPreview.summary.accumulated_depreciation) },
+                      { label: 'ROU NBV',                      value: fmt(trmPreview.summary.rou_asset_nbv) },
                       { label: 'Gain / Loss',                  value: fmt(trmPreview.summary.gain_loss_on_termination), highlight: true },
                       { label: 'Type',                         value: String(trmPreview.summary.gain_loss_type ?? '—') },
                       { label: 'Months Early',                 value: String(trmPreview.summary.months_early ?? '—') },
@@ -1582,6 +1594,70 @@ export default function LeaseTransactionCentre() {
                     <div>
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-5)</h4>
                       <JETable lines={trmPreview.jeLines} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Termination Calc Explanation Modal (full-screen blackboard) ── */}
+                {trmCalcOpen && trmPreview?.summary && (
+                  <div className="fixed inset-0 z-[9999] bg-gray-950/98 flex flex-col overflow-y-auto">
+                    <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
+                      <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                        <Calculator className="w-5 h-5" />
+                        Calculation Explanation — Lease Termination (IFRS 16 Para 46)
+                      </h2>
+                      <button onClick={() => setTrmCalcOpen(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
+                    </div>
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-green-300 max-w-4xl mx-auto w-full space-y-6">
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 1: Identify Balances at Termination Date ═══</p>
+                        <p>Termination Date: <span className="text-white">{trmDate}</span></p>
+                        <p>Remaining Lease Liability (closing balance): <span className="text-cyan-300">{fmt(trmPreview.summary.lease_liability_derecognised)} {trmPreview.summary.currency as string}</span></p>
+                        <p>ROU Asset (original cost): <span className="text-cyan-300">{fmt(trmPreview.summary.rou_asset_cost)} {trmPreview.summary.currency as string}</span></p>
+                        <p>Accumulated Depreciation (to date): <span className="text-cyan-300">{fmt(trmPreview.summary.accumulated_depreciation)} {trmPreview.summary.currency as string}</span></p>
+                        <p>ROU Net Book Value = Cost − Accum. Depr</p>
+                        <p className="ml-4">= {fmt(trmPreview.summary.rou_asset_cost)} − {fmt(trmPreview.summary.accumulated_depreciation)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(trmPreview.summary.rou_asset_nbv)} {trmPreview.summary.currency as string}</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 2: Calculate Gain/Loss on Derecognition ═══</p>
+                        <p>Gain/Loss = Lease Liability − ROU NBV</p>
+                        <p className="ml-4">= {fmt(trmPreview.summary.lease_liability_derecognised)} − {fmt(trmPreview.summary.rou_asset_nbv)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(trmPreview.summary.gain_loss_on_termination)} {trmPreview.summary.currency as string} ({trmPreview.summary.gain_loss_type as string})</p>
+                        <p className="mt-2 text-gray-400 text-xs">If positive → Gain (Cr to P&L) | If negative → Loss (Dr to P&L)</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 3: Journal Entry (JE-5) — Derecognition ═══</p>
+                        <p className="text-gray-400 mb-2">Debit entries remove liabilities and contra-assets from the balance sheet.</p>
+                        <p className="text-gray-400 mb-3">Credit entries remove the asset at original cost and recognise the gain/loss.</p>
+                        <table className="w-full text-xs border border-gray-700">
+                          <thead><tr className="bg-gray-800"><th className="px-3 py-2 text-left">Dr/Cr</th><th className="px-3 py-2 text-left">Account</th><th className="px-3 py-2 text-right">Amount</th><th className="px-3 py-2 text-left">Explanation</th></tr></thead>
+                          <tbody>
+                            <tr className="border-t border-gray-700"><td className="px-3 py-2 text-emerald-400 font-bold">Dr</td><td className="px-3 py-2">2101 — Lease Liability</td><td className="px-3 py-2 text-right text-emerald-300">{fmt(trmPreview.summary.lease_liability_derecognised)}</td><td className="px-3 py-2 text-gray-400">Remove remaining obligation to lessor</td></tr>
+                            <tr className="border-t border-gray-700"><td className="px-3 py-2 text-emerald-400 font-bold">Dr</td><td className="px-3 py-2">10200 — Accum. Depreciation</td><td className="px-3 py-2 text-right text-emerald-300">{fmt(trmPreview.summary.accumulated_depreciation)}</td><td className="px-3 py-2 text-gray-400">Remove contra-asset (depreciation charged to date)</td></tr>
+                            <tr className="border-t border-gray-700"><td className="px-3 py-2 text-rose-400 font-bold">Cr</td><td className="px-3 py-2">1601 — Right-of-Use Asset</td><td className="px-3 py-2 text-right text-rose-300">{fmt(trmPreview.summary.rou_asset_cost)}</td><td className="px-3 py-2 text-gray-400">Remove ROU asset at original cost</td></tr>
+                            <tr className="border-t border-gray-700"><td className="px-3 py-2 font-bold" style={{color: (trmPreview.summary.gain_loss_type === 'Gain') ? '#f87171' : '#34d399'}}>{(trmPreview.summary.gain_loss_type === 'Gain') ? 'Cr' : 'Dr'}</td><td className="px-3 py-2">7201 — Gain/Loss on Termination</td><td className="px-3 py-2 text-right" style={{color: (trmPreview.summary.gain_loss_type === 'Gain') ? '#f87171' : '#34d399'}}>{fmt(trmPreview.summary.gain_loss_on_termination)}</td><td className="px-3 py-2 text-gray-400">Balancing figure to P&L</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 4: Verification (Dr = Cr) ═══</p>
+                        <p>Total Debits  = {fmt(trmPreview.summary.lease_liability_derecognised)} + {fmt(trmPreview.summary.accumulated_depreciation)}</p>
+                        <p className="ml-4">= {fmt(Number(trmPreview.summary.lease_liability_derecognised) + Number(trmPreview.summary.accumulated_depreciation))}</p>
+                        <p>Total Credits = {fmt(trmPreview.summary.rou_asset_cost)} + {fmt(trmPreview.summary.gain_loss_on_termination)}</p>
+                        <p className="ml-4">= {fmt(Number(trmPreview.summary.rou_asset_cost) + Number(trmPreview.summary.gain_loss_on_termination))}</p>
+                        <p className="mt-2 text-white font-bold">✓ Balanced</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ IFRS 16 Reference ═══</p>
+                        <p className="text-gray-300">Para 46: "A lessee shall derecognise the right-of-use asset and the lease liability at the date of termination. The difference between the carrying amounts of the right-of-use asset and the lease liability shall be recognised in profit or loss."</p>
+                        <p className="mt-2 text-gray-400">Months terminated early: <span className="text-white">{String(trmPreview.summary.months_early)}</span></p>
+                        <p className="text-gray-400">Original expiry: <span className="text-white">{fmtDate(trmPreview.summary.original_expiry_date)}</span></p>
+                      </div>
                     </div>
                   </div>
                 )}
