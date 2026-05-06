@@ -107,8 +107,8 @@ function KPIRow({ items }: { items: { label: string; value: string; highlight?: 
 function SchedulePreview({ rows }: { rows: Array<Record<string, unknown>> }) {
   if (!rows?.length) return null;
   return (
-    <div className="overflow-x-auto rounded border border-border mt-3">
-      <p className="text-xs text-muted-foreground px-3 pt-2 pb-1">First {rows.length} periods of regenerated schedule</p>
+    <div className="overflow-x-auto rounded border border-border mt-3 max-h-[500px] overflow-y-auto">
+      <p className="text-xs text-muted-foreground px-3 pt-2 pb-1 sticky top-0 bg-card z-10">All {rows.length} periods of regenerated schedule</p>
       <table className="w-full text-xs">
         <thead className="bg-muted/50">
           <tr>

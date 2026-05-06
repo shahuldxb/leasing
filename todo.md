@@ -2100,3 +2100,6 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Credit ROU Asset at original cost (not NBV)
 - [x] Recalculate Gain/Loss as balancing figure: Liability - (ROU Cost - Accum Depr) = Liability - NBV
 - [x] Add Calc explanation button (yellow, full-screen blackboard style) to Derecognition Preview
+
+## Fix: Regenerated Schedule Preview (May 2026)
+- [x] Show all remaining periods in Regenerated Schedule Preview (not just first 6)
