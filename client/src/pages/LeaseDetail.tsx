@@ -416,9 +416,26 @@ function AmortisationTab({ contractId }: { contractId: number }) {
               try {
                 // Step 1: persist schedule to DB if not already there
                 await persistScheduleMut.mutateAsync({ contractId });
-                // Step 2: generate monthly JVs for selected rows
-                const ids = Array.from(selectedIds);
-                generateMonthlySelectedMut.mutate({ schedule_ids: ids, contract_id: contractId });
+                // Step 2: re-fetch schedule to get fresh IDs (persist may have re-created rows)
+                const freshData = await utils.lease.getAmortisationSchedule.fetch({ contractId });
+                const freshRows = (freshData?.schedule ?? []) as Array<Record<string, unknown>>;
+                // Map selected period numbers to fresh schedule_ids
+                const selectedPeriods = new Set<number>();
+                allRows.forEach(r => {
+                  if (selectedIds.has(Number(r.schedule_id ?? 0))) {
+                    selectedPeriods.add(Number(r.period ?? 0));
+                  }
+                });
+                const freshIds = freshRows
+                  .filter(r => selectedPeriods.has(Number(r.period ?? 0)))
+                  .map(r => Number(r.schedule_id ?? 0))
+                  .filter(id => id > 0);
+                if (freshIds.length === 0) {
+                  toast.error('No valid schedule rows found after persist.');
+                  return;
+                }
+                // Step 3: generate monthly JVs for fresh IDs
+                generateMonthlySelectedMut.mutate({ schedule_ids: freshIds, contract_id: contractId });
               } catch (e: any) {
                 toast.error(`Failed to persist schedule: ${e.message}`);
               } finally {
