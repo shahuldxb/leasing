@@ -2156,3 +2156,37 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Renewal Calc modal: step-by-step showing extended term PV, liability increase, ROU increase, JE-7 entry, new depreciation
 - [x] Purchase Calc modal: step-by-step showing derecognition of lease, transfer to owned asset, gain/loss calculation
 - [x] Extension Calc modal: reuse existing Modification Calc modal (already built)
+
+## Feature: Seed Data + Reports Module (May 2026)
+
+### Seed Data (via app API / direct SQL)
+- [x] Create 10-15 realistic lease contracts (offices, vehicles, equipment) with varied terms, IBRs, currencies
+- [x] Run Initial Recognition + Monthly Amortisation for all leases
+- [x] Apply Modifications (rent increase, rent decrease) on 2-3 leases
+- [x] Apply Renewals on 1-2 leases
+- [x] Apply Termination on 1 lease — skipped (Termination tab hidden per user request)
+- [x] Verify JV Register has full lifecycle data (355 JVs, 1419 JV lines)
+
+### Report Stored Procedures
+- [x] sp_ReportROURollForward: Opening → Additions → Depreciation → Modifications → Disposals → Closing by period
+- [x] sp_ReportLiabilityRollForward: Opening → New → Interest → Payments → Modifications → Closing by period
+- [x] sp_ReportMaturityAnalysis: Undiscounted future payments by <1yr, 1-2yr, 2-5yr, >5yr bands
+- [x] sp_ReportInterestExpense: Monthly/quarterly interest expense from amort schedule
+- [x] sp_ReportDepreciationExpense: combined into sp_ReportInterestExpense (both in one SP)
+- [x] sp_ReportLeaseExpiry: Leases expiring within N days with current balances
+- [x] sp_ReportCashForecast: Upcoming lease payments by month for next 12 months
+- [x] sp_ReportPortfolioSummary: Total leases, ROU, liability, payment, by asset type
+
+### Backend Router
+- [x] Add reports router with procedures for each report (date range, currency, asset type filters)
+
+### Frontend: Reports UI
+- [x] IFRS 16 Reports Centre (consolidated 7-tab full-screen page at /reports/ifrs16)
+- [x] Portfolio Summary tab with KPI cards
+- [x] ROU Roll-Forward tab with period selector, totals row, and per-lease table
+- [x] Liability Roll-Forward tab with period selector, totals row, and per-lease table
+- [x] Maturity Analysis tab with band breakdown (< 1yr, 1-2yr, 2-5yr, > 5yr)
+- [x] Interest & Depreciation Expense tab with monthly/quarterly toggle
+- [x] Lease Expiry tab with days-ahead filter and urgency badges
+- [x] Cash Payment Forecast tab with months filter
+- [x] Added to sidebar navigation under Accounting Engine

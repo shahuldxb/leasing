@@ -1480,4 +1480,94 @@ export const leaseRouter = router({
         status: string;
       }>;
     }),
+
+  // ══════════════════════════════════════════════════════════════════
+  // REPORTS MODULE
+  // ══════════════════════════════════════════════════════════════════
+
+  reportPortfolioSummary: protectedProcedure
+    .query(async () => {
+      const results = await execSPP('sp_ReportPortfolioSummary', []);
+      return (results[0] ?? {}) as Record<string, unknown>;
+    }),
+
+  reportROURollForward: protectedProcedure
+    .input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      currency: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_ReportROURollForward', [
+        { name: 'StartDate', type: sql.Date, value: input.startDate || null },
+        { name: 'EndDate', type: sql.Date, value: input.endDate || null },
+        { name: 'Currency', type: sql.VarChar(3), value: input.currency || null },
+      ]);
+    }),
+
+  reportLiabilityRollForward: protectedProcedure
+    .input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      currency: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_ReportLiabilityRollForward', [
+        { name: 'StartDate', type: sql.Date, value: input.startDate || null },
+        { name: 'EndDate', type: sql.Date, value: input.endDate || null },
+        { name: 'Currency', type: sql.VarChar(3), value: input.currency || null },
+      ]);
+    }),
+
+  reportMaturityAnalysis: protectedProcedure
+    .input(z.object({
+      asOfDate: z.string().optional(),
+      currency: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_ReportMaturityAnalysis', [
+        { name: 'AsOfDate', type: sql.Date, value: input.asOfDate || null },
+        { name: 'Currency', type: sql.VarChar(3), value: input.currency || null },
+      ]);
+    }),
+
+  reportInterestExpense: protectedProcedure
+    .input(z.object({
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      currency: z.string().optional(),
+      granularity: z.enum(['Monthly', 'Quarterly']).optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_ReportInterestExpense', [
+        { name: 'StartDate', type: sql.Date, value: input.startDate || null },
+        { name: 'EndDate', type: sql.Date, value: input.endDate || null },
+        { name: 'Currency', type: sql.VarChar(3), value: input.currency || null },
+        { name: 'Granularity', type: sql.VarChar(10), value: input.granularity || 'Monthly' },
+      ]);
+    }),
+
+  reportLeaseExpiry: protectedProcedure
+    .input(z.object({
+      daysAhead: z.number().optional(),
+      currency: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_ReportLeaseExpiry', [
+        { name: 'DaysAhead', type: sql.Int, value: input.daysAhead || 365 },
+        { name: 'Currency', type: sql.VarChar(3), value: input.currency || null },
+      ]);
+    }),
+
+  reportCashForecast: protectedProcedure
+    .input(z.object({
+      months: z.number().optional(),
+      currency: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return execSPP('sp_ReportCashForecast', [
+        { name: 'Months', type: sql.Int, value: input.months || 12 },
+        { name: 'Currency', type: sql.VarChar(3), value: input.currency || null },
+      ]);
+    }),
 });

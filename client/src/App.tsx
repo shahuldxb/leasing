@@ -82,6 +82,7 @@ import CPIEscalation      from "./pages/CPIEscalation";
 import LeaseExemptions    from "./pages/LeaseExemptions";
 import IFRS16Disclosure   from "./pages/IFRS16Disclosure";
 import RollForwardReport  from "./pages/RollForwardReport";
+import IFRS16Reports      from "./pages/IFRS16Reports";
 import ERPExport          from "./pages/ERPExport";
 import BulkOperations     from "./pages/BulkOperations";
 
@@ -252,6 +253,7 @@ function Router() {
       <Route path="/accounting/exemptions"   component={LeaseExemptions} />
       <Route path="/accounting/disclosure"   component={IFRS16Disclosure} />
       <Route path="/accounting/roll-forward" component={RollForwardReport} />
+      <Route path="/reports/ifrs16"          component={IFRS16Reports} />
       <Route path="/accounting/erp-export"   component={ERPExport} />
       <Route path="/accounting/bulk"         component={BulkOperations} />
 

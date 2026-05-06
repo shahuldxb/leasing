@@ -103,6 +103,7 @@ const menuItems: NavItem[] = [
       { label: "Accounting Settings",    path: "/accounting/settings" },
       { label: "FX Revaluation",        path: "/accounting/fx-revaluation" },
       { label: "Roll-Forward Report",  path: "/accounting/roll-forward" },
+      { label: "IFRS 16 Reports Centre", path: "/reports/ifrs16" },
       { label: "Disclosure Pack",       path: "/accounting/disclosure-pack" },
       { label: "Multi-Standard (IFRS/ASC/IPSAS)", path: "/accounting/multi-standard" },
       { label: "ERP Export",            path: "/accounting/erp-export" },
