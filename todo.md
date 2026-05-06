@@ -2056,3 +2056,17 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
   - Recreated SP with all DECLARE outside the loop, using SET inside
   - Tested: 3 JVs generated successfully with correct amounts
   - Reset all schedule rows back to Pending for fresh user testing
+
+## Fix: Send Monthly JVs not appearing in JV Register + status flow (May 2026)
+- [x] Investigate why Send Monthly JVs does not create entries visible in Journal Voucher Register
+  - Root cause: SP DECLARE inside WHILE loop + CHECK constraint missing 'Sent' value
+- [x] Fix JV Register to show status 'ERP' for generated monthly JVs
+  - SP now inserts JV header with status = 'ERP'
+- [x] Change Amortisation tab posting_status from 'ERP' to 'Sent' to prevent duplication
+  - Updated CHECK constraint (chk_posting_status_v3) to allow 'Sent'
+  - SP UPDATE sets posting_status = 'Sent'
+  - Frontend badge shows green 'Sent' instead of amber 'ERP'
+- [x] Ensure no duplication: once status is 'Sent', rows cannot be re-sent
+  - Frontend filter: !['Sent','ERP'].includes(status)
+  - SP filter: posting_status NOT IN ('Sent', 'ERP')
+- [x] Tested: 3 JVs generated with status ERP in register, schedule shows Sent, no duplication

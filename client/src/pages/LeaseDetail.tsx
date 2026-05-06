@@ -334,8 +334,8 @@ function AmortisationTab({ contractId }: { contractId: number }) {
     onSuccess: (r: any) => {
       const gen = r?.generated_count ?? 0;
       const skip = r?.skipped_count ?? 0;
-      if (gen > 0) toast.success(`${gen} monthly JV(s) generated & marked ERP.${skip > 0 ? ` ${skip} skipped (already ERP).` : ''}`);
-      else toast.info(`No new JVs generated. ${skip} row(s) were already in ERP status.`);
+      if (gen > 0) toast.success(`${gen} monthly JV(s) sent to JV Register.${skip > 0 ? ` ${skip} skipped (already sent).` : ''}`);
+      else toast.info(`No new JVs generated. ${skip} row(s) were already sent.`);
       setSelectedIds(new Set());
       utils.lease.getAmortisationSchedule.invalidate({ contractId });
     },
@@ -438,26 +438,26 @@ function AmortisationTab({ contractId }: { contractId: number }) {
             <tr>
               {viewMode === 'monthly' && (
                 <th className="px-3 py-2.5 text-center w-12 cursor-pointer" onClick={() => {
-                      const selectable = allRows.filter(r => String(r.posting_status ?? '') !== 'ERP' && r.schedule_id);
+                      const selectable = allRows.filter(r => !['Sent','ERP'].includes(String(r.posting_status ?? '')) && r.schedule_id);
                       const allSelected = selectable.length > 0 && selectable.every(r => selectedIds.has(Number(r.schedule_id)));
                       if (allSelected) {
                         setSelectedIds(new Set());
                       } else {
                         const newSet = new Set(selectedIds);
-                        allRows.forEach(r => { if (String(r.posting_status ?? '') !== 'ERP' && r.schedule_id) newSet.add(Number(r.schedule_id)); });
+                        allRows.forEach(r => { if (!['Sent','ERP'].includes(String(r.posting_status ?? '')) && r.schedule_id) newSet.add(Number(r.schedule_id)); });
                         setSelectedIds(newSet);
                       }
                     }}>
                   <Checkbox
                     className="h-5 w-5"
                     checked={(() => {
-                      const selectable = allRows.filter(r => String(r.posting_status ?? '') !== 'ERP' && r.schedule_id);
+                      const selectable = allRows.filter(r => !['Sent','ERP'].includes(String(r.posting_status ?? '')) && r.schedule_id);
                       return selectable.length > 0 && selectable.every(r => selectedIds.has(Number(r.schedule_id)));
                     })()}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         const newSet = new Set(selectedIds);
-                        allRows.forEach(r => { if (String(r.posting_status ?? '') !== 'ERP' && r.schedule_id) newSet.add(Number(r.schedule_id)); });
+                        allRows.forEach(r => { if (!['Sent','ERP'].includes(String(r.posting_status ?? '')) && r.schedule_id) newSet.add(Number(r.schedule_id)); });
                         setSelectedIds(newSet);
                       } else {
                         setSelectedIds(new Set());
@@ -485,7 +485,7 @@ function AmortisationTab({ contractId }: { contractId: number }) {
               const isExpanded = expandedRows.has(rowKey);
               const schedId = Number(r.schedule_id ?? 0);
               const rowStatus = String(r.posting_status ?? '');
-              const isERP = rowStatus === 'ERP';
+              const isSent = rowStatus === 'Sent' || rowStatus === 'ERP';
               const isSelected = selectedIds.has(schedId);
               // GL entries for this row
               const glEntries = [
@@ -496,10 +496,10 @@ function AmortisationTab({ contractId }: { contractId: number }) {
               ];
               return (
                 <Fragment key={`period-${rowKey}`}>
-                  <tr className={`border-t border-border hover:bg-muted/20 ${isERP ? 'opacity-60' : ''}`}>
+                  <tr className={`border-t border-border hover:bg-muted/20 ${isSent ? 'opacity-60' : ''}`}>
                     {viewMode === 'monthly' && (
                       <td className="px-3 py-2 text-center cursor-pointer" onClick={() => {
-                            if (isERP) return;
+                            if (isSent) return;
                             const newSet = new Set(selectedIds);
                             if (isSelected) newSet.delete(schedId);
                             else newSet.add(schedId);
@@ -508,7 +508,7 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                         <Checkbox
                           className="h-5 w-5"
                           checked={isSelected}
-                          disabled={isERP}
+                          disabled={isSent}
                           onCheckedChange={(checked) => {
                             const newSet = new Set(selectedIds);
                             if (checked) newSet.add(schedId);
@@ -532,8 +532,8 @@ function AmortisationTab({ contractId }: { contractId: number }) {
                     <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.period_date)}</td>
                     {viewMode === 'monthly' && (
                       <td className="px-3 py-2 text-center">
-                        {isERP ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">ERP</span>
+                        {isSent ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-green-500/15 text-green-400 border border-green-500/30">Sent</span>
                         ) : rowStatus === 'Posted' ? (
                           <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Posted</span>
                         ) : (

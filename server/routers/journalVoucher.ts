@@ -85,7 +85,7 @@ export const journalVoucherRouter = router({
   // ── Generate Monthly JVs for Selected Schedule Rows ────────────────────────
   generateMonthlySelected: protectedProcedure
     .input(z.object({
-      schedule_ids: z.array(z.number().int()).min(1).max(100),
+      schedule_ids: z.array(z.number().int()).min(1).max(500),
       contract_id: z.number().int(),
     }))
     .mutation(async ({ input, ctx }) => {
