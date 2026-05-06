@@ -83,7 +83,11 @@ export default function AmortizationMaster() {
               <SelectContent>
                 {contracts.map((c: any) => (
                   <SelectItem key={c.contract_id} value={c.contract_id.toString()}>
-                    {c.contract_ref} — {c.asset_type ?? "Lease"} — {fmtAmount(c.monthly_payment, c.currency ?? "QAR")}/mo
+                    <span className="flex items-center gap-6 w-full">
+                      <span className="text-red-400 font-mono font-semibold">{c.contract_ref}</span>
+                      <span className="text-muted-foreground">{c.lessor_name ?? c.asset_type ?? 'Lease'}</span>
+                      <span className="text-muted-foreground">—</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

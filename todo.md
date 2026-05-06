@@ -2070,3 +2070,8 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
   - Frontend filter: !['Sent','ERP'].includes(status)
   - SP filter: posting_status NOT IN ('Sent', 'ERP')
 - [x] Tested: 3 JVs generated with status ERP in register, schedule shows Sent, no duplication
+
+## Enhancement: Add month/year to JV line descriptions (May 2026)
+- [x] Update sp_GenerateMonthlyJVsForSelected to append (MMM YYYY) to each JV line description
+- [x] Amortization Master: Lease dropdown should show contract ref + lessor name (like LSE-2026-000001  Lusail Real Estate Development Co)
+- [x] Amortization Master: Show initiation (Day-1) entries when a lease is selected

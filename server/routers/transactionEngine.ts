@@ -36,22 +36,24 @@ export const transactionEngineRouter = router({
       const pool = await getPool();
       const result = await pool.request().query(`
         SELECT TOP 50
-          contract_id,
-          contract_ref,
-          asset_type,
-          asset_description,
-          monthly_payment,
-          currency,
-          ibr,
-          term_months,
-          rou_asset_value,
-          lease_liability_commence,
-          commencement_date,
-          expiry_date,
-          status
-        FROM lease.contracts
-        WHERE status IN ('Active','Draft','Pending')
-        ORDER BY contract_id
+          c.contract_id,
+          c.contract_ref,
+          c.asset_type,
+          c.asset_description,
+          c.monthly_payment,
+          c.currency,
+          c.ibr,
+          c.term_months,
+          c.rou_asset_value,
+          c.lease_liability_commence,
+          c.commencement_date,
+          c.expiry_date,
+          c.status,
+          l.legal_name AS lessor_name
+        FROM lease.contracts c
+        LEFT JOIN lease.lessors l ON l.lessor_id = c.lessor_id
+        WHERE c.status IN ('Active','Draft','Pending')
+        ORDER BY c.contract_id
       `);
       return (result.recordset as any[]) ?? [];
     }),
