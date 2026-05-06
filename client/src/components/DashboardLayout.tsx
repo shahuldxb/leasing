@@ -88,6 +88,7 @@ const menuItems: NavItem[] = [
   {
     icon: Calculator, label: "Accounting Engine",
     children: [
+      { label: "Amortization Master",  path: "/accounting/amortization-master" },
       { label: "IBR Library",         path: "/accounting/ibr" },
       { label: "Lease Classification", path: "/accounting/classification" },
       { label: "Remeasurement",       path: "/accounting/remeasurement" },

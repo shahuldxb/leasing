@@ -217,6 +217,41 @@ export const journalVoucherRouter = router({
       }
     }),
 
+  // ── Get Initial JV for Amortization Master ──────────────────────────────────
+  getInitialJV: protectedProcedure
+    .input(z.object({ contract_id: z.number().int() }))
+    .query(async ({ input }) => {
+      const pool = await getPool();
+      // Get the inception JV header
+      const headerResult = await pool.request().query(`
+        SELECT TOP 1 jv.jv_id, jv.jv_number, jv.jv_type, jv.contract_id, jv.status,
+               jv.period_year, jv.period_month, jv.posting_date, jv.description,
+               jv.total_debit, jv.total_credit, jv.currency, jv.created_by,
+               c.contract_ref, c.commencement_date, c.term_months, c.monthly_payment,
+               c.ibr, c.rou_asset_value, c.lease_liability_commence,
+               COALESCE(ld.lessee_name, 'N/A') AS lessee_name,
+               COALESCE(ld.staff_number, '') AS lessee_number
+        FROM accounting.journal_vouchers jv
+        INNER JOIN lease.contracts c ON c.contract_id = jv.contract_id
+        LEFT JOIN lease.lease_lessee_details ld ON ld.contract_id = c.contract_id
+        WHERE jv.contract_id = ${input.contract_id}
+          AND jv.jv_type IN ('INCEPTION', 'Initial Recognition')
+        ORDER BY jv.jv_id DESC
+      `);
+      const header = (headerResult.recordset as any[])?.[0] ?? null;
+      if (!header) return { header: null, lines: [] };
+
+      // Get lines for this JV
+      const linesResult = await pool.request().query(`
+        SELECT line_id, line_seq, dr_cr, account_code, account_name, amount,
+               description, currency, calc_explanation
+        FROM accounting.jv_lines
+        WHERE jv_id = ${header.jv_id}
+        ORDER BY line_seq
+      `);
+      return { header, lines: (linesResult.recordset as any[]) ?? [] };
+    }),
+
   // ── Chart of Accounts ─────────────────────────────────────────────────────
   getChartOfAccounts: protectedProcedure
     .input(z.object({ ifrs16_only: z.boolean().default(false) }))

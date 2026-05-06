@@ -2037,3 +2037,22 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Added DEFAULT constraint DF_gl_postings_posted_at on lease.gl_postings.posted_at
 - [x] Added DEFAULT constraints DF_transaction_drafts_created_at and DF_transaction_drafts_updated_at
 - [x] Tested: Contract 61 Termination posted successfully (JE-LTC-61-1, 3 GL postings, status changed to Terminated/Closed)
+
+## Feature: Amortization Master (May 2026)
+- [ ] Add "Amortization Master" menu item in left sidebar navigation
+- [ ] Create AmortizationMaster page with lease dropdown selector
+- [ ] Display lease header info (contract ref, lessee number, period MMM YY, date)
+- [ ] Show Initial Day-1 IFRS 16 Journal Entry with grouped entries
+- [ ] Each group shows: Account Code, Account Name, Debit, Credit
+- [ ] Add Calc explanation button for each group (full-screen blackboard style)
+- [ ] Groups: (1) Security Deposit entries, (2) ROU Asset / Lease Liability / Initial Direct Costs
+- [ ] Show Total Debit and Total Credit at bottom
+- [ ] Add backend tRPC procedure to fetch initial JV data for a selected lease
+
+## Fix: Send Monthly JVs reports "No new JVs generated - 36 rows already in ERP status" (May 2026)
+- [x] Investigate why all 36 amortization rows show as ERP status when they should be Pending
+  - Root cause: DECLARE statements inside WHILE loop in sp_GenerateMonthlyJVsForSelected only initialize once in T-SQL, causing silent failures on 2nd+ iteration
+- [x] Fix the Send Monthly JVs logic or reset the posting_status
+  - Recreated SP with all DECLARE outside the loop, using SET inside
+  - Tested: 3 JVs generated successfully with correct amounts
+  - Reset all schedule rows back to Pending for fresh user testing

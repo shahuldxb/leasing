@@ -13,6 +13,7 @@ import LeaseRegister      from "./pages/LeaseRegister";
 import NewLease           from "./pages/NewLease";
 import Amortisation           from "./pages/Amortisation";
 import AmortisationBlackboard from "./pages/AmortisationBlackboard";
+import AmortizationMaster from "./pages/AmortizationMaster";
 import LeaseRenewals      from "./pages/LeaseRenewals";
 import LeaseModifications from "./pages/LeaseModifications";
 import LeaseTerminations  from "./pages/LeaseTerminations";
@@ -243,6 +244,7 @@ function Router() {
       <Route path="/audit"                   component={AuditLog} />
 
       {/* Accounting Engine */}
+      <Route path="/accounting/amortization-master" component={AmortizationMaster} />
       <Route path="/accounting/ibr"          component={IBRLibrary} />
       <Route path="/accounting/classification" component={LeaseClassification} />
       <Route path="/accounting/remeasurement" component={RemeasurementEngine} />
