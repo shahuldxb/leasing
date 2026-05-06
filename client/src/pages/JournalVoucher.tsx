@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import React from "react";
-import { CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator, FileText, Download, Search, Filter, Calendar, TrendingUp, BookOpen, Layers, AlertTriangle, Info, X, Link2 } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, ChevronRight, Calculator, FileText, Download, Search, Filter, Calendar, TrendingUp, BookOpen, Layers, AlertTriangle, Info, X, Link2, Printer } from "lucide-react";
 import { groupDrCrByAmount, type JVLine } from "@/lib/jvGrouping";
 
 const SCREEN_ID = "VFACCJVUIX0001P001";
@@ -330,7 +330,24 @@ export default function JournalVoucher() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-full bg-gray-950 text-gray-100">
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 12mm 10mm; }
+          body { font-family: 'Arial', sans-serif; font-size: 8pt; color: #000; background: #fff !important; -webkit-print-color-adjust: exact; }
+          .print-hidden, nav, aside, header, [data-sidebar], .sidebar { display: none !important; }
+          .print-only { display: block !important; }
+          .print-table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+          .print-table th, .print-table td { border: 0.5pt solid #333; padding: 2pt 4pt; text-align: left; }
+          .print-table th { background: #e0e0e0 !important; font-weight: bold; }
+          .print-header { text-align: center; margin-bottom: 8pt; }
+          .print-header h1 { font-size: 14pt; font-weight: bold; margin: 0; }
+          .print-header p { font-size: 9pt; margin: 2pt 0; color: #333; }
+          .print-group-header { background: #f0f0f0 !important; font-weight: bold; }
+          .page-break-avoid { page-break-inside: avoid; }
+        }
+      `}</style>
+      <div className="flex flex-col h-full bg-gray-950 text-gray-100 print-hidden">
         <ScreenHeader
           screenId={SCREEN_ID}
           title="Journal Voucher Register"
@@ -414,6 +431,14 @@ export default function JournalVoucher() {
               </Button>
             )}
 
+            <Button
+              size="sm"
+              className="h-8 text-xs bg-[#e60000] hover:bg-[#cc0000] text-white font-semibold"
+              onClick={() => window.print()}
+            >
+              <Printer className="w-3 h-3 mr-1" />
+              Print Register
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -680,6 +705,67 @@ export default function JournalVoucher() {
             onClose={() => setCalcModalJv(null)}
           />
         )}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          PRINT-ONLY SECTION — hidden on screen, visible only when printing
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="hidden print-only" style={{ display: 'none' }}>
+        <div className="print-header">
+          <h1>Journal Voucher Register</h1>
+          <p>IFRS 16 Monthly Amortisation — {rows.length > 0 ? rows[0].contract_ref : 'All Leases'}</p>
+          <p>Period: {statusFilter !== 'all' ? statusFilter : 'All'} | Generated: {new Date().toLocaleDateString('en-GB')}</p>
+        </div>
+        <table className="print-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>JV Number</th>
+              <th>Type</th>
+              <th>Period</th>
+              <th>Dr/Cr</th>
+              <th>Acct Code</th>
+              <th>Account Name</th>
+              <th style={{ textAlign: 'right' }}>Debit</th>
+              <th style={{ textAlign: 'right' }}>Credit</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r: any, rIdx: number) => {
+              const jvLines = allLines.filter((l: any) => l.jv_id === r.jv_id);
+              const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const periodStr = `${monthNames[r.period_month]}-${String(r.period_year).slice(2)}`;
+              return (
+                <React.Fragment key={r.jv_id}>
+                  <tr className="print-group-header">
+                    <td>{r.period_seq ?? rIdx + 1}</td>
+                    <td>{r.jv_number}</td>
+                    <td>{r.jv_type === 'MONTHLY_AMORT' ? 'Monthly' : r.jv_type === 'Initial Recognition' ? 'Initial' : r.jv_type}</td>
+                    <td>{periodStr}</td>
+                    <td colSpan={4}>{r.description || ''}</td>
+                    <td>{r.status}</td>
+                    <td></td>
+                  </tr>
+                  {jvLines.map((l: any) => (
+                    <tr key={`${r.jv_id}-${l.line_seq}`}>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td>{l.dr_cr}</td>
+                      <td>{l.account_code}</td>
+                      <td>{l.account_name}</td>
+                      <td style={{ textAlign: 'right' }}>{l.dr_cr === 'Dr' ? Number(l.amount).toLocaleString('en', { minimumFractionDigits: 2 }) : ''}</td>
+                      <td style={{ textAlign: 'right' }}>{l.dr_cr === 'Cr' ? Number(l.amount).toLocaleString('en', { minimumFractionDigits: 2 }) : ''}</td>
+                      <td></td>
+                    </tr>
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </DashboardLayout>
   );

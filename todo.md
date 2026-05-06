@@ -2088,3 +2088,9 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 ## Fix: JV Register sort order — ascending period_seq (May 2026)
 - [x] Change JV Register sort to show monthly amortization JVs in ascending order (#1, #2, #3... #48) instead of descending
 - [x] Paginate for A4 landscape size (25 per page) with Page X of Y display and Prev/Next buttons
+
+## Feature: Print Preview for JV Register (May 2026)
+- [x] Add Print Preview button (prominent) in JV Register header
+- [x] Print loads ALL entries (no pagination) with big heading showing LSE-2026-000001
+- [x] Print CSS scales/squeezes content to fit A4 portrait pages with heading on every page
+- [x] Fix Calc button not working in JV Register (clicking does nothing) — populated calc_explanation for all 192 monthly JV lines and updated SP for future generation
