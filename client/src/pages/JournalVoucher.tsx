@@ -268,7 +268,7 @@ export default function JournalVoucher() {
     contract_id: contractFilter === "all" ? undefined : Number(contractFilter),
     search: search || undefined,
     page,
-    page_size: 30,
+    page_size: 25,
   }), [statusFilter, typeFilter, contractFilter, search, page]);
 
   const { data: listData, isLoading, refetch } = trpc.journalVoucher.list.useQuery(listInput);
@@ -450,8 +450,8 @@ export default function JournalVoucher() {
               <span className="text-xs text-gray-500">{total} journal vouchers</span>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹ Prev</Button>
-                <span className="text-xs text-gray-500">Page {page}</span>
-                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setPage(p => p + 1)} disabled={rows.length < 30}>Next ›</Button>
+                <span className="text-xs text-gray-500">Page {page} of {Math.ceil(total / 25) || 1}</span>
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setPage(p => p + 1)} disabled={rows.length < 25}>Next ›</Button>
               </div>
             </div>
 

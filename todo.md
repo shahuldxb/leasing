@@ -2039,15 +2039,15 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Tested: Contract 61 Termination posted successfully (JE-LTC-61-1, 3 GL postings, status changed to Terminated/Closed)
 
 ## Feature: Amortization Master (May 2026)
-- [ ] Add "Amortization Master" menu item in left sidebar navigation
-- [ ] Create AmortizationMaster page with lease dropdown selector
-- [ ] Display lease header info (contract ref, lessee number, period MMM YY, date)
-- [ ] Show Initial Day-1 IFRS 16 Journal Entry with grouped entries
-- [ ] Each group shows: Account Code, Account Name, Debit, Credit
-- [ ] Add Calc explanation button for each group (full-screen blackboard style)
-- [ ] Groups: (1) Security Deposit entries, (2) ROU Asset / Lease Liability / Initial Direct Costs
-- [ ] Show Total Debit and Total Credit at bottom
-- [ ] Add backend tRPC procedure to fetch initial JV data for a selected lease
+- [x] Add "Amortization Master" menu item in left sidebar navigation
+- [x] Create AmortizationMaster page with lease dropdown selector
+- [x] Display lease header info (contract ref, lessee number, period MMM YY, date)
+- [x] Show Initial Day-1 IFRS 16 Journal Entry with grouped entries
+- [x] Each group shows: Account Code, Account Name, Debit, Credit
+- [x] Add Calc explanation button for each group (full-screen blackboard style)
+- [x] Groups: (1) Security Deposit entries, (2) ROU Asset / Lease Liability / Initial Direct Costs
+- [x] Show Total Debit and Total Credit at bottom
+- [x] Add backend tRPC procedure to fetch initial JV data for a selected lease
 
 ## Fix: Send Monthly JVs reports "No new JVs generated - 36 rows already in ERP status" (May 2026)
 - [x] Investigate why all 36 amortization rows show as ERP status when they should be Pending
@@ -2084,3 +2084,7 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Fix recordset mapping in journalVoucher.ts (rs[0]=total, rs[1]=rows, rs[2]=lines)
 - [x] Add staff_name to sp_ListJournalVouchers via LEFT JOIN hr.staff
 - [x] Fix jv-enrichment.test.ts to use correct recordset indices
+
+## Fix: JV Register sort order — ascending period_seq (May 2026)
+- [x] Change JV Register sort to show monthly amortization JVs in ascending order (#1, #2, #3... #48) instead of descending
+- [x] Paginate for A4 landscape size (25 per page) with Page X of Y display and Prev/Next buttons
