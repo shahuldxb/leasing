@@ -504,6 +504,11 @@ export default function JournalVoucher() {
                                     <span className={`px-2 py-0.5 rounded text-[10px] border ${JV_TYPE_COLORS[r.jv_type] ?? 'bg-gray-700 text-gray-300'}`}>
                                       {JV_TYPE_LABELS[r.jv_type] ?? r.jv_type}
                                     </span>
+                                    {r.period_seq != null && r.jv_type === 'MONTHLY_AMORT' && (
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                                        #{r.period_seq}
+                                      </span>
+                                    )}
                                     {r.contract_ref && (
                                       <button
                                         className="font-mono text-[10px] text-blue-400 hover:text-blue-200 hover:underline transition-colors"

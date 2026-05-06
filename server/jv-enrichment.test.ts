@@ -27,7 +27,8 @@ describe("JV Enrichment — Staff Name & Lease Details", () => {
       .input("page_size", sql.Int, 5)
       .execute("accounting.sp_ListJournalVouchers");
     const rs = result.recordsets as any[][];
-    const rows = rs?.[0] ?? [];
+    // rs[0] = total count, rs[1] = JV rows, rs[2] = JV lines
+    const rows = rs?.[1] ?? [];
     if (rows.length > 0) {
       const firstRow = rows[0];
       expect("staff_name" in firstRow).toBe(true);
@@ -42,7 +43,8 @@ describe("JV Enrichment — Staff Name & Lease Details", () => {
       .input("page", sql.Int, 1)
       .input("page_size", sql.Int, 1)
       .execute("accounting.sp_ListJournalVouchers");
-    const jvRows = (listResult.recordsets as any[][])?.[0] ?? [];
+    // rs[0] = total count, rs[1] = JV rows
+    const jvRows = (listResult.recordsets as any[][])?.[1] ?? [];
     if (jvRows.length === 0) return;
     const jvId = jvRows[0].jv_id;
     const result = await pool.request()

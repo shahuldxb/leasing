@@ -2075,3 +2075,12 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Update sp_GenerateMonthlyJVsForSelected to append (MMM YYYY) to each JV line description
 - [x] Amortization Master: Lease dropdown should show contract ref + lessor name (like LSE-2026-000001  Lusail Real Estate Development Co)
 - [x] Amortization Master: Show initiation (Day-1) entries when a lease is selected
+
+## Fix: Day-1 Inception JV missing from JV Register + Add serial number to monthly JVs (May 2026)
+- [x] Investigate why Day-1 Inception JV vanished from JV Register and restore it
+- [x] Add serial/period number to monthly amortization JVs (e.g., Period 1, Period 2... Period 48)
+- [x] Fix sp_GenerateMonthlyJVsForSelected to set period_seq on new JV inserts (sequential 1, 2, 3...)
+- [x] Display period_seq as cyan badge (#N) in JV Register for MONTHLY_AMORT JVs
+- [x] Fix recordset mapping in journalVoucher.ts (rs[0]=total, rs[1]=rows, rs[2]=lines)
+- [x] Add staff_name to sp_ListJournalVouchers via LEFT JOIN hr.staff
+- [x] Fix jv-enrichment.test.ts to use correct recordset indices
