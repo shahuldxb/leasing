@@ -34,7 +34,7 @@ const fmtDate = (d: unknown) =>
   d ? new Date(d as string).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const today = () => new Date().toISOString().slice(0, 10);
 
-type TxnType = 'Details' | 'Modification' | 'Termination' | 'Renewal' | 'OptionsBreaks';
+type TxnType = 'Details' | 'Modification' | 'Termination' | 'Renewal' | 'Purchase' | 'Extension' | 'OptionsBreaks';
 
 const LIFECYCLE_COLORS: Record<string, string> = {
   Active:   'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -1306,6 +1306,20 @@ export default function LeaseTransactionCentre() {
   const [renRenewalOption, setRenRenewalOption] = useState(false);
   const [renPurchaseOption, setRenPurchaseOption] = useState(false);
 
+  // Purchase inputs
+  const [purDate, setPurDate]     = useState(today());
+  const [purPrice, setPurPrice]   = useState('');
+  const [purNotes, setPurNotes]   = useState('');
+  const [purCalcOpen, setPurCalcOpen] = useState(false);
+
+  // Extension inputs (reuses Modification logic with IBR focus)
+  const [extPayment, setExtPayment] = useState('');
+  const [extDate, setExtDate]       = useState(today());
+  const [extIBR, setExtIBR]         = useState('');
+  const [extNotes, setExtNotes]     = useState('');
+  const [extCalcOpen, setExtCalcOpen] = useState(false);
+  const [renCalcOpen, setRenCalcOpen] = useState(false);
+
   const { data: leases = [], isLoading: leasesLoading, refetch: refetchLeases } =
     trpc.lease.getLeasesForTransaction.useQuery({ search: search || undefined });
   const selected = useMemo(() => leases.find(l => l.contract_id === selectedId) ?? null, [leases, selectedId]);
@@ -1322,6 +1336,8 @@ export default function LeaseTransactionCentre() {
   const modPreviewEnabled = txnType === 'Modification' && !!selectedId && !!modPayment && !!modDate;
   const trmPreviewEnabled = txnType === 'Termination' && !!selectedId && !!trmDate;
   const renPreviewEnabled = txnType === 'Renewal' && !!selectedId && !!renPayment && !!renExpiry;
+  const purPreviewEnabled = txnType === 'Purchase' && !!selectedId && !!purPrice && !!purDate;
+  const extPreviewEnabled = txnType === 'Extension' && !!selectedId && !!extPayment && !!extDate;
 
   const { data: modPreview, isFetching: modFetching } = trpc.lease.previewModification.useQuery(
     { contractId: selectedId!, newMonthlyPayment: parseFloat(modPayment), effectiveDate: modDate, newIBR: modIBR ? parseFloat(modIBR) : undefined },
@@ -1335,6 +1351,14 @@ export default function LeaseTransactionCentre() {
     { contractId: selectedId!, newExpiryDate: renExpiry, newMonthlyPayment: parseFloat(renPayment), newIBR: renIBR ? parseFloat(renIBR) : undefined },
     { enabled: renPreviewEnabled }
   );
+  const { data: purPreview, isFetching: purFetching } = trpc.lease.previewPurchase.useQuery(
+    { contractId: selectedId!, purchaseDate: purDate, purchasePrice: parseFloat(purPrice || '0') },
+    { enabled: purPreviewEnabled }
+  );
+  const { data: extPreview, isFetching: extFetching } = trpc.lease.previewModification.useQuery(
+    { contractId: selectedId!, newMonthlyPayment: parseFloat(extPayment || '0'), effectiveDate: extDate, newIBR: extIBR ? parseFloat(extIBR) : undefined },
+    { enabled: extPreviewEnabled }
+  );
 
   const utils = trpc.useUtils();
   const postMut = trpc.lease.postLeaseTransaction.useMutation({
@@ -1347,19 +1371,46 @@ export default function LeaseTransactionCentre() {
     onError: (e) => toast.error(`Post failed: ${e.message}`),
   });
 
+  // Dedicated mutations for Renewal and Purchase (bypass sp_PostLeaseTransaction)
+  const applyRenewalMut = trpc.lease.applyRenewal.useMutation({
+    onSuccess: (data) => {
+      setPosted({ je_ref: data?.je_ref ?? '', je_label: data?.je_label ?? '' });
+      toast.success(`Renewal applied — ${data?.je_ref}`);
+      refetchLeases();
+      utils.lease.getLeaseTransactionHistory.invalidate({ contractId: selectedId! });
+    },
+    onError: (e) => toast.error(`Renewal failed: ${e.message}`),
+  });
+  const applyPurchaseMut = trpc.lease.applyPurchase.useMutation({
+    onSuccess: (data) => {
+      setPosted({ je_ref: data?.je_ref ?? '', je_label: data?.je_label ?? '' });
+      toast.success(`Purchase applied — ${data?.je_ref}`);
+      refetchLeases();
+      utils.lease.getLeaseTransactionHistory.invalidate({ contractId: selectedId! });
+    },
+    onError: (e) => toast.error(`Purchase failed: ${e.message}`),
+  });
+
   const handlePost = () => {
     if (!selectedId) return;
-    const base = { contractId: selectedId, transactionType: txnType as 'Modification' | 'Termination' | 'Renewal', effectiveDate: '' };
-    if (txnType === 'Modification')
-      postMut.mutate({ ...base, effectiveDate: modDate, newMonthlyPayment: parseFloat(modPayment), newIBR: modIBR ? parseFloat(modIBR) : undefined, notes: modNotes });
-    else if (txnType === 'Termination')
-      postMut.mutate({ ...base, effectiveDate: trmDate, notes: trmNotes });
-    else
-      postMut.mutate({ ...base, effectiveDate: renCommDate || today(), newMonthlyPayment: parseFloat(renPayment), newExpiryDate: renExpiry, newIBR: renIBR ? parseFloat(renIBR) : undefined, notes: renNotes });
+    if (txnType === 'Modification') {
+      const base = { contractId: selectedId, transactionType: 'Modification' as const, effectiveDate: modDate, newMonthlyPayment: parseFloat(modPayment), newIBR: modIBR ? parseFloat(modIBR) : undefined, notes: modNotes };
+      postMut.mutate(base);
+    } else if (txnType === 'Termination') {
+      postMut.mutate({ contractId: selectedId, transactionType: 'Termination' as const, effectiveDate: trmDate, notes: trmNotes });
+    } else if (txnType === 'Renewal') {
+      applyRenewalMut.mutate({ contractId: selectedId, newExpiryDate: renExpiry, newMonthlyPayment: parseFloat(renPayment), newIBR: renIBR ? parseFloat(renIBR) : undefined });
+    } else if (txnType === 'Purchase') {
+      applyPurchaseMut.mutate({ contractId: selectedId, purchaseDate: purDate, purchasePrice: parseFloat(purPrice) });
+    } else if (txnType === 'Extension') {
+      const base = { contractId: selectedId, transactionType: 'Modification' as const, effectiveDate: extDate, newMonthlyPayment: parseFloat(extPayment), newIBR: extIBR ? parseFloat(extIBR) : undefined, notes: extNotes };
+      postMut.mutate(base);
+    }
     setConfirmOpen(false);
   };
 
-  const isPreviewReady = txnType === 'Modification' ? !!modPreview : txnType === 'Termination' ? !!trmPreview : !!renPreview;
+  const isPreviewReady = txnType === 'Modification' ? !!modPreview : txnType === 'Termination' ? !!trmPreview : txnType === 'Renewal' ? !!renPreview : txnType === 'Purchase' ? !!purPreview : txnType === 'Extension' ? !!extPreview : false;
+  const isPosting = postMut.isPending || applyRenewalMut.isPending || applyPurchaseMut.isPending;
   const inputCls = "bg-background border-border text-foreground placeholder:text-muted-foreground";
   const labelCls = "text-xs font-medium text-foreground mb-1 block";
 
@@ -1374,7 +1425,7 @@ export default function LeaseTransactionCentre() {
             <ScreenHeader
               screenId="VFLTXNCTR0001P001" screenType="lease_transaction_centre"
               title="Lease Transaction Centre"
-              subtitle="IFRS 16 — Modification (JE-4) · Termination (JE-5) · Renewal (JE-7)"
+              subtitle="IFRS 16 — Modification (JE-4) · Renewal (JE-7) · Purchase (§26) · Extension (§45)"
             />
           </div>
 
@@ -1444,24 +1495,27 @@ export default function LeaseTransactionCentre() {
             >
               {/* Tab bar */}
               <div className="flex-shrink-0 px-6 pt-4 border-b border-border">
-                <TabsList className="grid grid-cols-6 w-full">
+                <TabsList className="grid grid-cols-7 w-full">
                   <TabsTrigger value="Details" className="flex items-center gap-2 text-sm py-2.5">
-                    <FileText className="w-4 h-4" /> Lease Details
+                    <FileText className="w-4 h-4" /> Details
                   </TabsTrigger>
                   <TabsTrigger value="Modification" className="flex items-center gap-2 text-sm py-2.5">
-                    <RefreshCw className="w-4 h-4" /> Modification (JE-4)
-                  </TabsTrigger>
-                  <TabsTrigger value="Termination" className="flex items-center gap-2 text-sm py-2.5">
-                    <XCircle className="w-4 h-4" /> Termination (JE-5)
+                    <RefreshCw className="w-4 h-4" /> Modification
                   </TabsTrigger>
                   <TabsTrigger value="Renewal" className="flex items-center gap-2 text-sm py-2.5">
-                    <ChevronRight className="w-4 h-4" /> Renewal (JE-7)
+                    <ChevronRight className="w-4 h-4" /> Renewal
+                  </TabsTrigger>
+                  <TabsTrigger value="Purchase" className="flex items-center gap-2 text-sm py-2.5">
+                    <CreditCard className="w-4 h-4" /> Purchase
+                  </TabsTrigger>
+                  <TabsTrigger value="Extension" className="flex items-center gap-2 text-sm py-2.5">
+                    <Plus className="w-4 h-4" /> Extension
                   </TabsTrigger>
                   <TabsTrigger value="OptionsBreaks" className="flex items-center gap-2 text-sm py-2.5">
-                    <GitBranch className="w-4 h-4" /> Options & Breaks
+                    <GitBranch className="w-4 h-4" /> Options
                   </TabsTrigger>
                   <TabsTrigger value="History" className="flex items-center gap-2 text-sm py-2.5">
-                    <History className="w-4 h-4" /> Txn History & GL
+                    <History className="w-4 h-4" /> History
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1652,8 +1706,8 @@ export default function LeaseTransactionCentre() {
                   </div>
                 ) : (
                   <div className="flex justify-end">
-                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || postMut.isPending} className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-2.5 text-sm">
-                      {postMut.isPending ? 'Posting…' : 'Post Modification & Generate JE-4'}
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || isPosting} className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-2.5 text-sm">
+                      {isPosting ? 'Posting…' : 'Post Modification & Generate JE-4'}
                     </Button>
                   </div>
                 )}
@@ -1789,8 +1843,8 @@ export default function LeaseTransactionCentre() {
                   </div>
                 ) : (
                   <div className="flex justify-end">
-                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || postMut.isPending} className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 text-sm">
-                      {postMut.isPending ? 'Posting…' : 'Post Termination & Generate JE-5'}
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || isPosting} className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 text-sm">
+                      {isPosting ? 'Posting…' : 'Post Termination & Generate JE-5'}
                     </Button>
                   </div>
                 )}
@@ -1934,7 +1988,16 @@ export default function LeaseTransactionCentre() {
                 {renFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating renewal remeasurement…</p>}
                 {renPreview?.summary && (
                   <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 space-y-4">
-                    <h4 className="text-sm font-semibold text-emerald-400">Renewal Remeasurement Preview (JE-7)</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-emerald-400">Renewal Remeasurement Preview (JE-7)</h4>
+                      <button
+                        onClick={() => setRenCalcOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-xs font-bold hover:bg-yellow-500/30 transition-colors"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                        Calc
+                      </button>
+                    </div>
                     <KPIRow items={[
                       { label: 'Current Liability',   value: fmt(renPreview.summary.current_liability) },
                       { label: 'New PV',              value: fmt(renPreview.summary.new_pv), highlight: true },
@@ -1948,6 +2011,71 @@ export default function LeaseTransactionCentre() {
                     <div>
                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-7)</h4>
                       <JETable lines={renPreview.jeLines} />
+                    </div>
+                    {renPreview.schedule?.length > 0 && <SchedulePreview rows={renPreview.schedule} />}
+                  </div>
+                )}
+
+                {/* ── Renewal Calc Explanation Modal (full-screen blackboard) ── */}
+                {renCalcOpen && renPreview?.summary && (
+                  <div className="fixed inset-0 z-[9999] bg-gray-950/98 flex flex-col overflow-y-auto">
+                    <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
+                      <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                        <Calculator className="w-5 h-5" />
+                        Calculation Explanation — Lease Renewal (IFRS 16 Para 19 / §45)
+                      </h2>
+                      <button onClick={() => setRenCalcOpen(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
+                    </div>
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-green-300 max-w-4xl mx-auto w-full space-y-6">
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 1: Current Balances ═══</p>
+                        <p>Current Lease Liability: <span className="text-cyan-300">{fmt(renPreview.summary.current_liability)} {renPreview.summary.currency as string}</span></p>
+                        <p>Current ROU NBV: <span className="text-cyan-300">{fmt(renPreview.summary.current_rou_nbv)} {renPreview.summary.currency as string}</span></p>
+                        <p>Old Expiry Date: <span className="text-white">{fmtDate(renPreview.summary.old_expiry_date)}</span></p>
+                        <p>New Expiry Date: <span className="text-white">{fmtDate(renPreview.summary.new_expiry_date)}</span></p>
+                        <p>New Term: <span className="text-white">{String(renPreview.summary.new_term_months)} months</span></p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 2: Remeasure Lease Liability ═══</p>
+                        <p>New Monthly Payment: <span className="text-cyan-300">{fmt(renPreview.summary.new_monthly_payment ?? parseFloat(renPayment))} {renPreview.summary.currency as string}</span></p>
+                        <p>IBR Used: <span className="text-cyan-300">{renPreview.summary.ibr_used ? `${(Number(renPreview.summary.ibr_used) * 100).toFixed(4)}%` : '—'}</span></p>
+                        <p className="mt-2">New PV = PMT × [(1 − (1 + r)^(−n)) / r]</p>
+                        <p className="ml-4">where PMT = {fmt(renPreview.summary.new_monthly_payment ?? parseFloat(renPayment))}, r = monthly rate, n = {String(renPreview.summary.new_term_months)} months</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(renPreview.summary.new_pv)} {renPreview.summary.currency as string}</p>
+                        <p className="mt-2">Liability Delta = New PV − Current Liability</p>
+                        <p className="ml-4">= {fmt(renPreview.summary.new_pv)} − {fmt(renPreview.summary.current_liability)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(renPreview.summary.liability_delta)} {renPreview.summary.currency as string}</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 3: Adjust ROU Asset ═══</p>
+                        <p>Per IFRS 16 Para 45: Adjust ROU by the same amount as the liability remeasurement (no P&L impact)</p>
+                        <p>New ROU NBV = Current ROU NBV + Liability Delta</p>
+                        <p className="ml-4">= {fmt(renPreview.summary.current_rou_nbv)} + {fmt(renPreview.summary.liability_delta)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(renPreview.summary.new_rou_nbv)} {renPreview.summary.currency as string}</p>
+                        <p className="mt-2">New Monthly Depreciation = New ROU NBV / New Term</p>
+                        <p className="ml-4">= {fmt(renPreview.summary.new_rou_nbv)} / {String(renPreview.summary.new_term_months)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(renPreview.summary.new_monthly_depreciation ?? (Number(renPreview.summary.new_rou_nbv) / Number(renPreview.summary.new_term_months)))} per month</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 4: Journal Entry (JE-7) — Renewal ═══</p>
+                        <table className="w-full text-xs mt-2">
+                          <thead><tr className="text-gray-400"><th className="text-left py-1">Account</th><th className="text-right py-1">Debit</th><th className="text-right py-1">Credit</th></tr></thead>
+                          <tbody className="text-green-300">
+                            <tr><td className="py-1">Dr Right-of-Use Asset</td><td className="text-right">{fmt(renPreview.summary.liability_delta)}</td><td></td></tr>
+                            <tr><td className="py-1">Cr Lease Liability</td><td></td><td className="text-right">{fmt(renPreview.summary.liability_delta)}</td></tr>
+                          </tbody>
+                        </table>
+                        <p className="mt-3 text-gray-400 text-xs">Dr = Cr = Liability Delta (balance sheet only, no P&L impact)</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ IFRS 16 Reference ═══</p>
+                        <p className="text-gray-300">Para 19: "A lessee shall determine the lease term as the non-cancellable period of a lease, together with periods covered by an option to extend the lease if the lessee is reasonably certain to exercise that option."</p>
+                        <p className="text-gray-300 mt-2">Para 45: "A lessee shall remeasure the lease liability by discounting the revised lease payments using a revised discount rate... The lessee shall recognise the amount of the remeasurement of the lease liability as an adjustment to the right-of-use asset."</p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1969,8 +2097,293 @@ export default function LeaseTransactionCentre() {
                     }}>
                       Reset Fields
                     </Button>
-                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || postMut.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 text-sm">
-                      {postMut.isPending ? 'Posting…' : 'Post Renewal & Generate JE-7'}
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || isPosting} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 text-sm">
+                      {isPosting ? 'Posting…' : 'Post Renewal & Generate JE-7'}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── PURCHASE TAB ── */}
+              <TabsContent value="Purchase" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                <div className="rounded-xl border border-blue-500/30 bg-card p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <CreditCard className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-base font-semibold">Purchase Option Exercise</h3>
+                    <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 26)</span>
+                  </div>
+                  <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 mb-5">
+                    <p className="text-xs text-blue-400 font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Finance Lease Conversion</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Exercising the purchase option derecognises the lease liability and ROU asset, transfers the asset to Property, Plant & Equipment at its carrying amount, and records the purchase price payment. Any difference is recognised as gain/loss in P&L.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-5">
+                    <div>
+                      <label className={labelCls}>Purchase Date *</label>
+                      <Input type="date" className={inputCls} value={purDate} onChange={e => setPurDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Purchase Price *</label>
+                      <Input className={inputCls} placeholder="e.g. 250000.00" value={purPrice} onChange={e => setPurPrice(e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelCls}>Notes / Reason</label>
+                      <Input className={inputCls} placeholder="Purchase option exercise justification…" value={purNotes} onChange={e => setPurNotes(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                {purFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating purchase derecognition…</p>}
+                {purPreview?.summary && (
+                  <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-blue-400">Purchase Derecognition Preview (IFRS 16 §26)</h4>
+                      <button
+                        onClick={() => setPurCalcOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-xs font-bold hover:bg-yellow-500/30 transition-colors"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                        Calc
+                      </button>
+                    </div>
+                    <KPIRow items={[
+                      { label: 'Lease Liability',       value: fmt(purPreview.summary.current_liability) },
+                      { label: 'ROU Asset (Cost)',      value: fmt(purPreview.summary.rou_asset_cost) },
+                      { label: 'Accum. Depreciation',   value: fmt(purPreview.summary.accumulated_depreciation) },
+                      { label: 'ROU NBV',               value: fmt(purPreview.summary.current_rou_nbv) },
+                      { label: 'Purchase Price',        value: fmt(purPreview.summary.purchase_price), highlight: true },
+                      { label: 'Owned Asset Value',     value: fmt(purPreview.summary.owned_asset_value), highlight: true },
+                      { label: 'Gain / Loss',           value: fmt(purPreview.summary.gain_loss), highlight: true },
+                      { label: 'Type',                  value: String(purPreview.summary.gain_loss_type ?? '—') },
+                    ]} />
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview — Purchase Option</h4>
+                      <JETable lines={purPreview.jeLines} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Purchase Calc Explanation Modal (full-screen blackboard) ── */}
+                {purCalcOpen && purPreview?.summary && (
+                  <div className="fixed inset-0 z-[9999] bg-gray-950/98 flex flex-col overflow-y-auto">
+                    <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
+                      <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                        <Calculator className="w-5 h-5" />
+                        Calculation Explanation — Purchase Option (IFRS 16 Para 26)
+                      </h2>
+                      <button onClick={() => setPurCalcOpen(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
+                    </div>
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-green-300 max-w-4xl mx-auto w-full space-y-6">
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 1: Identify Balances at Purchase Date ═══</p>
+                        <p>Purchase Date: <span className="text-white">{purDate}</span></p>
+                        <p>Remaining Lease Liability: <span className="text-cyan-300">{fmt(purPreview.summary.current_liability)} {purPreview.summary.currency as string}</span></p>
+                        <p>ROU Asset (original cost): <span className="text-cyan-300">{fmt(purPreview.summary.rou_asset_cost)} {purPreview.summary.currency as string}</span></p>
+                        <p>Accumulated Depreciation: <span className="text-cyan-300">{fmt(purPreview.summary.accumulated_depreciation)} {purPreview.summary.currency as string}</span></p>
+                        <p>ROU Net Book Value = Cost − Accum. Depr</p>
+                        <p className="ml-4">= {fmt(purPreview.summary.rou_asset_cost)} − {fmt(purPreview.summary.accumulated_depreciation)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(purPreview.summary.current_rou_nbv)} {purPreview.summary.currency as string}</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 2: Determine Owned Asset Value ═══</p>
+                        <p>Per IFRS 16 Para 26: The owned asset is recognised at the ROU carrying amount (NBV)</p>
+                        <p>Owned Asset Value = ROU NBV = <span className="text-white font-bold">{fmt(purPreview.summary.owned_asset_value)} {purPreview.summary.currency as string}</span></p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 3: Calculate Gain/Loss ═══</p>
+                        <p>Gain/Loss = Lease Liability − Purchase Price</p>
+                        <p className="ml-4">= {fmt(purPreview.summary.current_liability)} − {fmt(purPreview.summary.purchase_price)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(purPreview.summary.gain_loss)} ({purPreview.summary.gain_loss_type as string})</p>
+                        <p className="mt-2 text-gray-400 text-xs">If Liability {'>'} Purchase Price → Gain (we owed more than we paid)</p>
+                        <p className="text-gray-400 text-xs">If Liability {'<'} Purchase Price → Loss (we paid more than we owed)</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 4: Journal Entry — Purchase Option Exercise ═══</p>
+                        <table className="w-full text-xs mt-2">
+                          <thead><tr className="text-gray-400"><th className="text-left py-1">Account</th><th className="text-right py-1">Debit</th><th className="text-right py-1">Credit</th></tr></thead>
+                          <tbody className="text-green-300">
+                            <tr><td className="py-1">Dr Property, Plant & Equipment</td><td className="text-right">{fmt(purPreview.summary.owned_asset_value)}</td><td></td></tr>
+                            <tr><td className="py-1">Dr Accum. Depreciation — ROU</td><td className="text-right">{fmt(purPreview.summary.accumulated_depreciation)}</td><td></td></tr>
+                            <tr><td className="py-1">Dr Lease Liability</td><td className="text-right">{fmt(purPreview.summary.current_liability)}</td><td></td></tr>
+                            <tr><td className="py-1">Cr Right-of-Use Asset</td><td></td><td className="text-right">{fmt(purPreview.summary.rou_asset_cost)}</td></tr>
+                            <tr><td className="py-1">Cr Cash / Bank</td><td></td><td className="text-right">{fmt(purPreview.summary.purchase_price)}</td></tr>
+                            {Number(purPreview.summary.gain_loss) !== 0 && (
+                              <tr><td className="py-1">{Number(purPreview.summary.gain_loss) >= 0 ? 'Cr' : 'Dr'} Gain/Loss on Purchase</td>
+                                {Number(purPreview.summary.gain_loss) < 0 ? <><td className="text-right">{fmt(Math.abs(Number(purPreview.summary.gain_loss)))}</td><td></td></> : <><td></td><td className="text-right">{fmt(purPreview.summary.gain_loss)}</td></>}
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ IFRS 16 Reference ═══</p>
+                        <p className="text-gray-300">Para 26: "If the lease transfers ownership of the underlying asset to the lessee by the end of the lease term or if the cost of the right-of-use asset reflects that the lessee will exercise a purchase option, the lessee shall depreciate the right-of-use asset from the commencement date to the end of the useful life of the underlying asset."</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {posted && txnType === 'Purchase' ? (
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-400">Purchase Option Exercised Successfully</p>
+                      <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
+                      <p className="text-xs text-muted-foreground">{posted.je_label}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end">
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || isPosting} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 text-sm">
+                      {isPosting ? 'Posting…' : 'Exercise Purchase Option'}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── EXTENSION TAB ── */}
+              <TabsContent value="Extension" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                <div className="rounded-xl border border-amber-500/30 bg-card p-6">
+                  <div className="flex items-center gap-2 mb-5">
+                    <Plus className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-base font-semibold">Lease Extension (IBR Remeasurement)</h3>
+                    <span className="text-xs text-muted-foreground ml-1">(IFRS 16 Para 45 — same as Modification)</span>
+                  </div>
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-5">
+                    <p className="text-xs text-amber-400 font-semibold flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Remeasurement at New IBR</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Extension is treated as a lease modification under IFRS 16 Para 45. The lease liability is remeasured by discounting revised lease payments using a revised discount rate. The ROU asset is adjusted by the same amount (no P&L impact for increases).
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-5">
+                    <div>
+                      <label className={labelCls}>Effective Date *</label>
+                      <Input type="date" className={inputCls} value={extDate} onChange={e => setExtDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>New Monthly Payment *</label>
+                      <Input className={inputCls} placeholder="e.g. 12000.00" value={extPayment} onChange={e => setExtPayment(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>New IBR (Discount Rate)</label>
+                      <Input className={inputCls} placeholder="e.g. 0.0550" value={extIBR} onChange={e => setExtIBR(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Notes</label>
+                      <Input className={inputCls} placeholder="Extension justification…" value={extNotes} onChange={e => setExtNotes(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                {extFetching && <p className="text-sm text-muted-foreground animate-pulse px-1">Calculating extension remeasurement…</p>}
+                {extPreview?.summary && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-amber-400">
+                        {extPreview.summary.is_decrease ? 'Partial Termination Preview (IFRS 16 Para 46a) — Rent Decrease' : 'Extension Preview (IFRS 16 Para 45) — Remeasurement'}
+                      </h4>
+                      <button
+                        onClick={() => setExtCalcOpen(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-300 text-xs font-bold hover:bg-yellow-500/30 transition-colors"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                        Calc
+                      </button>
+                    </div>
+                    <KPIRow items={[
+                      { label: 'Current Liability',     value: fmt(extPreview.summary.current_liability) },
+                      { label: 'New PV',                value: fmt(extPreview.summary.new_pv), highlight: true },
+                      { label: 'Liability Δ',           value: fmt(extPreview.summary.liability_delta), highlight: true },
+                      { label: 'Current ROU NBV',       value: fmt(extPreview.summary.current_rou_nbv) },
+                      { label: 'New ROU NBV',           value: fmt(extPreview.summary.new_rou_nbv), highlight: true },
+                      { label: 'Remeasurement G/L',     value: fmt(extPreview.summary.remeasurement_gain_loss) },
+                      { label: 'IBR Used',              value: extPreview.summary.ibr_used ? `${(Number(extPreview.summary.ibr_used) * 100).toFixed(4)}%` : '—' },
+                      { label: 'New Depr/Month',        value: fmt(extPreview.summary.new_monthly_depreciation) },
+                    ]} />
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Journal Entry Preview (JE-4)</h4>
+                      <JETable lines={extPreview.jeLines} />
+                    </div>
+                    {extPreview.schedule?.length > 0 && <SchedulePreview rows={extPreview.schedule} />}
+                  </div>
+                )}
+
+                {/* ── Extension Calc Explanation Modal (full-screen blackboard) ── */}
+                {extCalcOpen && extPreview?.summary && (
+                  <div className="fixed inset-0 z-[9999] bg-gray-950/98 flex flex-col overflow-y-auto">
+                    <div className="flex items-center justify-between px-8 py-4 border-b border-gray-800">
+                      <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                        <Calculator className="w-5 h-5" />
+                        Calculation Explanation — Lease Extension ({extPreview.summary.is_decrease ? 'IFRS 16 Para 46a — Partial Termination' : 'IFRS 16 Para 45 — Remeasurement'})
+                      </h2>
+                      <button onClick={() => setExtCalcOpen(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
+                    </div>
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-green-300 max-w-4xl mx-auto w-full space-y-6">
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 1: Current Balances ═══</p>
+                        <p>Effective Date: <span className="text-white">{extDate}</span></p>
+                        <p>Current Lease Liability: <span className="text-cyan-300">{fmt(extPreview.summary.current_liability)} {extPreview.summary.currency as string}</span></p>
+                        <p>Current ROU NBV: <span className="text-cyan-300">{fmt(extPreview.summary.current_rou_nbv)} {extPreview.summary.currency as string}</span></p>
+                        <p>New Monthly Payment: <span className="text-cyan-300">{fmt(extPreview.summary.new_monthly_payment)} {extPreview.summary.currency as string}</span></p>
+                        <p>IBR Used: <span className="text-cyan-300">{extPreview.summary.ibr_used ? `${(Number(extPreview.summary.ibr_used) * 100).toFixed(4)}%` : '—'}</span></p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 2: Remeasure Lease Liability ═══</p>
+                        <p>New PV = PMT × [(1 − (1 + r)^(−n)) / r]</p>
+                        <p className="ml-4">= {fmt(extPreview.summary.new_monthly_payment)} × PV annuity factor</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(extPreview.summary.new_pv)} {extPreview.summary.currency as string}</p>
+                        <p className="mt-2">Liability Delta = New PV − Current Liability</p>
+                        <p className="ml-4">= {fmt(extPreview.summary.new_pv)} − {fmt(extPreview.summary.current_liability)}</p>
+                        <p className="ml-4 text-white font-bold">= {fmt(extPreview.summary.liability_delta)} {extPreview.summary.currency as string}</p>
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ STEP 3: Adjust ROU Asset ═══</p>
+                        {extPreview.summary.is_decrease ? (
+                          <>
+                            <p>Proportional Ratio = New PV / Current Liability = {fmt(extPreview.summary.new_pv)} / {fmt(extPreview.summary.current_liability)} = {extPreview.summary.proportional_ratio ? Number(extPreview.summary.proportional_ratio).toFixed(6) : '—'}</p>
+                            <p>ROU Reduction = Current ROU NBV × (1 − Ratio)</p>
+                            <p className="ml-4 text-white font-bold">New ROU NBV = {fmt(extPreview.summary.new_rou_nbv)}</p>
+                            <p className="mt-2">Remeasurement G/L = Liability Reduction − ROU Reduction (recognised in P&L)</p>
+                            <p className="ml-4 text-white font-bold">= {fmt(extPreview.summary.remeasurement_gain_loss)}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p>ROU Adjustment = Liability Delta (no P&L impact for increases)</p>
+                            <p>New ROU NBV = Current ROU NBV + Liability Delta</p>
+                            <p className="ml-4">= {fmt(extPreview.summary.current_rou_nbv)} + {fmt(extPreview.summary.liability_delta)}</p>
+                            <p className="ml-4 text-white font-bold">= {fmt(extPreview.summary.new_rou_nbv)} {extPreview.summary.currency as string}</p>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="border border-gray-700 rounded-lg p-5 bg-gray-900/50">
+                        <p className="text-yellow-400 font-bold mb-3">═══ IFRS 16 Reference ═══</p>
+                        <p className="text-gray-300">Para 45: "A lessee shall remeasure the lease liability by discounting the revised lease payments using a revised discount rate... The lessee shall recognise the amount of the remeasurement of the lease liability as an adjustment to the right-of-use asset."</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {posted && txnType === 'Extension' ? (
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-400">Extension Posted Successfully</p>
+                      <p className="text-xs text-muted-foreground mt-1">JE Reference: <span className="font-mono font-bold">{posted.je_ref}</span></p>
+                      <p className="text-xs text-muted-foreground">{posted.je_label}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end">
+                    <Button onClick={() => setConfirmOpen(true)} disabled={!isPreviewReady || isPosting} className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-2.5 text-sm">
+                      {isPosting ? 'Posting…' : 'Post Extension & Generate JE-4'}
                     </Button>
                   </div>
                 )}
@@ -2026,6 +2439,8 @@ export default function LeaseTransactionCentre() {
               <p className="text-xs text-muted-foreground">
                 {txnType === 'Termination'
                   ? 'This will permanently derecognise the ROU asset and lease liability and cannot be undone.'
+                  : txnType === 'Purchase'
+                  ? 'This will derecognise the lease liability and ROU asset, transfer to PP&E, and record the purchase payment.'
                   : `This will post the ${txnType.toLowerCase()} JE and regenerate the amortisation schedule.`}
               </p>
             </div>
@@ -2033,7 +2448,7 @@ export default function LeaseTransactionCentre() {
           <div className="flex items-center gap-3 shrink-0">
             <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handlePost}
-              className={txnType === 'Termination' ? 'bg-red-600 hover:bg-red-700 text-white' : txnType === 'Renewal' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}>
+              className={txnType === 'Termination' ? 'bg-red-600 hover:bg-red-700 text-white' : txnType === 'Renewal' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : txnType === 'Purchase' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}>
               Post Transaction
             </Button>
           </div>

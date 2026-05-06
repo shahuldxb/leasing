@@ -2008,14 +2008,14 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Fix the "No amortisation schedule generated yet" message for contracts that have valid data
 - [x] Backfilled all existing contracts (contract 58: 36 rows, contract 59: 48 rows, all others already had schedules)
 
-## Refactor Teller Roles (May 2026)
-- [ ] Update tellerRole values to: BOM (Branch Operation Manager), AM (Assistant Manager), CTL (Chief Teller), TLR (Teller)
-- [ ] Branch structure: 1 BOM, 1 AM, 1 CTL, 4 TLR per branch
-- [ ] user_id: unique integer code
-- [ ] Add name column (32 characters)
-- [ ] Add status column (9 characters)
-- [ ] Refactor all dependent backend code (routers, SPs)
-- [ ] Refactor all dependent frontend code (forms, tables, dropdowns)
+## Refactor Teller Roles (May 2026) — CANCELLED per user instruction ("No. No teller role")
+- [x] ~~Update tellerRole values~~ — NOT NEEDED
+- [x] ~~Branch structure~~ — NOT NEEDED
+- [x] ~~user_id: unique integer code~~ — NOT NEEDED
+- [x] ~~Add name column~~ — NOT NEEDED
+- [x] ~~Add status column~~ — NOT NEEDED
+- [x] ~~Refactor all dependent backend code~~ — NOT NEEDED
+- [x] ~~Refactor all dependent frontend code~~ — NOT NEEDED
 
 ## Fix: posting_status NULL error (May 2026)
 - [x] Root cause: posting_status column is NOT NULL with CHECK constraint (Projected/Posted/Locked) but sp_SaveAmortisationSchedule didn't include it in INSERT
@@ -2117,3 +2117,42 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Frontend: show Remeasurement G/L as non-zero for rent decrease, display 4-line JV preview
 - [x] Delete future JVs, insert modification JV, regenerate new monthly JVs (same as rent increase flow)
 - [x] Add Calc explanation for rent decrease showing proportional reduction formula (full-screen blackboard modal with step-by-step IFRS 16 Para 45/46a calculation)
+
+## Feature: Lease Transaction Centre Redesign — Renewal, Purchase, Extension (May 2026)
+
+### Red Lines (System Integrity)
+- [x] Existing SPs (sp_PreviewTermination, sp_PreviewModification, sp_ApplyLeaseModification, sp_GenerateMonthlyJVsForSelected) remain intact
+- [x] JV Register data untouched (all existing JVs preserved)
+- [x] Database schema — no destructive changes to core tables
+- [x] Existing Modification logic preserved (rent increase Para 45, rent decrease Para 46a)
+- [x] Period_seq numbering, Print Register, existing Calc modals all preserved
+
+### SP: Renewal (JE-7, IFRS 16 §19)
+- [x] Create sp_PreviewRenewal_v2: inputs (ContractId, NewExpiryDate, NewMonthlyPayment, NewIBR) → outputs (summary with extended term PV, liability delta, ROU delta; JE-7 lines; new schedule)
+- [x] Create sp_ApplyRenewal: delete future monthly JVs, insert JE-7 (Dr ROU / Cr Liability for extension), regenerate monthly JVs for extended term with new period_seq
+
+### SP: Purchase (JE-4, IFRS 16 §26)
+- [x] Create sp_PreviewPurchase: inputs (ContractId, PurchaseDate, PurchasePrice) → outputs (summary with current liability, ROU NBV, purchase price, gain/loss; JE lines to derecognise lease and transfer to owned asset)
+- [x] Create sp_ApplyPurchase: derecognise lease liability + ROU, transfer to Property/Plant/Equipment at carrying amount + purchase price, delete future monthly JVs, update contract status to 'Purchased'
+
+### SP: Extension (reuse existing Modification SP — IFRS 16 §45)
+- [x] Verify sp_PreviewModification works for Extension scenario (IBR change + same/new payment over same remaining term)
+- [x] No new SP needed — Extension tab reuses existing Modification preview/apply logic
+
+### Backend Router Updates
+- [x] Add previewRenewalV2 procedure to lease router (calls sp_PreviewRenewal_v2)
+- [x] Add applyRenewal procedure to lease router (calls sp_ApplyRenewal)
+- [x] Add previewPurchase procedure to lease router (calls sp_PreviewPurchase)
+- [x] Add applyPurchase procedure to lease router (calls sp_ApplyPurchase)
+
+### Frontend: Redesign LeaseTransactionCentre Tabs
+- [x] Rename tabs to: Modification (rent change), Renewal (extend term), Purchase (buy asset), Extension (IBR remeasurement)
+- [x] Hide Termination tab from UI (keep SP functional for backend use)
+- [x] Renewal tab: inputs = New Expiry Date, New Monthly Payment, New IBR; preview + post flow
+- [x] Purchase tab: inputs = Purchase Date, Purchase Price; preview + post flow
+- [x] Extension tab: reuse Modification UI with IBR-focused labelling
+
+### Calc Modals (full-screen blackboard style)
+- [x] Renewal Calc modal: step-by-step showing extended term PV, liability increase, ROU increase, JE-7 entry, new depreciation
+- [x] Purchase Calc modal: step-by-step showing derecognition of lease, transfer to owned asset, gain/loss calculation
+- [x] Extension Calc modal: reuse existing Modification Calc modal (already built)

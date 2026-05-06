@@ -938,16 +938,85 @@ export const leaseRouter = router({
       newIBR: z.number().optional(),
     }))
     .query(async ({ input }) => {
-      const results = await execSPPMulti('sp_PreviewRenewal', [
+      const results = await execSPPMulti('sp_PreviewRenewal_v2', [
         { name: 'ContractId',        type: sql.Int,           value: input.contractId },
         { name: 'NewExpiryDate',     type: sql.Date,          value: new Date(input.newExpiryDate) },
         { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment },
         { name: 'NewIBR',            type: sql.Decimal(8,6),  value: input.newIBR ?? null },
       ]);
       return {
+        summary:  (results[0] ?? [])[0] as Record<string, unknown>,
+        jeLines:  (results[1] ?? []) as Array<Record<string, unknown>>,
+        schedule: (results[2] ?? []) as Array<Record<string, unknown>>,
+      };
+    }),
+
+  previewPurchase: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      purchaseDate: z.string(),
+      purchasePrice: z.number(),
+    }))
+    .query(async ({ input }) => {
+      const results = await execSPPMulti('sp_PreviewPurchase', [
+        { name: 'ContractId',    type: sql.Int,           value: input.contractId },
+        { name: 'PurchaseDate',  type: sql.Date,          value: new Date(input.purchaseDate) },
+        { name: 'PurchasePrice', type: sql.Decimal(18,2), value: input.purchasePrice },
+      ]);
+      return {
         summary: (results[0] ?? [])[0] as Record<string, unknown>,
         jeLines: (results[1] ?? []) as Array<Record<string, unknown>>,
       };
+    }),
+
+  applyRenewal: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      newExpiryDate: z.string(),
+      newMonthlyPayment: z.number(),
+      newIBR: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const postedBy = ctx.user.name ?? ctx.user.openId;
+      const result = await execSPPOne('sp_ApplyRenewal', [
+        { name: 'ContractId',        type: sql.Int,           value: input.contractId },
+        { name: 'NewExpiryDate',     type: sql.Date,          value: new Date(input.newExpiryDate) },
+        { name: 'NewMonthlyPayment', type: sql.Decimal(18,2), value: input.newMonthlyPayment },
+        { name: 'NewIBR',            type: sql.Decimal(8,6),  value: input.newIBR ?? null },
+        { name: 'PostedBy',          type: sql.NVarChar(100), value: postedBy },
+      ]);
+      await writeAuditLog({
+        userId: ctx.user.id, username: ctx.user.name ?? '',
+        userRole: ctx.user.role ?? 'user',
+        module: 'LeaseTransactionCentre', actionType: 'APPLY_RENEWAL',
+        screenId: 'LTC', recordId: String(input.contractId),
+        outcome: 'Success', processStartTime: new Date(),
+      });
+      return result as { result: string; je_ref: string; je_label: string };
+    }),
+
+  applyPurchase: protectedProcedure
+    .input(z.object({
+      contractId: z.number(),
+      purchaseDate: z.string(),
+      purchasePrice: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const postedBy = ctx.user.name ?? ctx.user.openId;
+      const result = await execSPPOne('sp_ApplyPurchase', [
+        { name: 'ContractId',    type: sql.Int,           value: input.contractId },
+        { name: 'PurchaseDate',  type: sql.Date,          value: new Date(input.purchaseDate) },
+        { name: 'PurchasePrice', type: sql.Decimal(18,2), value: input.purchasePrice },
+        { name: 'PostedBy',      type: sql.NVarChar(100), value: postedBy },
+      ]);
+      await writeAuditLog({
+        userId: ctx.user.id, username: ctx.user.name ?? '',
+        userRole: ctx.user.role ?? 'user',
+        module: 'LeaseTransactionCentre', actionType: 'APPLY_PURCHASE',
+        screenId: 'LTC', recordId: String(input.contractId),
+        outcome: 'Success', processStartTime: new Date(),
+      });
+      return result as { result: string; je_ref: string; je_label: string };
     }),
 
   postLeaseTransaction: protectedProcedure
