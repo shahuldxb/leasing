@@ -2103,3 +2103,10 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 
 ## Fix: Regenerated Schedule Preview (May 2026)
 - [x] Show all remaining periods in Regenerated Schedule Preview (not just first 6)
+
+## Feature: Modification posting to JV Register (May 2026)
+- [x] Keep Initial Recognition + past monthly JVs untouched when modification is applied
+- [x] Delete future monthly amortisation JVs (from effective date onwards) when modification is applied
+- [x] Insert Remeasurement JV (JE-4) into journal_vouchers + jv_lines tables
+- [x] Regenerate new monthly amortisation JVs for remaining periods with new terms (new payment, new PV, new depreciation)
+- [x] Renumber period_seq after modification (past JVs keep original seq, new JVs get sequential numbering)
