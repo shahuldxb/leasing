@@ -24,6 +24,9 @@ export default function IAS17Comparison() {
   const [year, setYear] = useState(currentYear);
   const [search, setSearch] = useState('');
 
+  const { data: settings } = trpc.journalVoucher.getSettings.useQuery();
+  const ccy = settings?.default_currency || 'QAR';
+
   const { data, isLoading, refetch } = trpc.lease.getIAS17Comparison.useQuery(
     { year },
     { retry: false }
@@ -41,12 +44,12 @@ export default function IAS17Comparison() {
     const lines = [
       `IAS 17 vs IFRS 16 Comparative Report — Year ended 31 December ${year}`,
       '',
-      `Total IAS 17 Rent Expense:          ZAR ${fmt(summary.total_ias17_expense, 2)}`,
-      `Total IFRS 16 Interest Expense:     ZAR ${fmt(summary.total_ifrs16_interest, 2)}`,
-      `Total IFRS 16 Depreciation:         ZAR ${fmt(summary.total_ifrs16_depreciation, 2)}`,
-      `Total IFRS 16 P&L Charge:           ZAR ${fmt(summary.total_ifrs16_charge, 2)}`,
-      `Total Lease Liability (B/S):        ZAR ${fmt(summary.total_lease_liability, 2)}`,
-      `Total ROU Asset (B/S):              ZAR ${fmt(summary.total_rou_asset, 2)}`,
+      `Total IAS 17 Rent Expense:          ${ccy} ${fmt(summary.total_ias17_expense, 2)}`,
+      `Total IFRS 16 Interest Expense:     ${ccy} ${fmt(summary.total_ifrs16_interest, 2)}`,
+      `Total IFRS 16 Depreciation:         ${ccy} ${fmt(summary.total_ifrs16_depreciation, 2)}`,
+      `Total IFRS 16 P&L Charge:           ${ccy} ${fmt(summary.total_ifrs16_charge, 2)}`,
+      `Total Lease Liability (B/S):        ${ccy} ${fmt(summary.total_lease_liability, 2)}`,
+      `Total ROU Asset (B/S):              ${ccy} ${fmt(summary.total_rou_asset, 2)}`,
       '',
       'Per-Lease Detail:',
       ...filtered.map(r =>
@@ -168,7 +171,7 @@ export default function IAS17Comparison() {
                     : 'IFRS 16 results in lower P&L charge — occurs in later years as interest component decreases.'}
                 </div>
                 <div className="p-2 bg-sky-500/10 border border-sky-500/20 rounded text-xs text-sky-300 mt-2">
-                  <strong>Balance sheet:</strong> IFRS 16 adds ZAR {fmt(summary.total_lease_liability, 0)} of lease liabilities and ZAR {fmt(summary.total_rou_asset, 0)} of ROU assets.
+                  <strong>Balance sheet:</strong> IFRS 16 adds {ccy} {fmt(summary.total_lease_liability, 0)} of lease liabilities and {ccy} {fmt(summary.total_rou_asset, 0)} of ROU assets.
                 </div>
               </div>
             </div>

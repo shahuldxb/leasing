@@ -2190,3 +2190,19 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Lease Expiry tab with days-ahead filter and urgency badges
 - [x] Cash Payment Forecast tab with months filter
 - [x] Added to sidebar navigation under Accounting Engine
+
+## Feature: Menu Cleanup + Currency Fix (May 2026)
+
+### Remove Sidebar Menus
+- [x] Remove "Amortization Master" from Accounting Engine children
+- [x] Remove "Exemptions" from Accounting Engine children
+- [x] Remove "Transaction Engine" from Accounting Engine children
+- [x] Remove "FX Revaluation" from Accounting Engine children
+- [x] Remove "Bulk Operations" from Accounting Engine children
+- [x] Remove "Consolidation" from Accounting Engine children
+- [x] Keep Accounting Engine parent (cleaned up children only)
+
+### Currency Fix
+- [x] Fix all currency displays to show actual currency (QAR/AED) not ZAR — DisclosureNotes.tsx and IAS17Comparison.tsx now fetch default_currency from settings
+- [x] Default currency setting (QAR) already exists in Accounting Settings page (Configuration Centre)
+- [x] default_currency already stored in accounting.system_settings table as 'QAR'

@@ -22,6 +22,9 @@ export default function DisclosureNotes() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
+  const { data: settings } = trpc.journalVoucher.getSettings.useQuery();
+  const ccy = settings?.default_currency || 'QAR';
+
   const { data, isLoading, refetch } = trpc.lease.getDisclosureNotes.useQuery(
     { reportingYear: year },
     { retry: false }
@@ -45,9 +48,9 @@ export default function DisclosureNotes() {
       '',
       '1. Maturity Analysis of Lease Liabilities (Undiscounted)',
       ...sortedMaturity.map(r =>
-        `  ${r.maturity_band}: Undiscounted ZAR ${fmt(r.undiscounted_payment, 2)} | Discounted ZAR ${fmt(r.discounted_liability, 2)}`
+        `  ${r.maturity_band}: Undiscounted ${ccy} ${fmt(r.undiscounted_payment, 2)} | Discounted ${ccy} ${fmt(r.discounted_liability, 2)}`
       ),
-      `  Total: Undiscounted ZAR ${fmt(totalUndiscounted, 2)} | Discounted ZAR ${fmt(totalDiscounted, 2)}`,
+      `  Total: Undiscounted ${ccy} ${fmt(totalUndiscounted, 2)} | Discounted ${ccy} ${fmt(totalDiscounted, 2)}`,
       '',
       '2. ROU Asset Movement',
       ...rouRows.map(r =>
@@ -55,18 +58,18 @@ export default function DisclosureNotes() {
       ),
       '',
       '3. Lease Liability Reconciliation',
-      `  Opening liability: ZAR ${fmt(liab.opening_liability, 2)}`,
-      `  New leases recognised: ZAR ${fmt(liab.new_leases, 2)}`,
-      `  Interest accrued: ZAR ${fmt(liab.interest_accrued, 2)}`,
-      `  Payments made: (ZAR ${fmt(liab.payments_made, 2)})`,
-      `  Closing liability: ZAR ${fmt(liab.closing_liability, 2)}`,
+      `  Opening liability: ${ccy} ${fmt(liab.opening_liability, 2)}`,
+      `  New leases recognised: ${ccy} ${fmt(liab.new_leases, 2)}`,
+      `  Interest accrued: ${ccy} ${fmt(liab.interest_accrued, 2)}`,
+      `  Payments made: (${ccy} ${fmt(liab.payments_made, 2)})`,
+      `  Closing liability: ${ccy} ${fmt(liab.closing_liability, 2)}`,
       '',
       '4. Key Assumptions',
       `  Number of leases: ${assumptions.total_leases}`,
       `  Weighted average IBR: ${pct(assumptions.weighted_avg_ibr)}`,
       `  Average remaining term: ${assumptions.avg_remaining_term_months} months`,
-      `  Total ROU asset (NBV): ZAR ${fmt(assumptions.total_rou_nbv, 2)}`,
-      `  Total lease liability: ZAR ${fmt(assumptions.total_lease_liability, 2)}`,
+      `  Total ROU asset (NBV): ${ccy} ${fmt(assumptions.total_rou_nbv, 2)}`,
+      `  Total lease liability: ${ccy} ${fmt(assumptions.total_lease_liability, 2)}`,
     ];
     navigator.clipboard.writeText(lines.join('\n'));
     toast.success('Copied to clipboard — ready to paste into the financial statements.');
@@ -110,8 +113,8 @@ export default function DisclosureNotes() {
               {[
                 { label: 'Total Leases', value: String(assumptions.total_leases ?? '—'), icon: Building2, color: 'text-blue-400' },
                 { label: 'Weighted Avg IBR', value: pct(assumptions.weighted_avg_ibr), icon: TrendingUp, color: 'text-emerald-400' },
-                { label: 'Total ROU Asset', value: `ZAR ${fmt(assumptions.total_rou_nbv, 0)}`, icon: Scale, color: 'text-violet-400' },
-                { label: 'Total Lease Liability', value: `ZAR ${fmt(assumptions.total_lease_liability, 0)}`, icon: Info, color: 'text-amber-400' },
+                { label: 'Total ROU Asset', value: `${ccy} ${fmt(assumptions.total_rou_nbv, 0)}`, icon: Scale, color: 'text-violet-400' },
+                { label: 'Total Lease Liability', value: `${ccy} ${fmt(assumptions.total_lease_liability, 0)}`, icon: Info, color: 'text-amber-400' },
               ].map(({ label, value, icon: Icon, color }) => (
                 <Card key={label} className="bg-card/60 border-border/50">
                   <CardContent className="pt-4 pb-3">
@@ -141,8 +144,8 @@ export default function DisclosureNotes() {
                       <tr className="border-b border-border/50">
                         <th className="text-left py-2 text-muted-foreground font-medium">Maturity Band</th>
                         <th className="text-right py-2 text-muted-foreground font-medium">Leases</th>
-                        <th className="text-right py-2 text-muted-foreground font-medium">Undiscounted (ZAR)</th>
-                        <th className="text-right py-2 text-muted-foreground font-medium">Discounted (ZAR)</th>
+                        <th className="text-right py-2 text-muted-foreground font-medium">Undiscounted ({ccy})</th>
+                        <th className="text-right py-2 text-muted-foreground font-medium">Discounted ({ccy})</th>
                         <th className="text-right py-2 text-muted-foreground font-medium">Discount Effect</th>
                       </tr>
                     </thead>
@@ -253,7 +256,7 @@ export default function DisclosureNotes() {
                     <div key={label} className={`flex justify-between py-1.5 border-b border-border/20 ${bold ? 'border-t-2 border-border font-semibold mt-2 pt-2' : ''}`}>
                       <span className={bold ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
                       <span className={`font-mono ${bold ? 'text-foreground' : sign < 0 ? 'text-red-400' : 'text-foreground'}`}>
-                        {sign < 0 ? `(${fmt(value, 2)})` : `ZAR ${fmt(value, 2)}`}
+                        {sign < 0 ? `(${fmt(value, 2)})` : `${ccy} ${fmt(value, 2)}`}
                       </span>
                     </div>
                   ))}
@@ -277,10 +280,10 @@ export default function DisclosureNotes() {
                     { label: 'Weighted average IBR', value: pct(assumptions.weighted_avg_ibr) },
                     { label: 'IBR range', value: `${pct(assumptions.min_ibr)} – ${pct(assumptions.max_ibr)}` },
                     { label: 'Avg remaining term', value: `${assumptions.avg_remaining_term_months ?? '—'} months` },
-                    { label: 'Total annual payments', value: `ZAR ${fmt(assumptions.total_annual_payments, 0)}` },
-                    { label: 'Total lease liability', value: `ZAR ${fmt(assumptions.total_lease_liability, 0)}` },
-                    { label: 'Total ROU asset (NBV)', value: `ZAR ${fmt(assumptions.total_rou_nbv, 0)}` },
-                    { label: 'Discount on liability', value: `ZAR ${fmt((Number(assumptions.total_lease_liability) || 0) - (Number(liab.closing_liability) || 0), 0)}` },
+                    { label: 'Total annual payments', value: `${ccy} ${fmt(assumptions.total_annual_payments, 0)}` },
+                    { label: 'Total lease liability', value: `${ccy} ${fmt(assumptions.total_lease_liability, 0)}` },
+                    { label: 'Total ROU asset (NBV)', value: `${ccy} ${fmt(assumptions.total_rou_nbv, 0)}` },
+                    { label: 'Discount on liability', value: `${ccy} ${fmt((Number(assumptions.total_lease_liability) || 0) - (Number(liab.closing_liability) || 0), 0)}` },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-muted/20 rounded-lg p-3">
                       <div className="text-xs text-muted-foreground mb-1">{label}</div>
