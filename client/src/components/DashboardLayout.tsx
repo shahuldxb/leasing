@@ -102,20 +102,13 @@ const menuItems: NavItem[] = [
       { label: "IFRS 16 Reports Centre", path: "/reports/ifrs16" },
       { label: "Disclosure Pack",       path: "/accounting/disclosure-pack" },
       { label: "Multi-Standard (IFRS/ASC/IPSAS)", path: "/accounting/multi-standard" },
-      { label: "ERP Export",            path: "/accounting/erp-export" },
     ],
   },
 
   {
     icon: TrendingUp, label: "Finance & Planning",
     children: [
-      { label: "Budget Variance",    path: "/finance/budget-variance" },
-      { label: "Budget vs Actual",   path: "/accounting/budget-vs-actual" },
-      { label: "Maturity Analysis",  path: "/accounting/maturity" },
       { label: "Maturity Ladder",    path: "/accounting/maturity-ladder" },
-      { label: "Modification Wizard",  path: "/leases/modification-wizard" },
-      { label: "Variable Rent",      path: "/accounting/variable-rent" },
-      { label: "ASC 842",            path: "/accounting/asc842" },
     ],
   },
 
@@ -135,7 +128,6 @@ const menuItems: NavItem[] = [
   {
     icon: TrendingUp, label: "Budgeting & ESG",
     children: [
-      { label: "Budgeting & Forecasting", path: "/finance/budgeting" },
       { label: "ESG Data Entry",          path: "/esg/data-entry" },
       { label: "ESG Report",              path: "/esg/report" },
     ],

@@ -2206,3 +2206,8 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Fix all currency displays to show actual currency (QAR/AED) not ZAR — DisclosureNotes.tsx and IAS17Comparison.tsx now fetch default_currency from settings
 - [x] Default currency setting (QAR) already exists in Accounting Settings page (Configuration Centre)
 - [x] default_currency already stored in accounting.system_settings table as 'QAR'
+
+## Feature: Additional Menu Cleanup (May 2026)
+- [x] Remove "ERP Export" from Accounting Engine
+- [x] In Finance & Planning, keep only "Maturity Ladder" (remove all others)
+- [x] In Budgeting & ESG, remove "Budgeting & Forecasting"
