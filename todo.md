@@ -2213,9 +2213,12 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] In Budgeting & ESG, remove "Budgeting & Forecasting"
 
 ## Feature: Landing Page Demo Video (May 2026)
-- [ ] Create product demo video concept and get user approval
-- [ ] Generate video following video-generator skill workflow
-- [ ] Build landing page with embedded video
+- [x] Create product demo video concept and get user approval (approved by user)
+- [x] Generate video following video-generator skill workflow (6 clips + narration + BGM assembled into 32s final video)
+- [x] Generate 7 new video clips for AI Report Engine (one per report type)
+- [x] Generate narration for 7 new report clips
+- [x] Merge 7 report clips into existing demo video (extended cut: 60s, 13 clips)
+- [x] Build landing page with embedded final video at / (root) and /landing routes
 
 ## Feature: AI-Powered Report Engine (May 2026)
 

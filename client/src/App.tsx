@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Core
 import Dashboard          from "./pages/Dashboard";
+import LandingPage        from "./pages/LandingPage";
 
 // Lease Management
 import LeaseRegister      from "./pages/LeaseRegister";
@@ -174,7 +175,8 @@ function Router() {
   return (
     <Switch>
       {/* Root */}
-      <Route path="/"                        component={Dashboard} />
+      <Route path="/"                        component={LandingPage} />
+      <Route path="/landing"                  component={LandingPage} />
       <Route path="/dashboard"               component={Dashboard} />
 
       {/* Lease Management */}
