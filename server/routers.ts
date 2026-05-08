@@ -24,7 +24,8 @@ import { esgRouter }            from "./routers/esg";
 import { transactionEngineRouter } from "./routers/transactionEngine";
 import { businessRulesRouter } from "./routers/businessRules";
 import { glConfigurationRouter } from "./routers/glConfiguration";
-import { performanceRouter } from "./routers/performance";
+import { performanceRouter } from './routers/performance';
+import { reportEngineRouter } from './routers/reportEngine';
 import { protectedProcedure }   from "./_core/trpc";
 import { z }                    from "zod";
 import { getPool }              from "./db-sqlserver";
@@ -123,6 +124,7 @@ export const appRouter = router({
   businessRules: businessRulesRouter,
   glConfiguration: glConfigurationRouter,
   performance: performanceRouter,
+  reportEngine: reportEngineRouter,
 });
 
 export type AppRouter = typeof appRouter;

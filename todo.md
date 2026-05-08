@@ -2211,3 +2211,32 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Remove "ERP Export" from Accounting Engine
 - [x] In Finance & Planning, keep only "Maturity Ladder" (remove all others)
 - [x] In Budgeting & ESG, remove "Budgeting & Forecasting"
+
+## Feature: Landing Page Demo Video (May 2026)
+- [ ] Create product demo video concept and get user approval
+- [ ] Generate video following video-generator skill workflow
+- [ ] Build landing page with embedded video
+
+## Feature: AI-Powered Report Engine (May 2026)
+
+### Database
+- [x] Create accounting.report_outputs table (id, report_type, generated_at, parameters_json, content_markdown, status)
+
+### Backend (7 Enterprise Prompts + Generation + Storage + Retrieval)
+- [x] Build generateReport procedure: pulls live data from SP, feeds to Azure OpenAI with enterprise prompt, stores result
+- [x] Build getReport procedure: retrieves latest stored report by type
+- [x] Build listReports procedure: lists all generated reports with timestamps
+- [x] Craft enterprise prompt for Portfolio Summary (executive summary, risk indicators, concentration)
+- [x] Craft enterprise prompt for ROU Roll-Forward (movement analysis, variance, impairment)
+- [x] Craft enterprise prompt for Liability Roll-Forward (cash flow impact, refinancing risk)
+- [x] Craft enterprise prompt for Maturity Analysis (liquidity risk, renewal strategy)
+- [x] Craft enterprise prompt for Interest & Depreciation (P&L impact, budget variance, trends)
+- [x] Craft enterprise prompt for Lease Expiry (action items, renewal/termination recommendations)
+- [x] Craft enterprise prompt for Cash Forecast (cash planning, payment concentration, FX exposure)
+
+### Frontend
+- [x] Add "Generate Report" button to each tab (amber/gold gradient, calls generateReport)
+- [x] Add "View Report" panel (emerald button, full-screen overlay with Streamdown markdown rendering)
+- [x] Show generation timestamp, user, period, currency, report ID
+- [x] Render markdown content with prose-invert styling and Streamdown component
+- [x] Regenerate button inside overlay to refresh the report

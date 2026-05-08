@@ -1,8 +1,11 @@
 /**
- * IFRS 16 Reports Centre
+ * IFRS 16 Reports Centre — AI-Powered Report Engine
  * Screen ID: RPT-001
  * Consolidates: Portfolio Summary, ROU Roll-Forward, Liability Roll-Forward,
  *               Maturity Analysis, Interest/Depreciation Expense, Lease Expiry, Cash Forecast
+ *
+ * Each tab shows raw data tables AND an AI-generated narrative report.
+ * Click "Generate Report" to create a new AI narrative; stored reports show automatically.
  */
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
@@ -17,9 +20,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2, TrendingUp, TrendingDown, Banknote, Calendar, AlertTriangle,
-  DollarSign, RefreshCw, Download, BarChart3, PieChart
+  DollarSign, RefreshCw, Download, BarChart3, PieChart, Sparkles, FileText,
+  Loader2, Clock, X, Eye
 } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { Streamdown } from "streamdown";
+import { toast } from "sonner";
 
 const fmt = (n: unknown) =>
   n != null && !isNaN(Number(n))
@@ -37,6 +43,27 @@ const fmtDate = (d: unknown) => {
   return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+// Map tab values to report engine types
+const TAB_TO_REPORT_TYPE: Record<string, string> = {
+  portfolio: "portfolio_summary",
+  rou: "rou_roll_forward",
+  liability: "liability_roll_forward",
+  maturity: "maturity_analysis",
+  expense: "interest_depreciation",
+  expiry: "lease_expiry",
+  cash: "cash_forecast",
+};
+
+const REPORT_TYPE_LABELS: Record<string, string> = {
+  portfolio_summary: "Portfolio Summary",
+  rou_roll_forward: "ROU Asset Roll-Forward",
+  liability_roll_forward: "Lease Liability Roll-Forward",
+  maturity_analysis: "Maturity Analysis",
+  interest_depreciation: "Interest & Depreciation Expense",
+  lease_expiry: "Lease Expiry & Renewal Action",
+  cash_forecast: "Cash Payment Forecast",
+};
+
 export default function IFRS16Reports() {
   const [activeTab, setActiveTab] = useState("portfolio");
   const [startDate, setStartDate] = useState("2023-01-01");
@@ -45,10 +72,13 @@ export default function IFRS16Reports() {
   const [granularity, setGranularity] = useState<"Monthly" | "Quarterly">("Monthly");
   const [daysAhead, setDaysAhead] = useState(365);
   const [months, setMonths] = useState(12);
+  const [showAIReport, setShowAIReport] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const currencyFilter = currency === "all" ? undefined : currency;
+  const currentReportType = TAB_TO_REPORT_TYPE[activeTab] as any;
 
-  // Queries
+  // ── Data Queries ─────────────────────────────────────────
   const portfolio = trpc.lease.reportPortfolioSummary.useQuery(undefined, { enabled: activeTab === "portfolio" });
   const rou = trpc.lease.reportROURollForward.useQuery(
     { startDate, endDate, currency: currencyFilter },
@@ -75,7 +105,36 @@ export default function IFRS16Reports() {
     { enabled: activeTab === "cash" }
   );
 
-  // ROU totals
+  // ── AI Report Engine Queries ─────────────────────────────
+  const latestReport = trpc.reportEngine.getLatestReport.useQuery(
+    { reportType: currentReportType },
+    { enabled: !!currentReportType }
+  );
+
+  const generateMut = trpc.reportEngine.generateReport.useMutation({
+    onSuccess: (data) => {
+      setIsGenerating(false);
+      setShowAIReport(true);
+      latestReport.refetch();
+      toast.success("AI Report generated successfully");
+    },
+    onError: (err) => {
+      setIsGenerating(false);
+      toast.error(`Report generation failed: ${err.message}`);
+    },
+  });
+
+  const handleGenerateReport = () => {
+    setIsGenerating(true);
+    generateMut.mutate({
+      reportType: currentReportType,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      currency: currencyFilter || undefined,
+    });
+  };
+
+  // ── Computed Totals ──────────────────────────────────────
   const rouTotals = useMemo(() => {
     if (!rou.data || !Array.isArray(rou.data)) return null;
     const rows = rou.data as Array<Record<string, unknown>>;
@@ -88,7 +147,6 @@ export default function IFRS16Reports() {
     };
   }, [rou.data]);
 
-  // Liability totals
   const liabTotals = useMemo(() => {
     if (!liability.data || !Array.isArray(liability.data)) return null;
     const rows = liability.data as Array<Record<string, unknown>>;
@@ -101,7 +159,6 @@ export default function IFRS16Reports() {
     };
   }, [liability.data]);
 
-  // Maturity totals
   const matTotals = useMemo(() => {
     if (!maturity.data || !Array.isArray(maturity.data)) return null;
     const rows = maturity.data as Array<Record<string, unknown>>;
@@ -166,12 +223,39 @@ export default function IFRS16Reports() {
                   <Input type="number" value={months} onChange={e => setMonths(Number(e.target.value))} className="w-24 h-9" />
                 </div>
               )}
+
+              {/* AI Report Engine Buttons */}
+              <div className="ml-auto flex items-center gap-2">
+                {latestReport.data && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAIReport(true)}
+                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-950/50"
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1" />
+                    View Report
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white"
+                >
+                  {isGenerating ? (
+                    <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Generating...</>
+                  ) : (
+                    <><Sparkles className="h-3.5 w-3.5 mr-1" />Generate AI Report</>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setShowAIReport(false); }} className="w-full">
           <TabsList className="grid grid-cols-7 w-full h-10">
             <TabsTrigger value="portfolio" className="text-xs"><PieChart className="h-3 w-3 mr-1" />Portfolio</TabsTrigger>
             <TabsTrigger value="rou" className="text-xs"><Building2 className="h-3 w-3 mr-1" />ROU Roll-Forward</TabsTrigger>
@@ -492,6 +576,118 @@ export default function IFRS16Reports() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* ══════ AI REPORT OVERLAY ══════ */}
+      {showAIReport && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm overflow-auto">
+          <div className="max-w-5xl mx-auto p-8">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    {REPORT_TYPE_LABELS[currentReportType] || "AI Report"}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    {latestReport.data?.generated_at
+                      ? `Generated: ${fmtDate(latestReport.data.generated_at)} by ${latestReport.data.generated_by || "System"}`
+                      : "No report generated yet"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="border-amber-500/50 text-amber-400 hover:bg-amber-950/50"
+                >
+                  {isGenerating ? (
+                    <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Regenerating...</>
+                  ) : (
+                    <><RefreshCw className="h-3.5 w-3.5 mr-1" />Regenerate</>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowAIReport(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Report Content */}
+            <div className="bg-gray-900/80 border border-gray-700/50 rounded-xl p-8">
+              {isGenerating ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <Loader2 className="h-10 w-10 text-amber-500 animate-spin" />
+                  <p className="text-gray-400">Generating AI report from live data...</p>
+                  <p className="text-xs text-gray-500">This may take 15-30 seconds</p>
+                </div>
+              ) : latestReport.data?.content_markdown ? (
+                <div className="prose prose-invert prose-sm max-w-none
+                  prose-headings:text-amber-300 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
+                  prose-strong:text-white prose-a:text-blue-400
+                  prose-table:border-gray-600 prose-th:bg-gray-800/50 prose-th:text-gray-200
+                  prose-td:border-gray-700 prose-th:border-gray-700
+                  prose-li:text-gray-300 prose-p:text-gray-300
+                  prose-code:text-emerald-400 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
+                ">
+                  <Streamdown>{latestReport.data.content_markdown}</Streamdown>
+                </div>
+              ) : generateMut.data?.content ? (
+                <div className="prose prose-invert prose-sm max-w-none
+                  prose-headings:text-amber-300 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
+                  prose-strong:text-white prose-a:text-blue-400
+                  prose-table:border-gray-600 prose-th:bg-gray-800/50 prose-th:text-gray-200
+                  prose-td:border-gray-700 prose-th:border-gray-700
+                  prose-li:text-gray-300 prose-p:text-gray-300
+                  prose-code:text-emerald-400 prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded
+                ">
+                  <Streamdown>{generateMut.data.content}</Streamdown>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <Sparkles className="h-10 w-10 text-gray-600" />
+                  <p className="text-gray-400">No report generated yet for this tab.</p>
+                  <p className="text-xs text-gray-500">Click "Generate AI Report" to create one from live data.</p>
+                  <Button
+                    size="sm"
+                    onClick={handleGenerateReport}
+                    className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white mt-2"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 mr-1" />Generate Now
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {latestReport.data && (
+              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-3 w-3" />
+                  <span>Report ID: #{latestReport.data.id}</span>
+                  <span>|</span>
+                  <span>Period: {latestReport.data.from_date ? fmtDate(latestReport.data.from_date) : "Inception"} — {latestReport.data.to_date ? fmtDate(latestReport.data.to_date) : "Today"}</span>
+                  <span>|</span>
+                  <span>Currency: {latestReport.data.currency || "All"}</span>
+                </div>
+                <Badge variant="outline" className="text-emerald-400 border-emerald-500/50">
+                  {latestReport.data.status}
+                </Badge>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
