@@ -2250,3 +2250,4 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Generate 60-second corporate ambient BGM
 - [x] Assemble extended 60-second video (original 32s + 28s report section)
 - [x] Upload extended video and update landing page video source URL
+- [x] Replace last clip (logo reveal) with user-provided VodaLease Enterprise logo and reassemble extended video
