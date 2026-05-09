@@ -138,7 +138,7 @@ export default function LandingPage() {
               className="w-full aspect-video bg-black"
               poster=""
             >
-              <source src="/manus-storage/vodalease-demo-extended_f993b618.mp4" type="video/mp4" />
+              <source src="/manus-storage/vodalease-demo-extended_0f6b1aa2.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           </div>

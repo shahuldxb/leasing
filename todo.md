@@ -2243,3 +2243,10 @@ Note: Cold call times are dominated by remote SQL Server network latency (~1300m
 - [x] Show generation timestamp, user, period, currency, report ID
 - [x] Render markdown content with prose-invert styling and Streamdown component
 - [x] Regenerate button inside overlay to refresh the report
+
+## Feature: Extended Video Regeneration (May 2026 - Post Sandbox Reset)
+- [x] Regenerate 7 AI Report Engine video clips from surviving reference images
+- [x] Regenerate 7 narration audio files for report clips
+- [x] Generate 60-second corporate ambient BGM
+- [x] Assemble extended 60-second video (original 32s + 28s report section)
+- [x] Upload extended video and update landing page video source URL
